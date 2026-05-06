@@ -2,27 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <meta name="theme-color" content="#2D6A4F">
-<meta name="description" content="Thinko — Think it. Sort it. Do it. Your AI mind-sorting companion.">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Thinko — Think it. Sort it. Do it.</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+<title>Thinko</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;overflow:hidden}
-body{font-family:'DM Sans',system-ui,sans-serif}
-#root{height:100vh;display:flex;flex-direction:column}
-</style>
+<style>*{margin:0;padding:0;box-sizing:border-box}html,body,#root{height:100%;overflow:hidden}body{font-family:"DM Sans",sans-serif;background:#F7F5F2}</style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useRef, useEffect } = React;
+const {useState,useRef,useEffect}=React;
 
 
 
@@ -198,8 +190,8 @@ function TasksTab(){
   function addItem(){var v=dInp.trim();if(!v)return;setItems(function(p){return p.concat([{text:v,cid:"none"}]);});setDInp("");if(dRef.current)dRef.current.focus();}
   function remItem(i){setItems(function(p){return p.filter(function(_,x){return x!==i;});});}
   function setIC(i,cid){setItems(function(p){var n=p.slice();n[i]=Object.assign({},n[i],{cid:cid});return n;});setDPick(null);}
-  function makeSmart(i,text){setSLoad(i);setSView(null);callAI([{role:"user",content:"Convert this into a SMART goal: "+text}],SSYS,1000).then(function(r){var p=JSON.parse(r.replace(/```json|```/g,"").trim());setSRes(function(x){var n=Object.assign({},x);n[i]=p;return n;});setSView(i);}).catch(function(){setSRes(function(x){var n=Object.assign({},x);n[i]={error:true};return n;});setSView(i);}).finally(function(){setSLoad(null);});}
-  function prioritise(){var lines=raw.split("\n").map(function(l){return l.trim();}).filter(Boolean);if(!lines.length)return;setPhase("loading");callAI([{role:"user",content:"Prioritise:\n"+lines.map(function(l,i){return(i+1)+". "+l;}).join("\n")}],PSYS).then(function(r){var p=JSON.parse(r.replace(/```json|```/g,"").trim());setResults(p.ranked);setRmsg(p.message);setDone({});setTCols({});setPhase("results");}).catch(function(){setErr("Something went wrong.");setPhase("input");});}
+  function makeSmart(i,text){setSLoad(i);setSView(null);callAI([{role:"user",content:"Convert this into a SMART goal: "+text}],SSYS,1000).then(function(r){var p=JSON.parse(r.replace(new RegExp(String.fromCharCode(96,96,96)+"json|"+String.fromCharCode(96,96,96),"g"),"").trim());setSRes(function(x){var n=Object.assign({},x);n[i]=p;return n;});setSView(i);}).catch(function(){setSRes(function(x){var n=Object.assign({},x);n[i]={error:true};return n;});setSView(i);}).finally(function(){setSLoad(null);});}
+  function prioritise(){var lines=raw.split("\n").map(function(l){return l.trim();}).filter(Boolean);if(!lines.length)return;setPhase("loading");callAI([{role:"user",content:"Prioritise:\n"+lines.map(function(l,i){return(i+1)+". "+l;}).join("\n")}],PSYS).then(function(r){var p=JSON.parse(r.replace(new RegExp(String.fromCharCode(96,96,96)+"json|"+String.fromCharCode(96,96,96),"g"),"").trim());setResults(p.ranked);setRmsg(p.message);setDone({});setTCols({});setPhase("results");}).catch(function(){setErr("Something went wrong.");setPhase("input");});}
   function buildPairs(list){var pairs=[];for(var i=0;i<list.length;i++){for(var j=i+1;j<list.length;j++){pairs.push([list[i],list[j]]);}}for(var k=pairs.length-1;k>0;k--){var r=Math.floor(Math.random()*(k+1));var tmp=pairs[k];pairs[k]=pairs[r];pairs[r]=tmp;}return pairs;}
   function startTot(){var lines=totItems.length>0?totItems:totInp.split("\n").map(function(l){return l.trim();}).filter(Boolean);if(lines.length<2)return;var pairs=buildPairs(lines);var wins={};lines.forEach(function(t){wins[t]=0;});setTotPairs(pairs);setTotIdx(0);setTotWins(wins);setTotPhase("comparing");}
   function pickWinner(winner,loser){
@@ -323,8 +315,8 @@ function ToolsTab(){
   var [tool,setTool]=useState("menu");var [ph,setPh]=useState("input");var [inp,setInp]=useState("");var [res,setRes]=useState(null);var [gd,setGd]=useState({});var [err,setErr]=useState("");
   function reset(){setPh("input");setInp("");setRes(null);setGd({});setErr("");}
   function back(){setTool("menu");reset();}
-  function runGoal(){if(!inp.trim())return;setPh("loading");callAI([{role:"user",content:"My goal: "+inp}],GSYS).then(function(r){setRes(JSON.parse(r.replace(/```json|```/g,"").trim()));setPh("results");}).catch(function(){setErr("Something went wrong.");setPh("input");});}
-  function runDoc(){if(!inp.trim())return;setPh("loading");callAI([{role:"user",content:"Simplify:\n\n"+inp}],DSYS,1000).then(function(r){setRes(JSON.parse(r.replace(/```json|```/g,"").trim()));setPh("results");}).catch(function(){setErr("Something went wrong.");setPh("input");});}
+  function runGoal(){if(!inp.trim())return;setPh("loading");callAI([{role:"user",content:"My goal: "+inp}],GSYS).then(function(r){setRes(JSON.parse(r.replace(new RegExp(String.fromCharCode(96,96,96)+"json|"+String.fromCharCode(96,96,96),"g"),"").trim()));setPh("results");}).catch(function(){setErr("Something went wrong.");setPh("input");});}
+  function runDoc(){if(!inp.trim())return;setPh("loading");callAI([{role:"user",content:"Simplify:\n\n"+inp}],DSYS,1000).then(function(r){setRes(JSON.parse(r.replace(new RegExp(String.fromCharCode(96,96,96)+"json|"+String.fromCharCode(96,96,96),"g"),"").trim()));setPh("results");}).catch(function(){setErr("Something went wrong.");setPh("input");});}
   if(tool==="menu")return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:14}},
     React.createElement("div",{style:{fontSize:20,fontWeight:700,color:C.t}},"Tools"),
     [{id:"goal",i:"🎯",l:"Break Down a Goal",d:"Turn any big goal into 5 manageable steps",c:C.g},{id:"doc",i:"📄",l:"Simplify a Document",d:"Paste any letter or form — get plain English back",c:C.b}].map(function(t){return React.createElement("button",{key:t.id,onClick:function(){setTool(t.id);reset();},style:{background:C.card,border:"1px solid "+C.cb,borderRadius:16,padding:18,cursor:"pointer",textAlign:"left",width:"100%",fontFamily:"inherit",transition:"border-color .15s"}},React.createElement("div",{style:{fontSize:26,marginBottom:8}},t.i),React.createElement("div",{style:{fontSize:15,fontWeight:700,color:C.t,marginBottom:4}},t.l),React.createElement("div",{style:{fontSize:12,color:C.tm,lineHeight:1.4}},t.d));})
@@ -465,8 +457,7 @@ function Thinko(){
   );
 }
 
-
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Thinko));
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Thinko));
 </script>
 </body>
 </html>
