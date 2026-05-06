@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body,#root{height:100%;overflow:hidden}
@@ -20,6 +21,7 @@ body{font-family:'DM Sans',system-ui,sans-serif}
 </head>
 <body>
 <div id="root"></div>
+
 <script>
 (function(){
 var R=React,h=R.createElement;
@@ -63,12 +65,7 @@ function Spin(props){return h("div",{style:{display:"flex",flexDirection:"column
   h(Dots)
 );}
 
-function CPick(props){return h("div",{style:{background:C.sur,border:"1px solid "+C.br,borderRadius:12,padding:10,display:"flex",gap:6,flexWrap:"wrap",boxShadow:"0 4px 16px rgba(0,0,0,.1)",marginTop:4}},
-  TCOLS.map(function(c){return h("button",{key:c.id,onClick:function(){props.onPick(c.id);},style:{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"4px 6px"}},
-    h("div",{style:{width:22,height:22,borderRadius:"50%",background:c.c||C.cb,border:props.sel===c.id?"3px solid "+C.t:"2px solid transparent"}}),
-    h("span",{style:{fontSize:9,color:C.tm,fontWeight:600}},c.l)
-  );});
-);}
+function CPick(props){return h("div",{style:{background:C.sur,border:"1px solid "+C.br,borderRadius:12,padding:10,display:"flex",gap:6,flexWrap:"wrap",boxShadow:"0 4px 16px rgba(0,0,0,.1)",marginTop:4}},TCOLS.map(function(c){return h("button",{key:c.id,onClick:function(){props.onPick(c.id);},style:{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"4px 6px"}},h("div",{style:{width:22,height:22,borderRadius:"50%",background:c.c||C.cb,border:props.sel===c.id?"3px solid "+C.t:"2px solid transparent"}}),h("span",{style:{fontSize:9,color:C.tm,fontWeight:600}},c.l));}))}
 
 function TimerRow(props){
   var tSet=props.tSet,tLeft=props.tLeft,isActive=props.isActive;
