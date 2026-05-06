@@ -6,14 +6,38 @@
 <meta name="theme-color" content="#2D6A4F">
 <title>Thinko</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body,#root{height:100%;overflow:hidden}
+body{font-family:"DM Sans",sans-serif;background:#F7F5F2}
+#loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#F7F5F2;z-index:999}
+.ldot{width:8px;height:8px;border-radius:50%;background:#2D6A4F;animation:ldb 1.2s ease-in-out infinite}
+.ldot:nth-child(2){animation-delay:.2s}
+.ldot:nth-child(3){animation-delay:.4s}
+@keyframes ldb{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-8px);opacity:1}}
+</style>
+</head>
+<body>
+<div id="loading">
+  <div style="width:48px;height:48px;border-radius:14px;background:#2D6A4F;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:800;font-family:sans-serif">T</div>
+  <div style="display:flex;gap:6px"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div>
+  <div style="font-size:14px;color:#999;font-family:sans-serif">Loading Thinko...</div>
+</div>
+<div id="root"></div>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<style>*{margin:0;padding:0;box-sizing:border-box}html,body,#root{height:100%;overflow:hidden}body{font-family:"DM Sans",sans-serif;background:#F7F5F2}</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
+<script>
+window.addEventListener('load', function() {
+  var code = document.getElementById('app-code').textContent;
+  var transformed = Babel.transform(code, {presets:['react']}).code;
+  var fn = new Function('React','ReactDOM', transformed + '\nreturn Thinko;');
+  var ThinkoApp = fn(React, ReactDOM);
+  document.getElementById('loading').style.display = 'none';
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ThinkoApp));
+});
+</script>
+<script id="app-code" type="text/plain">
 const {useState,useRef,useEffect}=React;
 
 
@@ -457,7 +481,6 @@ function Thinko(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Thinko));
 </script>
 </body>
 </html>
