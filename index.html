@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Thinko</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body,#root{height:100%;overflow:hidden}
@@ -34,8 +36,6 @@ body{font-family:'Nunito',sans-serif}
 </head>
 <body>
 <div id="root"></div>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script>
 (function(){
 var h=React.createElement;
@@ -221,13 +221,21 @@ function TodoTab(){
               !isDone&&h("button",{onClick:function(){setCPick(cPick===i?null:i);},style:{width:20,height:20,borderRadius:"50%",background:co.c||C.cb,border:"2px solid "+(co.c?co.c+"70":C.br),cursor:"pointer",flexShrink:0}}),
               h("button",{onClick:function(){rem(i);},style:{background:"none",border:"none",color:C.tm,fontSize:14,cursor:"pointer",padding:"0 2px",flexShrink:0}},"\u2715")
             ),
-            !isDone&&h("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid "+C.cb}},
+            !isDone&&h("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid "+C.cb,display:"flex",flexDirection:"column",gap:8}},
               ti
-                ?h("div",{style:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}},
-                  h("div",{style:{background:C.al,borderRadius:100,padding:"4px 12px",fontSize:12,fontWeight:800,color:C.a}},"\u23F1\uFE0F "+ti.wm+"m work"),
-                  h("div",{style:{background:C.gs,borderRadius:100,padding:"4px 12px",fontSize:12,fontWeight:800,color:C.g}},"\u2615\uFE0F "+ti.bm+"m break"),
-                  h("button",{onClick:function(){setTSheet({i:i});},style:{background:"transparent",border:"1px solid "+C.cb,borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:700,color:C.tm,cursor:"pointer",fontFamily:"inherit"}},"Edit"),
-                  h("button",{onClick:function(){setRunT({taskText:item.text,wm:ti.wm,bm:ti.bm});},style:{background:C.grad,border:"none",borderRadius:100,padding:"5px 14px",fontSize:12,fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto"}},"\u25B6 Start")
+                ?h("div",{style:{display:"flex",flexDirection:"column",gap:6}},
+                  h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                    h("div",{style:{background:C.al,borderRadius:100,padding:"5px 13px",fontSize:12,fontWeight:800,color:C.a,display:"flex",alignItems:"center",gap:5}},
+                      h("span",null,"\u23F1\uFE0F"),h("span",null,ti.wm+"m work")
+                    ),
+                    h("button",{onClick:function(){setTSheet({i:i});},style:{background:"transparent",border:"1px solid "+C.cb,borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:700,color:C.tm,cursor:"pointer",fontFamily:"inherit"}},"Edit"),
+                    h("button",{onClick:function(){setRunT({taskText:item.text,wm:ti.wm,bm:ti.bm});},style:{background:C.grad,border:"none",borderRadius:100,padding:"5px 16px",fontSize:12,fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto"}},"\u25B6 Start")
+                  ),
+                  h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                    h("div",{style:{background:C.gs,borderRadius:100,padding:"5px 13px",fontSize:12,fontWeight:800,color:C.g,display:"flex",alignItems:"center",gap:5}},
+                      h("span",null,"\u2615\uFE0F"),h("span",null,ti.bm+"m break")
+                    )
+                  )
                 )
                 :h("button",{onClick:function(){setTSheet({i:i});},style:{background:C.al,border:"1px dashed "+C.a+"55",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,color:C.a,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}},"\u23F1\uFE0F Set Work & Break Timer")
             )
