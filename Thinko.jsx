@@ -1,440 +1,317 @@
-import React, { useState, useRef, useEffect } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#7C3AED">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Thinko</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body,#root{height:100%;overflow:hidden}
+body{font-family:'Nunito',system-ui,sans-serif;background:#F8F5FF}
+.drum{height:120px;overflow:hidden;position:relative;width:60px;cursor:grab;user-select:none;touch-action:none}
+.drum-inner{display:flex;flex-direction:column}
+.drum-item{height:40px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:rgba(255,255,255,0.3);flex-shrink:0}
+.drum-item.sel{color:#fff;font-size:22px;font-weight:900}
+.drum-item.near{color:rgba(255,255,255,0.65);font-size:19px}
+.drum::before{content:'';position:absolute;top:0;left:0;right:0;height:40px;background:linear-gradient(to bottom,rgba(124,58,237,.98),transparent);z-index:2;pointer-events:none}
+.drum::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(to top,rgba(124,58,237,.98),transparent);z-index:2;pointer-events:none}
+.drum-line{position:absolute;top:40px;left:4px;right:4px;height:40px;border-top:1.5px solid rgba(255,255,255,0.25);border-bottom:1.5px solid rgba(255,255,255,0.25);pointer-events:none;z-index:3}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+var h=React.createElement;
+var useState=React.useState,useRef=React.useRef,useEffect=React.useEffect;
 
-var L={bg:"#F7F5F2",sur:"#FFFFFF",card:"#FDFCFB",cb:"#E8E4DF",a:"#2D6A4F",as:"#2D6A4F18",ag:"#2D6A4F30",g:"#2D6A4F",gs:"#2D6A4F15",r:"#C1121F",rs:"#C1121F15",b:"#1D3557",bs:"#1D355715",am:"#E07A1F",ams:"#E07A1F15",p:"#6B3FA0",ps:"#6B3FA015",t:"#1A1A1A",ts:"#555555",tm:"#999999",br:"#E8E4DF"};
-var D={bg:"#111214",sur:"#1A1D20",card:"#1F2227",cb:"#2A2D33",a:"#52B788",as:"#52B78818",ag:"#52B78830",g:"#52B788",gs:"#52B78815",r:"#E63946",rs:"#E6394615",b:"#4EA8DE",bs:"#4EA8DE15",am:"#F4A261",ams:"#F4A26115",p:"#9D4EDD",ps:"#9D4EDD15",t:"#F0EDE8",ts:"#AAAAAA",tm:"#555555",br:"#2A2D33"};
-var C=L;
+var TASK_COLORS=["#DC2626","#D97706","#059669","#2563EB","#7C3AED","#DB2777","#0891B2","#65A30D"];
+var LIST_COLORS=["#7C3AED","#2563EB","#059669","#DB2777","#D97706","#0891B2","#DC2626","#65A30D"];
+var DVALS=[];for(var _d=1;_d<=99;_d++)DVALS.push(_d);
 
-var TASK_COLORS=[{id:"none",l:"None",c:null},{id:"r",l:"Urgent",c:"#C1121F"},{id:"am",l:"Today",c:"#E07A1F"},{id:"g",l:"Personal",c:"#2D6A4F"},{id:"b",l:"Work",c:"#1D3557"},{id:"p",l:"Idea",c:"#6B3FA0"},{id:"pink",l:"Self-care",c:"#C2185B"}];
-
-var PSYS="You are Thinko task prioritisation AI. Use A/B Sorting. Return ONLY valid JSON no markdown: {\"ranked\":[{\"rank\":1,\"task\":\"text\",\"reason\":\"one warm sentence\"}],\"message\":\"one encouraging sentence\"}";
-var SSYS="You are Thinko SMART Goal engine. Return ONLY valid JSON no markdown: {\"smart_goal\":\"\",\"specific\":\"\",\"measurable\":\"\",\"achievable\":\"\",\"relevant\":\"\",\"timebound\":\"\",\"steps\":[\"1\",\"2\",\"3\",\"4\",\"5\"],\"encouragement\":\"\"}";
-var GSYS="You are Thinko goal breakdown engine. Return ONLY valid JSON no markdown: {\"tasks\":[\"1\",\"2\",\"3\",\"4\",\"5\"],\"encouragement\":\"\"}";
-var DSYS="You are Thinko document simplifier. Return ONLY valid JSON no markdown: {\"summary\":\"\",\"they_want\":\"\",\"deadline\":\"\",\"next_step\":\"\",\"jargon\":[{\"term\":\"\",\"plain\":\"\"}]}";
-var ASYS="You are Thinko, a smart friendly AI task and mind-sorting companion for everyone. Be warm, practical, concise. 3-5 sentences max. End with one clear next step or question.";
-
-function callAI(msgs,sys,mt){return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:mt||800,system:sys,messages:msgs})}).then(function(r){return r.json();}).then(function(d){return(d.content&&d.content[0]&&d.content[0].text)||"";});}
-
-function Dots(){return React.createElement("div",{style:{display:"flex",gap:4,alignItems:"center"}},[0,1,2].map(function(i){return React.createElement("div",{key:i,style:{width:6,height:6,borderRadius:"50%",background:C.a,animation:"tkB 1.1s ease-in-out "+(i*0.18)+"s infinite"}});}));}
-
-function Bubble(props){
-  var m=props.msg,u=m.role==="user";
-  return React.createElement("div",{style:{display:"flex",justifyContent:u?"flex-end":"flex-start",marginBottom:6}},
-    !u&&React.createElement("div",{style:{width:28,height:28,borderRadius:8,background:C.a,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0,marginRight:8,marginTop:2,color:"#fff",fontWeight:800}},"T"),
-    React.createElement("div",{style:{maxWidth:"80%",background:u?C.a:C.card,color:u?"#fff":C.t,borderRadius:u?"16px 16px 4px 16px":"16px 16px 16px 4px",padding:"10px 14px",fontSize:14,lineHeight:1.6,border:u?"none":"1px solid "+C.cb,whiteSpace:"pre-wrap"}},m.content)
+function Drum(props){
+  var selIdx=DVALS.indexOf(props.value||25);if(selIdx<0)selIdx=24;
+  var ref=useRef(null),startY=useRef(null),startIdx=useRef(selIdx),curIdx=useRef(selIdx);
+  function clamp(n){return Math.max(0,Math.min(DVALS.length-1,n));}
+  function applyIdx(idx,anim){
+    if(!ref.current)return;
+    var inner=ref.current.querySelector(".drum-inner");
+    if(!inner)return;
+    inner.style.transition=anim?"transform .18s ease":"none";
+    inner.style.transform="translateY("+(-idx*40+40)+"px)";
+    var items=ref.current.querySelectorAll(".drum-item");
+    items.forEach(function(el,i){el.className="drum-item"+(i===idx?" sel":Math.abs(i-idx)===1?" near":"");});
+  }
+  function onDown(e){startY.current=e.touches?e.touches[0].clientY:e.clientY;startIdx.current=curIdx.current;e.preventDefault();}
+  function onMove(e){if(startY.current===null)return;var y=e.touches?e.touches[0].clientY:e.clientY;var ni=clamp(Math.round(startIdx.current+(startY.current-y)/40));if(ni!==curIdx.current){curIdx.current=ni;applyIdx(ni,false);}e.preventDefault();}
+  function onUp(e){if(startY.current===null)return;startY.current=null;applyIdx(curIdx.current,true);props.onChange(DVALS[curIdx.current]);e.preventDefault();}
+  function onWheel(e){var ni=clamp(curIdx.current+(e.deltaY>0?1:-1));curIdx.current=ni;applyIdx(ni,true);props.onChange(DVALS[ni]);e.preventDefault();}
+  useEffect(function(){applyIdx(selIdx,false);},[]);
+  return h("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:4}},
+    h("div",{ref:ref,className:"drum",onTouchStart:onDown,onTouchMove:onMove,onTouchEnd:onUp,onMouseDown:onDown,onMouseMove:onMove,onMouseUp:onUp,onMouseLeave:onUp,onWheel:onWheel},
+      h("div",{className:"drum-inner"},DVALS.map(function(v){return h("div",{key:v,className:"drum-item"},v);})),
+      h("div",{className:"drum-line"})
+    ),
+    h("div",{style:{fontSize:10,fontWeight:800,color:"rgba(255,255,255,.5)",letterSpacing:"0.1em"}},props.label||"MIN")
   );
 }
 
-function Card(props){return React.createElement("div",{style:{background:C.card,border:"1px solid "+C.cb,borderRadius:16,padding:props.p||16,...(props.style||{})}},props.children);}
-function Btn(props){var dis=props.disabled;return React.createElement("button",{onClick:props.onClick,disabled:dis,style:{width:"100%",padding:props.small?"10px":"14px",background:dis?(C.card):(props.bg||C.a),border:"1.5px solid "+(dis?C.cb:(props.bg||C.a)),borderRadius:12,color:dis?C.tm:(props.color||"#fff"),fontSize:props.small?13:15,fontWeight:700,fontFamily:"inherit",cursor:dis?"not-allowed":"pointer",opacity:dis?0.5:1,transition:"all .15s"}},props.children);}
-function Tag(props){return React.createElement("div",{style:{display:"inline-block",background:props.color+"18",color:props.color,borderRadius:100,padding:"3px 10px",fontSize:11,fontWeight:700}},props.children);}
-function Spin(props){return React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:60,flex:1}},React.createElement("div",{style:{width:48,height:48,borderRadius:12,background:C.a,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,color:"#fff",animation:"tkP 1.5s ease-in-out infinite"}},"T"),React.createElement("div",{style:{fontSize:15,fontWeight:600,color:C.a}},props.msg||"Thinko is thinking..."),React.createElement(Dots));}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
 
-// HOME / CHAT
-function HomeTab(props){
-  var setTab=props.setTab;
-  var h=new Date().getHours();
-  var gr=h<5?"Good night":h<12?"Good morning":h<17?"Good afternoon":"Good evening";
-  var [msgs,setMsgs]=useState([{role:"assistant",content:gr+"! I'm Thinko — your AI mind-sorting companion.\n\nWhat's on your mind today? I can help you sort tasks, break down goals, or just think things through."}]);
-  var [inp,setInp]=useState("");var [load,setLoad]=useState(false);
-  var bRef=useRef(null);var iRef=useRef(null);
-  useEffect(function(){if(bRef.current)bRef.current.scrollIntoView({behavior:"smooth"});},[msgs,load]);
-  function send(t){var c=(t||inp).trim();if(!c||load)return;setInp("");var nm=msgs.concat([{role:"user",content:c}]);setMsgs(nm);setLoad(true);callAI(nm.map(function(m){return{role:m.role,content:m.content};}),ASYS).then(function(r){setMsgs(function(p){return p.concat([{role:"assistant",content:r}]);});}).catch(function(){setMsgs(function(p){return p.concat([{role:"assistant",content:"Something went wrong. Try again?"}]);});}).finally(function(){setLoad(false);setTimeout(function(){if(iRef.current)iRef.current.focus();},100);});}
-  var quick=[{l:"Sort my tasks",i:"⚡",t:"tasks"},{l:"Break down a goal",i:"🎯",t:"tools"},{l:"Start a focus timer",i:"⏱️",t:"focus"},{l:"Simplify a document",i:"📄",t:"tools"}];
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
-    React.createElement("div",{style:{padding:"10px 14px 0",flexShrink:0}},
-      React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}},
-        quick.map(function(a,i){return React.createElement("button",{key:i,onClick:function(){setTab(a.t);},style:{background:C.card,border:"1px solid "+C.cb,borderRadius:12,padding:"9px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontFamily:"inherit",textAlign:"left",transition:"border-color .15s"}},React.createElement("span",{style:{fontSize:16}},a.i),React.createElement("span",{style:{fontSize:12,fontWeight:600,color:C.ts,lineHeight:1.3}},a.l));})
-      )
-    ),
-    React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"12px 14px 8px",display:"flex",flexDirection:"column",gap:10}},
-      msgs.map(function(m,i){return React.createElement(Bubble,{key:i,msg:m});}),
-      load&&React.createElement("div",{style:{display:"flex",alignItems:"flex-start",gap:8}},React.createElement("div",{style:{width:28,height:28,borderRadius:8,background:C.a,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",fontWeight:800,flexShrink:0}},"T"),React.createElement("div",{style:{background:C.card,border:"1px solid "+C.cb,borderRadius:"16px 16px 16px 4px",padding:"10px 14px"}},React.createElement(Dots))),
-      React.createElement("div",{ref:bRef})
-    ),
-    React.createElement("div",{style:{padding:"8px 14px 14px",background:C.sur,borderTop:"1px solid "+C.br,flexShrink:0}},
-      React.createElement("div",{style:{display:"flex",gap:8,alignItems:"flex-end"}},
-        React.createElement("textarea",{ref:iRef,value:inp,onChange:function(e){setInp(e.target.value);},onKeyDown:function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}},placeholder:"Ask Thinko anything...",rows:1,style:{flex:1,background:C.card,border:"1px solid "+C.cb,borderRadius:12,padding:"10px 13px",color:C.t,fontSize:14,fontFamily:"inherit",resize:"none",outline:"none",lineHeight:1.5,maxHeight:100},onInput:function(e){e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}),
-        React.createElement("button",{onClick:function(){send();},disabled:!inp.trim()||load,style:{width:38,height:38,borderRadius:10,flexShrink:0,background:(inp.trim()&&!load)?C.a:C.card,border:"1px solid "+((inp.trim()&&!load)?C.a:C.cb),color:(inp.trim()&&!load)?"#fff":C.tm,cursor:(inp.trim()&&!load)?"pointer":"not-allowed",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}},"↑")
-      )
+function TimerSheet(props){
+  var _w=useState(props.wm||25);var wm=_w[0],setWm=_w[1];
+  var _b=useState(props.bm||5);var bm=_b[0],setBm=_b[1];
+  return h("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"},onClick:function(e){if(e.target===e.currentTarget)props.onClose();}},
+    h("div",{style:{background:props.color||"#7C3AED",borderRadius:"22px 22px 0 0",padding:"22px 20px 40px",width:"100%",maxWidth:480,animation:"slideUp .28s ease-out"}},
+      h("div",{style:{width:34,height:4,background:"rgba(255,255,255,.3)",borderRadius:100,margin:"0 auto 18px"}}),
+      h("div",{style:{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.6)",marginBottom:3}},"TIMER FOR"),
+      h("div",{style:{fontSize:15,fontWeight:800,color:"#fff",marginBottom:22,lineHeight:1.3}},props.taskText),
+      h("div",{style:{display:"flex",justifyContent:"space-around",alignItems:"flex-start",marginBottom:24}},
+        h("div",{style:{textAlign:"center"}},h("div",{style:{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.55)",marginBottom:10,letterSpacing:"0.1em"}},"WORK"),h(Drum,{value:wm,onChange:setWm})),
+        h("div",{style:{alignSelf:"center",fontSize:22,color:"rgba(255,255,255,.3)",fontWeight:700,marginTop:20}},"//"),
+        h("div",{style:{textAlign:"center"}},h("div",{style:{fontSize:11,fontWeight:800,color:"rgba(255,255,255,.55)",marginBottom:10,letterSpacing:"0.1em"}},"BREAK"),h(Drum,{value:bm,onChange:setBm}))
+      ),
+      h("button",{onClick:function(){props.onSave(wm,bm);},style:{width:"100%",padding:15,background:"#fff",border:"none",borderRadius:14,color:props.color||"#7C3AED",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}},"Set: "+wm+"min work / "+bm+"min break"),
+      h("button",{onClick:props.onClose,style:{width:"100%",padding:11,background:"transparent",border:"none",color:"rgba(255,255,255,.5)",fontSize:13,fontWeight:700,fontFamily:"inherit",cursor:"pointer",marginTop:6}},"Cancel")
     )
   );
 }
 
-// TODO LIST
-function TodoTab(){
-  var [items,setItems]=useState([]);
-  var [inp,setInp]=useState("");
-  var [cPick,setCPick]=useState(null);
-  var [done,setDone]=useState({});
-  var [timers,setTimers]=useState({});
-  var [timerLeft,setTimerLeft]=useState({});
-  var [activeTimer,setActiveTimer]=useState(null);
-  var [breakActive,setBreakActive]=useState(null);
-  var [breakLeft,setBreakLeft]=useState({});
-  var timerRef=useRef(null);
+function RunTimer(props){
+  var _p=useState("work");var phase=_p[0],setPhase=_p[1];
+  var _l=useState(props.wm*60);var left=_l[0],setLeft=_l[1];
+  var _pa=useState(false);var paused=_pa[0],setPaused=_pa[1];
+  var _c=useState(0);var cycles=_c[0],setCycles=_c[1];
+  var ref=useRef(null);
+  useEffect(function(){
+    if(paused){clearInterval(ref.current);return;}
+    ref.current=setInterval(function(){setLeft(function(p){if(p<=1){clearInterval(ref.current);setPhase(function(ph){if(ph==="work"){setLeft(props.bm*60);setCycles(function(c){return c+1;});return"break";}else{setLeft(props.wm*60);return"work";}});return 0;}return p-1;});},1000);
+    return function(){clearInterval(ref.current);};
+  },[paused,phase]);
+  var isWork=phase==="work",total=isWork?props.wm*60:props.bm*60,prog=(total-left)/total;
+  var r=82,circ=2*Math.PI*r,col=isWork?(props.color||"#7C3AED"):"#059669";
+  return h("div",{style:{position:"fixed",inset:0,background:"#F8F5FF",zIndex:200,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:28,gap:16}},
+    h("div",{style:{fontSize:11,fontWeight:800,color:"#9B8BB4",letterSpacing:"0.12em"}},isWork?"FOCUS TIME":"BREAK TIME"),
+    h("div",{style:{fontSize:14,fontWeight:700,color:"#5B4C7A",textAlign:"center",maxWidth:240,lineHeight:1.4}},props.taskText),
+    h("div",{style:{position:"relative",width:184,height:184}},
+      h("svg",{width:"184",height:"184",style:{transform:"rotate(-90deg)"}},h("circle",{cx:"92",cy:"92",r:r,fill:"none",stroke:"#E9E0FF",strokeWidth:"10"}),h("circle",{cx:"92",cy:"92",r:r,fill:"none",stroke:col,strokeWidth:"10",strokeLinecap:"round",strokeDasharray:circ,strokeDashoffset:circ*(1-prog),style:{transition:"stroke-dashoffset 1s linear,stroke .5s"}})),
+      h("div",{style:{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}},h("div",{style:{fontSize:40,fontWeight:900,color:col,letterSpacing:"-1px"}},fmt(left)),h("div",{style:{fontSize:10,fontWeight:800,color:"#9B8BB4",marginTop:3,letterSpacing:"0.1em"}},isWork?"WORK":"BREAK"))
+    ),
+    cycles>0&&h("div",{style:{background:"#EDE9FE",borderRadius:100,padding:"5px 14px",fontSize:12,fontWeight:800,color:"#7C3AED"}},cycles+" cycle"+(cycles===1?"":"s")+" done"),
+    h("div",{style:{display:"flex",gap:10,width:"100%",maxWidth:220}},
+      h("button",{onClick:function(){setPaused(function(v){return !v;});},style:{flex:2,padding:13,background:"#EDE9FE",border:"2px solid "+(props.color||"#7C3AED"),borderRadius:13,color:props.color||"#7C3AED",fontSize:14,fontWeight:800,fontFamily:"inherit",cursor:"pointer"}},paused?"\u25B6 Resume":"\u23F8 Pause"),
+      h("button",{onClick:props.onClose,style:{flex:1,padding:13,background:"#fff",border:"1.5px solid #E9E0FF",borderRadius:13,color:"#9B8BB4",fontSize:14,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}},"\u2715")
+    )
+  );
+}
+
+function ListView(props){
+  var list=props.list;
+  var _items=useState(list.items||[]);var items=_items[0],setItems=_items[1];
+  var _inp=useState("");var inp=_inp[0],setInp=_inp[1];
+  var _done=useState({});var done=_done[0],setDone=_done[1];
+  var _cPick=useState(null);var cPick=_cPick[0],setCPick=_cPick[1];
+  var _tSheet=useState(null);var tSheet=_tSheet[0],setTSheet=_tSheet[1];
+  var _runT=useState(null);var runT=_runT[0],setRunT=_runT[1];
+  var _tInfo=useState({});var tInfo=_tInfo[0],setTInfo=_tInfo[1];
+  var _phase=useState("list");var phase=_phase[0],setPhase=_phase[1];
+  var _pairs=useState([]);var pairs=_pairs[0],setPairs=_pairs[1];
+  var _pIdx=useState(0);var pIdx=_pIdx[0],setPIdx=_pIdx[1];
+  var _wins=useState({});var wins=_wins[0],setWins=_wins[1];
   var iRef=useRef(null);
-  useEffect(function(){return function(){clearInterval(timerRef.current);};},[]);
-
-  function addItem(){var v=inp.trim();if(!v)return;setItems(function(p){return p.concat([{text:v,cid:"none",added:Date.now()}]);});setInp("");if(iRef.current)iRef.current.focus();}
-  function remItem(i){setItems(function(p){return p.filter(function(_,x){return x!==i;});});}
-  function setColor(i,cid){setItems(function(p){var n=p.slice();n[i]=Object.assign({},n[i],{cid:cid});return n;});setCPick(null);}
-  function toggleDone(i){setDone(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});setCPick(null);}
-  function gco(id){return TASK_COLORS.find(function(c){return c.id===id;})||TASK_COLORS[0];}
-  function setTimer(i,mins){setTimers(function(p){var n=Object.assign({},p);n[i]=mins*60;return n;});}
-  function startTimer(i){
-    if(activeTimer===i){clearInterval(timerRef.current);setActiveTimer(null);return;}
-    clearInterval(timerRef.current);
-    var secs=timers[i]||25*60;
-    setTimerLeft(function(p){var n=Object.assign({},p);n[i]=secs;return n;});
-    setActiveTimer(i);
-    timerRef.current=setInterval(function(){setTimerLeft(function(p){var left=(p[i]||secs)-1;if(left<=0){clearInterval(timerRef.current);setActiveTimer(null);var n=Object.assign({},p);n[i]=0;return n;}var n=Object.assign({},p);n[i]=left;return n;});},1000);
+  useEffect(function(){props.onUpdate(items);},[items]);
+  function add(){var v=inp.trim();if(!v)return;setItems(function(p){return p.concat([{text:v,color:TASK_COLORS[p.length%TASK_COLORS.length]}]);});setInp("");if(iRef.current)iRef.current.focus();}
+  function saveT(i,wm,bm){setTInfo(function(p){var n=Object.assign({},p);n[i]={wm:wm,bm:bm};return n;});setTSheet(null);}
+  function startPri(){
+    var active=items.filter(function(_,i){return !done[i];});
+    if(active.length<2)return;
+    var txts=active.map(function(x){return x.text;});
+    var ps=[];for(var i=0;i<txts.length;i++)for(var j=i+1;j<txts.length;j++)ps.push([txts[i],txts[j]]);
+    for(var k=ps.length-1;k>0;k--){var r=Math.floor(Math.random()*(k+1));var tmp=ps[k];ps[k]=ps[r];ps[r]=tmp;}
+    var w={};txts.forEach(function(t){w[t]=0;});
+    setPairs(ps);setPIdx(0);setWins(w);setPhase("comparing");
   }
-  function startBreak(i){
-    if(breakActive===i){clearInterval(timerRef.current);setBreakActive(null);return;}
-    clearInterval(timerRef.current);setActiveTimer(null);
-    var secs=300;
-    setBreakLeft(function(p){var n=Object.assign({},p);n[i]=secs;return n;});
-    setBreakActive(i);
-    timerRef.current=setInterval(function(){setBreakLeft(function(p){var left=(p[i]||secs)-1;if(left<=0){clearInterval(timerRef.current);setBreakActive(null);var n=Object.assign({},p);n[i]=0;return n;}var n=Object.assign({},p);n[i]=left;return n;});},1000);
+  function pickWinner(winner){
+    var nw=Object.assign({},wins);nw[winner]=(nw[winner]||0)+1;
+    var ni=pIdx+1;
+    if(ni>=pairs.length){
+      var ranked=Object.entries(nw).sort(function(a,b){return b[1]-a[1];}).map(function(e){return e[0];});
+      setItems(function(prev){
+        var doneItems=prev.filter(function(_,i){return done[i];});
+        var activeItems=prev.filter(function(_,i){return !done[i];});
+        var sorted=ranked.map(function(txt){return activeItems.find(function(x){return x.text===txt;});}).filter(Boolean);
+        return sorted.concat(doneItems);
+      });
+      setPhase("list");
+    }else{setWins(nw);setPIdx(ni);}
   }
-  function fmt(s){if(!s&&s!==0)return"";return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
-
-  var now=Date.now();
-  var oneMonth=30*24*60*60*1000;
   var active=items.filter(function(_,i){return !done[i];});
-  var top3=active.slice(0,3);
-  var doneCount=Object.values(done).filter(Boolean).length;
+  var dc=Object.values(done).filter(Boolean).length;
 
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},
-    React.createElement("div",{style:{padding:"12px 14px 0",flexShrink:0}},
-      React.createElement("div",{style:{display:"flex",gap:8}},
-        React.createElement("input",{ref:iRef,value:inp,onChange:function(e){setInp(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")addItem();},placeholder:"Add a task...",style:{flex:1,background:C.card,border:"1px solid "+(inp?C.a+"80":C.cb),borderRadius:12,padding:"11px 14px",color:C.t,fontSize:14,fontFamily:"inherit",outline:"none",transition:"border-color .2s"}}),
-        React.createElement("button",{onClick:addItem,disabled:!inp.trim(),style:{width:42,height:42,borderRadius:12,background:inp.trim()?C.a:C.card,border:"1px solid "+(inp.trim()?C.a:C.cb),color:inp.trim()?"#fff":C.tm,cursor:inp.trim()?"pointer":"not-allowed",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}},"+")
+  if(phase==="comparing"){
+    var pair=pairs[pIdx];
+    var pct=Math.round((pIdx/pairs.length)*100);
+    return h("div",{style:{display:"flex",flexDirection:"column",height:"100%",background:"#F8F5FF"}},
+      h("div",{style:{background:"#2563EB",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0}},
+        h("button",{onClick:function(){setPhase("list");},style:{background:"none",border:"none",color:"#fff",fontSize:22,cursor:"pointer",lineHeight:1}},"\u2190"),
+        h("div",{style:{flex:1,fontSize:16,fontWeight:800,color:"#fff"}},"Prioritiser"),
+        h("div",{style:{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.7)"}},pct+"%")
       ),
-      items.length>0&&React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 2px 0"}},
-        React.createElement("div",{style:{fontSize:12,fontWeight:600,color:C.tm}},items.length+" task"+(items.length===1?"":"s")+" · "+doneCount+" done"),
-        top3.length>0&&React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.a}},"Top 3 highlighted")
+      h("div",{style:{height:4,background:"rgba(37,99,235,.2)"}},h("div",{style:{height:"100%",width:pct+"%",background:"#2563EB",transition:"width .3s"}})),
+      h("div",{style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"28px 20px",gap:24}},
+        h("div",{style:{fontSize:22,fontWeight:900,color:"#1E1033",textAlign:"center",lineHeight:1.3}},"Which one is most important?"),
+        h("div",{style:{display:"flex",gap:16,width:"100%",alignItems:"center",justifyContent:"center"}},
+          h("button",{onClick:function(){pickWinner(pair[0]);},style:{flex:1,maxWidth:150,padding:"24px 14px",background:"#60A5FA",borderRadius:18,border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:14,boxShadow:"0 6px 24px rgba(37,99,235,.3)"}},
+            h("div",{style:{width:50,height:50,background:"rgba(255,255,255,.4)",borderRadius:10}}),
+            h("div",{style:{fontSize:15,fontWeight:800,color:"#fff",textAlign:"center",lineHeight:1.3}},pair[0])
+          ),
+          h("div",{style:{fontSize:24,fontWeight:900,color:"#DC2626",flexShrink:0}},"OR"),
+          h("button",{onClick:function(){pickWinner(pair[1]);},style:{flex:1,maxWidth:150,padding:"24px 14px",background:"#60A5FA",borderRadius:18,border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:14,boxShadow:"0 6px 24px rgba(37,99,235,.3)"}},
+            h("div",{style:{width:50,height:50,background:"rgba(255,255,255,.4)",borderRadius:10}}),
+            h("div",{style:{fontSize:15,fontWeight:800,color:"#fff",textAlign:"center",lineHeight:1.3}},pair[1])
+          )
+        ),
+        h("div",{style:{fontSize:12,color:"#9B8BB4",fontWeight:600}},(pIdx+1)+" of "+pairs.length+" comparisons")
+      )
+    );
+  }
+
+  return h("div",{style:{display:"flex",flexDirection:"column",height:"100%"}},
+    h("div",{style:{background:list.color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0}},
+      h("button",{onClick:props.onBack,style:{background:"none",border:"none",color:"#fff",fontSize:22,cursor:"pointer",lineHeight:1}},"\u2190"),
+      h("div",{style:{flex:1,fontSize:18,fontWeight:900,color:"#fff"}},list.name),
+      h("div",{style:{fontSize:12,fontWeight:700,color:"rgba(255,255,255,.75)"}},items.length+" items")
+    ),
+    h("div",{style:{padding:"12px 14px 8px",background:"#fff",borderBottom:"1px solid #E9E0FF",flexShrink:0}},
+      h("div",{style:{display:"flex",gap:8}},
+        h("input",{ref:iRef,value:inp,onChange:function(e){setInp(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")add();},placeholder:"Add goal / item...",style:{flex:1,background:"#F8F5FF",border:"2px solid "+(inp?list.color:"#E9E0FF"),borderRadius:13,padding:"11px 14px",color:"#1E1033",fontSize:14,fontFamily:"inherit",outline:"none",fontWeight:600,transition:"border-color .2s"}}),
+        h("button",{onClick:add,disabled:!inp.trim(),style:{width:46,height:46,borderRadius:13,background:inp.trim()?list.color:"transparent",border:"2px solid "+(inp.trim()?list.color:"#E9E0FF"),color:inp.trim()?"#fff":"#9B8BB4",cursor:inp.trim()?"pointer":"not-allowed",fontSize:24,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}},"+")
       )
     ),
-    React.createElement("div",{style:{flex:1,overflowY:"auto",padding:"10px 14px 14px",display:"flex",flexDirection:"column",gap:6}},
-      items.length===0&&React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px",gap:12,textAlign:"center"}},
-        React.createElement("div",{style:{width:56,height:56,borderRadius:16,background:C.as,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}},"📋"),
-        React.createElement("div",{style:{fontSize:15,fontWeight:600,color:C.ts}},"Your list is empty"),
-        React.createElement("div",{style:{fontSize:13,color:C.tm}},"Add your first task above")
+    h("div",{style:{flex:1,overflowY:"auto",padding:"10px 14px",display:"flex",flexDirection:"column",gap:6}},
+      items.length===0&&h("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"60px 20px",gap:10,textAlign:"center"}},
+        h("div",{style:{fontSize:40}},"\uD83D\uDCCB"),
+        h("div",{style:{fontSize:15,fontWeight:700,color:"#5B4C7A"}},"No items yet"),
+        h("div",{style:{fontSize:13,color:"#9B8BB4"}},"Add your first goal above")
       ),
       items.map(function(item,i){
         var isDone=done[i];
-        var co=gco(item.cid);
-        var bc=isDone?C.g:co.c?co.c:C.cb;
-        var isTop=!isDone&&top3.findIndex(function(t){return t===active[0]||active.indexOf(t)<=2;})>=0&&!isDone&&items.indexOf(item)<3&&!isDone;
-        var isTop3=!isDone&&items.filter(function(_,x){return !done[x];}).indexOf(item)<3;
-        var isOld=!isDone&&(now-item.added)>oneMonth;
-        var tSet=timers[i];var tLeft=timerLeft[i];var isActive=activeTimer===i;var isBrk=breakActive===i;var bLeft=breakLeft[i];
-        return React.createElement("div",{key:i,style:{display:"flex",flexDirection:"column",gap:0}},
-          React.createElement("div",{style:{background:isDone?C.gs:C.card,border:"1.5px solid "+(isDone?C.g+"50":isTop3?C.a+"60":bc),borderRadius:14,padding:"11px 12px",opacity:isDone?0.55:1,transition:"all .2s",boxShadow:isTop3&&!isDone?"0 2px 8px "+C.a+"20":"none"}},
-            React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},
-              React.createElement("div",{style:{width:22,height:22,borderRadius:6,background:isDone?C.g:isTop3?C.a+"20":"transparent",border:"2px solid "+(isDone?C.g:isTop3?C.a:C.cb),display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:isDone?C.sur:C.a,fontWeight:800,flexShrink:0,cursor:"pointer"},onClick:function(){toggleDone(i);}},isDone?"✓":isTop3?i+1:""),
-              React.createElement("div",{onClick:function(){toggleDone(i);},style:{flex:1,cursor:"pointer"}},
-                React.createElement("div",{style:{fontSize:14,fontWeight:isTop3?600:400,textDecoration:isDone?"line-through":"none",color:isDone?C.tm:C.t,lineHeight:1.4}},item.text),
-                isOld&&React.createElement("div",{style:{fontSize:10,color:C.am,fontWeight:700,marginTop:2}},"⚠️ Over 1 month old — still relevant?")
+        var ti=tInfo[i];
+        return h("div",{key:i,style:{display:"flex",flexDirection:"column",gap:0,animation:"fadeUp .2s ease-out"}},
+          h("div",{style:{background:isDone?"rgba(5,150,105,.08)":"#fff",border:"1.5px solid "+(isDone?"rgba(5,150,105,.3)":"#E9E0FF"),borderRadius:14,padding:"12px 13px",opacity:isDone?0.65:1,transition:"all .2s"}},
+            h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+              h("div",{onClick:function(){setDone(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});},style:{width:28,height:28,borderRadius:7,background:isDone?"rgba(5,150,105,.15)":"rgba(124,58,237,.1)",border:"2px solid "+(isDone?"#059669":list.color),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,color:isDone?"#059669":list.color,flexShrink:0,cursor:"pointer"}},isDone?"\u2713":i+1),
+              h("button",{onClick:function(){setCPick(cPick===i?null:i);},style:{width:28,height:28,borderRadius:6,background:item.color,border:"none",cursor:"pointer",flexShrink:0}}),
+              h("div",{onClick:function(){setDone(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});},style:{flex:1,cursor:"pointer"}},
+                h("div",{style:{fontSize:14,fontWeight:isDone?400:700,textDecoration:isDone?"line-through":"none",color:isDone?"#9B8BB4":"#1E1033",lineHeight:1.4}},item.text)
               ),
-              !isDone&&React.createElement("button",{onClick:function(){setCPick(cPick===i?null:i);},style:{width:18,height:18,borderRadius:"50%",background:co.c||C.cb,border:"2px solid "+(co.c||C.br),cursor:"pointer",flexShrink:0}}),
-              React.createElement("button",{onClick:function(){remItem(i);},style:{background:"none",border:"none",color:C.tm,fontSize:14,cursor:"pointer",padding:"0 2px",lineHeight:1}},isOld?"🗑️":"✕")
+              h("button",{onClick:function(){setItems(function(p){return p.filter(function(_,x){return x!==i;});});},style:{background:"none",border:"none",color:"#9B8BB4",fontSize:16,cursor:"pointer",padding:"0 4px",lineHeight:1}},"\u2715")
             ),
-            !isDone&&React.createElement("div",{style:{display:"flex",alignItems:"center",gap:6,marginTop:8,flexWrap:"wrap"}},
-              [5,10,15,25].map(function(m){return React.createElement("button",{key:m,onClick:function(){setTimer(i,m);},style:{padding:"3px 9px",background:tSet===m*60?C.a:C.card,border:"1px solid "+(tSet===m*60?C.a:C.cb),borderRadius:100,fontSize:11,fontWeight:600,color:tSet===m*60?"#fff":C.tm,cursor:"pointer",fontFamily:"inherit"}},m+"m");}),
-              tSet&&React.createElement("button",{onClick:function(){startTimer(i);},style:{padding:"3px 12px",background:isActive?C.am+"20":C.as,border:"1px solid "+(isActive?C.am:C.a),borderRadius:100,fontSize:11,fontWeight:700,color:isActive?C.am:C.a,cursor:"pointer",fontFamily:"inherit",minWidth:52,textAlign:"center"}},isActive?fmt(tLeft||tSet):"▶ Start"),
-              React.createElement("button",{onClick:function(){startBreak(i);},style:{padding:"3px 10px",background:isBrk?C.bs:C.card,border:"1px solid "+(isBrk?C.b:C.cb),borderRadius:100,fontSize:11,fontWeight:600,color:isBrk?C.b:C.tm,cursor:"pointer",fontFamily:"inherit",marginLeft:"auto"}},isBrk?"☕ "+fmt(bLeft):"☕ Break")
+            cPick===i&&!isDone&&h("div",{style:{marginTop:10,display:"flex",gap:8,flexWrap:"wrap"}},
+              TASK_COLORS.map(function(col){return h("button",{key:col,onClick:function(){setItems(function(p){var n=p.slice();n[i]=Object.assign({},n[i],{color:col});return n;});setCPick(null);},style:{width:30,height:30,borderRadius:7,background:col,border:item.color===col?"3px solid #1E1033":"2px solid transparent",cursor:"pointer"}});})
+            ),
+            !isDone&&h("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid #E9E0FF",display:"flex",flexDirection:"column",gap:6}},
+              ti
+                ?h("div",{style:{display:"flex",flexDirection:"column",gap:6}},
+                  h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                    h("div",{style:{background:"rgba(124,58,237,.1)",borderRadius:100,padding:"5px 13px",fontSize:12,fontWeight:800,color:list.color}},"\u23F1\uFE0F "+ti.wm+"m work"),
+                    h("button",{onClick:function(){setTSheet({i:i});},style:{background:"transparent",border:"1px solid #E9E0FF",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:700,color:"#9B8BB4",cursor:"pointer",fontFamily:"inherit"}},"Edit"),
+                    h("button",{onClick:function(){setRunT({taskText:item.text,wm:ti.wm,bm:ti.bm});},style:{background:list.color,border:"none",borderRadius:100,padding:"5px 16px",fontSize:12,fontWeight:900,color:"#fff",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto"}},"\u25B6 Start")
+                  ),
+                  h("div",{style:{display:"flex",alignItems:"center"}},
+                    h("div",{style:{background:"rgba(5,150,105,.1)",borderRadius:100,padding:"5px 13px",fontSize:12,fontWeight:800,color:"#059669"}},"\u2615\uFE0F "+ti.bm+"m break")
+                  )
+                )
+                :h("button",{onClick:function(){setTSheet({i:i});},style:{background:"rgba(124,58,237,.1)",border:"1px dashed "+list.color+"55",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,color:list.color,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}},"\u23F1\uFE0F Set Work & Break Timer")
             )
-          ),
-          cPick===i&&!isDone&&React.createElement("div",{style:{background:C.sur,border:"1px solid "+C.br,borderRadius:12,padding:10,display:"flex",gap:6,flexWrap:"wrap",marginTop:4,boxShadow:"0 4px 16px rgba(0,0,0,0.08)"}},
-            TASK_COLORS.map(function(c){return React.createElement("button",{key:c.id,onClick:function(){setColor(i,c.id);},style:{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:"4px 6px"}},
-              React.createElement("div",{style:{width:22,height:22,borderRadius:"50%",background:c.c||C.cb,border:item.cid===c.id?"3px solid "+C.t:"2px solid transparent"}}),
-              React.createElement("span",{style:{fontSize:9,color:C.tm,fontWeight:600}},c.l)
-            );})
           )
         );
       }),
-      doneCount===items.length&&items.length>0&&React.createElement(Card,{style:{textAlign:"center",padding:24}},React.createElement("div",{style:{fontSize:28,marginBottom:8}},"🎉"),React.createElement("div",{style:{fontSize:15,fontWeight:700,color:C.g}},"All done! That's a great day."))
-    )
+      dc===items.length&&items.length>0&&h("div",{style:{textAlign:"center",padding:22,background:"rgba(5,150,105,.08)",borderRadius:16,border:"1.5px solid rgba(5,150,105,.3)",marginTop:8}},h("div",{style:{fontSize:26,marginBottom:6}},"\uD83C\uDF89"),h("div",{style:{fontSize:15,fontWeight:800,color:"#059669"}},"All done!"))
+    ),
+    active.length>=2&&h("div",{style:{padding:"12px 14px",background:"#fff",borderTop:"1.5px solid #E9E0FF",flexShrink:0}},
+      h("button",{onClick:startPri,style:{width:"100%",padding:14,background:"#2563EB",border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:900,fontFamily:"inherit",cursor:"pointer"}},"\u2696\uFE0F Prioritise")
+    ),
+    tSheet&&h(TimerSheet,{taskText:items[tSheet.i]&&items[tSheet.i].text||"",wm:(tInfo[tSheet.i]||{}).wm||25,bm:(tInfo[tSheet.i]||{}).bm||5,color:list.color,onSave:function(wm,bm){saveT(tSheet.i,wm,bm);},onClose:function(){setTSheet(null);}}),
+    runT&&h(RunTimer,Object.assign({},runT,{color:list.color,onClose:function(){setRunT(null);}}))
   );
 }
 
-// TASKS — Brain Dump / AI Ranker / Prioritise My Tasks
-function TasksTab(){
-  var [mode,setMode]=useState("dump");
-  var [items,setItems]=useState([]);var [dInp,setDInp]=useState("");var [dPick,setDPick]=useState(null);var [sLoad,setSLoad]=useState(null);var [sRes,setSRes]=useState({});var [sView,setSView]=useState(null);
-  var [raw,setRaw]=useState("");var [phase,setPhase]=useState("input");var [results,setResults]=useState(null);var [rmsg,setRmsg]=useState("");var [done,setDone]=useState({});var [tCols,setTCols]=useState({});var [cPick,setCPick]=useState(null);var [err,setErr]=useState("");
-  var [totItems,setTotItems]=useState([]);var [totInp,setTotInp]=useState("");var [totPhase,setTotPhase]=useState("input");var [totPairs,setTotPairs]=useState([]);var [totIdx,setTotIdx]=useState(0);var [totWins,setTotWins]=useState({});var [totResults,setTotResults]=useState([]);var [totDone,setTotDone]=useState({});var [totCols,setTotCols]=useState({});var [totPick,setTotPick]=useState(null);
-  var [timers,setTimers]=useState({});var [timerLeft,setTimerLeft]=useState({});var [activeTimer,setActiveTimer]=useState(null);var timerRef=useRef(null);var dRef=useRef(null);
-  useEffect(function(){return function(){clearInterval(timerRef.current);};},[]);
-  function gco(id){return TASK_COLORS.find(function(c){return c.id===id;})||TASK_COLORS[0];}
-  function addItem(){var v=dInp.trim();if(!v)return;setItems(function(p){return p.concat([{text:v,cid:"none"}]);});setDInp("");if(dRef.current)dRef.current.focus();}
-  function remItem(i){setItems(function(p){return p.filter(function(_,x){return x!==i;});});}
-  function setIC(i,cid){setItems(function(p){var n=p.slice();n[i]=Object.assign({},n[i],{cid:cid});return n;});setDPick(null);}
-  function makeSmart(i,text){setSLoad(i);setSView(null);callAI([{role:"user",content:"Convert this into a SMART goal: "+text}],SSYS,1000).then(function(r){var p=JSON.parse(r.replace(/```json|```/g,"").trim());setSRes(function(x){var n=Object.assign({},x);n[i]=p;return n;});setSView(i);}).catch(function(){setSRes(function(x){var n=Object.assign({},x);n[i]={error:true};return n;});setSView(i);}).finally(function(){setSLoad(null);});}
-  function prioritise(){var lines=raw.split("\n").map(function(l){return l.trim();}).filter(Boolean);if(!lines.length)return;setPhase("loading");callAI([{role:"user",content:"Prioritise:\n"+lines.map(function(l,i){return(i+1)+". "+l;}).join("\n")}],PSYS).then(function(r){var p=JSON.parse(r.replace(/```json|```/g,"").trim());setResults(p.ranked);setRmsg(p.message);setDone({});setTCols({});setPhase("results");}).catch(function(){setErr("Something went wrong.");setPhase("input");});}
-  function buildPairs(list){var pairs=[];for(var i=0;i<list.length;i++){for(var j=i+1;j<list.length;j++){pairs.push([list[i],list[j]]);}}for(var k=pairs.length-1;k>0;k--){var r=Math.floor(Math.random()*(k+1));var tmp=pairs[k];pairs[k]=pairs[r];pairs[r]=tmp;}return pairs;}
-  function startTot(){var lines=totItems.length>0?totItems:totInp.split("\n").map(function(l){return l.trim();}).filter(Boolean);if(lines.length<2)return;var pairs=buildPairs(lines);var wins={};lines.forEach(function(t){wins[t]=0;});setTotPairs(pairs);setTotIdx(0);setTotWins(wins);setTotPhase("comparing");}
-  function pickWinner(winner,loser){
-    var nextIdx=totIdx+1;
-    var newWins=Object.assign({},totWins);newWins[winner]=(newWins[winner]||0)+1;setTotWins(newWins);
-    if(nextIdx>=totPairs.length){var entries=Object.entries(newWins).map(function(e){return{task:e[0],wins:e[1]};}).sort(function(a,b){return b.wins-a.wins;});setTotResults(entries);setTotDone({});setTotCols({});setTotPhase("results");}
-    else{setTotIdx(nextIdx);}
+function App(){
+  var _lists=useState([
+    {id:1,name:"To do list",color:"#7C3AED",items:[]},
+    {id:2,name:"Home Tasks",color:"#2563EB",items:[]},
+    {id:3,name:"Creative list",color:"#059669",items:[]},
+    {id:4,name:"Beauty & wellbeing",color:"#DB2777",items:[]}
+  ]);var lists=_lists[0],setLists=_lists[1];
+  var _open=useState(null);var openId=_open[0],setOpenId=_open[1];
+  var _adding=useState(false);var adding=_adding[0],setAdding=_adding[1];
+  var _newName=useState("");var newName=_newName[0],setNewName=_newName[1];
+  var _newColor=useState(LIST_COLORS[0]);var newColor=_newColor[0],setNewColor=_newColor[1];
+  var iRef=useRef(null);
+  useEffect(function(){if(adding&&iRef.current)iRef.current.focus();},[adding]);
+  function createList(){
+    var n=newName.trim();if(!n)return;
+    var id=Date.now();
+    setLists(function(p){return p.concat([{id:id,name:n,color:newColor,items:[]}]);});
+    setNewName("");setAdding(false);setOpenId(id);
   }
-  function setTimer(i,mins){setTimers(function(p){var n=Object.assign({},p);n[i]=mins*60;return n;});}
-  function startTimer(i){if(activeTimer===i){clearInterval(timerRef.current);setActiveTimer(null);return;}clearInterval(timerRef.current);var secs=timers[i]||25*60;setTimerLeft(function(p){var n=Object.assign({},p);n[i]=secs;return n;});setActiveTimer(i);timerRef.current=setInterval(function(){setTimerLeft(function(p){var left=(p[i]||secs)-1;if(left<=0){clearInterval(timerRef.current);setActiveTimer(null);var n=Object.assign({},p);n[i]=0;return n;}var n=Object.assign({},p);n[i]=left;return n;});},1000);}
-  function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
-  var td=Object.values(done).filter(Boolean).length;var tot=results?results.length:0;
-  var mbar=React.createElement("div",{style:{display:"flex",background:C.sur,borderBottom:"1px solid "+C.br,flexShrink:0}},
-    [{id:"dump",l:"🧠 Dump"},{id:"pri",l:"🤖 AI Ranker"},{id:"tot",l:"⚖️ Prioritise"}].map(function(m){return React.createElement("button",{key:m.id,onClick:function(){setMode(m.id);},style:{flex:1,padding:"11px 4px",background:"none",border:"none",borderBottom:"2px solid "+(mode===m.id?C.a:"transparent"),color:mode===m.id?C.a:C.tm,fontSize:11,fontWeight:mode===m.id?700:400,cursor:"pointer",fontFamily:"inherit"}},m.l);})
-  );
-  // BRAIN DUMP
-  if(mode==="dump"){
-    return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},mbar,
-      React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}},
-        React.createElement("div",{style:{display:"flex",gap:8}},
-          React.createElement("input",{ref:dRef,value:dInp,onChange:function(e){setDInp(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")addItem();},placeholder:"Type anything on your mind...",style:{flex:1,background:C.card,border:"1px solid "+C.cb,borderRadius:12,padding:"11px 13px",color:C.t,fontSize:14,fontFamily:"inherit",outline:"none"}}),
-          React.createElement("button",{onClick:addItem,disabled:!dInp.trim(),style:{width:42,height:42,borderRadius:12,background:dInp.trim()?C.a:C.card,border:"1px solid "+(dInp.trim()?C.a:C.cb),color:dInp.trim()?"#fff":C.tm,cursor:dInp.trim()?"pointer":"not-allowed",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}},"+")
+  if(openId){
+    var list=lists.find(function(l){return l.id===openId;});
+    if(!list){setOpenId(null);return null;}
+    return h(ListView,{list:list,onBack:function(){setOpenId(null);},onUpdate:function(items){setLists(function(p){return p.map(function(l){return l.id===openId?Object.assign({},l,{items:items}):l;});});}});
+  }
+  return h("div",{style:{display:"flex",flexDirection:"column",height:"100vh"}},
+    h("div",{style:{background:"linear-gradient(135deg,#7C3AED,#A855F7)",padding:"16px 18px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}},
+      h("div",null,h("div",{style:{fontSize:24,fontWeight:900,color:"#fff",lineHeight:1}},"Thinko"),h("div",{style:{fontSize:11,color:"rgba(255,255,255,.7)",marginTop:2,fontWeight:700,letterSpacing:"0.1em"}},"MY LISTS")),
+      h("button",{onClick:function(){setAdding(true);},style:{width:42,height:42,borderRadius:12,background:"rgba(255,255,255,.2)",border:"2px solid rgba(255,255,255,.4)",color:"#fff",fontSize:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,lineHeight:1}},"+")
+    ),
+    h("div",{style:{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:10}},
+      lists.map(function(list){
+        var count=list.items?list.items.length:0;
+        return h("button",{key:list.id,onClick:function(){setOpenId(list.id);},style:{background:"#fff",border:"2px solid #E9E0FF",borderRadius:18,padding:"16px",cursor:"pointer",display:"flex",alignItems:"center",gap:14,textAlign:"left",width:"100%",fontFamily:"inherit",boxShadow:"0 2px 12px rgba(0,0,0,.05)",animation:"fadeUp .2s ease-out"}},
+          h("div",{style:{width:50,height:50,borderRadius:14,background:list.color,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,flexShrink:0}},
+            [0,1,2].map(function(j){return h("div",{key:j,style:{width:22,height:4,background:"rgba(255,255,255,.9)",borderRadius:2}});})
+          ),
+          h("div",{style:{flex:1}},
+            h("div",{style:{fontSize:16,fontWeight:800,color:"#1E1033",marginBottom:3}},list.name),
+            h("div",{style:{fontSize:12,fontWeight:600,color:"#9B8BB4"}},count===0?"No items yet":count+" item"+(count===1?"":"s"))
+          ),
+          h("button",{onClick:function(e){e.stopPropagation();setLists(function(p){return p.filter(function(l){return l.id!==list.id;});});},style:{width:34,height:34,borderRadius:9,background:"rgba(220,38,38,.08)",border:"none",color:"#DC2626",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},"\uD83D\uDDD1\uFE0F"),
+          h("div",{style:{color:"#9B8BB4",fontSize:20,fontWeight:700,flexShrink:0}},"\u203A")
+        );
+      }),
+      h("button",{onClick:function(){setAdding(true);},style:{background:"transparent",border:"2px dashed #E9E0FF",borderRadius:18,padding:"16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,width:"100%",fontFamily:"inherit",color:"#9B8BB4",fontSize:14,fontWeight:700}},
+        h("div",{style:{width:32,height:32,borderRadius:"50%",background:"#EDE9FE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"#7C3AED"}},"+"),
+        "Create new list"
+      )
+    ),
+    adding&&h("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
+      h("div",{style:{background:"#fff",borderRadius:22,padding:"24px 20px",width:"100%",maxWidth:360,boxShadow:"0 20px 60px rgba(0,0,0,.2)"}},
+        h("div",{style:{fontSize:18,fontWeight:900,color:"#1E1033",marginBottom:4}},"New list"),
+        h("div",{style:{fontSize:13,color:"#9B8BB4",marginBottom:16,fontWeight:600}},"Give your list a name and colour"),
+        h("input",{ref:iRef,value:newName,onChange:function(e){setNewName(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")createList();},placeholder:"e.g. Home Tasks, Work, Shopping...",style:{width:"100%",background:"#F8F5FF",border:"2px solid "+(newName?"#7C3AED":"#E9E0FF"),borderRadius:12,padding:"12px 14px",color:"#1E1033",fontSize:14,fontFamily:"inherit",outline:"none",fontWeight:600,marginBottom:14,transition:"border-color .2s"}}),
+        h("div",{style:{fontSize:11,fontWeight:800,color:"#9B8BB4",marginBottom:10,letterSpacing:"0.06em"}},"CHOOSE COLOUR"),
+        h("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}},
+          LIST_COLORS.map(function(col){return h("button",{key:col,onClick:function(){setNewColor(col);},style:{width:36,height:36,borderRadius:10,background:col,border:newColor===col?"3px solid #1E1033":"2px solid transparent",cursor:"pointer"}});})
         ),
-        items.length>0&&React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.a,letterSpacing:"0.04em"}},items.length+" ITEM"+(items.length===1?"":"S")),
-        items.length===0&&React.createElement("div",{style:{textAlign:"center",padding:"40px 20px",color:C.tm}},React.createElement("div",{style:{fontSize:32,marginBottom:10}},"🧠"),React.createElement("div",{style:{fontSize:14}},"Get it all out of your head.")),
-        items.map(function(item,i){
-          var co=gco(item.cid);
-          return React.createElement("div",{key:i,style:{position:"relative"}},
-            React.createElement(Card,{style:{border:"1px solid "+(co.c?co.c+"40":C.cb)}},
-              React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8}},
-                React.createElement("div",{style:{width:22,height:22,borderRadius:6,background:C.as,color:C.a,fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},i+1),
-                React.createElement("button",{onClick:function(){setDPick(dPick===i?null:i);},style:{width:16,height:16,borderRadius:"50%",background:co.c||C.cb,border:"2px solid "+(co.c||C.br),flexShrink:0,cursor:"pointer"}}),
-                React.createElement("div",{style:{flex:1,fontSize:14,color:C.t,lineHeight:1.4}},item.text),
-                React.createElement("button",{onClick:function(){makeSmart(i,item.text);},disabled:sLoad===i,style:{background:C.gs,border:"1px solid "+C.g+"40",borderRadius:8,padding:"3px 8px",color:C.g,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0,whiteSpace:"nowrap"}},sLoad===i?"...":"⚡ SMART"),
-                React.createElement("button",{onClick:function(){remItem(i);},style:{background:"none",border:"none",color:C.tm,fontSize:14,cursor:"pointer",padding:"0 2px"}},"✕")
-              ),
-              sView===i&&sRes[i]&&React.createElement("div",{style:{marginTop:10,background:C.gs,borderRadius:10,padding:12}},
-                sRes[i].error?React.createElement("div",{style:{fontSize:13,color:C.r}},"Something went wrong."):
-                React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:8}},
-                  React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.g}},"⚡ SMART Goal"),
-                  React.createElement("div",{style:{fontSize:14,fontWeight:600,color:C.t,lineHeight:1.4}},sRes[i].smart_goal),
-                  React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}},
-                    [{l:"S",v:sRes[i].specific,c:C.a},{l:"M",v:sRes[i].measurable,c:C.b},{l:"A",v:sRes[i].achievable,c:C.g},{l:"R",v:sRes[i].relevant,c:C.p}].map(function(s){return React.createElement("div",{key:s.l,style:{background:s.c+"12",border:"1px solid "+s.c+"25",borderRadius:8,padding:"6px 8px"}},React.createElement("div",{style:{fontSize:9,fontWeight:800,color:s.c,marginBottom:2}},s.l),React.createElement("div",{style:{fontSize:11,color:C.t,lineHeight:1.4}},s.v));})
-                  ),
-                  React.createElement("div",{style:{background:C.ams,border:"1px solid "+C.am+"25",borderRadius:8,padding:"6px 8px"}},React.createElement("div",{style:{fontSize:9,fontWeight:800,color:C.am,marginBottom:2}},"TIME"),React.createElement("div",{style:{fontSize:11,color:C.t}},sRes[i].timebound)),
-                  sRes[i].steps&&sRes[i].steps.map(function(step,si){return React.createElement("div",{key:si,style:{display:"flex",gap:8}},React.createElement("div",{style:{width:18,height:18,borderRadius:"50%",background:C.as,color:C.a,fontSize:10,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},si+1),React.createElement("div",{style:{fontSize:12,color:C.t,lineHeight:1.4}},step));}),
-                  sRes[i].encouragement&&React.createElement("div",{style:{fontSize:12,color:C.g,fontStyle:"italic"}},'"'+sRes[i].encouragement+'"'),
-                  React.createElement("button",{onClick:function(){setSView(null);},style:{padding:"6px",background:"transparent",border:"1px solid "+C.cb,borderRadius:8,color:C.ts,fontSize:11,fontWeight:600,fontFamily:"inherit",cursor:"pointer"}},"Close")
-                )
-              )
-            ),
-            dPick===i&&React.createElement("div",{style:{background:C.sur,border:"1px solid "+C.br,borderRadius:12,padding:8,display:"flex",gap:6,flexWrap:"wrap",boxShadow:"0 4px 16px rgba(0,0,0,0.1)",marginTop:4}},
-              TASK_COLORS.map(function(c){return React.createElement("button",{key:c.id,onClick:function(){setIC(i,c.id);},style:{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:3}},React.createElement("div",{style:{width:22,height:22,borderRadius:"50%",background:c.c||C.cb,border:item.cid===c.id?"3px solid "+C.t:"2px solid transparent"}}),React.createElement("span",{style:{fontSize:9,color:C.tm,fontWeight:600}},c.l));})
-            )
-          );
-        }),
-        items.length>0&&React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:8}},
-          React.createElement(Btn,{onClick:function(){setRaw(items.map(function(d){return d.text;}).join("\n"));setMode("pri");setPhase("input");}},  "🤖 Send to AI Ranker"),
-          React.createElement(Btn,{onClick:function(){setTotItems(items.map(function(d){return d.text;}));setMode("tot");setTotPhase("input");},bg:C.b},"⚖️ Send to Prioritise My Tasks")
+        h("div",{style:{display:"flex",gap:10}},
+          h("button",{onClick:function(){setAdding(false);setNewName("");},style:{flex:1,padding:12,background:"transparent",border:"1.5px solid #E9E0FF",borderRadius:12,color:"#5B4C7A",fontSize:14,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}},"Cancel"),
+          h("button",{onClick:createList,disabled:!newName.trim(),style:{flex:2,padding:12,background:newName.trim()?"linear-gradient(135deg,#7C3AED,#A855F7)":"#E9E0FF",border:"none",borderRadius:12,color:newName.trim()?"#fff":"#9B8BB4",fontSize:14,fontWeight:800,fontFamily:"inherit",cursor:newName.trim()?"pointer":"not-allowed"}},"Create List")
         )
       )
-    );
-  }
-  // AI RANKER
-  if(mode==="pri"&&phase==="input"){return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},mbar,React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:12}},React.createElement(Card,null,React.createElement("div",{style:{fontSize:13,fontWeight:600,color:C.t,marginBottom:10}},"🤖 AI Ranker"),React.createElement("div",{style:{fontSize:12,color:C.tm,marginBottom:10}},"One task per line. AI ranks them by importance."),React.createElement("textarea",{value:raw,onChange:function(e){setRaw(e.target.value);},placeholder:"Call the school\nPay electric bill\nTidy bedroom\nEmail the doctor",style:{width:"100%",minHeight:160,background:"transparent",border:"none",outline:"none",color:C.t,fontSize:14,fontFamily:"inherit",lineHeight:1.8,resize:"none"}})),raw.trim()&&React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.a}},raw.split("\n").filter(function(l){return l.trim();}).length+" tasks ready"),err&&React.createElement("div",{style:{color:C.r,fontSize:13,textAlign:"center"}},err),React.createElement(Btn,{onClick:prioritise,disabled:!raw.trim()},"⚡ Rank My Tasks")));} 
-  if(mode==="pri"&&phase==="loading"){return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},mbar,React.createElement(Spin,{msg:"Ranking your tasks..."}));}
-  if(mode==="pri"&&phase==="results"){return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},mbar,React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}},React.createElement(Card,null,React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:8}},React.createElement("div",{style:{fontSize:13,fontWeight:600}},"Progress"),React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.a}},td+"/"+tot)),React.createElement("div",{style:{height:6,background:C.br,borderRadius:100,overflow:"hidden"}},React.createElement("div",{style:{height:"100%",width:(tot>0?(td/tot)*100:0)+"%",background:C.a,borderRadius:100,transition:"width .4s"}})),rmsg&&React.createElement("div",{style:{fontSize:12,color:C.ts,marginTop:8,fontStyle:"italic"}},'"'+rmsg+'"')),results&&results.map(function(task,i){var isDone=done[i];var rk=i===0?C.r:i===1?C.am:i===2?C.b:C.tm;var cid=tCols[i]||"none";var cho=gco(cid);var dc=(cho&&cho.c)?cho.c:rk;return React.createElement("div",{key:i,style:{position:"relative"}},React.createElement(Card,{style:{border:"1px solid "+((cho&&cho.c)?cho.c+"50":(isDone?C.g:C.cb)),background:isDone?C.gs:C.card,opacity:isDone?0.55:1}},React.createElement("div",{style:{display:"flex",alignItems:"flex-start",gap:10}},React.createElement("div",{onClick:function(){setDone(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});},style:{width:28,height:28,borderRadius:8,background:isDone?C.g:dc+"15",border:"2px solid "+(isDone?C.g:dc),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:12,color:isDone?C.sur:dc,cursor:"pointer",flexShrink:0}},isDone?"✓":"#"+(i+1)),React.createElement("div",{onClick:function(){setDone(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});},style:{flex:1,cursor:"pointer"}},React.createElement("div",{style:{fontSize:14,fontWeight:500,textDecoration:isDone?"line-through":"none",color:isDone?C.tm:C.t,lineHeight:1.4}},task.task),!isDone&&React.createElement("div",{style:{fontSize:11,color:C.tm,marginTop:3}},task.reason)),!isDone&&React.createElement("button",{onClick:function(){setCPick(cPick===i?null:i);},style:{width:16,height:16,borderRadius:"50%",background:(cho&&cho.c)?cho.c:C.cb,border:"2px solid "+((cho&&cho.c)?cho.c:C.br),cursor:"pointer",flexShrink:0}}))),cPick===i&&!isDone&&React.createElement("div",{style:{background:C.sur,border:"1px solid "+C.br,borderRadius:12,padding:8,display:"flex",gap:6,flexWrap:"wrap",marginTop:4,boxShadow:"0 4px 16px rgba(0,0,0,0.08)"}},COLORS_PICK()));})  ,td===tot&&tot>0&&React.createElement(Card,{style:{textAlign:"center",padding:20}},React.createElement("div",{style:{fontSize:24}},"🎉"),React.createElement("div",{style:{fontSize:14,fontWeight:700,color:C.g,marginTop:6}},"All done!")),React.createElement(Btn,{onClick:function(){setPhase("input");setRaw("");setResults(null);setDone({});setCPick(null);},bg:C.card,color:C.ts},"↩ New List")));
-    function COLORS_PICK(){return TASK_COLORS.map(function(c){return React.createElement("button",{key:c.id,onClick:function(){setCPick(null);setTCols(function(p){var n=Object.assign({},p);n[cPick]=c.id;return n;});},style:{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:3}},React.createElement("div",{style:{width:22,height:22,borderRadius:"50%",background:c.c||C.cb,border:"2px solid transparent"}}),React.createElement("span",{style:{fontSize:9,color:C.tm,fontWeight:600}},c.l));});}}
-  // PRIORITISE MY TASKS
-  if(mode==="tot"){
-    if(totPhase==="input"){return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},mbar,React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:12}},React.createElement(Card,null,React.createElement("div",{style:{fontSize:13,fontWeight:600,color:C.t,marginBottom:6}},"⚖️ Prioritise My Tasks"),React.createElement("div",{style:{fontSize:12,color:C.tm,marginBottom:10}},"Thinko shows two tasks at a time. You pick which matters more. Your choices build the ranked list.")),totItems.length>0?React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:6}},totItems.map(function(t,i){return React.createElement(Card,{key:i},React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},React.createElement("div",{style:{width:22,height:22,borderRadius:6,background:C.bs,color:C.b,fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},i+1),React.createElement("div",{style:{fontSize:14,color:C.t}},t)));})):React.createElement(Card,null,React.createElement("textarea",{value:totInp,onChange:function(e){setTotInp(e.target.value);},placeholder:"Call the school\nPay electric bill\nTidy bedroom",style:{width:"100%",minHeight:160,background:"transparent",border:"none",outline:"none",color:C.t,fontSize:14,fontFamily:"inherit",lineHeight:1.8,resize:"none"}})),React.createElement(Btn,{onClick:startTot,disabled:(totItems.length===0&&totInp.split("\n").filter(function(l){return l.trim();}).length<2)},"⚖️ Start Prioritising")));}
-    if(totPhase==="comparing"){var pair=totPairs[totIdx];var pct=Math.round((totIdx/totPairs.length)*100);return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},mbar,React.createElement("div",{style:{flex:1,display:"flex",flexDirection:"column",padding:14,gap:14}},React.createElement(Card,null,React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},React.createElement("div",{style:{fontSize:12,color:C.tm}},totIdx+1+" of "+totPairs.length),React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.a}},pct+"%")),React.createElement("div",{style:{height:5,background:C.br,borderRadius:100,overflow:"hidden"}},React.createElement("div",{style:{height:"100%",width:pct+"%",background:C.a,borderRadius:100,transition:"width .3s"}}))),React.createElement("div",{style:{fontSize:13,fontWeight:600,color:C.tm,textAlign:"center",letterSpacing:"0.04em"}},"WHICH IS MORE IMPORTANT RIGHT NOW?"),React.createElement("div",{style:{flex:1,display:"flex",flexDirection:"column",gap:12,justifyContent:"center"}},[pair[0],pair[1]].map(function(task,i){return React.createElement("button",{key:i,onClick:function(){pickWinner(task,i===0?pair[1]:pair[0]);},style:{width:"100%",padding:"20px 16px",background:i===0?C.as:C.bs,border:"2px solid "+(i===0?C.a:C.b),borderRadius:16,cursor:"pointer",textAlign:"center",fontFamily:"inherit",transition:"transform .1s"},onMouseDown:function(e){e.currentTarget.style.transform="scale(0.97)";},onMouseUp:function(e){e.currentTarget.style.transform="scale(1)";}},React.createElement("div",{style:{fontSize:11,fontWeight:700,color:i===0?C.a:C.b,marginBottom:8,letterSpacing:"0.06em"}},i===0?"THIS":"OR THAT"),React.createElement("div",{style:{fontSize:16,fontWeight:600,color:C.t,lineHeight:1.4}},task));})),React.createElement("div",{style:{fontSize:11,color:C.tm,textAlign:"center"}},"Go with your gut. No wrong answers.")));}
-    if(totPhase==="results"){return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}},mbar,React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}},React.createElement(Card,{style:{textAlign:"center"}}  ,React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.b,marginBottom:2}},"Your Ranked List"),React.createElement("div",{style:{fontSize:11,color:C.tm}},"Based on "+totPairs.length+" comparisons")),totResults.map(function(item,i){var isDone=totDone[i];var rk=i===0?C.r:i===1?C.am:i===2?C.b:C.tm;var tcid=totCols[i]||"none";var tcho=gco(tcid);var dc=(tcho&&tcho.c)?tcho.c:rk;var tSet=timers["t"+i];var tLeft=timerLeft["t"+i];var isActive=activeTimer==="t"+i;return React.createElement("div",{key:i,style:{position:"relative"}},React.createElement(Card,{style:{border:"1px solid "+((tcho&&tcho.c)?tcho.c+"50":(isDone?C.g:isActive?C.am:C.cb)),background:isDone?C.gs:C.card,opacity:isDone?0.55:1}},React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:!isDone?8:0}},React.createElement("div",{onClick:function(){setTotDone(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});},style:{width:28,height:28,borderRadius:8,background:isDone?C.g:dc+"15",border:"2px solid "+(isDone?C.g:dc),display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:12,color:isDone?C.sur:dc,cursor:"pointer",flexShrink:0}},isDone?"✓":"#"+(i+1)),React.createElement("div",{onClick:function(){setTotDone(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});},style:{flex:1,cursor:"pointer"}},React.createElement("div",{style:{fontSize:14,fontWeight:500,textDecoration:isDone?"line-through":"none",color:isDone?C.tm:C.t,lineHeight:1.4}},item.task),!isDone&&React.createElement("div",{style:{fontSize:11,color:C.tm,marginTop:2}},item.wins+" win"+(item.wins===1?"":"s"))),!isDone&&React.createElement("button",{onClick:function(){setTotPick(totPick===i?null:i);},style:{width:16,height:16,borderRadius:"50%",background:(tcho&&tcho.c)?tcho.c:C.cb,border:"2px solid "+((tcho&&tcho.c)?tcho.c:C.br),cursor:"pointer",flexShrink:0}})),!isDone&&React.createElement("div",{style:{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}},[5,10,15,25].map(function(m){return React.createElement("button",{key:m,onClick:function(){setTimers(function(p){var n=Object.assign({},p);n["t"+i]=m*60;return n;});},style:{padding:"3px 8px",background:tSet===m*60?C.a:C.card,border:"1px solid "+(tSet===m*60?C.a:C.cb),borderRadius:100,fontSize:10,fontWeight:600,color:tSet===m*60?"#fff":C.tm,cursor:"pointer",fontFamily:"inherit"}},m+"m");}),tSet&&React.createElement("button",{onClick:function(){startTimer("t"+i);},style:{padding:"3px 10px",background:isActive?C.ams:C.as,border:"1px solid "+(isActive?C.am:C.a),borderRadius:100,fontSize:11,fontWeight:700,color:isActive?C.am:C.a,cursor:"pointer",fontFamily:"inherit",minWidth:50,textAlign:"center"}},isActive?fmt(tLeft||tSet):"▶ Start"))),totPick===i&&!isDone&&React.createElement("div",{style:{background:C.sur,border:"1px solid "+C.br,borderRadius:12,padding:8,display:"flex",gap:6,flexWrap:"wrap",marginTop:4,boxShadow:"0 4px 16px rgba(0,0,0,0.08)"}},TASK_COLORS.map(function(c){return React.createElement("button",{key:c.id,onClick:function(){setTotCols(function(p){var n=Object.assign({},p);n[i]=c.id;return n;});setTotPick(null);},style:{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",cursor:"pointer",padding:3}},React.createElement("div",{style:{width:22,height:22,borderRadius:"50%",background:c.c||C.cb,border:tcid===c.id?"3px solid "+C.t:"2px solid transparent"}}),React.createElement("span",{style:{fontSize:9,color:C.tm,fontWeight:600}},c.l));}))));})  ,Object.values(totDone).filter(Boolean).length===totResults.length&&totResults.length>0&&React.createElement(Card,{style:{textAlign:"center",padding:20}},React.createElement("div",{style:{fontSize:24}},"🎉"),React.createElement("div",{style:{fontSize:14,fontWeight:700,color:C.g,marginTop:6}},"All done!")),React.createElement(Btn,{onClick:function(){setTotPhase("input");setTotItems([]);setTotInp("");setTotPairs([]);setTotIdx(0);setTotWins({});setTotResults([]);setTotDone({});setTotCols({});},bg:C.card,color:C.ts},"↩ Start Again")));}}
-  return null;
-}
-
-// FOCUS TIMER
-var TOPTS=[{l:"5 min",s:300,i:"🌱"},{l:"15 min",s:900,i:"⚡"},{l:"25 min",s:1500,i:"🔥"},{l:"50 min",s:3000,i:"🏔️"}];
-function FocusTab(){
-  var [ph,setPh]=useState("setup");var [task,setTask]=useState("");var [sel,setSel]=useState(1);var [sLeft,setSLeft]=useState(null);var [total,setTotal]=useState(null);var [paused,setPaused]=useState(false);var iRef=useRef(null);
-  useEffect(function(){return function(){clearInterval(iRef.current);};},[]);
-  function start(){var s=TOPTS[sel].s;setTotal(s);setSLeft(s);setPaused(false);setPh("on");iRef.current=setInterval(function(){setSLeft(function(p){if(p<=1){clearInterval(iRef.current);setPh("done");return 0;}return p-1;});},1000);}
-  function pause(){if(paused){iRef.current=setInterval(function(){setSLeft(function(p){if(p<=1){clearInterval(iRef.current);setPh("done");return 0;}return p-1;});},1000);}else{clearInterval(iRef.current);}setPaused(function(v){return !v;});}
-  function reset(){clearInterval(iRef.current);setPh("setup");setSLeft(null);setTotal(null);setPaused(false);}
-  function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
-  var prog=total?(total-sLeft)/total:0;var r=96;var circ=2*Math.PI*r;
-  if(ph==="setup")return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14}},
-    React.createElement("div",{style:{fontSize:20,fontWeight:700,color:C.t}},"Focus Mode"),
-    React.createElement("div",null,React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.tm,marginBottom:8,letterSpacing:"0.06em"}},"WHAT ARE YOU FOCUSING ON?"),React.createElement("input",{value:task,onChange:function(e){setTask(e.target.value);},placeholder:"e.g. Write the project proposal",style:{width:"100%",background:C.card,border:"1px solid "+(task?C.a+"60":C.cb),borderRadius:12,padding:"12px 14px",color:C.t,fontSize:14,fontFamily:"inherit",outline:"none",transition:"border-color .2s"}})),
-    React.createElement("div",null,React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.tm,marginBottom:8,letterSpacing:"0.06em"}},"HOW LONG?"),React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}},TOPTS.map(function(opt,i){return React.createElement("button",{key:i,onClick:function(){setSel(i);},style:{background:sel===i?C.a:C.card,border:"2px solid "+(sel===i?C.a:C.cb),borderRadius:12,padding:"12px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all .15s"}},React.createElement("span",{style:{fontSize:22}},opt.i),React.createElement("span",{style:{fontSize:13,fontWeight:700,color:sel===i?"#fff":C.t}},opt.l));}))),
-    React.createElement(Btn,{onClick:start,disabled:!task.trim()},task.trim()?"Start "+TOPTS[sel].l+" Focus ▶":"Enter a task to start")
-  );
-  if(ph==="on")return React.createElement("div",{style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,gap:20}},
-    React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.tm,letterSpacing:"0.1em"}},"FOCUSING ON"),
-    React.createElement("div",{style:{fontSize:16,fontWeight:600,color:C.t,textAlign:"center",maxWidth:260,lineHeight:1.4}},'"'+task+'"'),
-    React.createElement("div",{style:{position:"relative",width:220,height:220}},
-      React.createElement("svg",{width:"220",height:"220",style:{transform:"rotate(-90deg)"}},
-        React.createElement("circle",{cx:"110",cy:"110",r:r,fill:"none",stroke:C.br,strokeWidth:"8"}),
-        React.createElement("circle",{cx:"110",cy:"110",r:r,fill:"none",stroke:paused?C.tm:C.a,strokeWidth:"8",strokeLinecap:"round",strokeDasharray:circ,strokeDashoffset:circ-prog*circ,style:{transition:"stroke-dashoffset 1s linear,stroke .3s"}})
-      ),
-      React.createElement("div",{style:{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}},
-        React.createElement("div",{style:{fontSize:44,fontWeight:700,color:paused?C.tm:C.a,letterSpacing:"-1px",fontVariantNumeric:"tabular-nums"}},fmt(sLeft)),
-        React.createElement("div",{style:{fontSize:11,color:C.tm,marginTop:4,fontWeight:600}},paused?"PAUSED":TOPTS[sel].l)
-      )
-    ),
-    React.createElement("div",{style:{display:"flex",gap:10,width:"100%",maxWidth:260}},
-      React.createElement("button",{onClick:pause,style:{flex:2,padding:"13px",background:paused?C.as:C.card,border:"2px solid "+(paused?C.a:C.cb),borderRadius:12,color:paused?C.a:C.t,fontSize:14,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}},paused?"▶ Resume":"⏸ Pause"),
-      React.createElement("button",{onClick:reset,style:{flex:1,padding:"13px",background:"transparent",border:"2px solid "+C.cb,borderRadius:12,color:C.tm,fontSize:14,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}},"✕")
-    )
-  );
-  return React.createElement("div",{style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,gap:16}},
-    React.createElement("div",{style:{fontSize:52}},"🎉"),
-    React.createElement("div",{style:{textAlign:"center"}},React.createElement("div",{style:{fontSize:22,fontWeight:700,color:C.t}},"Session complete!"),React.createElement("div",{style:{fontSize:14,color:C.ts,marginTop:6,lineHeight:1.5}},"You focused for "+TOPTS[sel].l+". Great work.")),
-    React.createElement(Btn,{onClick:function(){setTask("");reset();}},"⚡ Start Another"),
-    React.createElement(Btn,{onClick:reset,bg:C.card,color:C.ts},"↩ Back")
-  );
-}
-
-// TOOLS
-function ToolsTab(){
-  var [tool,setTool]=useState("menu");var [ph,setPh]=useState("input");var [inp,setInp]=useState("");var [res,setRes]=useState(null);var [gd,setGd]=useState({});var [err,setErr]=useState("");
-  function reset(){setPh("input");setInp("");setRes(null);setGd({});setErr("");}
-  function back(){setTool("menu");reset();}
-  function runGoal(){if(!inp.trim())return;setPh("loading");callAI([{role:"user",content:"My goal: "+inp}],GSYS).then(function(r){setRes(JSON.parse(r.replace(/```json|```/g,"").trim()));setPh("results");}).catch(function(){setErr("Something went wrong.");setPh("input");});}
-  function runDoc(){if(!inp.trim())return;setPh("loading");callAI([{role:"user",content:"Simplify:\n\n"+inp}],DSYS,1000).then(function(r){setRes(JSON.parse(r.replace(/```json|```/g,"").trim()));setPh("results");}).catch(function(){setErr("Something went wrong.");setPh("input");});}
-  if(tool==="menu")return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:14}},
-    React.createElement("div",{style:{fontSize:20,fontWeight:700,color:C.t}},"Tools"),
-    [{id:"goal",i:"🎯",l:"Break Down a Goal",d:"Turn any big goal into 5 manageable steps",c:C.g},{id:"doc",i:"📄",l:"Simplify a Document",d:"Paste any letter or form — get plain English back",c:C.b}].map(function(t){return React.createElement("button",{key:t.id,onClick:function(){setTool(t.id);reset();},style:{background:C.card,border:"1px solid "+C.cb,borderRadius:16,padding:18,cursor:"pointer",textAlign:"left",width:"100%",fontFamily:"inherit",transition:"border-color .15s"}},React.createElement("div",{style:{fontSize:26,marginBottom:8}},t.i),React.createElement("div",{style:{fontSize:15,fontWeight:700,color:C.t,marginBottom:4}},t.l),React.createElement("div",{style:{fontSize:12,color:C.tm,lineHeight:1.4}},t.d));})
-  );
-  if(tool==="goal"){
-    if(ph==="input")return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:12}},React.createElement("div",{style:{fontSize:18,fontWeight:700,color:C.t}},"🎯 Goal Breakdown"),React.createElement("div",{style:{fontSize:13,color:C.tm,lineHeight:1.5}},"Tell Thinko your big goal. It breaks it down into 5 steps you can start today."),React.createElement("textarea",{value:inp,onChange:function(e){setInp(e.target.value);},placeholder:"e.g. Start my own business, Learn to drive, Get fit",style:{width:"100%",minHeight:110,background:C.card,border:"1px solid "+C.cb,borderRadius:12,padding:14,color:C.t,fontSize:14,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.6}}),err&&React.createElement("div",{style:{color:C.r,fontSize:13}},err),React.createElement(Btn,{onClick:runGoal,disabled:!inp.trim()},"Break It Down"),React.createElement(Btn,{onClick:back,bg:C.card,color:C.ts},"← Back"));
-    if(ph==="loading")return React.createElement(Spin,{msg:"Breaking down your goal..."});
-    if(ph==="results"&&res)return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}},React.createElement(Card,{style:{background:C.gs,border:"1px solid "+C.g+"30"}},React.createElement("div",{style:{fontSize:12,color:C.tm,fontWeight:700,marginBottom:4}},"YOUR GOAL"),React.createElement("div",{style:{fontSize:15,fontWeight:600,color:C.t,lineHeight:1.4}},inp),res.encouragement&&React.createElement("div",{style:{fontSize:12,color:C.g,marginTop:8,fontStyle:"italic"}},'"'+res.encouragement+'"')),res.tasks&&res.tasks.map(function(t,i){var isDone=gd[i];return React.createElement("div",{key:i,onClick:function(){setGd(function(p){var n=Object.assign({},p);n[i]=!p[i];return n;});},style:{background:isDone?C.gs:C.card,border:"1px solid "+(isDone?C.g+"40":C.cb),borderRadius:12,padding:"13px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,opacity:isDone?0.65:1}},React.createElement("div",{style:{width:24,height:24,borderRadius:8,background:isDone?C.g:C.as,border:"2px solid "+(isDone?C.g:C.a),display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:isDone?"#fff":C.a,flexShrink:0}},isDone?"✓":i+1),React.createElement("div",{style:{fontSize:14,fontWeight:500,color:isDone?C.tm:C.t,textDecoration:isDone?"line-through":"none",lineHeight:1.4}},t));})  ,React.createElement(Btn,{onClick:reset,bg:C.card,color:C.ts},"↩ Try Another"),React.createElement("button",{onClick:back,style:{padding:"8px",background:"transparent",border:"none",color:C.tm,fontSize:12,fontFamily:"inherit",cursor:"pointer"}},"← Back to Tools"));
-  }
-  if(tool==="doc"){
-    if(ph==="input")return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:12}},React.createElement("div",{style:{fontSize:18,fontWeight:700,color:C.t}},"📄 Document Simplifier"),React.createElement("div",{style:{fontSize:13,color:C.tm,lineHeight:1.5}},"Paste any confusing letter, form or email. Thinko translates it into plain English."),React.createElement("textarea",{value:inp,onChange:function(e){setInp(e.target.value);},placeholder:"Paste your document here...",style:{width:"100%",minHeight:160,background:C.card,border:"1px solid "+C.cb,borderRadius:12,padding:14,color:C.t,fontSize:14,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.7}}),err&&React.createElement("div",{style:{color:C.r,fontSize:13}},err),React.createElement(Btn,{onClick:runDoc,disabled:!inp.trim()},"Simplify This"),React.createElement(Btn,{onClick:back,bg:C.card,color:C.ts},"← Back"));
-    if(ph==="loading")return React.createElement(Spin,{msg:"Reading your document..."});
-    if(ph==="results"&&res)return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:10}},
-      [{l:"WHAT IT'S ABOUT",v:res.summary,c:C.b,i:"📋"},{l:"WHAT THEY WANT",v:res.they_want,c:C.am,i:"👉"},{l:"DEADLINE",v:res.deadline,c:C.r,i:"📅"},{l:"YOUR NEXT STEP",v:res.next_step,c:C.g,i:"🪜"}].map(function(item,i){return React.createElement(Card,{key:i,style:{background:item.c+"08",border:"1px solid "+item.c+"25"}},React.createElement("div",{style:{fontSize:10,fontWeight:800,color:item.c,letterSpacing:"0.08em",marginBottom:6}},item.i+" "+item.l),React.createElement("div",{style:{fontSize:14,color:C.t,lineHeight:1.6}},item.v));}),
-      res.jargon&&res.jargon.length>0&&React.createElement(Card,null,React.createElement("div",{style:{fontSize:10,fontWeight:800,color:C.tm,letterSpacing:"0.08em",marginBottom:10}},"JARGON BUSTER"),res.jargon.map(function(j,i){return React.createElement("div",{key:i,style:{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:8,alignItems:"center",marginBottom:i<res.jargon.length-1?8:0,paddingBottom:i<res.jargon.length-1?8:0,borderBottom:i<res.jargon.length-1?"1px solid "+C.br:"none"}},React.createElement("div",{style:{background:C.rs,borderRadius:8,padding:"5px 8px",fontSize:11,color:C.r,fontWeight:600}},j.term),React.createElement("div",{style:{color:C.tm,fontSize:11}},"→"),React.createElement("div",{style:{background:C.gs,borderRadius:8,padding:"5px 8px",fontSize:11,color:C.g,fontWeight:600}},j.plain));})),
-      React.createElement(Btn,{onClick:reset,bg:C.card,color:C.ts},"↩ Simplify Another"),React.createElement("button",{onClick:back,style:{padding:"8px",background:"transparent",border:"none",color:C.tm,fontSize:12,fontFamily:"inherit",cursor:"pointer"}},"← Back to Tools")
-    );
-  }
-  return null;
-}
-
-// PRO UPGRADE
-function ProScreen(props){
-  var perks=["🧠 Brain Dump with SMART Goals","🤖 AI Ranker","⚖️ Prioritise My Tasks","⚡ Focus Timer","📄 Document Simplifier","🗺️ Mind Map (coming soon)","🤵 Personal Assistant (coming soon)","🏆 AI Chief of Staff (coming soon)","🌙 Dark mode","⚡ Priority support"];
-  return React.createElement("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}},
-    React.createElement("div",{style:{background:C.sur,borderRadius:"24px 24px 0 0",padding:"20px 18px 40px",width:"100%",maxWidth:480,maxHeight:"88vh",overflowY:"auto"}},
-      React.createElement("div",{style:{width:36,height:4,background:C.br,borderRadius:100,margin:"0 auto 18px"}}),
-      React.createElement("div",{style:{textAlign:"center",marginBottom:18}},
-        React.createElement("div",{style:{width:52,height:52,borderRadius:14,background:C.a,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,color:"#fff",fontWeight:800,margin:"0 auto 12px"}},"T"),
-        React.createElement("div",{style:{fontSize:24,fontWeight:800,color:C.t,marginBottom:4}},"Thinko Pro"),
-        React.createElement("div",{style:{fontSize:13,color:C.ts,lineHeight:1.5,maxWidth:260,margin:"0 auto"}},"Everything you need to think clearly and get things done.")
-      ),
-      React.createElement(Card,{style:{background:C.as,border:"2px solid "+C.a+"50",marginBottom:16,textAlign:"center"}},
-        React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.tm,letterSpacing:"0.08em",marginBottom:6}},"THINKO PRO"),
-        React.createElement("div",{style:{display:"flex",alignItems:"baseline",justifyContent:"center",gap:4,marginBottom:4}},React.createElement("div",{style:{fontSize:38,fontWeight:800,color:C.a,lineHeight:1}},"£9.99"),React.createElement("div",{style:{fontSize:13,color:C.tm}},"/month")),
-        React.createElement("div",{style:{fontSize:11,color:C.ts,marginBottom:14}},"or £79.99/year · save £39.89"),
-        React.createElement("button",{onClick:props.onUpgrade,style:{width:"100%",padding:"14px",background:C.a,border:"none",borderRadius:12,color:"#fff",fontSize:15,fontWeight:700,fontFamily:"inherit",cursor:"pointer",boxShadow:"0 4px 20px "+C.a+"40"}},"Start Free 7-Day Trial"),
-        React.createElement("div",{style:{fontSize:11,color:C.tm,marginTop:8}},"Cancel anytime · No commitment")
-      ),
-      React.createElement("div",{style:{fontSize:11,fontWeight:700,color:C.tm,letterSpacing:"0.08em",marginBottom:10}},"EVERYTHING INCLUDED"),
-      React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:20}},
-        perks.map(function(p,i){return React.createElement("div",{key:i,style:{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:C.card,border:"1px solid "+C.cb,borderRadius:10}},React.createElement("div",{style:{fontSize:14}},p.split(" ")[0]),React.createElement("div",{style:{flex:1,fontSize:13,color:C.t}},p.split(" ").slice(1).join(" ")),React.createElement("div",{style:{color:C.g,fontSize:13,fontWeight:700}},"✓"));})
-      ),
-      React.createElement("button",{onClick:props.onClose,style:{width:"100%",padding:"13px",background:"transparent",border:"1.5px solid "+C.cb,borderRadius:12,color:C.ts,fontSize:14,fontWeight:600,fontFamily:"inherit",cursor:"pointer"}},"Maybe Later")
     )
   );
 }
 
-function LockedFeature(props){
-  return React.createElement("div",{style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,gap:14,textAlign:"center"}},
-    React.createElement("div",{style:{width:64,height:64,borderRadius:18,background:C.as,border:"2px solid "+C.a+"30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}},"🔒"),
-    React.createElement("div",null,React.createElement("div",{style:{fontSize:20,fontWeight:700,color:C.t,marginBottom:6}},"Pro Feature"),React.createElement("div",{style:{fontSize:14,color:C.ts,lineHeight:1.6,maxWidth:240}},"Upgrade to Thinko Pro to unlock this feature.")),
-    React.createElement(Btn,{onClick:props.onUpgrade},"Upgrade to Pro · £9.99/month"),
-    React.createElement("div",{style:{fontSize:11,color:C.tm}},"7-day free trial · Cancel anytime")
-  );
-}
-
-// MORE MENU
-function MoreMenu(props){
-  var setTab=props.setTab;var isPro=props.isPro;var onUpgrade=props.onUpgrade;
-  var secs=[
-    {title:"Tools",items:[{id:"tools",i:"🛠️",l:"Tools",d:"Goal breakdown & document simplifier",pro:false},{id:"focus",i:"⏱️",l:"Focus Timer",d:"Timed focus sessions",pro:false}]},
-    {title:"Pro Features",items:[{id:"pro_mindmap",i:"🗺️",l:"Mind Map",d:"Visual thinking and idea mapping",pro:true},{id:"pro_pa",i:"🤵",l:"Personal Assistant",d:"Categories, files and reminders",pro:true},{id:"pro_chief",i:"🏆",l:"AI Chief of Staff",d:"Manages your day like a celebrity PA",pro:true}]},
-  ];
-  return React.createElement("div",{style:{flex:1,overflowY:"auto",padding:14,display:"flex",flexDirection:"column",gap:18}},
-    React.createElement("div",{style:{fontSize:20,fontWeight:700,color:C.t}},"More"),
-    !isPro&&React.createElement("button",{onClick:onUpgrade,style:{width:"100%",padding:"14px 16px",background:"linear-gradient(135deg,"+C.a+","+C.g+")",border:"none",borderRadius:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit"}},
-      React.createElement("div",{style:{textAlign:"left"}},React.createElement("div",{style:{fontSize:14,fontWeight:700,color:"#fff"}},"Upgrade to Thinko Pro"),React.createElement("div",{style:{fontSize:11,color:"rgba(255,255,255,0.75)",marginTop:2}},"7-day free trial · Unlock everything")),
-      React.createElement("div",{style:{background:"rgba(255,255,255,0.2)",color:"#fff",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:700}},"£9.99/mo")
-    ),
-    secs.map(function(sec){return React.createElement("div",{key:sec.title},
-      React.createElement("div",{style:{fontSize:10,fontWeight:800,color:C.tm,letterSpacing:"0.1em",marginBottom:8,textTransform:"uppercase"}},sec.title),
-      React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:6}},sec.items.map(function(item){
-        var locked=item.pro&&!isPro;
-        return React.createElement("button",{key:item.id,onClick:function(){locked?onUpgrade():setTab(item.id);},style:{background:C.card,border:"1px solid "+(locked?C.a+"20":C.cb),borderRadius:14,padding:"13px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",width:"100%",fontFamily:"inherit",transition:"border-color .15s"}},
-          React.createElement("div",{style:{width:40,height:40,borderRadius:11,background:locked?C.as:C.sur,border:"1px solid "+C.cb,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}},item.i),
-          React.createElement("div",{style:{flex:1}},React.createElement("div",{style:{fontSize:14,fontWeight:600,color:C.t}},item.l),React.createElement("div",{style:{fontSize:11,color:C.tm,marginTop:1}},item.d)),
-          locked?React.createElement("div",{style:{background:C.a,color:"#fff",borderRadius:100,padding:"2px 9px",fontSize:10,fontWeight:700}},"PRO"):React.createElement("span",{style:{color:C.tm,fontSize:16}},"›")
-        );
-      }))
-    );})
-  );
-}
-
-// ROOT
-export default function Thinko(){
-  var [tab,setTab]=useState("home");
-  var [dark,setDark]=useState(false);
-  var [isPro,setIsPro]=useState(false);
-  var [showPro,setShowPro]=useState(false);
-  C=dark?D:L;
-  var NAV=[{id:"home",i:"💬",l:"Chat"},{id:"todo",i:"📋",l:"To-Do"},{id:"tasks",i:"🧠",l:"Thinko"},{id:"focus",i:"⏱️",l:"Focus"},{id:"more",i:"☰",l:"More"}];
-  var mainTabs=["home","todo","tasks","focus","more"];
-  return React.createElement("div",{style:{fontFamily:"'DM Sans',system-ui,sans-serif",background:C.bg,color:C.t,height:"100vh",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column"}},
-    React.createElement("link",{href:"https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap",rel:"stylesheet"}),
-    React.createElement("style",null,
-      "@keyframes tkB{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-5px);opacity:1}} "+
-      "@keyframes tkP{0%,100%{transform:scale(1);box-shadow:0 4px 12px "+C.ag+"}50%{transform:scale(1.06);box-shadow:0 8px 24px "+C.ag+"}} "+
-      "*{box-sizing:border-box;margin:0;padding:0} "+
-      "::-webkit-scrollbar{width:3px} "+
-      "::-webkit-scrollbar-thumb{background:"+C.br+";border-radius:2px} "+
-      "textarea::placeholder,input::placeholder{color:"+C.tm+"} "+
-      "input,textarea{box-sizing:border-box}"
-    ),
-    React.createElement("div",{style:{padding:"12px 16px 10px",background:C.sur,borderBottom:"1px solid "+C.br,display:"flex",alignItems:"center",gap:10,flexShrink:0}},
-      React.createElement("div",{style:{width:34,height:34,borderRadius:10,background:C.a,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:"#fff",fontWeight:800}},"T"),
-      React.createElement("div",{style:{flex:1}},
-        React.createElement("div",{style:{fontSize:18,fontWeight:800,color:C.t,lineHeight:1,letterSpacing:"-0.02em"}},"Thinko"),
-        React.createElement("div",{style:{fontSize:9,color:C.tm,marginTop:1,fontWeight:500,letterSpacing:"0.08em"}},isPro?"PRO · THINK IT. SORT IT. DO IT.":"THINK IT. SORT IT. DO IT.")
-      ),
-      React.createElement("button",{onClick:function(){setDark(function(d){return !d;});},style:{width:44,height:24,borderRadius:100,background:dark?C.a:C.sur,border:"1.5px solid "+(dark?C.a:C.cb),cursor:"pointer",position:"relative",transition:"all .25s",flexShrink:0}},
-        React.createElement("div",{style:{position:"absolute",top:2,left:dark?22:2,width:18,height:18,borderRadius:"50%",background:dark?C.sur:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,transition:"left .2s",boxShadow:"0 1px 4px rgba(0,0,0,0.15)"}},dark?"🌙":"☀️")
-      )
-    ),
-    React.createElement("div",{style:{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}},
-      tab==="home"&&React.createElement(HomeTab,{setTab:setTab}),
-      tab==="todo"&&React.createElement(TodoTab,null),
-      tab==="tasks"&&React.createElement(TasksTab,null),
-      tab==="focus"&&React.createElement(FocusTab,null),
-      tab==="tools"&&React.createElement(ToolsTab,null),
-      tab==="more"&&React.createElement(MoreMenu,{setTab:setTab,isPro:isPro,onUpgrade:function(){setShowPro(true);}}),
-      (tab==="pro_mindmap"||tab==="pro_pa"||tab==="pro_chief")&&(isPro?React.createElement("div",{style:{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:32,textAlign:"center"}},React.createElement("div",null,React.createElement("div",{style:{fontSize:40,marginBottom:12}},"🚧"),React.createElement("div",{style:{fontSize:18,fontWeight:700,color:C.t}},"Coming Soon"),React.createElement("div",{style:{fontSize:13,color:C.ts,marginTop:6,lineHeight:1.5}},"This feature is being built now."),React.createElement("button",{onClick:function(){setTab("more");},style:{marginTop:16,padding:"10px 20px",background:"transparent",border:"1.5px solid "+C.cb,borderRadius:12,color:C.ts,fontSize:13,fontWeight:600,fontFamily:"inherit",cursor:"pointer"}},"← Back"))):React.createElement(LockedFeature,{onUpgrade:function(){setShowPro(true);}}))
-    ),
-    !isPro&&React.createElement("div",{onClick:function(){setShowPro(true);},style:{padding:"8px 16px",background:C.a,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",flexShrink:0}},
-      React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8}},React.createElement("div",{style:{fontSize:13,fontWeight:700,color:"#fff"}},"Upgrade to Pro"),React.createElement("div",{style:{fontSize:11,color:"rgba(255,255,255,0.75)"}},"7-day free trial")),
-      React.createElement("div",{style:{background:"rgba(255,255,255,0.2)",color:"#fff",borderRadius:100,padding:"3px 10px",fontSize:11,fontWeight:700}},"£9.99/mo")
-    ),
-    React.createElement("div",{style:{background:C.sur,borderTop:"1px solid "+C.br,display:"flex",flexShrink:0,paddingBottom:"env(safe-area-inset-bottom,0px)"}},
-      NAV.map(function(t){
-        var active=t.id==="more"?(!mainTabs.slice(0,4).includes(tab)&&tab!=="more"?false:tab==="more"||!["home","todo","tasks","focus"].includes(tab)):tab===t.id;
-        return React.createElement("button",{key:t.id,onClick:function(){setTab(t.id);},style:{flex:1,padding:"9px 0 8px",background:"none",border:"none",borderTop:"2px solid "+(active?C.a:"transparent"),cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"all .12s"}},
-          React.createElement("span",{style:{fontSize:16}}  ,t.i),
-          React.createElement("span",{style:{fontSize:9,color:active?C.a:C.tm,fontWeight:active?700:400}},t.l)
-        );
-      })
-    ),
-    showPro&&React.createElement(ProScreen,{onClose:function(){setShowPro(false);},onUpgrade:function(){setIsPro(true);setShowPro(false);}})
-  );
-}
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
