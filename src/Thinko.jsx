@@ -6043,7 +6043,8 @@ function usePro() {
   const [limitHit, setLimitHit]   = useState("");
 
   const canDo = (feature, currentCount=0) => {
-    if (TESTING_MODE) return true;          // 🔓 all unlocked
+    if (TESTING_MODE) return true;
+    if (isPro) return true;                // 🔓 Pro subscribers unlocked
     const limit = FREE_LIMITS[feature];
     if (limit === undefined) return true;
     return currentCount < limit;
@@ -6107,6 +6108,185 @@ function ProUpgradeModal({ limitHit, onClose }) {
   );
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   🔐 AUTH SYSTEM — Supabase + Google login for Pro users
+   Free users: full app, limited features
+   Pro users: sign in with Google to unlock everything
+═══════════════════════════════════════════════════════ */
+
+// ── Supabase config — replace with your project URL + anon key ──
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+
+// ── Simple Supabase auth helper (no SDK needed) ──────────
+const supabase = {
+  async signInWithGoogle() {
+    const redirectTo = window.location.origin;
+    const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+    window.location.href = url;
+  },
+  async signOut() {
+    const token = localStorage.getItem("thinko_access_token");
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method:"POST",
+      headers:{"Authorization":`Bearer ${token}`,"apikey":SUPABASE_ANON_KEY}
+    });
+    localStorage.removeItem("thinko_access_token");
+    localStorage.removeItem("thinko_user");
+  },
+  async getUser() {
+    const token = localStorage.getItem("thinko_access_token");
+    if(!token) return null;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers:{"Authorization":`Bearer ${token}`,"apikey":SUPABASE_ANON_KEY}
+      });
+      if(!res.ok) return null;
+      return await res.json();
+    } catch { return null; }
+  },
+  handleAuthCallback() {
+    // Parse token from URL hash after Google redirect
+    const hash = window.location.hash;
+    if(hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.replace("#",""));
+      const token = params.get("access_token");
+      if(token) {
+        localStorage.setItem("thinko_access_token", token);
+        window.history.replaceState(null,"",window.location.pathname);
+        return true;
+      }
+    }
+    return false;
+  }
+};
+
+// ── useAuth hook ─────────────────────────────────────────
+function useAuth() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{
+    // Check for auth callback from Google
+    supabase.handleAuthCallback();
+    // Load user
+    supabase.getUser().then(u=>{
+      setUser(u);
+      setLoading(false);
+    });
+  },[]);
+
+  const signIn = () => supabase.signInWithGoogle();
+  const signOut = async () => { await supabase.signOut(); setUser(null); };
+  const isPro = !!user; // signed in = Pro
+
+  return { user, loading, signIn, signOut, isPro };
+}
+
+// ── Pro Login Modal ──────────────────────────────────────
+function ProLoginModal({onClose, onSignIn}) {
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(10,2,30,0.92)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{background:C.wh,borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:380,textAlign:"center",boxShadow:"0 16px 60px rgba(45,10,94,0.6)"}}>
+
+        {/* Logo */}
+        <div style={{fontSize:52,marginBottom:8}}>🧠</div>
+        <div style={{fontWeight:900,color:C.dp,fontSize:26,marginBottom:4}}>Thinko Pro</div>
+        <div style={{color:C.soft,fontSize:14,marginBottom:24,lineHeight:1.6}}>
+          Sign in with Google to unlock all features
+        </div>
+
+        {/* Features list */}
+        <div style={{background:C.pale,borderRadius:16,padding:"14px 16px",marginBottom:24,textAlign:"left"}}>
+          {[
+            "✨ Unlimited AI features",
+            "🧠 Unlimited Mind Maps",
+            "📋 Unlimited Prioritizer lists",
+            "🎯 Unlimited Goals",
+            "🌿 Full Rest Space library",
+            "🗄️ Filing Cabinet uploads",
+            "🎓 Study Studio unlimited",
+            "☁️ Data synced across devices",
+          ].map((f,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6,fontSize:13,color:C.txt,fontWeight:600}}>
+              {f}
+            </div>
+          ))}
+        </div>
+
+        {/* Pricing */}
+        <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,borderRadius:16,padding:"12px 16px",marginBottom:20,color:C.wh,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontWeight:900,fontSize:22}}>£4.99<span style={{fontSize:13,fontWeight:600}}>/month</span></div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.65)"}}>or £39.99/year — save £20</div>
+          </div>
+          <div style={{fontSize:32}}>💎</div>
+        </div>
+
+        {/* Google Sign In button */}
+        <button onClick={onSignIn}
+          style={{width:"100%",padding:"14px",background:"#fff",color:"#444",border:"2px solid #ddd",borderRadius:14,fontWeight:800,fontSize:15,cursor:"pointer",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:12,boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}}>
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <button onClick={onClose}
+          style={{width:"100%",padding:"11px",background:"transparent",color:C.soft,border:`1px solid ${C.ll}`,borderRadius:14,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+          Continue as guest — free features only
+        </button>
+
+        <div style={{marginTop:14,fontSize:11,color:C.soft,lineHeight:1.5}}>
+          By signing in you agree to our terms. Cancel anytime.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── User avatar / sign in button for home screen ─────────
+function AuthButton({user, onSignIn, onSignOut}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  if(!user) return(
+    <button onClick={onSignIn}
+      style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:12,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+      💎 Go Pro
+    </button>
+  );
+  return(
+    <div style={{position:"relative"}}>
+      <button onClick={()=>setMenuOpen(m=>!m)}
+        style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:12,padding:"6px 12px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+        {user.user_metadata?.avatar_url
+          ? <img src={user.user_metadata.avatar_url} style={{width:24,height:24,borderRadius:"50%"}} alt="avatar"/>
+          : <span style={{fontSize:20}}>👤</span>}
+        <span style={{maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12}}>
+          {user.user_metadata?.full_name?.split(" ")[0] || "Pro"}
+        </span>
+        💎
+      </button>
+      {menuOpen&&(
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:C.wh,borderRadius:14,padding:"8px",boxShadow:"0 8px 32px rgba(45,10,94,0.25)",minWidth:180,zIndex:100}} onClick={()=>setMenuOpen(false)}>
+          <div style={{padding:"8px 12px",fontSize:13,color:C.soft,borderBottom:`1px solid ${C.ll}`,marginBottom:4}}>
+            {user.email}
+          </div>
+          <div style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:"#27ae60"}}>✓ Pro subscriber</div>
+          <button onClick={onSignOut}
+            style={{width:"100%",padding:"8px 12px",background:"transparent",color:"#e74c3c",border:"none",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",textAlign:"left"}}>
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 const MODULES=[
   {id:"prioritizer", icon:"📋", name:"Prioritizer",  desc:"Tasks, timers & priorities",       grad:`linear-gradient(135deg,#5a3d9a,#7c5cbf)`},
   {id:"mindmap",     icon:"🧠", name:"Mind Map",     desc:"Visual thinking & brainstorm",      grad:`linear-gradient(135deg,#c2185b,#9b59b6)`},
@@ -6123,6 +6303,8 @@ const MODULES=[
 
 export default function App() {
   const [screen,setScreen]=useState("home");
+  const {user,loading,signIn,signOut,isPro}=useAuth();
+  const [showLoginModal,setShowLoginModal]=useState(false);
 
   // ── localStorage helpers ──────────────────────────────
   const load=(key,def)=>{try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch{return def;}};
@@ -6186,6 +6368,8 @@ export default function App() {
         <div style={{fontSize:32,fontWeight:900,color:C.wh,letterSpacing:1}}>Thinko</div>
         <div style={{fontSize:14,color:"rgba(255,255,255,0.6)",marginTop:4,letterSpacing:0.5}}>🤔 Think it · 📋 Plan it · ✨ Live it</div>
         {TESTING_MODE&&<div style={{marginTop:8,background:"rgba(255,215,0,0.2)",border:"1px solid rgba(255,215,0,0.4)",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:700,color:"#FFD700",display:"inline-block"}}>🔓 Tester Mode — all features unlocked</div>}
+        <div style={{marginTop:12}}><AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/></div>
+        {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
       </div>
       <div style={{padding:"10px 12px 4px",textAlign:"center"}}>
         <span style={{fontSize:11,color:"rgba(255,255,255,0.4)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
