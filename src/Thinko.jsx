@@ -6057,19 +6057,39 @@ const MODULES=[
 
 export default function App() {
   const [screen,setScreen]=useState("home");
-  const [priData,setPriData]=useState([]);
-  const [mapData,setMapData]=useState([]);
-  const [notesData,setNotesData]=useState([]);
-  const [mealData,setMealData]=useState({});
-  const [ideasData,setIdeasData]=useState([]);
-  const [matrixData,setMatrixData]=useState([]);
-  const [budgetData,setBudgetData]=useState([]);
-  const [shopData,setShopData]=useState([]);
-  const [goalsData,setGoalsData]=useState([]);
-  const [chargeData,setChargeData]=useState({dailyTarget:3,weeklyAward:'',days:{},streak:0});
+
+  // ── localStorage helpers ──────────────────────────────
+  const load=(key,def)=>{try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch{return def;}};
+  const save=(key,val)=>{try{localStorage.setItem(key,JSON.stringify(val));}catch{}};
+
+  // ── Persisted state ───────────────────────────────────
+  const [priData,setPriDataRaw]=useState(()=>load('thinko_pri',[]));
+  const [mapData,setMapDataRaw]=useState(()=>load('thinko_map',[]));
+  const [notesData,setNotesDataRaw]=useState(()=>load('thinko_notes',[]));
+  const [mealData,setMealDataRaw]=useState(()=>load('thinko_meal',{}));
+  const [ideasData,setIdeasDataRaw]=useState(()=>load('thinko_ideas',[]));
+  const [matrixData,setMatrixDataRaw]=useState(()=>load('thinko_matrix',[]));
+  const [budgetData,setBudgetDataRaw]=useState(()=>load('thinko_budget',[]));
+  const [shopData,setShopDataRaw]=useState(()=>load('thinko_shop',[]));
+  const [goalsData,setGoalsDataRaw]=useState(()=>load('thinko_goals',[]));
+  const [chargeData,setChargeDataRaw]=useState(()=>load('thinko_charge',{dailyTarget:3,weeklyAward:'',days:{},streak:0}));
+  const [moduleOrder,setModuleOrderRaw]=useState(()=>load('thinko_order',MODULES.map(m=>m.id)));
+
+  // ── Auto-save wrappers ────────────────────────────────
+  const setPriData=v=>{setPriDataRaw(v);save('thinko_pri',typeof v==='function'?v(priData):v);};
+  const setMapData=v=>{setMapDataRaw(v);save('thinko_map',typeof v==='function'?v(mapData):v);};
+  const setNotesData=v=>{setNotesDataRaw(v);save('thinko_notes',typeof v==='function'?v(notesData):v);};
+  const setMealData=v=>{setMealDataRaw(v);save('thinko_meal',typeof v==='function'?v(mealData):v);};
+  const setIdeasData=v=>{setIdeasDataRaw(v);save('thinko_ideas',typeof v==='function'?v(ideasData):v);};
+  const setMatrixData=v=>{setMatrixDataRaw(v);save('thinko_matrix',typeof v==='function'?v(matrixData):v);};
+  const setBudgetData=v=>{setBudgetDataRaw(v);save('thinko_budget',typeof v==='function'?v(budgetData):v);};
+  const setShopData=v=>{setShopDataRaw(v);save('thinko_shop',typeof v==='function'?v(shopData):v);};
+  const setGoalsData=v=>{setGoalsDataRaw(v);save('thinko_goals',typeof v==='function'?v(goalsData):v);};
+  const setChargeData=v=>{setChargeDataRaw(v);save('thinko_charge',typeof v==='function'?v(chargeData):v);};
+  const setModuleOrder=v=>{setModuleOrderRaw(v);save('thinko_order',typeof v==='function'?v(moduleOrder):v);};
+
   const [showProModal,setShowProModal]=useState(false);
   const [proLimitHit,setProLimitHit]=useState('');
-  const [moduleOrder,setModuleOrder]=useState(MODULES.map(m=>m.id));
   const [dragHome,setDragHome]=useState(null);
   const orderedModules=moduleOrder.map(id=>MODULES.find(m=>m.id===id)).filter(Boolean);
 
