@@ -133,10 +133,64 @@ function ScrollPicker({value,max,onChange,label}){
   );
 }
 
+/* ── Alarm sound — loops until stopped ── */
+let _alarmInterval=null;
+function stopAlarm(){
+  if(_alarmInterval){clearInterval(_alarmInterval);_alarmInterval=null;}
+}
+function playAlarm(type){
+  stopAlarm(); // stop any previous alarm first
+  const ring=()=>{
+    try{
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      const master=ctx.createGain();
+      master.gain.setValueAtTime(0.6,ctx.currentTime);
+      master.connect(ctx.destination);
+      if(type==="gentle"){
+        [0,0.3,0.6,0.9].forEach((t,i)=>{
+          const osc=ctx.createOscillator();const g=ctx.createGain();
+          osc.connect(g);g.connect(master);osc.type="sine";
+          osc.frequency.setValueAtTime([528,660,792,528][i],ctx.currentTime+t);
+          g.gain.setValueAtTime(0.5,ctx.currentTime+t);
+          g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.6);
+          osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.6);
+        });
+        setTimeout(()=>ctx.close(),2000);
+      } else if(type==="focus"){
+        [0,0.2,0.4].forEach(t=>{
+          const osc=ctx.createOscillator();const g=ctx.createGain();
+          osc.connect(g);g.connect(master);osc.type="square";
+          osc.frequency.setValueAtTime(660,ctx.currentTime+t);
+          g.gain.setValueAtTime(0.3,ctx.currentTime+t);
+          g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.15);
+          osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.15);
+        });
+        setTimeout(()=>ctx.close(),1500);
+      } else {
+        [0,0.5,1.0].forEach(t=>{
+          const osc=ctx.createOscillator();const g=ctx.createGain();
+          osc.connect(g);g.connect(master);osc.type="sine";
+          osc.frequency.setValueAtTime(880,ctx.currentTime+t);
+          osc.frequency.exponentialRampToValueAtTime(440,ctx.currentTime+t+0.4);
+          g.gain.setValueAtTime(0.8,ctx.currentTime+t);
+          g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.8);
+          osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.8);
+        });
+        setTimeout(()=>ctx.close(),3000);
+      }
+    }catch(e){console.log("Audio error",e);}
+  };
+  ring(); // play immediately
+  // repeat every 3 seconds until stopAlarm() is called
+  _alarmInterval=setInterval(ring,3000);
+}
+
+
 function TimerWidget({icon,label,mins,setMins,left,start,stop,fmt,glass,accent,accentText,setScreen}) {
   const [h,setH]=useState(0);
   const [m,setM]=useState(mins||5);
   const [s,setS]=useState(0);
+  const [ringing,setRinging]=useState(false);
   const pct=left!==null?(left/((h*3600+m*60+s)||1))*100:100;
   const totalSecs=h*3600+m*60+s;
   const bg=glass?"rgba(255,255,255,0.18)":`${accent}`;
@@ -144,27 +198,39 @@ function TimerWidget({icon,label,mins,setMins,left,start,stop,fmt,glass,accent,a
   const numColor=glass?C.wh:C.dp;
   const barFill=glass?"rgba(255,255,255,0.85)":accent;
 
+  useEffect(()=>{
+    if(left===0&&!ringing){setRinging(true);}
+    if(left===null){setRinging(false);stopAlarm();}
+  },[left]);
+
+  const handleStop=()=>{stop();setRinging(false);stopAlarm();};
+
   const handleStart=()=>{
-    // sync mins for backwards compat
     if(setMins)setMins(Math.max(1,Math.round(totalSecs/60)));
     start(totalSecs);
+    setRinging(false);stopAlarm();
   };
 
   return (
-    <div style={{background:bg,backdropFilter:glass?"blur(8px)":"none",border,borderRadius:18,padding:"13px 14px",boxShadow:glass?"0 4px 20px rgba(45,10,94,0.18)":"none"}}>
+    <div style={{background:ringing?"rgba(255,50,50,0.15)":bg,backdropFilter:glass?"blur(8px)":"none",border:ringing?"2px solid #e74c3c":border,borderRadius:18,padding:"13px 14px",boxShadow:glass?"0 4px 20px rgba(45,10,94,0.18)":"none",transition:"all 0.3s"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-        <span style={{fontSize:20}}>{icon}</span>
-        <div style={{fontSize:11,fontWeight:800,color:glass?"rgba(255,255,255,0.75)":accent,textTransform:"uppercase",letterSpacing:1.4,flex:1}}>{label}</div>
-        {setScreen&&!left&&(
+        <span style={{fontSize:20}}>{ringing?"🔔":icon}</span>
+        <div style={{fontSize:11,fontWeight:800,color:ringing?"#e74c3c":glass?"rgba(255,255,255,0.75)":accent,textTransform:"uppercase",letterSpacing:1.4,flex:1}}>{ringing?"⏰ Timer done!":label}</div>
+        {setScreen&&!left&&!ringing&&(
           <button onClick={()=>setScreen("rest")} style={{background:"rgba(30,92,58,0.4)",color:"#52c47a",border:"1px solid rgba(82,196,122,0.4)",borderRadius:10,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🌿 Rest</button>
         )}
       </div>
-      {left!==null?(
+      {ringing&&(
+        <button onClick={handleStop} style={{width:"100%",padding:"14px",background:"#e74c3c",color:"#fff",border:"none",borderRadius:14,fontWeight:900,fontSize:16,cursor:"pointer",marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:10,animation:"pulse 0.6s infinite alternate"}}>
+          🔕 Stop Alarm
+        </button>
+      )}
+      {left!==null&&!ringing?(
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{fontFamily:"monospace",fontSize:36,fontWeight:900,lineHeight:1,color:left<60?(glass?"#ffb3b3":"#c0392b"):numColor,flex:1,textAlign:"center"}}>{fmt(left)}</div>
-          <button onClick={stop} style={{background:accentText,color:C.wh,border:"none",borderRadius:12,width:46,height:46,fontSize:18,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          <button onClick={handleStop} style={{background:accentText,color:C.wh,border:"none",borderRadius:12,width:46,height:46,fontSize:18,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
         </div>
-      ):(
+      ):!ringing&&(
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{display:"flex",flex:1,gap:0,background:"rgba(0,0,0,0.25)",borderRadius:14,overflow:"hidden",padding:"0 8px"}}>
             <ScrollPicker value={h} max={23} onChange={setH} label="h"/>
@@ -246,7 +312,7 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
   const ref=useRef(null);
   useEffect(()=>{
     if(on&&left>0)ref.current=setInterval(()=>setLeft(l=>l-1),1000);
-    else{clearInterval(ref.current);if(left===0)setOn(false);}
+    else{clearInterval(ref.current);if(left===0){setOn(false);playAlarm('bell');}}
     return()=>clearInterval(ref.current);
   },[on,left]);
   const start=(secs)=>{const t=secs||mins*60;if(t<1)return;setLeft(t);setOn(true);};
@@ -3548,7 +3614,7 @@ function MatrixTimer({setScreen}) {
 
   useEffect(()=>{
     if(on&&left>0){ref.current=setInterval(()=>setLeft(l=>l-1),1000);}
-    else{clearInterval(ref.current);if(left===0)setOn(false);}
+    else{clearInterval(ref.current);if(left===0){setOn(false);playAlarm(mode==='focus'?'focus':'gentle');}}
     return()=>clearInterval(ref.current);
   },[on,left]);
 
@@ -4560,7 +4626,7 @@ function CountdownTool() {
 
   useEffect(()=>{
     if(on&&left>0){ref.current=setInterval(()=>setLeft(l=>l-1),1000);}
-    else{ clearInterval(ref.current); if(left===0&&on){setOn(false);setDone(true);}}
+    else{ clearInterval(ref.current); if(left===0&&on){setOn(false);setDone(true);playAlarm('bell');}}
     return()=>clearInterval(ref.current);
   },[on,left]);
 
@@ -5727,7 +5793,7 @@ function RestSpace({setScreen}){
   // Break timer
   useEffect(()=>{
     if(breakOn&&breakLeft>0){breakRef.current=setInterval(()=>setBreakLeft(l=>l-1),1000);}
-    else{clearInterval(breakRef.current);if(breakLeft===0&&breakOn)setBreakOn(false);}
+    else{clearInterval(breakRef.current);if(breakLeft===0&&breakOn){setBreakOn(false);playAlarm('gentle');}}
     return()=>clearInterval(breakRef.current);
   },[breakOn,breakLeft]);
 
