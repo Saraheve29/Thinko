@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-// Thinko v2.5 — Top3 Prioritizer · MindMap Goals · SendToDropdown · Ideas fix
+// Thinko v2.6 — Pro login + localStorage + alarms
 
 /* ═══════════════════════════════════════════════════════
    THEME
