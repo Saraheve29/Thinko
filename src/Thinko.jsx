@@ -6116,8 +6116,8 @@ function ProUpgradeModal({ limitHit, onClose }) {
 ═══════════════════════════════════════════════════════ */
 
 // ── Supabase config — replace with your project URL + anon key ──
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+const SUPABASE_URL = "https://qlgvcwfmgamfarlrcqoy.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_zFA1_iBaYLUcjdqaS35Gtw_vtt_duJm";
 
 // ── Simple Supabase auth helper (no SDK needed) ──────────
 const supabase = {
