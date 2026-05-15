@@ -1436,29 +1436,15 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
   const root=nodes.find(n=>n.parent===null);
 
   return (
-    <div style={{minHeight:"100vh",background:darkBg?`linear-gradient(160deg,#0d001a 0%,#1a0336 40%,#2d0a5e 100%)`:"#f5f0ff",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
-      <Header title={map.name} onBack={onBack} right={
-        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 13px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>🏠 Home</button>
-      }/>
-
-      {/* Toolbar */}
-      <div style={{padding:"8px 12px",display:"flex",gap:8,alignItems:"center",background:"rgba(0,0,0,0.3)",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-        <button onClick={()=>{if(selected){setEditingId(selected);setEditText(nodes.find(n=>n.id===selected)?.text||"");}}}
-          disabled={!selected}
-          style={{background:"rgba(255,255,255,0.15)",color:C.wh,border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"7px 13px",fontWeight:700,fontSize:13,cursor:selected?"pointer":"default",opacity:selected?1:0.4}}>
-          ✏️ Edit
-        </button>
-        <button onClick={deleteSelected}
-          disabled={!selected||nodes.find(n=>n.id===selected)?.parent===null}
-          style={{background:"rgba(180,30,30,0.35)",color:C.wh,border:"1px solid rgba(255,100,100,0.3)",borderRadius:10,padding:"7px 13px",fontWeight:700,fontSize:13,cursor:"pointer",opacity:(selected&&nodes.find(n=>n.id===selected)?.parent!==null)?1:0.4}}>
-          🗑 Delete
-        </button>
-        <button onClick={()=>setDarkBg(d=>!d)} style={{marginLeft:"auto",background:"rgba(255,255,255,0.15)",color:C.wh,border:"1px solid rgba(255,255,255,0.25)",borderRadius:10,padding:"5px 12px",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0}}>
-          {darkBg?"☀️ Light":"🌙 Dark"}
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
+      {/* Back button — floating top left like reference */}
+      <div style={{position:"absolute",top:0,left:0,zIndex:50,padding:"16px"}}>
+        <button onClick={onBack} style={{width:44,height:44,borderRadius:"50%",background:"rgba(248,245,236,0.88)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
 
-      {/* Canvas */}
+      {/* Canvas — full bleed */}
       <div style={{flex:1,overflow:"hidden",position:"relative"}}>
         <svg ref={svgRef} width="100%" height="100%"
           style={{position:"absolute",inset:0,touchAction:"none"}}
@@ -1467,120 +1453,129 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
           onDoubleClick={onDblClick}>
 
           <defs>
-            {/* Subtle purple glow */}
-            <radialGradient id="bgGl" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#5a2d9a" stopOpacity="0.25"/>
-              <stop offset="100%" stopColor="transparent" stopOpacity="0"/>
-            </radialGradient>
-            {/* Clip for root image */}
-            
-            {/* Crystal gradient for root card */}
-            <linearGradient id="rootGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#3d1a6e"/>
-              <stop offset="100%" stopColor="#7c5cbf"/>
+            {/* Sage node fill */}
+            <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#7A9068"/>
+              <stop offset="100%" stopColor="#5A7848"/>
             </linearGradient>
+            {/* Root node fill */}
+            <linearGradient id="rootGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#8A9E78"/>
+              <stop offset="100%" stopColor="#607850"/>
+            </linearGradient>
+            {/* Leaf gradient */}
+            <linearGradient id="leafG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#A8D070"/>
+              <stop offset="100%" stopColor="#5A8830"/>
+            </linearGradient>
+            <filter id="nodeSh" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#1A2E08" floodOpacity="0.18"/>
+            </filter>
           </defs>
 
           <rect width="100%" height="100%" fill="transparent"/>
-          {/* Stars — only on dark bg */}
-          {darkBg&&[...Array(28)].map((_,i)=>(
-            <circle key={i} cx={`${(i*41+13)%100}%`} cy={`${(i*59+7)%100}%`}
-              r={i%6===0?1.5:0.7} fill="rgba(255,255,255,0.5)" opacity={(i%3+1)*0.18}/>
-          ))}
-          {darkBg&&<circle cx="50%" cy="50%" r="200" fill="url(#bgGl)"/>}
 
           <g transform={`translate(${pan.x},${pan.y})`}>
 
-            {/* ── Edges ── */}
+            {/* ── Vine Edges — organic S-curves with small leaves ── */}
             {nodes.filter(n=>n.parent).map(n=>{
               const p=nodes.find(x=>x.id===n.parent);
               if(!p)return null;
               const isSel=n.id===selected||p.id===selected;
+              const d=edgePath(p,n);
+              // midpoint for leaf placement
+              const x1=p.parent===null?p.x+55:p.x+45;
+              const x2=n.x-48;
+              const mx=(x1+x2)/2;
+              const my=(p.y+n.y)/2;
               return(
-                <path key={`e${n.id}`} d={edgePath(p,n)} fill="none"
-                  stroke={isSel?(n.color||"#c4aee8"):(darkBg?"rgba(196,174,232,0.3)":"#c4aee8")}
-                  strokeWidth={isSel?2:1.5} strokeLinecap="round"
-                />
+                <g key={`e${n.id}`}>
+                  <path d={d} fill="none"
+                    stroke={isSel?"#5A7848":"#7A9068"}
+                    strokeWidth={isSel?2.5:2} strokeLinecap="round"
+                    opacity={isSel?1:0.75}
+                  />
+                  {/* Small leaf on branch mid-point */}
+                  <g transform={`translate(${mx},${my})`}>
+                    <ellipse cx="0" cy="-7" rx="5" ry="9" fill="url(#leafG)" opacity="0.85" transform="rotate(-20)"/>
+                    <line x1="0" y1="-2" x2="0" y2="-13" stroke="#2A5010" strokeWidth="0.7" opacity="0.6"/>
+                    <ellipse cx="8" cy="-3" rx="4" ry="7" fill="url(#leafG)" opacity="0.75" transform="rotate(15)"/>
+                  </g>
+                </g>
               );
             })}
 
-            {/* ── Root node — photo card ── */}
+            {/* ── Root node — larger rounded pill ── */}
             {root&&(()=>{
               const isSel=root.id===selected;
               const rx=root.x, ry=root.y;
-              const W=110,imgH=70,textH=40,totalH=imgH+textH;
+              const W=root.text.length>14?160:140, H=46;
               return(
-                <g key={root.id} style={{cursor:"pointer"}} onClick={()=>{}}>
-                  {/* Selection glow */}
-                  {isSel&&<rect x={rx-W/2-4} y={ry-totalH/2-4} width={W+8} height={totalH+8} rx={14}
-                    fill="none" stroke="rgba(196,174,232,0.7)" strokeWidth={2} strokeDasharray="6,3"/>}
-
-                  {/* Card shadow */}
-                  <rect x={rx-W/2+3} y={ry-totalH/2+3} width={W} height={totalH} rx={12} fill="rgba(0,0,0,0.35)"/>
-
-                  {/* Image area */}
-                  {root.rootImg?(
-                    <>
-                      {/* Clipped image using inline clipPath */}
-                      <defs>
-                        <clipPath id="rootImgClip">
-                          <rect x={rx-W/2} y={ry-totalH/2} width={W} height={imgH} rx={10}/>
-                        </clipPath>
-                      </defs>
-                      <image href={root.rootImg} x={rx-W/2} y={ry-totalH/2} width={W} height={imgH}
-                        preserveAspectRatio="xMidYMid slice" clipPath="url(#rootImgClip)"/>
-                    </>
-                  ):(
-                    <rect x={rx-W/2} y={ry-totalH/2} width={W} height={imgH} rx={10}
-                      fill="url(#rootGrad)" style={{cursor:"pointer"}}/>
-                  )}
-                  {/* Camera icon if no image */}
-                  {!root.rootImg&&(
-                    <text x={rx} y={ry-totalH/2+imgH/2} textAnchor="middle" dominantBaseline="middle"
-                      fontSize={22} style={{pointerEvents:"none",userSelect:"none"}}>📸</text>
-                  )}
-
-                  {/* Text area */}
-                  <rect x={rx-W/2} y={ry-totalH/2+imgH} width={W} height={textH} rx="0 0 10 10"
-                    fill={isSel?"#5a3d9a":"#2d0a5e"}/>
-                  <text x={rx} y={ry-totalH/2+imgH+20} textAnchor="middle" dominantBaseline="middle"
-                    fill="white" fontSize={root.text.length>12?10:12} fontWeight={800}
+                <g key={root.id} style={{cursor:"pointer"}}
+                  onClick={()=>{if(selected===root.id){spawnChild(root.id);}else setSelected(root.id);}}
+                  onDoubleClick={()=>{setEditingId(root.id);setEditText(root.text);}}>
+                  {/* Shadow */}
+                  <rect x={rx-W/2+2} y={ry-H/2+3} width={W} height={H} rx={H/2} fill="rgba(0,0,0,0.14)" filter="url(#nodeSh)"/>
+                  {/* Root pill */}
+                  <rect x={rx-W/2} y={ry-H/2} width={W} height={H} rx={H/2}
+                    fill="url(#rootGrad)"
+                    stroke={isSel?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.3)"}
+                    strokeWidth={isSel?2.5:1.5}/>
+                  {/* Label */}
+                  <text x={rx} y={ry} textAnchor="middle" dominantBaseline="middle"
+                    fill="white" fontSize={root.text.length>16?12:14} fontWeight={700}
                     style={{pointerEvents:"none",userSelect:"none"}}>
-                    {root.text.length>16?root.text.slice(0,15)+"…":root.text}
+                    {root.text.length>18?root.text.slice(0,17)+"…":root.text}
                   </text>
+                  {/* Small leaf accent top */}
+                  <g transform={`translate(${rx},${ry-H/2-8})`}>
+                    <ellipse cx="0" cy="-6" rx="4" ry="7" fill="url(#leafG)" opacity="0.9" transform="rotate(-10)"/>
+                    <ellipse cx="6" cy="-4" rx="3" ry="5" fill="url(#leafG)" opacity="0.75" transform="rotate(20)"/>
+                    <line x1="0" y1="0" x2="0" y2="-12" stroke="#2A5010" strokeWidth="0.8" opacity="0.6"/>
+                  </g>
                 </g>
               );
             })()}
 
-            {/* ── Branch nodes — rounded rectangles ── */}
+            {/* ── Branch nodes — sage rounded pills ── */}
             {nodes.filter(n=>n.parent!==null).map(n=>{
               const isSel=n.id===selected;
-              const col=n.color||NODE_COLORS[0];
-              const lCol=n.lightColor||BRANCH_COLORS[0];
-              const W=n.text.length>14?130:100, H=34;
-              // has children?
-              const hasChildren=nodes.some(c=>c.parent===n.id);
+              const W=n.text.length>12?140:116, H=38;
+              const hasIcon=n.icon;
               return(
-                <g key={n.id} style={{cursor:"pointer"}}>
+                <g key={n.id} style={{cursor:"pointer"}}
+                  onClick={()=>{if(selected===n.id){spawnChild(n.id);}else setSelected(n.id);}}
+                  onDoubleClick={()=>{setEditingId(n.id);setEditText(n.text);}}
+                  onContextMenu={e=>{e.preventDefault();setDeleteConfirmId(n.id);}}>
                   {/* Shadow */}
-                  <rect x={n.x-W/2+2} y={n.y-H/2+2} width={W} height={H} rx={17} fill="rgba(0,0,0,0.25)"/>
-                  {/* Main pill */}
-                  <rect x={n.x-W/2} y={n.y-H/2} width={W} height={H} rx={17}
-                    fill={isSel?col:lCol+"dd"} stroke={isSel?"white":col} strokeWidth={isSel?2:1.5}/>
-                  {/* Colour accent left dot */}
-                  <circle cx={n.x-W/2+12} cy={n.y} r={5} fill={col}/>
+                  <rect x={n.x-W/2+1} y={n.y-H/2+2} width={W} height={H} rx={H/2} fill="rgba(0,0,0,0.12)" filter="url(#nodeSh)"/>
+                  {/* Pill */}
+                  <rect x={n.x-W/2} y={n.y-H/2} width={W} height={H} rx={H/2}
+                    fill={isSel?"url(#nodeGrad)":"rgba(248,245,236,0.88)"}
+                    stroke={isSel?"rgba(255,255,255,0.7)":"rgba(90,120,72,0.35)"}
+                    strokeWidth={1.5}/>
+                  {/* Icon circle if node has icon */}
+                  {hasIcon&&(
+                    <>
+                      <circle cx={n.x-W/2+20} cy={n.y} r={14}
+                        fill={isSel?"rgba(255,255,255,0.2)":"rgba(248,245,236,0.95)"}
+                        stroke={isSel?"rgba(255,255,255,0.4)":"rgba(90,120,72,0.2)"} strokeWidth={1}/>
+                      <text x={n.x-W/2+20} y={n.y} textAnchor="middle" dominantBaseline="middle"
+                        fontSize={12} style={{pointerEvents:"none",userSelect:"none"}}>{n.icon}</text>
+                    </>
+                  )}
                   {/* Label */}
-                  <text x={n.x+4} y={n.y} textAnchor="middle" dominantBaseline="middle"
-                    fill={isSel?"white":(darkBg?"#1a0840":"#1a0840")} fontSize={11} fontWeight={700}
+                  <text
+                    x={hasIcon?n.x+10:n.x} y={n.y}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fill={isSel?"white":"#1A2E10"} fontSize={12} fontWeight={600}
                     style={{pointerEvents:"none",userSelect:"none"}}>
-                    {n.text.length>15?n.text.slice(0,14)+"…":n.text}
+                    {n.text.length>14?n.text.slice(0,13)+"…":n.text}
                   </text>
-                  {/* Child indicator */}
-                  {hasChildren&&<circle cx={n.x+W/2-8} cy={n.y} r={4} fill={col} opacity={0.7}/>}
-                  {/* Image thumb if any */}
-                  {(n.images||[]).length>0&&(
-                    <text x={n.x-W/2+28} y={n.y} textAnchor="middle" dominantBaseline="middle"
-                      fontSize={9} style={{pointerEvents:"none"}}>🖼</text>
+                  {/* Link icon if has url */}
+                  {n.url&&(
+                    <text x={n.x+W/2-14} y={n.y} textAnchor="middle" dominantBaseline="middle"
+                      fontSize={10} style={{pointerEvents:"none"}}>🔗</text>
                   )}
                 </g>
               );
@@ -1589,32 +1584,58 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
         </svg>
 
         {nodes.length===1&&!selected&&(
-          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",color:"rgba(255,255,255,0.45)",fontSize:13,pointerEvents:"none",marginTop:60}}>
-            Tap the card to add your first branch ✨
+          <div style={{position:"absolute",top:"58%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",color:"rgba(90,80,60,0.55)",fontSize:14,pointerEvents:"none",fontFamily:"Georgia,serif",lineHeight:1.6}}>
+            Tap the central node<br/>to add your first branch
           </div>
         )}
       </div>
 
-      {/* Photo buttons — outside SVG canvas so touch events work */}
-      <div style={{position:"relative",padding:"10px 14px",display:"flex",gap:8,justifyContent:"flex-end",background:"rgba(0,0,0,0.15)",flexShrink:0}}>
-        {root&&!root.rootImg&&(
-          <label style={{background:"rgba(124,92,191,0.9)",color:C.wh,borderRadius:12,padding:"10px 18px",fontSize:13,fontWeight:800,cursor:"pointer",border:"1.5px solid rgba(196,174,232,0.5)",display:"flex",alignItems:"center",gap:8,boxShadow:"0 2px 12px rgba(45,10,94,0.3)"}}>
-            📸 Add cover photo
-            <input type="file" accept="image/*" style={{display:"none"}} onChange={handleRootImg}/>
-          </label>
-        )}
-        {root&&root.rootImg&&(
-          <>
-            <button onClick={()=>setNodes(ns=>ns.map(n=>n.parent===null?{...n,rootImg:undefined}:n))}
-              style={{background:"rgba(192,57,43,0.8)",color:C.wh,border:"none",borderRadius:12,padding:"10px 14px",fontSize:13,fontWeight:800,cursor:"pointer"}}>
-              🗑 Remove
-            </button>
-            <label style={{background:"rgba(124,92,191,0.9)",color:C.wh,borderRadius:12,padding:"10px 18px",fontSize:13,fontWeight:800,cursor:"pointer",border:"1.5px solid rgba(196,174,232,0.5)",display:"flex",alignItems:"center",gap:8}}>
-              📸 Change photo
-              <input type="file" accept="image/*" style={{display:"none"}} onChange={handleRootImg}/>
-            </label>
-          </>
-        )}
+      {/* ── Bottom toolbar — matching reference ── */}
+      <div style={{
+        padding:"12px 12px 28px",
+        display:"flex",gap:8,alignItems:"center",
+        background:"rgba(240,236,224,0.88)",
+        backdropFilter:"blur(20px)",
+        WebkitBackdropFilter:"blur(20px)",
+        borderTop:"1px solid rgba(255,255,255,0.6)",
+        boxShadow:"0 -2px 16px rgba(0,0,0,0.06)",
+        overflowX:"auto",
+        scrollbarWidth:"none",
+        flexShrink:0,
+      }}>
+        <style>{`.mmbar::-webkit-scrollbar{display:none}`}</style>
+        {/* + Add Node */}
+        <button onClick={()=>{if(selected)spawnChild(selected);else if(root)spawnChild(root.id);}}
+          style={{
+            background:"#5A7848",color:"white",
+            border:"none",borderRadius:100,
+            padding:"11px 18px",
+            fontSize:14,fontWeight:700,cursor:"pointer",
+            display:"flex",alignItems:"center",gap:7,
+            whiteSpace:"nowrap",flexShrink:0,
+            boxShadow:"0 2px 10px rgba(58,80,38,0.28)",
+          }}>
+          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1v12M1 7h12" stroke="white" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          Add Node
+        </button>
+        {/* Attach */}
+        <button onClick={()=>{if(editingId||selected){setEditingId(selected||editingId);setEditText(nodes.find(n=>n.id===(selected||editingId))?.text||"");}}}
+          style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 18px",fontSize:14,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          Attach
+        </button>
+        {/* Colors */}
+        <button onClick={()=>setDarkBg(d=>!d)}
+          style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 18px",fontSize:14,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          Colors
+        </button>
+        {/* Export */}
+        <button style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 18px",fontSize:14,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          Export
+        </button>
+        {/* Turn into Podcast Recap */}
+        <button style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 16px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,lineHeight:1.3,textAlign:"center"}}>
+          Turn into<br/>Podcast Recap
+        </button>
       </div>
 
       {/* Long press delete confirm */}
