@@ -2971,151 +2971,215 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
   };
 
   const DAY_GRADS=[
-    `linear-gradient(135deg,#5a3d9a,#7c5cbf)`,
-    `linear-gradient(135deg,#9a3d7a,#bf5caa)`,
-    `linear-gradient(135deg,#3d5a9a,#5c7cbf)`,
-    `linear-gradient(135deg,#3d9a6a,#5cbf9a)`,
-    `linear-gradient(135deg,#9a6a3d,#bf9a5c)`,
-    `linear-gradient(135deg,#6a3d9a,#9a5cbf)`,
-    `linear-gradient(135deg,#9a3d3d,#bf5c5c)`,
+    "rgba(196,176,224,0.55)",  // Day 1 — soft purple
+    "rgba(224,176,176,0.55)",  // Day 2 — soft pink/rose
+    "rgba(176,196,224,0.55)",  // Day 3 — soft blue
+    "rgba(176,216,196,0.55)",  // Day 4 — soft green
+    "rgba(224,204,176,0.55)",  // Day 5 — soft orange/peach
+    "rgba(176,216,212,0.55)",  // Day 6 — soft teal
+    "rgba(204,188,224,0.55)",  // Day 7 — soft lavender
+  ];
+  const DAY_BORDER=[
+    "rgba(180,152,212,0.45)",
+    "rgba(212,152,152,0.45)",
+    "rgba(152,180,212,0.45)",
+    "rgba(152,204,176,0.45)",
+    "rgba(212,184,152,0.45)",
+    "rgba(152,200,196,0.45)",
+    "rgba(188,168,212,0.45)",
+  ];
+  const DAY_TEXT=[
+    "#4A3068","#6A3040","#2A4868","#2A5840","#6A4020","#205850","#3A2868",
   ];
 
   // Recipe detail view
   if(recipeDetail){
     const r=recipeDetail;
     return(
-      <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
         <Header title={r.name} onBack={()=>setRecipeDetail(null)} right={
-          <button onClick={()=>{setRecipes(rs=>rs.filter(x=>x.id!==r.id));setRecipeDetail(null);}} style={{background:"rgba(192,57,43,0.3)",color:C.wh,border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Delete</button>
+          <button onClick={()=>{setRecipes(rs=>rs.filter(x=>x.id!==r.id));setRecipeDetail(null);}} style={{background:"rgba(192,57,43,0.15)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.3)",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Delete</button>
         }/>
         <div style={{padding:"16px 14px"}}>
           {r.url&&<div style={{marginBottom:12}}><UrlBadge url={r.url}/></div>}
-          {r.ingredients&&<GlassCard style={{marginBottom:12}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:8}}>🥕 Ingredients</div>
-            <div style={{fontSize:14,color:C.txt,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{r.ingredients}</div>
-          </GlassCard>}
-          {r.method&&<GlassCard style={{marginBottom:12}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:8}}>👨‍🍳 Method</div>
-            <div style={{fontSize:14,color:C.txt,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{r.method}</div>
-          </GlassCard>}
-          {r.description&&<GlassCard>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:8}}>📝 Notes</div>
-            <div style={{fontSize:14,color:C.txt,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{r.description}</div>
-          </GlassCard>}
+          {r.ingredients&&<div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+            <div style={{fontWeight:700,color:"#2A4020",fontSize:14,marginBottom:8}}>🥕 Ingredients</div>
+            <div style={{fontSize:14,color:"#3A3020",lineHeight:1.8,whiteSpace:"pre-wrap"}}>{r.ingredients}</div>
+          </div>}
+          {r.method&&<div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+            <div style={{fontWeight:700,color:"#2A4020",fontSize:14,marginBottom:8}}>👨‍🍳 Method</div>
+            <div style={{fontSize:14,color:"#3A3020",lineHeight:1.8,whiteSpace:"pre-wrap"}}>{r.method}</div>
+          </div>}
+          {r.description&&<div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,padding:"16px",border:"1px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+            <div style={{fontWeight:700,color:"#2A4020",fontSize:14,marginBottom:8}}>📝 Notes</div>
+            <div style={{fontSize:14,color:"#3A3020",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{r.description}</div>
+          </div>}
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <HomeBar setScreen={setScreen} title="🍽️ Meal Planner" onBack={()=>setScreen("home")}/>
-      <Header title="🍽️ Meal Planner" onBack={()=>setScreen("home")} right={
-        <div style={{display:"flex",gap:8}}>
-          {mealTab==='week'&&<button onClick={()=>save(init())} style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Reset</button>}
-          {mealTab==='recipes'&&<button onClick={()=>setAddingRecipe(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>}
-        </div>
-      }/>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      {/* Header matching reference */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"16px 20px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 12px rgba(0,0,0,0.06)",position:"sticky",top:0,zIndex:50,borderBottom:"1px solid rgba(90,120,72,0.1)"}}>
+        <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",width:36,height:36,fontSize:22,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <span style={{flex:1,color:"#1A1A10",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,textAlign:"center",letterSpacing:0.2}}>Meal Planner 🍽️</span>
+        {/* Settings-style icon */}
+        <button style={{background:"rgba(90,80,60,0.08)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:"50%",width:36,height:36,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"#5A5040",fontSize:15}}>⊙</button>
+      </div>
 
-      {/* Tabs */}
-      <div style={{display:"flex",background:"rgba(0,0,0,0.2)",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
-        {[["week","📅 Week Plan"],["recipes","📖 Recipes"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setMealTab(k)} style={{flex:1,padding:"12px 8px",background:"none",border:"none",borderBottom:mealTab===k?"3px solid #c4aee8":"3px solid transparent",color:mealTab===k?C.wh:"rgba(255,255,255,0.5)",fontWeight:mealTab===k?800:600,fontSize:14,cursor:"pointer"}}>{l}</button>
-        ))}
+      {/* Tabs — Week Plan | Recipes | Reset */}
+      <div style={{padding:"14px 16px 8px",display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={()=>setMealTab("week")} style={{
+          background:mealTab==="week"?"#1A1A10":"rgba(248,245,236,0.88)",
+          color:mealTab==="week"?"#fff":"#5A5040",
+          border:mealTab==="week"?"none":"1.5px solid rgba(90,80,60,0.2)",
+          borderRadius:100,padding:"10px 20px",
+          fontWeight:700,fontSize:14,cursor:"pointer",
+          boxShadow:mealTab==="week"?"0 2px 10px rgba(0,0,0,0.2)":"none",
+          transition:"all 0.15s",
+        }}>Week Plan</button>
+        <button onClick={()=>setMealTab("recipes")} style={{
+          background:mealTab==="recipes"?"#1A1A10":"rgba(248,245,236,0.88)",
+          color:mealTab==="recipes"?"#fff":"#5A5040",
+          border:mealTab==="recipes"?"none":"1.5px solid rgba(90,80,60,0.2)",
+          borderRadius:100,padding:"10px 20px",
+          fontWeight:700,fontSize:14,cursor:"pointer",
+          boxShadow:mealTab==="recipes"?"0 2px 10px rgba(0,0,0,0.2)":"none",
+          transition:"all 0.15s",
+        }}>Recipes</button>
+        <button onClick={()=>save(init())} style={{
+          background:"rgba(248,245,236,0.88)",color:"#5A5040",
+          border:"1.5px solid rgba(90,80,60,0.2)",
+          borderRadius:100,padding:"10px 20px",
+          fontWeight:700,fontSize:14,cursor:"pointer",
+          marginLeft:"auto",
+        }}>Reset</button>
       </div>
 
       {/* Recipes tab */}
-      {mealTab==='recipes'&&(
-        <div style={{padding:"16px 14px"}}>
+      {mealTab==="recipes"&&(
+        <div style={{padding:"8px 16px"}}>
+          <button onClick={()=>setAddingRecipe(true)} style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:14,boxShadow:"0 3px 12px rgba(58,80,38,0.28)",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+            <span style={{fontSize:18}}>+</span> Add Recipe
+          </button>
           {addingRecipe&&(
-            <GlassCard style={{marginBottom:14}}>
-              <div style={{fontWeight:800,color:C.dp,fontSize:15,marginBottom:12}}>📖 New Recipe</div>
-              <input value={recipeDraft.name} onChange={e=>setRecipeDraft(d=>({...d,name:e.target.value}))} placeholder="Recipe name" style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:8}}/>
-              <UrlField value={recipeDraft.url} onChange={v=>setRecipeDraft(d=>({...d,url:v}))} style={{marginBottom:8}}/>
-              <textarea value={recipeDraft.ingredients} onChange={e=>setRecipeDraft(d=>({...d,ingredients:e.target.value}))} placeholder="Ingredients (one per line)..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${C.ll}`,fontSize:13,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}/>
-              <textarea value={recipeDraft.method} onChange={e=>setRecipeDraft(d=>({...d,method:e.target.value}))} placeholder="Method / steps..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${C.ll}`,fontSize:13,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}/>
-              <textarea value={recipeDraft.description} onChange={e=>setRecipeDraft(d=>({...d,description:e.target.value}))} placeholder="Notes (optional)..." rows={2} style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${C.ll}`,fontSize:13,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10}}/>
+            <div style={{background:"rgba(248,245,236,0.95)",borderRadius:22,padding:"20px 18px",marginBottom:14,boxShadow:"0 4px 24px rgba(0,0,0,0.08)",border:"1px solid rgba(90,120,72,0.18)"}}>
+              <div style={{fontWeight:700,color:"#2A4020",fontSize:15,marginBottom:12}}>📖 New Recipe</div>
+              <input value={recipeDraft.name} onChange={e=>setRecipeDraft(d=>({...d,name:e.target.value}))} placeholder="Recipe name" style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.9)"}}/>
+              <UrlField value={recipeDraft.url} onChange={v=>setRecipeDraft(d=>({...d,url:v}))} style={{marginBottom:10}}/>
+              <textarea value={recipeDraft.ingredients} onChange={e=>setRecipeDraft(d=>({...d,ingredients:e.target.value}))} placeholder="Ingredients (one per line)..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
+              <textarea value={recipeDraft.method} onChange={e=>setRecipeDraft(d=>({...d,method:e.target.value}))} placeholder="Method / steps..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
+              <textarea value={recipeDraft.description} onChange={e=>setRecipeDraft(d=>({...d,description:e.target.value}))} placeholder="Notes (optional)..." rows={2} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:14,background:"rgba(255,255,255,0.85)"}}/>
               <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                <button onClick={()=>{setAddingRecipe(false);setRecipeDraft({name:'',description:'',ingredients:'',method:'',url:''}); }} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,cursor:"pointer"}}>Cancel</button>
-                <PurpleBtn onClick={()=>{if(!recipeDraft.name.trim())return;setRecipes(rs=>[...rs,{id:Date.now(),...recipeDraft}]);setRecipeDraft({name:'',description:'',ingredients:'',method:'',url:''});setAddingRecipe(false);}}>Save Recipe</PurpleBtn>
+                <button onClick={()=>{setAddingRecipe(false);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:""});}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,cursor:"pointer",padding:"8px 16px"}}>Cancel</button>
+                <button onClick={()=>{if(!recipeDraft.name.trim())return;setRecipes(rs=>[...rs,{id:Date.now(),...recipeDraft}]);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:""});setAddingRecipe(false);}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 24px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>Save Recipe</button>
               </div>
-            </GlassCard>
+            </div>
           )}
           {recipes.length===0&&!addingRecipe&&(
             <div style={{textAlign:"center",marginTop:60}}>
               <div style={{fontSize:52,marginBottom:12}}>📖</div>
-              <div style={{color:"rgba(255,255,255,0.55)",fontSize:15,marginBottom:6}}>No recipes yet</div>
-              <div style={{color:"rgba(255,255,255,0.35)",fontSize:13}}>Tap + to write your own or paste a link</div>
+              <div style={{color:"#8A8070",fontSize:15,marginBottom:6,fontFamily:"Georgia,serif"}}>No recipes yet</div>
+              <div style={{color:"#A0907A",fontSize:13}}>Tap above to write your own or paste a link</div>
             </div>
           )}
           {recipes.map(r=>(
-            <div key={r.id} onClick={()=>setRecipeDetail(r)} style={{background:"rgba(255,255,255,0.92)",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 12px rgba(45,10,94,0.08)",border:`1.5px solid ${C.ll}`,cursor:"pointer",transition:"transform 0.15s"}}
+            <div key={r.id} onClick={()=>setRecipeDetail(r)} style={{background:"rgba(248,245,236,0.92)",borderRadius:20,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",border:"1px solid rgba(90,120,72,0.15)",cursor:"pointer",transition:"transform 0.15s"}}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
               <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:42,height:42,borderRadius:10,background:`linear-gradient(135deg,#1e8449,#1abc9c)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🍽️</div>
+                <div style={{width:42,height:42,borderRadius:12,background:"#5A7848",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🍽️</div>
                 <div style={{flex:1}}>
-                  <div style={{fontWeight:800,fontSize:15,color:C.dp}}>{r.name}</div>
-                  <div style={{fontSize:12,color:C.soft,marginTop:2}}>
-                    {r.ingredients?(r.ingredients.split('\n').filter(Boolean).length+' ingredients'):'Freewrite recipe'}
-                    {r.url&&' · 🔗 link'}
-                  </div>
+                  <div style={{fontWeight:700,fontSize:15,color:"#1A1A10"}}>{r.name}</div>
+                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>{r.ingredients?(r.ingredients.split("\n").filter(Boolean).length+" ingredients"):"Freewrite recipe"}{r.url&&" · 🔗 link"}</div>
                 </div>
-                <span style={{color:C.soft,fontSize:18}}>›</span>
+                <span style={{color:"#A0907A",fontSize:18}}>›</span>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {mealTab==='week'&&<div style={{padding:"16px 14px"}}>
-        {plan.labels.map((label,dayIdx)=>{
-          const meals=plan.days[dayIdx]||[];
-          return (
-            <div key={dayIdx} style={{background:"rgba(255,255,255,0.90)",borderRadius:18,marginBottom:14,overflow:"hidden",boxShadow:"0 2px 14px rgba(45,10,94,0.10)",border:`1.5px solid ${C.ll}`}}>
-
-              {/* Day header */}
-              <div style={{background:DAY_GRADS[dayIdx],padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
-                <div style={{flex:1}}>
-                  {editLabelIdx===dayIdx ? (
-                    <input
-                      value={labelDraft}
-                      onChange={e=>setLabelDraft(e.target.value)}
-                      onKeyDown={e=>{if(e.key==="Enter")saveLabelEdit();if(e.key==="Escape")setEditLabelIdx(null);}}
-                      onBlur={saveLabelEdit}
-                      autoFocus
-                      style={{background:"rgba(255,255,255,0.25)",border:"1.5px solid rgba(255,255,255,0.6)",borderRadius:8,padding:"4px 10px",color:C.wh,fontSize:15,fontWeight:800,outline:"none",width:"100%",boxSizing:"border-box"}}
-                    />
-                  ) : (
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{color:C.wh,fontWeight:900,fontSize:16}}>{label}</span>
-                      <button onClick={()=>openLabelEdit(dayIdx)} style={{background:"rgba(255,255,255,0.2)",color:C.wh,border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}} title="Edit day name">✏️</button>
-                    </div>
-                  )}
-                </div>
-                <button onClick={()=>openAddMeal(dayIdx)} style={{background:"rgba(255,255,255,0.25)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.45)",borderRadius:9,width:32,height:32,cursor:"pointer",fontSize:20,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
-              </div>
-
-              {/* Meals list */}
-              <div style={{padding:"10px 14px 12px"}}>
-                {meals.length===0&&(
-                  <div onClick={()=>openAddMeal(dayIdx)} style={{color:C.soft,fontSize:13,fontStyle:"italic",cursor:"pointer",padding:"6px 0"}}>Tap + to add a meal</div>
-                )}
-                {meals.map((meal,mi)=>(
-                  <div key={meal.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:mi<meals.length-1?`1px solid ${C.ll}`:"none"}}>
-                    <div style={{width:8,height:8,borderRadius:"50%",background:DAY_GRADS[dayIdx].includes("bf5cbf")?"#bf5cbf":C.pp,flexShrink:0}}/>
-                    <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:C.txt,lineHeight:1.4}}>{meal.text}</div>{meal.url&&<UrlBadge url={meal.url}/>}</div>
-                    <button onClick={()=>sendMealToShop(meal,label)} title="Add ingredients to shopping list" style={{background:"#e3f2fd",color:"#1565c0",border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🛒</button>
-                    <button onClick={()=>scheduleMeal(meal,label)} title="Schedule in Google Calendar" style={{background:"#e8f5e9",color:"#2e7d32",border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>📅</button>
-                    <button onClick={()=>openEditMeal(dayIdx,meal)} style={{background:C.ll,color:C.mp,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
-                    <button onClick={()=>deleteMeal(dayIdx,meal.id)} style={{background:"#fce4e4",color:"#c0392b",border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+      {/* Week tab — matching reference exactly */}
+      {mealTab==="week"&&(
+        <div style={{padding:"8px 16px"}}>
+          {plan.labels.map((label,dayIdx)=>{
+            const meals=plan.days[dayIdx]||[];
+            const bg=DAY_GRADS[dayIdx];
+            const border=DAY_BORDER[dayIdx];
+            const textCol=DAY_TEXT[dayIdx];
+            return (
+              <div key={dayIdx} style={{
+                background:bg,
+                borderRadius:22,
+                marginBottom:12,
+                overflow:"hidden",
+                boxShadow:"0 2px 16px rgba(0,0,0,0.07)",
+                border:`1.5px solid ${border}`,
+                backdropFilter:"blur(8px)",
+                WebkitBackdropFilter:"blur(8px)",
+              }}>
+                {/* Day header row */}
+                <div style={{padding:"14px 18px 10px",display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{flex:1}}>
+                    {editLabelIdx===dayIdx ? (
+                      <input
+                        value={labelDraft}
+                        onChange={e=>setLabelDraft(e.target.value)}
+                        onKeyDown={e=>{if(e.key==="Enter")saveLabelEdit();if(e.key==="Escape")setEditLabelIdx(null);}}
+                        onBlur={saveLabelEdit}
+                        autoFocus
+                        style={{background:"rgba(255,255,255,0.5)",border:`1.5px solid ${border}`,borderRadius:10,padding:"4px 12px",color:textCol,fontSize:16,fontWeight:800,outline:"none",width:"100%",boxSizing:"border-box"}}
+                      />
+                    ) : (
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <button onClick={()=>openLabelEdit(dayIdx)} style={{background:"rgba(255,255,255,0.4)",border:"none",borderRadius:7,width:26,height:26,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:textCol}}>✏️</button>
+                        <span style={{color:textCol,fontWeight:800,fontSize:17,fontFamily:"Georgia,serif"}}>{label}</span>
+                      </div>
+                    )}
+                    {meals.length===0&&(
+                      <div style={{color:textCol,opacity:0.7,fontSize:13,marginTop:3,paddingLeft:34}}>Tap + to add a meal</div>
+                    )}
                   </div>
-                ))}
+                  {/* Large + button matching reference */}
+                  <button onClick={()=>openAddMeal(dayIdx)} style={{
+                    width:44,height:44,borderRadius:"50%",
+                    background:"rgba(255,255,255,0.85)",
+                    border:`1.5px solid ${border}`,
+                    color:textCol,
+                    fontSize:24,fontWeight:300,
+                    cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    flexShrink:0,
+                    boxShadow:"0 2px 8px rgba(0,0,0,0.1)",
+                    transition:"all 0.15s",
+                  }}>+</button>
+                </div>
+
+                {/* Meals list */}
+                {meals.length>0&&(
+                  <div style={{padding:"0 18px 14px"}}>
+                    {meals.map((meal,mi)=>(
+                      <div key={meal.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderTop:`1px solid ${border}`}}>
+                        <div style={{width:6,height:6,borderRadius:"50%",background:textCol,flexShrink:0,opacity:0.6}}/>
+                        <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:textCol,lineHeight:1.4}}>{meal.text}</div>{meal.url&&<UrlBadge url={meal.url}/>}</div>
+                        <button onClick={()=>sendMealToShop(meal,label)} title="Shopping list" style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🛒</button>
+                        <button onClick={()=>scheduleMeal(meal,label)} title="Calendar" style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>📅</button>
+                        <button onClick={()=>openEditMeal(dayIdx,meal)} style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
+                        <button onClick={()=>deleteMeal(dayIdx,meal.id)} style={{background:"rgba(255,255,255,0.5)",color:"#c0392b",border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          );
-        })}
-      </div>}
+            );
+          })}
+        </div>
+      )}
 
       {/* Meal edit modal */}
       {editMeal!==null&&(
