@@ -4548,10 +4548,10 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
    boxes, AI assist, calendar, mindmap & prioritizer links
 ═══════════════════════════════════════════════════════ */
 const QUADS=[
-  {key:"do",   label:"Do First",     emoji:"🔴", sub:"Urgent + Important",        bg:"#FF0022", light:"#fff0f2", border:"#FF0022", desc:"Act on these today"},
-  {key:"plan", label:"Schedule",     emoji:"🟠", sub:"Important, not urgent",     bg:"#5A7848", light:"#fff4ec", border:"#5A7848", desc:"Block time for these"},
-  {key:"help", label:"Ask for Help", emoji:"🔵", sub:"Urgent, not important",     bg:"#00E5FF", light:"#e0fcff", border:"#00BCD4", desc:"Use a tool, app or ask Claude"},
-  {key:"drop", label:"Eliminate",    emoji:"⚫", sub:"Not urgent, not important", bg:"#546E7A", light:"#f5f7f8", border:"#546E7A", desc:"Question if this needs doing"},
+  {key:"do",   label:"Urgent & Important",     sub:"(Do First)",        bg:"#8A9E78", light:"rgba(138,158,120,0.18)", border:"rgba(138,158,120,0.35)", desc:"Act on these today"},
+  {key:"plan", label:"Important, Not Urgent",  sub:"(Schedule)",        bg:"#5A7848", light:"rgba(248,245,236,0.75)", border:"rgba(90,120,72,0.2)",    desc:"Block time for these"},
+  {key:"help", label:"Urgent, Not Important",  sub:"(Delegate)",        bg:"#8A9E78", light:"rgba(138,158,120,0.18)", border:"rgba(138,158,120,0.35)", desc:"Outsource or use a tool"},
+  {key:"drop", label:"Not Urgent & Not Important", sub:"(Delete / Later)", bg:"#5A7848", light:"rgba(248,245,236,0.75)", border:"rgba(90,120,72,0.2)", desc:"Question if this is needed"},
 ];
 const quadByKey=k=>QUADS.find(q=>q.key===k)||QUADS[0];
 const STALE_MS=7*24*60*60*1000;
@@ -4731,127 +4731,119 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   );
 
   return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <Header title="🎯 Matrix" onBack={()=>setScreen("home")} />
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:110}}>
 
-      <div style={{padding:"12px 12px 0"}}>
+      {/* ── Header ── */}
+      <div style={{background:"rgba(248,245,236,0.88)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"18px 20px 14px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setScreen("home")} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.25}}>
+          Matrix —<br/>Urgent vs Important
+        </div>
+      </div>
+
+      <div style={{padding:"14px 12px 0"}}>
 
         {/* Stale banner */}
         {staleTasks.length>0&&(
-          <div style={{background:"linear-gradient(135deg,#b71c1c,#FF1744)",borderRadius:14,padding:"10px 14px",marginBottom:12,boxShadow:"0 4px 16px rgba(255,23,68,0.35)"}}>
-            <div style={{color:"#1A1A10",fontWeight:900,fontSize:13,marginBottom:6}}>⏰ {staleTasks.length} task{staleTasks.length>1?"s":""} untouched 7+ days</div>
+          <div style={{background:"rgba(192,57,43,0.12)",borderRadius:18,padding:"12px 16px",marginBottom:12,border:"1.5px solid rgba(192,57,43,0.25)"}}>
+            <div style={{color:"#c0392b",fontWeight:700,fontSize:13,marginBottom:8}}>⏰ {staleTasks.length} task{staleTasks.length>1?"s":""} untouched 7+ days</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {staleTasks.map(t=><button key={t.id} onClick={()=>setStaleModal(t)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1px solid rgba(255,255,255,0.4)",borderRadius:16,padding:"3px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>{t.text.slice(0,22)}{t.text.length>22?"…":""}</button>)}
+              {staleTasks.map(t=><button key={t.id} onClick={()=>setStaleModal(t)} style={{background:"rgba(255,255,255,0.8)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.3)",borderRadius:100,padding:"4px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.text.slice(0,22)}{t.text.length>22?"…":""}</button>)}
             </div>
           </div>
         )}
 
-        {/* AI panel */}
-        <div style={{background:"rgba(255,255,255,0.14)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:16,padding:"12px 14px",marginBottom:12}}>
-          <div style={{color:"#1A1A10",fontWeight:800,fontSize:12,marginBottom:8}}>🤖 AI Placement — describe a task</div>
-          <div style={{display:"flex",gap:8,marginBottom:aiResult?8:0}}>
-            <input value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAI()} placeholder="e.g. Book dentist appointment..." style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid rgba(255,255,255,0.35)",background:"rgba(255,255,255,0.18)",color:"#1A1A10",fontSize:13,fontWeight:600,outline:"none"}}/>
-            <button onClick={askAI} disabled={aiLoading||!aiInput.trim()} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:9,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",opacity:aiInput.trim()?1:0.5,flexShrink:0}}>{aiLoading?"…":"Ask AI"}</button>
-          </div>
-          {aiResult&&(()=>{const q=quadByKey(aiResult.quad);return(
-            <div style={{background:C.wh,borderRadius:10,padding:"10px 12px",border:`2px solid ${q.bg}`}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <span style={{background:q.bg,color:"#1A1A10",borderRadius:16,padding:"2px 9px",fontSize:11,fontWeight:800}}>{q.emoji} {q.label}</span>
-                <span style={{fontSize:11,color:C.soft,flex:1,lineHeight:1.4}}>{aiResult.reason}</span>
-              </div>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={acceptAI} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:9,padding:"6px 14px",fontWeight:800,fontSize:12,cursor:"pointer"}}>✅ Accept</button>
-                <button onClick={()=>setAiResult(null)} style={{background:C.ll,color:C.mid,border:"none",borderRadius:9,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Dismiss</button>
-              </div>
-            </div>
-          );})()}
-        </div>
-
         {/* Import from Prioritizer */}
-        {priData.some(l=>l.tasks.filter(t=>!t.done).length>0)&&(
-          <div style={{background:"rgba(255,255,255,0.12)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:14,padding:"10px 14px",marginBottom:12}}>
-            <div style={{color:"#1A1A10",fontWeight:800,fontSize:12,marginBottom:8}}>📋 Import from Prioritizer</div>
+        {priData.some(l=>l.tasks.length>0)&&(
+          <div style={{background:"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",marginBottom:12,border:"1px solid rgba(90,120,72,0.2)"}}>
+            <div style={{color:"#5A7848",fontWeight:700,fontSize:12,marginBottom:8,letterSpacing:0.3,textTransform:"uppercase"}}>🌿 Pull from Prioritizer</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {priData.flatMap(l=>l.tasks.filter(t=>!t.done)).slice(0,6).map(t=>(
-                <button key={t.id} onClick={()=>importFromPri(t)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1px solid rgba(255,255,255,0.35)",borderRadius:16,padding:"3px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>{t.name.slice(0,20)}{t.name.length>20?"…":""} +</button>
+              {priData.flatMap(l=>l.tasks.filter(t=>!t.done).slice(0,3)).map(t=>(
+                <button key={t.id} onClick={()=>importFromPri(t)} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.name.slice(0,20)}{t.name.length>20?"…":""} +</button>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── 2×2 quadrant grid ── */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {/* ── 2×2 GRID matching reference ── */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:3,borderRadius:24,overflow:"hidden",boxShadow:"0 4px 28px rgba(0,0,0,0.08)",border:"1px solid rgba(255,255,255,0.7)",marginBottom:16}}>
           {QUADS.map(q=>{
             const tasks=data.filter(d=>d.quad===q.key);
+            const isSage=q.key==="do"||q.key==="help";
             return(
-              <div key={q.key} style={{borderRadius:18,overflow:"hidden",boxShadow:`0 4px 20px ${q.bg}`,border:`2.5px solid ${q.bg}`}}>
-                {/* Vibrant header */}
-                <div style={{background:q.bg,padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <div>
-                    <div style={{color:q.key==="help"?"#003a45":C.wh,fontWeight:900,fontSize:13}}>{q.emoji} {q.label}</div>
-                    <div style={{color:q.key==="help"?"rgba(0,50,70,0.75)":"rgba(255,255,255,0.8)",fontSize:9,marginTop:1,letterSpacing:0.3}}>{q.sub}</div>
-                  </div>
-                  <div style={{background:"rgba(255,255,255,0.25)",color:q.key==="help"?"#003a45":C.wh,fontWeight:900,fontSize:12,borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center"}}>{tasks.length}</div>
+              <div key={q.key} style={{
+                background:isSage?"rgba(138,158,120,0.28)":"rgba(248,245,236,0.82)",
+                padding:"16px 14px 14px",
+                position:"relative",
+                minHeight:180,
+                backdropFilter:"blur(8px)",
+                WebkitBackdropFilter:"blur(8px)",
+              }}>
+                {/* Small leaf icon top-right */}
+                <div style={{position:"absolute",top:12,right:12,opacity:0.7}}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3C12 3 4 8 4 15a8 8 0 0016 0C20 8 12 3 12 3z" fill={isSage?"#3A5828":"#5A7848"}/>
+                    <path d="M12 3C12 3 4 8 4 15" stroke={isSage?"#2A4018":"#3A6020"} strokeWidth="0.8" fill="none" opacity="0.5"/>
+                  </svg>
                 </div>
 
-                <div style={{background:q.light,padding:"8px 10px 10px"}}>
-                  <div style={{fontSize:9,color:"#888",fontStyle:"italic",marginBottom:6}}>{q.desc}</div>
+                {/* Quadrant label */}
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:isSage?"#2A3A18":"#1A1A10",lineHeight:1.3,marginBottom:3,paddingRight:24}}>
+                  {q.label}
+                </div>
+                <div style={{fontFamily:"Georgia,serif",fontSize:13,color:isSage?"#3A5028":"#5A5040",marginBottom:12,fontWeight:400}}>
+                  {q.sub}
+                </div>
 
-                  {/* Tasks */}
-                  {tasks.map(t=>{
-                    const stale=now-t.touched>STALE_MS;
-                    const expanded=expandedTask===t.id;
-                    return(
-                      <div key={t.id} style={{background:C.wh,borderRadius:10,padding:"7px 9px",marginBottom:6,border:`1.5px solid ${stale?"#FF1744":q.bg}`,position:"relative",boxShadow:stale?`0 0 0 2px ${q.bg}`:""}}>
-                        {stale&&<div style={{position:"absolute",top:-7,right:4,background:"#FF1744",color:"#1A1A10",fontSize:8,fontWeight:900,borderRadius:8,padding:"1px 5px"}}>⏰</div>}
-                        <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{fontSize:12,fontWeight:700,color:C.txt,lineHeight:1.4,marginBottom:5,cursor:"pointer"}}>{t.text}</div>
-                        {/* URL badge when collapsed */}
-                        {!expanded&&t.url&&<div style={{marginBottom:4}}><UrlBadge url={t.url}/></div>}
-                        {/* URL edit when expanded */}
-                        {expanded&&(
-                          <div style={{marginBottom:6}}>
-                            <UrlField
-                              value={taskUrls[t.id]??t.url??""}
-                              onChange={v=>{
-                                setTaskUrls(u=>({...u,[t.id]:v}));
-                                setData(ds=>ds.map(d=>d.id===t.id?{...d,url:v}:d));
-                              }}
-                            />
-                          </div>
-                        )}
-                        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                          <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,-1);}} style={{background:"rgba(255,255,255,0.8)",color:C.dp,border:"1px solid #ddd",borderRadius:6,padding:"2px 5px",fontSize:9,fontWeight:900,cursor:"pointer",lineHeight:1}}>▲</button>
-                          <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,1);}} style={{background:"rgba(255,255,255,0.8)",color:C.dp,border:"1px solid #ddd",borderRadius:6,padding:"2px 5px",fontSize:9,fontWeight:900,cursor:"pointer",lineHeight:1}}>▼</button>
-                          <button onClick={()=>touch(t.id)} style={{background:"#e8f5e9",color:"#27ae60",border:"1px solid #a5d6a7",borderRadius:6,padding:"2px 6px",fontSize:9,fontWeight:700,cursor:"pointer"}}>✓</button>
-                          <button onClick={()=>setMoveTask(t)} style={{background:C.ll,color:C.mp,border:`1px solid ${C.lp}`,borderRadius:6,padding:"2px 6px",fontSize:9,fontWeight:700,cursor:"pointer"}}>↔</button>
-                          <button onClick={()=>setSendMenu(t)} style={{background:`${q.bg}`,color:q.bg,border:`1px solid ${q.bg}`,borderRadius:6,padding:"2px 6px",fontSize:9,fontWeight:700,cursor:"pointer"}}>↗ Send</button>
-                          <button onClick={()=>window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("🎯 "+t.text)}`,"_blank")} style={{background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",borderRadius:6,padding:"2px 6px",fontSize:9,fontWeight:700,cursor:"pointer"}}>📅</button>
-                          <button onClick={()=>del(t.id)} style={{background:"#fce4e4",color:"#c0392b",border:"1px solid #f1948a",borderRadius:6,padding:"2px 6px",fontSize:9,fontWeight:700,cursor:"pointer"}}>🗑</button>
+                {/* Tasks */}
+                {tasks.map(t=>{
+                  const stale=now-t.touched>STALE_MS;
+                  const expanded=expandedTask===t.id;
+                  return(
+                    <div key={t.id} style={{background:"rgba(255,255,255,0.75)",borderRadius:12,padding:"8px 10px",marginBottom:6,border:`1px solid ${stale?"rgba(192,57,43,0.4)":"rgba(255,255,255,0.9)"}`,position:"relative",backdropFilter:"blur(4px)"}}>
+                      {stale&&<div style={{position:"absolute",top:-6,right:6,background:"rgba(192,57,43,0.85)",color:"#fff",fontSize:8,fontWeight:700,borderRadius:8,padding:"1px 6px"}}>⏰</div>}
+                      <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{fontSize:13,fontWeight:600,color:"#1A1A10",lineHeight:1.45,marginBottom:expanded?6:0,cursor:"pointer"}}>{t.text}</div>
+                      {!expanded&&t.url&&<div style={{marginTop:4}}><UrlBadge url={t.url}/></div>}
+                      {expanded&&(
+                        <div style={{marginBottom:6}}>
+                          <UrlField value={taskUrls[t.id]??t.url??""} onChange={v=>{setTaskUrls(u=>({...u,[t.id]:v}));setData(ds=>ds.map(d=>d.id===t.id?{...d,url:v}:d));}}/>
                         </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Inline type-in box */}
-                  <div style={{marginTop:4,display:"flex",flexDirection:"column",gap:4}}>
-                    <div style={{display:"flex",gap:5}}>
-                      <input
-                        value={inlineTexts[q.key]}
-                        onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
-                        onKeyDown={e=>e.key==="Enter"&&addInline(q.key)}
-                        placeholder="Type task here…"
-                        style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${q.bg}`,background:"rgba(255,255,255,0.85)",fontSize:11,fontWeight:600,color:C.txt,outline:"none"}}
-                      />
-                      <button onClick={()=>addInline(q.key)} style={{background:q.bg,color:"#1A1A10",border:"none",borderRadius:8,width:26,height:26,fontSize:16,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                      )}
+                      {expanded&&(
+                        <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4}}>
+                          <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,-1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>▲</button>
+                          <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>▼</button>
+                          <button onClick={()=>touch(t.id)} style={{background:"rgba(90,160,80,0.15)",color:"#2A7020",border:"1px solid rgba(90,160,80,0.3)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✓ Done</button>
+                          <button onClick={()=>setMoveTask(t)} style={{background:"rgba(90,120,72,0.1)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>↔ Move</button>
+                          <button onClick={()=>setSendMenu(t)} style={{background:"rgba(90,120,72,0.1)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>↗ Send</button>
+                          <button onClick={()=>del(t.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>🗑</button>
+                        </div>
+                      )}
                     </div>
-                    <input
-                      value={inlineUrls[q.key]}
-                      onChange={e=>setInlineUrls(t=>({...t,[q.key]:e.target.value}))}
-                      placeholder="🔗 Paste website (optional)"
-                      style={{padding:"5px 8px",borderRadius:8,border:`1.5px solid ${q.bg}`,background:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:600,color:C.txt,outline:"none",width:"100%",boxSizing:"border-box"}}
-                    />
-                  </div>
+                  );
+                })}
+
+                {/* Add task input */}
+                <div style={{display:"flex",gap:5,marginTop:6}}>
+                  <input
+                    value={inlineTexts[q.key]}
+                    onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
+                    onKeyDown={e=>e.key==="Enter"&&addInline(q.key)}
+                    placeholder="Add task…"
+                    style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.2)",background:"rgba(255,255,255,0.75)",fontSize:12,color:"#1A1A10",outline:"none"}}
+                  />
+                  <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,fontSize:18,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
+                {inlineUrls[q.key]!==undefined&&(
+                  <input
+                    value={inlineUrls[q.key]}
+                    onChange={e=>setInlineUrls(t=>({...t,[q.key]:e.target.value}))}
+                    placeholder="🔗 Link (optional)"
+                    style={{marginTop:4,width:"100%",boxSizing:"border-box",padding:"5px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.6)",fontSize:11,color:"#1A1A10",outline:"none"}}
+                  />
+                )}
               </div>
             );
           })}
@@ -4862,26 +4854,36 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 
       </div>
 
+      {/* ── Bottom action buttons matching reference ── */}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:90,padding:"12px 14px 32px",background:"rgba(240,236,224,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10}}>
+        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"15px",background:"#7A9068",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(90,120,72,0.30)"}}>
+          Move to Prioritizer
+        </button>
+        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"15px",background:"rgba(248,245,236,0.95)",color:"#2A4820",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+          Weekly Insights
+        </button>
+      </div>
+
       {/* Send menu */}
       {sendMenu&&<SendMenu task={sendMenu}/>}
 
       {/* Move modal */}
       {moveTask&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(20,5,50,0.7)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300}}>
-          <div style={{background:C.wh,borderRadius:"22px 22px 0 0",padding:"0 0 28px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(45,10,94,0.4)"}}>
-            <div style={{display:"flex",justifyContent:"center",padding:"12px 0 6px"}}><div style={{width:40,height:4,borderRadius:2,background:C.ll}}/></div>
+        <div style={{position:"fixed",inset:0,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
+          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.2)"}}/></div>
             <div style={{padding:"0 20px"}}>
-              <div style={{fontWeight:900,color:C.dp,fontSize:15,marginBottom:4}}>↔ Move task</div>
-              <div style={{color:C.soft,fontSize:13,marginBottom:12,fontStyle:"italic"}}>{moveTask.text}</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>Move task</div>
+              <div style={{color:"#8A8070",fontSize:13,marginBottom:14,fontStyle:"italic"}}>{moveTask.text}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {QUADS.map(q=>(
-                  <button key={q.key} onClick={()=>move(moveTask.id,q.key)} style={{padding:"12px 10px",borderRadius:14,border:`2.5px solid ${q.bg}`,background:moveTask.quad===q.key?q.light:C.wh,cursor:"pointer",textAlign:"left",opacity:moveTask.quad===q.key?0.5:1}}>
-                    <div style={{fontWeight:800,fontSize:13,color:q.bg}}>{q.emoji} {q.label}</div>
-                    <div style={{fontSize:10,color:"#777",marginTop:2}}>{q.sub}</div>
+                  <button key={q.key} onClick={()=>move(moveTask.id,q.key)} style={{padding:"14px 12px",borderRadius:18,border:`1.5px solid rgba(90,120,72,${moveTask.quad===q.key?0.5:0.2})`,background:moveTask.quad===q.key?"rgba(90,120,72,0.12)":"rgba(255,255,255,0.8)",cursor:"pointer",textAlign:"left",opacity:moveTask.quad===q.key?0.6:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#2A4020",lineHeight:1.3}}>{q.label}</div>
+                    <div style={{fontSize:11,color:"#7A8A6A",marginTop:2}}>{q.sub}</div>
                   </button>
                 ))}
               </div>
-              <button onClick={()=>setMoveTask(null)} style={{width:"100%",marginTop:12,background:C.ll,color:C.mid,border:"none",borderRadius:12,padding:"12px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Cancel</button>
+              <button onClick={()=>setMoveTask(null)} style={{width:"100%",marginTop:12,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Cancel</button>
             </div>
           </div>
         </div>
@@ -4889,24 +4891,24 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 
       {/* Stale modal */}
       {staleModal&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(20,5,50,0.7)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300}}>
-          <div style={{background:C.wh,borderRadius:"22px 22px 0 0",padding:"0 0 28px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(255,23,68,0.3)"}}>
-            <div style={{display:"flex",justifyContent:"center",padding:"12px 0 6px"}}><div style={{width:40,height:4,borderRadius:2,background:"#f1948a"}}/></div>
+        <div style={{position:"fixed",inset:0,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
+          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(0,0,0,0.12)"}}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(192,57,43,0.3)"}}/></div>
             <div style={{padding:"0 20px"}}>
-              <div style={{fontWeight:900,color:"#FF1744",fontSize:16,marginBottom:4}}>⏰ Stale Task</div>
-              <div style={{color:C.soft,fontSize:13,marginBottom:8}}>Untouched for over a week:</div>
-              <div style={{background:"#fff5f5",borderRadius:12,padding:"12px 14px",fontWeight:700,fontSize:14,color:C.txt,marginBottom:14,border:"1.5px solid #FF1744"}}>{staleModal.text}</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#c0392b",fontSize:17,marginBottom:4}}>⏰ Stale Task</div>
+              <div style={{color:"#8A8070",fontSize:13,marginBottom:10}}>Untouched for over a week:</div>
+              <div style={{background:"rgba(192,57,43,0.06)",borderRadius:16,padding:"13px 16px",fontWeight:600,fontSize:14,color:"#1A1A10",marginBottom:16,border:"1px solid rgba(192,57,43,0.2)"}}>{staleModal.text}</div>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                <button onClick={()=>{touch(staleModal.id);setStaleModal(null);showToast("👍 Kept — timer reset!");}} style={{background:"#e8f5e9",color:"#27ae60",border:"1.5px solid #a5d6a7",borderRadius:12,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer"}}>✅ Still doing it — keep it</button>
-                <button onClick={()=>{setMoveTask(staleModal);setStaleModal(null);}} style={{background:C.ll,color:C.mp,border:`1.5px solid ${C.lp}`,borderRadius:12,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer"}}>↔ Move to different quadrant</button>
-                <button onClick={()=>{del(staleModal.id);setStaleModal(null);showToast("🗑 Erased.");}} style={{background:"#fce4e4",color:"#c0392b",border:"1.5px solid #f1948a",borderRadius:12,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer"}}>🗑 Erase — it's not happening</button>
+                <button onClick={()=>{touch(staleModal.id);setStaleModal(null);showToast("👍 Kept!");}} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"1.5px solid rgba(90,160,80,0.3)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ Still doing it — keep it</button>
+                <button onClick={()=>{setMoveTask(staleModal);setStaleModal(null);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>↔ Move to different quadrant</button>
+                <button onClick={()=>{del(staleModal.id);setStaleModal(null);showToast("🗑 Removed.");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1.5px solid rgba(192,57,43,0.2)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>🗑 Erase — it's not happening</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:C.dp,color:"#1A1A10",borderRadius:12,padding:"10px 20px",fontWeight:700,fontSize:14,boxShadow:"0 4px 20px rgba(45,10,94,0.4)",zIndex:500,whiteSpace:"nowrap"}}>{toast}</div>}
+      {toast&&<div style={{position:"fixed",bottom:110,left:"50%",transform:"translateX(-50%)",background:"rgba(42,56,28,0.92)",color:"#fff",borderRadius:100,padding:"11px 22px",fontWeight:700,fontSize:14,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:500,whiteSpace:"nowrap",backdropFilter:"blur(8px)"}}>{toast}</div>}
     </div>
   );
 }
