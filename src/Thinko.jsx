@@ -801,38 +801,138 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen}) {
   };
 
   if(active) return <PriList list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ls=>ls.map(l=>l.id===u.id?u:l))} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/>;
-  const shades=[{from:"#9b7dd4",to:"#5a3d9a"},{from:"#b48abf",to:"#7a4a8a"},{from:"#7e8fd4",to:"#4a5aaf"},{from:"#c4aee8",to:"#8a6cbd"}];
+  const listColors=["#5A7848","#7A6038","#486878","#6A5870","#486050","#705848"];
   return (
-    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
-      <Header title="📋 Prioritizer" onBack={()=>setScreen("home")} right={<button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>}/>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
+      <Header title="Prioritizer" onBack={()=>setScreen("home")} right={
+        <button onClick={()=>setAdding(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:50,width:40,height:40,fontSize:24,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 12px rgba(58,80,38,0.35)"}}>+</button>
+      }/>
+
       <div style={{padding:"20px 16px"}}>
+        {/* New list form */}
         {adding&&(
-          <GlassCard style={{marginBottom:18}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1.2,marginBottom:10}}>New list</div>
-            <input ref={inputRef} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submit();if(e.key==="Escape"){setAdding(false);setName("");}}} placeholder="List name..." style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:11,border:`2px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:14}}/>
+          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:18,boxShadow:"0 4px 24px rgba(0,0,0,0.1)",border:"1px solid rgba(90,120,72,0.2)"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:1.4,marginBottom:12}}>New list</div>
+            <input ref={inputRef} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submit();if(e.key==="Escape"){setAdding(false);setName("");}}} placeholder="List name..." style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.3)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.9)"}}/>
             <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
-              <button onClick={()=>{setAdding(false);setName("");}} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,fontSize:14,cursor:"pointer",padding:"6px 14px"}}>CANCEL</button>
-              <PurpleBtn onClick={submit}>INSERT</PurpleBtn>
+              <button onClick={()=>{setAdding(false);setName("");}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,fontSize:14,cursor:"pointer",padding:"8px 16px"}}>Cancel</button>
+              <button onClick={submit} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 24px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.3)"}}>Create</button>
             </div>
-          </GlassCard>
-        )}
-        {data.length===0&&!adding&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:80,fontSize:15}}>Tap + to create your first list</div>}
-        {data.length>0&&<div style={{fontSize:11,color:"rgba(255,255,255,0.35)",textAlign:"center",marginBottom:8}}>⠿ Hold and drag to reorder</div>}
-        {data.map((list,i)=>{const s=shades[i%shades.length];return(
-          <div key={list.id}
-            draggable
-            onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragId(list.id);}}
-            onDragOver={e=>dragOver(e,list.id)}
-            onDragEnd={()=>setDragId(null)}
-            onClick={()=>setActiveId(list.id)}
-            style={{display:"flex",alignItems:"center",gap:12,background:dragId===list.id?"rgba(255,255,255,0.32)":cardGlass,backdropFilter:"blur(8px)",borderRadius:18,padding:"15px 16px",marginBottom:12,border:"1px solid rgba(255,255,255,0.3)",cursor:"grab",transition:"all 0.15s",boxShadow:dragId===list.id?"0 8px 24px rgba(45,10,94,0.25)":"0 4px 16px rgba(45,10,94,0.12)",transform:dragId===list.id?"scale(1.02)":"scale(1)"}}>
-            <div style={{color:"rgba(255,255,255,0.3)",fontSize:16,flexShrink:0}}>⠿</div>
-            <div style={{width:40,height:40,borderRadius:11,flexShrink:0,background:`linear-gradient(135deg,${s.from},${s.to})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19}}>📊</div>
-            <span style={{flex:1,color:C.wh,fontWeight:700,fontSize:17}}>{list.name}</span>
-            <span style={{color:"rgba(255,255,255,0.4)",fontSize:13,marginRight:4}}>{list.tasks.length}</span>
-            <button onClick={e=>{e.stopPropagation();setData(ls=>ls.filter(l=>l.id!==list.id));}} style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:9,width:32,height:32,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
           </div>
-        );})}
+        )}
+
+        {/* EMPTY STATE — beautiful garden landing */}
+        {data.length===0&&!adding&&(
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 0"}}>
+            {/* Decorative vine illustration */}
+            <svg width="220" height="160" viewBox="0 0 220 160" fill="none" style={{marginBottom:8,overflow:"visible"}}>
+              <defs>
+                <linearGradient id="eg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8EC98"/><stop offset="100%" stopColor="#5A8830"/></linearGradient>
+                <linearGradient id="eg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8D870"/><stop offset="100%" stopColor="#4A7820"/></linearGradient>
+                <linearGradient id="eg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#D8F0A8"/><stop offset="100%" stopColor="#78B040"/></linearGradient>
+                <filter id="esh"><feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#1A3A08" floodOpacity="0.28"/></filter>
+              </defs>
+              {/* Main stems */}
+              <path d="M30 160 Q25 120 35 88 Q42 62 28 32 Q22 16 35 5" stroke="#7A6030" strokeWidth="4" fill="none" strokeLinecap="round"/>
+              <path d="M190 160 Q195 120 185 88 Q178 62 192 32 Q198 16 185 5" stroke="#7A6030" strokeWidth="4" fill="none" strokeLinecap="round"/>
+              <path d="M30 60 Q70 40 110 45 Q150 50 190 60" stroke="#8A7040" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.7"/>
+              {/* Left big leaves */}
+              <g filter="url(#esh)"><path d="M28 24 Q8 8 -5 18 Q-8 32 8 38 Q22 40 28 24Z" fill="url(#eg1)"/><line x1="28" y1="24" x2="8" y2="38" stroke="#1A3A08" strokeWidth="0.8" opacity="0.6"/><line x1="18" y1="31" x2="12" y2="38" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/><line x1="18" y1="31" x2="22" y2="37" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/></g>
+              <g filter="url(#esh)"><path d="M32 46 Q12 34 0 44 Q-3 58 14 62 Q28 63 32 46Z" fill="url(#eg2)"/><line x1="32" y1="46" x2="14" y2="62" stroke="#1A3A08" strokeWidth="0.8" opacity="0.58"/></g>
+              <g filter="url(#esh)"><path d="M30 74 Q10 62 -2 72 Q-5 86 12 90 Q26 91 30 74Z" fill="url(#eg3)"/><line x1="30" y1="74" x2="12" y2="90" stroke="#1A3A08" strokeWidth="0.75" opacity="0.55"/></g>
+              <g filter="url(#esh)"><path d="M34 100 Q14 88 2 98 Q-1 112 16 116 Q30 117 34 100Z" fill="url(#eg1)"/><line x1="34" y1="100" x2="16" y2="116" stroke="#1A3A08" strokeWidth="0.75" opacity="0.52"/></g>
+              <g filter="url(#esh)"><path d="M32 128 Q12 116 0 126 Q-3 140 14 144 Q28 145 32 128Z" fill="url(#eg2)"/></g>
+              {/* Right big leaves */}
+              <g filter="url(#esh)"><path d="M192 24 Q212 8 225 18 Q228 32 212 38 Q198 40 192 24Z" fill="url(#eg1)"/><line x1="192" y1="24" x2="212" y2="38" stroke="#1A3A08" strokeWidth="0.8" opacity="0.6"/><line x1="202" y1="31" x2="208" y2="38" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/><line x1="202" y1="31" x2="198" y2="37" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/></g>
+              <g filter="url(#esh)"><path d="M188 46 Q208 34 220 44 Q223 58 206 62 Q192 63 188 46Z" fill="url(#eg2)"/><line x1="188" y1="46" x2="206" y2="62" stroke="#1A3A08" strokeWidth="0.8" opacity="0.58"/></g>
+              <g filter="url(#esh)"><path d="M190 74 Q210 62 222 72 Q225 86 208 90 Q194 91 190 74Z" fill="url(#eg3)"/><line x1="190" y1="74" x2="208" y2="90" stroke="#1A3A08" strokeWidth="0.75" opacity="0.55"/></g>
+              <g filter="url(#esh)"><path d="M186 100 Q206 88 218 98 Q221 112 204 116 Q190 117 186 100Z" fill="url(#eg1)"/><line x1="186" y1="100" x2="204" y2="116" stroke="#1A3A08" strokeWidth="0.75" opacity="0.52"/></g>
+              <g filter="url(#esh)"><path d="M188 128 Q208 116 220 126 Q223 140 206 144 Q192 145 188 128Z" fill="url(#eg2)"/></g>
+              {/* Top arch leaves */}
+              <g filter="url(#esh)"><path d="M55 52 Q48 32 60 22 Q72 15 80 28 Q84 40 72 48 Q60 52 55 52Z" fill="url(#eg3)"/><line x1="55" y1="52" x2="72" y2="48" stroke="#1A3A08" strokeWidth="0.7" opacity="0.5"/></g>
+              <g filter="url(#esh)"><path d="M85 48 Q80 28 92 18 Q104 11 112 24 Q116 36 104 44 Q92 48 85 48Z" fill="url(#eg1)"/><line x1="85" y1="48" x2="104" y2="44" stroke="#1A3A08" strokeWidth="0.7" opacity="0.5"/></g>
+              <g filter="url(#esh)"><path d="M118 48 Q115 28 128 18 Q140 12 148 25 Q151 37 140 45 Q128 49 118 48Z" fill="url(#eg2)"/><line x1="118" y1="48" x2="140" y2="45" stroke="#1A3A08" strokeWidth="0.7" opacity="0.5"/></g>
+              <g filter="url(#esh)"><path d="M150 52 Q148 32 160 22 Q172 15 178 28 Q180 42 168 50 Q156 54 150 52Z" fill="url(#eg3)"/><line x1="150" y1="52" x2="168" y2="50" stroke="#1A3A08" strokeWidth="0.7" opacity="0.5"/></g>
+              {/* Centre clipboard icon */}
+              <rect x="88" y="62" width="44" height="52" rx="6" fill="rgba(248,245,236,0.92)" stroke="rgba(90,120,72,0.3)" strokeWidth="1.5"/>
+              <rect x="98" y="58" width="24" height="10" rx="5" fill="rgba(90,120,72,0.4)"/>
+              <path d="M96 80h28M96 90h20M96 100h24" stroke="rgba(90,120,72,0.6)" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+
+            {/* Headline */}
+            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#1A1A10",textAlign:"center",marginBottom:10,letterSpacing:-0.4,lineHeight:1.25}}>
+              Your calm task sanctuary
+            </div>
+
+            {/* Description */}
+            <div style={{fontSize:15,color:"#6A6050",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:280,fontWeight:400}}>
+              Create multiple lists — one for work, one for home, one just for today. Keep everything beautifully organised and calm.
+            </div>
+
+            {/* CTA button */}
+            <button onClick={()=>setAdding(true)} style={{
+              background:"#5A7848",
+              color:"#fff",
+              border:"none",
+              borderRadius:100,
+              padding:"17px 40px",
+              fontSize:17,
+              fontWeight:700,
+              cursor:"pointer",
+              boxShadow:"0 6px 24px rgba(58,80,38,0.38)",
+              display:"flex",alignItems:"center",gap:12,
+              letterSpacing:0.2,
+              marginBottom:16,
+            }}>
+              <span style={{fontSize:20}}>+</span>
+              Create your first list
+            </button>
+
+            {/* Hint */}
+            <div style={{fontSize:12,color:"rgba(90,80,60,0.55)",textAlign:"center",display:"flex",alignItems:"center",gap:6}}>
+              <span>🌿</span>
+              <span>You can create as many lists as you like</span>
+              <span>🌿</span>
+            </div>
+          </div>
+        )}
+
+        {/* LISTS — when they exist */}
+        {data.length>0&&(
+          <div style={{fontSize:11,color:"rgba(60,50,30,0.45)",textAlign:"center",marginBottom:12,letterSpacing:0.5}}>⠿ Hold and drag to reorder</div>
+        )}
+        {data.map((list,i)=>{
+          const col=listColors[i%listColors.length];
+          return(
+            <div key={list.id}
+              draggable
+              onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragId(list.id);}}
+              onDragOver={e=>dragOver(e,list.id)}
+              onDragEnd={()=>setDragId(null)}
+              onClick={()=>setActiveId(list.id)}
+              style={{
+                display:"flex",alignItems:"center",gap:14,
+                background:dragId===list.id?"rgba(255,255,255,0.95)":"rgba(248,245,236,0.88)",
+                backdropFilter:"blur(12px)",
+                borderRadius:22,
+                padding:"16px 18px",
+                marginBottom:12,
+                border:"1px solid rgba(255,255,255,0.9)",
+                cursor:"pointer",
+                transition:"all 0.15s",
+                boxShadow:dragId===list.id?"0 8px 28px rgba(0,0,0,0.12)":"0 2px 14px rgba(0,0,0,0.06)",
+                transform:dragId===list.id?"scale(1.02)":"scale(1)",
+              }}>
+              <div style={{color:"rgba(60,50,30,0.3)",fontSize:14,flexShrink:0}}>⠿</div>
+              <div style={{width:44,height:44,borderRadius:14,flexShrink:0,background:col,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 2px 10px ${col}55`}}>📋</div>
+              <div style={{flex:1}}>
+                <div style={{color:"#1A1A10",fontWeight:700,fontSize:17,marginBottom:2}}>{list.name}</div>
+                <div style={{color:"#8A8070",fontSize:12}}>{list.tasks.length} task{list.tasks.length!==1?"s":""}</div>
+              </div>
+              <button onClick={e=>{e.stopPropagation();setData(ls=>ls.filter(l=>l.id!==list.id));}} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
