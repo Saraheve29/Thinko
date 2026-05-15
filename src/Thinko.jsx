@@ -6191,39 +6191,17 @@ function useAuth(){
 
 
 const MODULES=[
-  {id:"prioritizer", name:"Prioritizer",  desc:"Tasks, timers & priorities",
-   grad:`linear-gradient(135deg,#e8e2d0,#ddd6c0)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><rect x="6" y="4" width="20" height="24" rx="3" stroke="#4A6838" strokeWidth="2" fill="none"/><path d="M10 10h12M10 15h12M10 20h7" stroke="#4A6838" strokeWidth="2" strokeLinecap="round"/><circle cx="22" cy="21" r="1.5" fill="#4A6838"/></svg>},
-  {id:"mindmap",     name:"Mind Map",     desc:"Visual thinking & brainstorm",
-   grad:`linear-gradient(135deg,#d8d0c2,#ccc6b4)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><circle cx="16" cy="16" r="4" fill="#4A6838"/><circle cx="6" cy="8" r="2.5" stroke="#4A6838" strokeWidth="1.8" fill="none"/><circle cx="26" cy="8" r="2.5" stroke="#4A6838" strokeWidth="1.8" fill="none"/><circle cx="6" cy="24" r="2.5" stroke="#4A6838" strokeWidth="1.8" fill="none"/><circle cx="26" cy="24" r="2.5" stroke="#4A6838" strokeWidth="1.8" fill="none"/><path d="M12.5 13.5L8.5 10M19.5 13.5L23.5 10M12.5 18.5L8.5 22M19.5 18.5L23.5 22" stroke="#4A6838" strokeWidth="1.6"/></svg>},
-  {id:"notes",       name:"The Vault",    desc:"Notes, Ideas, Filing & Studio",
-   grad:`linear-gradient(135deg,#ddd6c8,#cfc8b8)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><rect x="4" y="6" width="6" height="20" rx="1.5" stroke="#4A6838" strokeWidth="1.8" fill="none"/><rect x="13" y="6" width="6" height="20" rx="1.5" stroke="#4A6838" strokeWidth="1.8" fill="none"/><rect x="22" y="6" width="6" height="20" rx="1.5" stroke="#4A6838" strokeWidth="1.8" fill="none"/></svg>},
-  {id:"meals",       name:"Meal Planner", desc:"Plan your week of meals",
-   grad:`linear-gradient(135deg,#ccd6c8,#bccabb)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><path d="M10 6v6a4 4 0 004 4v10" stroke="#4A6838" strokeWidth="2" strokeLinecap="round"/><path d="M6 6v4M14 6v4" stroke="#4A6838" strokeWidth="2" strokeLinecap="round"/><path d="M22 6c0 0 4 2.5 4 8h-8c0-5.5 4-8 4-8z" stroke="#4A6838" strokeWidth="1.8" strokeLinejoin="round" fill="none"/><path d="M22 20v6" stroke="#4A6838" strokeWidth="2" strokeLinecap="round"/></svg>},
-  {id:"goals",       name:"Goals",        desc:"Smart goals · 5 horizons",
-   grad:`linear-gradient(135deg,#d4d0c8,#c8c4ba)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><circle cx="16" cy="16" r="10" stroke="#4A6838" strokeWidth="2" fill="none"/><circle cx="16" cy="16" r="6" stroke="#4A6838" strokeWidth="1.6" fill="none"/><circle cx="16" cy="16" r="2.5" fill="#4A6838"/><path d="M16 4v2M16 26v2M4 16H6M26 16h2" stroke="#4A6838" strokeWidth="1.8" strokeLinecap="round"/></svg>},
-  {id:"matrix",      name:"Matrix",       desc:"Eisenhower grid",
-   grad:`linear-gradient(135deg,#2C3820,#3A4A28)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><circle cx="16" cy="16" r="9" fill="rgba(255,255,255,0.15)"/><circle cx="16" cy="16" r="9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" fill="none"/><path d="M11 16l3 3 7-7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>},
-  {id:"charge",      name:"The Charge",   desc:"Daily challenge · orb of light",
-   grad:`linear-gradient(135deg,#c8c4b8,#bcb8ac)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><path d="M18 4l-8 14h8l-2 10 10-16h-8l2-8z" stroke="#4A6838" strokeWidth="2" strokeLinejoin="round" fill="none"/></svg>},
-  {id:"budget",      name:"Budget",       desc:"Income, outgoing & AI review",
-   grad:`linear-gradient(135deg,#c8d0c0,#bcc5b4)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><circle cx="16" cy="16" r="11" stroke="#4A6838" strokeWidth="2" fill="none"/><path d="M16 8v2M16 22v2M11 12.5c0-1.5 1.2-2.5 3-2.5h3c1.8 0 3 1 3 2.5s-1.2 2-3 2.5c-1.8.5-3 1.5-3 3s1.2 2.5 3 2.5h3c1.8 0 3-1 3-2.5" stroke="#4A6838" strokeWidth="1.8" strokeLinecap="round"/></svg>},
-  {id:"shopping",    name:"Shopping",     desc:"Multiple lists, tick off as you go",
-   grad:`linear-gradient(135deg,#d0d4c8,#c4c8bc)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><path d="M6 6h3l3.5 12h12l2.5-9H11" stroke="#4A6838" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="13" cy="24" r="2" fill="#4A6838"/><circle cx="23" cy="24" r="2" fill="#4A6838"/></svg>},
-  {id:"tools",       name:"Tools",        desc:"Calculator, timer, alarm",
-   grad:`linear-gradient(135deg,#ccc8c0,#c0bcb4)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><path d="M20 4c0 0-2 2-2 5s2 5 2 5l-10 11a2.5 2.5 0 003.5 3.5L25 18c3 0 5-2 5-4s-2-3-4-3L20 4z" stroke="#4A6838" strokeWidth="1.8" strokeLinejoin="round" fill="none"/><circle cx="8.5" cy="23.5" r="1.2" fill="#4A6838"/></svg>},
-  {id:"rest",        name:"Rest Space",   desc:"Guided rest · Nature sounds",
-   grad:`linear-gradient(135deg,#c8d4c8,#bccabc)`,
-   svg:<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:36,height:36}}><path d="M16 6c0 0-8 6-8 14a8 8 0 0016 0c0-8-8-14-8-14z" stroke="#4A6838" strokeWidth="1.8" strokeLinejoin="round" fill="none"/><path d="M16 14v8M12 18h8" stroke="#4A6838" strokeWidth="1.8" strokeLinecap="round"/></svg>},
+  {id:"prioritizer", name:"Prioritizer",  desc:"Tasks, timers & priorities",       icon:"📋"},
+  {id:"mindmap",     name:"Mind Map",     desc:"Visual thinking & brainstorm",      icon:"🧠"},
+  {id:"notes",       name:"The Vault",    desc:"Notes, Ideas, Filing & Studio",     icon:"📚"},
+  {id:"meals",       name:"Meal Planner", desc:"Plan your week of meals",           icon:"🍽️"},
+  {id:"goals",       name:"Goals",        desc:"Smart goals · 5 horizons",          icon:"🎯"},
+  {id:"matrix",      name:"Matrix",       desc:"Eisenhower urgent-important grid",  icon:"⚡"},
+  {id:"charge",      name:"The Charge",   desc:"Daily challenge · orb of light",   icon:"⚡"},
+  {id:"budget",      name:"Budget",       desc:"Income, outgoing & AI review",     icon:"💰"},
+  {id:"shopping",    name:"Shopping",     desc:"Multiple lists, tick off as you go",icon:"🛒"},
+  {id:"tools",       name:"Tools",        desc:"Calculator, timer, alarm & sounds", icon:"🔧"},
+  {id:"rest",        name:"Rest Space",   desc:"Guided rest · Nature sounds",       icon:"🌿"},
 ];
 
 function ProLoginModal({onClose,onSignIn}){
@@ -6359,7 +6337,7 @@ export default function App() {
       <div style={{padding:"4px 12px 2px",textAlign:"center"}}>
         <span style={{fontSize:11,color:"rgba(60,56,40,0.45)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
       </div>
-      <div style={{padding:"8px 14px 100px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+      <div style={{padding:"8px 14px 100px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {orderedModules.map(m=>(
           <div key={m.id}
             draggable
@@ -6368,37 +6346,41 @@ export default function App() {
             onDragEnd={homeDragEnd}
             onClick={()=>setScreen(m.id)}
             style={{
-              background:dragHome===m.id?"rgba(255,255,255,0.88)":"rgba(240,236,226,0.75)",
-              backdropFilter:"blur(12px)",
-              WebkitBackdropFilter:"blur(12px)",
+              background:dragHome===m.id?"rgba(255,255,255,0.92)":"rgba(248,245,236,0.88)",
+              backdropFilter:"blur(14px)",
+              WebkitBackdropFilter:"blur(14px)",
               borderRadius:22,
-              padding:"18px 16px 16px",
-              border:"1px solid rgba(255,255,255,0.7)",
+              padding:"18px 16px 16px 18px",
+              border:"1px solid rgba(255,255,255,0.92)",
               cursor:"pointer",
               transition:"all 0.15s",
-              boxShadow:dragHome===m.id?"0 8px 28px rgba(60,70,40,0.18)":"0 2px 10px rgba(60,70,40,0.08)",
+              boxShadow:dragHome===m.id
+                ?"0 8px 28px rgba(60,70,40,0.14),inset 0 1px 0 rgba(255,255,255,1)"
+                :"0 2px 12px rgba(60,70,40,0.07),inset 0 1px 0 rgba(255,255,255,0.95)",
               transform:dragHome===m.id?"scale(1.03)":"scale(1)",
-              display:"flex",flexDirection:"column",gap:10,
+              display:"flex",flexDirection:"column",
+              justifyContent:"space-between",
               position:"relative",
-              minHeight:130,
+              minHeight:128,
             }}>
-            {/* Top row — icon + drag dot */}
+            {/* Top: emoji icon + drag dots */}
             <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-              <div style={{
-                width:56,height:56,borderRadius:16,
-                background:m.grad,
-                display:"flex",alignItems:"center",justifyContent:"center",
-                boxShadow:"0 3px 12px rgba(60,70,40,0.15)",
-                flexShrink:0,
-              }}>
-                {m.svg}
-              </div>
-              <div style={{width:22,height:22,borderRadius:"50%",border:"1.5px solid rgba(60,56,40,0.2)",display:"flex",alignItems:"center",justifyContent:"center",opacity:0.5}}>
-                <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="3" cy="3" r="1.2" fill="#4A4030"/><circle cx="7" cy="3" r="1.2" fill="#4A4030"/><circle cx="3" cy="7" r="1.2" fill="#4A4030"/><circle cx="7" cy="7" r="1.2" fill="#4A4030"/></svg>
+              <span style={{fontSize:38,lineHeight:1,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.12))"}}>
+                {m.icon}
+              </span>
+              <div style={{opacity:0.35,marginTop:2}}>
+                <svg width="14" height="14" viewBox="0 0 14 14">
+                  <circle cx="4" cy="4" r="1.5" fill="#3A3020"/>
+                  <circle cx="10" cy="4" r="1.5" fill="#3A3020"/>
+                  <circle cx="4" cy="10" r="1.5" fill="#3A3020"/>
+                  <circle cx="10" cy="10" r="1.5" fill="#3A3020"/>
+                </svg>
               </div>
             </div>
-            {/* Name */}
-            <div style={{fontSize:16,fontWeight:700,color:"#1A1A10",letterSpacing:-0.2,lineHeight:1.2}}>{m.name}</div>
+            {/* Bottom: name */}
+            <div style={{fontSize:15,fontWeight:700,color:"#1A1A10",letterSpacing:-0.2,lineHeight:1.2,marginTop:10}}>
+              {m.name}
+            </div>
           </div>
         ))}
       </div>
@@ -6415,7 +6397,7 @@ function NavBar({current,setScreen}) {
         <div className="navscroll" style={{display:"flex",minWidth:"100%",justifyContent:"space-around"}}>
           {MODULES.map(m=>(
             <button key={m.id} onClick={()=>setScreen(m.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 8px",opacity:current===m.id?1:0.45,transition:"opacity 0.15s",flexShrink:0}}>
-              <div style={{width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center"}}>{m.svg}</div>
+              <span style={{fontSize:20,lineHeight:1}}>{m.icon}</span>
               <span style={{fontSize:8,color:current===m.id?C.mp:"rgba(60,56,40,0.5)",fontWeight:current===m.id?800:500,letterSpacing:0.3,whiteSpace:"nowrap"}}>{m.name}</span>
             </button>
           ))}
