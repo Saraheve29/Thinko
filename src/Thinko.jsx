@@ -4,422 +4,643 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Thinko Home</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;width:100%;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
-body{background:#EDE8D8;overflow-x:hidden;}
+html,body{height:100%;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+body{background:#E8E2D0;}
 
-/* ── FIXED VINE BACKGROUND ── */
-.bg{position:fixed;inset:0;z-index:0;}
-.bg-cream{position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 40%,#FAF7EE 0%,#F3EDE0 50%,#E8DFC8 100%);}
+.page{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;}
 
-/* ── CONTENT ── */
-.page{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;padding:0;}
-
-/* ── GLASS CARD AREA ── */
-.glass-panel{
-  margin:12px 14px;
-  background:rgba(250,247,240,0.55);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
-  border-radius:32px;
-  border:1px solid rgba(255,255,255,0.7);
-  padding:22px 18px 18px;
+/* Glass panel */
+.panel{
+  margin:10px 12px 10px;
+  background:rgba(248,244,234,0.52);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+  border-radius:36px;
+  border:1.5px solid rgba(255,255,255,0.65);
+  padding:20px 16px 16px;
   flex:1;
-  box-shadow:0 4px 32px rgba(80,70,40,0.08),inset 0 1px 0 rgba(255,255,255,0.8);
+  box-shadow:0 6px 40px rgba(60,55,30,0.1),inset 0 1px 0 rgba(255,255,255,0.85);
+  margin-bottom:88px;
 }
 
-/* ── GREETING ── */
-.greeting{margin-bottom:22px;padding:0 4px;}
-.greeting-back{font-size:20px;color:#3A3020;opacity:0.6;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:4px;}
-.greeting-text{font-size:28px;font-weight:800;color:#1A1A10;letter-spacing:-0.5px;line-height:1.2;}
+/* Top bar */
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;opacity:0.6;}
 
-/* ── GRID ── */
+/* Greeting */
+.greet{font-size:26px;font-weight:800;color:#1A1A0E;letter-spacing:-0.5px;line-height:1.2;margin-bottom:20px;}
+
+/* Grid */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
-/* ── MODULE CARD ── */
-.mcard{
-  background:rgba(248,244,236,0.82);
+/* Cards */
+.card{
+  background:rgba(248,245,236,0.88);
   border-radius:22px;
-  padding:18px 16px 16px;
-  border:1px solid rgba(255,255,255,0.85);
-  box-shadow:0 2px 12px rgba(80,70,40,0.07),inset 0 1px 0 rgba(255,255,255,0.9);
+  padding:18px 16px 15px;
+  border:1px solid rgba(255,255,255,0.9);
+  box-shadow:
+    0 2px 14px rgba(60,55,30,0.07),
+    0 1px 3px rgba(60,55,30,0.04),
+    inset 0 1px 0 rgba(255,255,255,1);
   cursor:pointer;
-  transition:all 0.16s ease;
-  display:flex;flex-direction:column;gap:8px;
-  min-height:120px;
+  transition:all 0.15s ease;
+  display:flex;flex-direction:column;gap:6px;
+  min-height:115px;
   position:relative;
-  overflow:hidden;
 }
-.mcard::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent);}
-.mcard:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 6px 22px rgba(80,70,40,0.13);}
-.mcard:active{transform:scale(0.98);}
-.mcard-icon{font-size:34px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.1));}
-.mcard-name{font-size:15px;font-weight:700;color:#1A1A10;letter-spacing:-0.2px;margin-top:2px;}
+.card::before{
+  content:'';position:absolute;
+  top:0;left:12px;right:12px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent);
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(60,55,30,0.12);}
+.card:active{transform:scale(0.98);}
+.card-ico{font-size:36px;line-height:1;margin-bottom:2px;}
+.card-name{font-size:15px;font-weight:700;color:#1A1A0E;letter-spacing:-0.2px;}
 
-/* ── NAV ── */
+/* Nav */
 .nav{
-  position:fixed;bottom:0;left:0;right:0;
-  background:rgba(242,237,226,0.94);
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(240,235,222,0.94);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-top:1px solid rgba(255,255,255,0.7);
+  padding:12px 8px 28px;
+  display:flex;justify-content:space-around;align-items:center;
+  box-shadow:0 -4px 24px rgba(60,55,30,0.08);
+}
+.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:0.45;min-width:58px;transition:opacity 0.2s;}
+.ni.on{opacity:1;}
+.ni-lbl{font-size:11px;font-weight:600;color:#2A2A18;}
+.ni.on .ni-lbl{color:#3A6820;}
+
+/* pop animation */
+@keyframes popIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.greet{animation:popIn 0.5s ease 0.05s both;}
+.card:nth-child(1){animation:popIn 0.4s ease 0.1s both;}
+.card:nth-child(2){animation:popIn 0.4s ease 0.14s both;}
+.card:nth-child(3){animation:popIn 0.4s ease 0.18s both;}
+.card:nth-child(4){animation:popIn 0.4s ease 0.22s both;}
+.card:nth-child(5){animation:popIn 0.4s ease 0.26s both;}
+.card:nth-child(6){animation:popIn 0.4s ease 0.30s both;}
+.card:nth-child(7){animation:popIn 0.4s ease 0.34s both;}
+.card:nth-child(8){animation:popIn 0.4s ease 0.38s both;}
+.card:nth-child(9){animation:popIn 0.4s ease 0.42s both;}
+.card:nth-child(10){animation:popIn 0.4s ease 0.46s both;}
+
+/* NAME MODAL */
+.modal-bg{
+  position:fixed;inset:0;z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  padding:28px;
+  background:rgba(224,218,202,0.82);
   backdrop-filter:blur(20px);
   -webkit-backdrop-filter:blur(20px);
-  border-top:1px solid rgba(255,255,255,0.7);
-  padding:12px 0 24px;
-  display:flex;justify-content:space-around;align-items:flex-start;
-  z-index:100;
-  box-shadow:0 -2px 20px rgba(80,70,40,0.08);
 }
-.ni{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;opacity:0.5;min-width:64px;transition:opacity 0.2s;}
-.ni.on{opacity:1;}
-.ni-ico{font-size:22px;}
-.ni-lbl{font-size:11px;font-weight:600;color:#1A1A10;}
-.ni.on .ni-lbl{color:#3A6830;}
-
-/* sparkle animation */
-@keyframes sparkle{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.7;transform:scale(1.2);}}
-.sparkle{display:inline-block;animation:sparkle 2s ease-in-out infinite;}
-
-/* card pop-in */
-@keyframes popIn{from{opacity:0;transform:translateY(10px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
-.mcard{animation:popIn 0.4s ease both;}
-.mcard:nth-child(1){animation-delay:0.05s;}
-.mcard:nth-child(2){animation-delay:0.10s;}
-.mcard:nth-child(3){animation-delay:0.15s;}
-.mcard:nth-child(4){animation-delay:0.20s;}
-.mcard:nth-child(5){animation-delay:0.25s;}
-.mcard:nth-child(6){animation-delay:0.30s;}
-.mcard:nth-child(7){animation-delay:0.35s;}
-.mcard:nth-child(8){animation-delay:0.40s;}
-.mcard:nth-child(9){animation-delay:0.45s;}
-.mcard:nth-child(10){animation-delay:0.50s;}
+.modal-card{
+  background:rgba(252,249,242,0.97);
+  border-radius:36px;
+  padding:44px 28px 36px;
+  width:100%;max-width:340px;
+  text-align:center;
+  box-shadow:0 16px 56px rgba(50,45,20,0.18);
+  border:1.5px solid rgba(255,255,255,0.95);
+  position:relative;
+  z-index:1;
+}
+.modal-card input{
+  width:100%;padding:15px 20px;
+  border-radius:100px;
+  border:1.5px solid rgba(148,180,120,0.4);
+  background:rgba(240,236,224,0.85);
+  font-family:'Inter',sans-serif;font-size:16px;color:#1A1A0E;
+  outline:none;text-align:center;margin-bottom:14px;
+  box-shadow:inset 0 2px 6px rgba(50,45,20,0.06);
+}
+.modal-card input:focus{border-color:rgba(74,112,40,0.5);background:rgba(250,248,240,0.9);}
+.modal-btn{
+  width:100%;padding:17px;border-radius:100px;
+  background:linear-gradient(135deg,#3A6820,#5A9040);
+  color:white;font-family:'Inter',sans-serif;
+  font-size:16px;font-weight:700;border:none;cursor:pointer;
+  box-shadow:0 6px 20px rgba(58,104,32,0.38);
+  letter-spacing:0.2px;
+  transition:transform 0.15s;
+}
+.modal-btn:hover{transform:translateY(-1px);}
+.modal-btn:active{transform:scale(0.98);}
 </style>
 </head>
 <body>
 
-<!-- ══ PHOTOREALISTIC VINE BACKGROUND ══ -->
-<div class="bg">
-  <div class="bg-cream"></div>
-  <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <!-- Leaf gradients — 3-tone for photorealism -->
-      <linearGradient id="L1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#A8D878"/><stop offset="45%" stop-color="#78B848"/><stop offset="100%" stop-color="#4A8828"/></linearGradient>
-      <linearGradient id="L2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#C0E890"/><stop offset="50%" stop-color="#90C860"/><stop offset="100%" stop-color="#60A030"/></linearGradient>
-      <linearGradient id="L3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#88C858"/><stop offset="50%" stop-color="#58A828"/><stop offset="100%" stop-color="#388010"/></linearGradient>
-      <linearGradient id="L4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#B8E088"/><stop offset="50%" stop-color="#88C058"/><stop offset="100%" stop-color="#589030"/></linearGradient>
-      <linearGradient id="Ls" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#68A838"/><stop offset="100%" stop-color="#285808"/></linearGradient>
-      <!-- Stem gradient -->
-      <linearGradient id="St" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#7A6840"/><stop offset="50%" stop-color="#6A5830"/><stop offset="100%" stop-color="#8A7850"/></linearGradient>
-      <!-- Leaf shadow filter -->
-      <filter id="lsh" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="rgba(30,50,10,0.25)"/>
-      </filter>
-      <filter id="ssh" x="-10%" y="-10%" width="120%" height="120%">
-        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(30,50,10,0.2)"/>
-      </filter>
-      <!-- Golden glow -->
-      <radialGradient id="glow" cx="85%" cy="8%" r="35%"><stop offset="0%" stop-color="rgba(220,200,130,0.4)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
-      <radialGradient id="glow2" cx="15%" cy="55%" r="30%"><stop offset="0%" stop-color="rgba(160,200,130,0.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
-      <radialGradient id="vign" cx="50%" cy="50%" r="70%"><stop offset="0%" stop-color="transparent"/><stop offset="100%" stop-color="rgba(40,50,20,0.15)"/></radialGradient>
-    </defs>
-
-    <!-- Background glow -->
-    <rect width="390" height="844" fill="url(#glow)"/>
-    <rect width="390" height="844" fill="url(#glow2)"/>
-
-    <!-- ══ TOP LEFT VINE CLUSTER ══ -->
-    <!-- Main thick stem top-left coming from corner -->
-    <path d="M-15 -10 Q15 25 5 70 Q-5 115 18 165 Q35 210 15 260" stroke="url(#St)" stroke-width="5" fill="none" filter="url(#ssh)" stroke-linecap="round"/>
-    <path d="M10 -10 Q35 20 28 62 Q20 105 42 148 Q58 185 45 230" stroke="url(#St)" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
-
-    <!-- Top-left ivy leaves — large, detailed -->
-    <!-- Leaf 1 — big fan leaf top-left corner -->
-    <g filter="url(#lsh)">
-      <path d="M-5 15 Q20 -5 45 5 Q58 15 52 32 Q45 48 28 44 Q8 38 -5 15Z" fill="url(#L1)"/>
-      <path d="M-5 15 L28 44" stroke="#2A5010" stroke-width="0.9" opacity="0.7"/>
-      <path d="M28 44 L22 50" stroke="#2A5010" stroke-width="0.6" opacity="0.5"/>
-      <path d="M28 44 L36 48" stroke="#2A5010" stroke-width="0.6" opacity="0.5"/>
-      <path d="M-5 15 L28 44 L52 32" stroke="#3A6820" stroke-width="0.5" opacity="0.4" fill="none"/>
-    </g>
-    <!-- Leaf 2 -->
-    <g filter="url(#lsh)">
-      <path d="M8 -8 Q38 -18 60 -5 Q72 8 65 24 Q56 38 40 33 Q18 25 8 -8Z" fill="url(#L2)"/>
-      <path d="M8 -8 L40 33" stroke="#2A5010" stroke-width="0.9" opacity="0.65"/>
-      <path d="M40 33 L35 40" stroke="#2A5010" stroke-width="0.6" opacity="0.45"/>
-      <path d="M40 33 L48 38" stroke="#2A5010" stroke-width="0.6" opacity="0.45"/>
-    </g>
-    <!-- Leaf 3 — overlapping -->
-    <g filter="url(#lsh)" opacity="0.9">
-      <path d="M-10 42 Q12 22 38 28 Q52 35 48 52 Q42 66 25 64 Q5 58 -10 42Z" fill="url(#L3)"/>
-      <path d="M-10 42 L25 64" stroke="#2A5010" stroke-width="0.8" opacity="0.6"/>
-      <path d="M25 64 L20 72" stroke="#2A5010" stroke-width="0.5" opacity="0.4"/>
-      <path d="M25 64 L34 70" stroke="#2A5010" stroke-width="0.5" opacity="0.4"/>
-    </g>
-    <!-- Leaf 4 hanging down -->
-    <g filter="url(#lsh)">
-      <path d="M5 62 Q28 48 52 55 Q65 64 60 80 Q54 94 36 92 Q14 88 5 62Z" fill="url(#L4)"/>
-      <path d="M5 62 L36 92" stroke="#2A5010" stroke-width="0.8" opacity="0.6"/>
-      <path d="M36 92 L30 100" stroke="#2A5010" stroke-width="0.55" opacity="0.4"/>
-      <path d="M36 92 L44 98" stroke="#2A5010" stroke-width="0.55" opacity="0.4"/>
-    </g>
-    <!-- Leaf 5 -->
-    <g filter="url(#lsh)" opacity="0.85">
-      <path d="M-8 85 Q14 68 40 76 Q54 85 50 102 Q44 116 28 114 Q8 108 -8 85Z" fill="url(#L1)"/>
-      <path d="M-8 85 L28 114" stroke="#2A5010" stroke-width="0.8" opacity="0.58"/>
-    </g>
-    <!-- Leaf 6 branch right -->
-    <g filter="url(#lsh)">
-      <path d="M28 38 Q55 20 80 30 Q92 42 85 58 Q76 70 60 66 Q40 60 28 38Z" fill="url(#L2)"/>
-      <path d="M28 38 L60 66" stroke="#2A5010" stroke-width="0.8" opacity="0.6"/>
-    </g>
-    <!-- Leaf 7 top arch -->
-    <g filter="url(#lsh)" opacity="0.88">
-      <path d="M55 -5 Q82 -20 105 -8 Q118 5 110 20 Q100 32 84 28 Q64 22 55 -5Z" fill="url(#L3)"/>
-      <path d="M55 -5 L84 28" stroke="#2A5010" stroke-width="0.8" opacity="0.55"/>
-    </g>
-    <!-- Leaf 8 -->
-    <g filter="url(#lsh)" opacity="0.82">
-      <path d="M-5 108 Q18 92 42 100 Q56 110 52 126 Q46 140 30 138 Q10 132 -5 108Z" fill="url(#L4)"/>
-      <path d="M-5 108 L30 138" stroke="#2A5010" stroke-width="0.75" opacity="0.55"/>
-    </g>
-    <!-- Leaf 9 -->
-    <g filter="url(#lsh)" opacity="0.78">
-      <path d="M15 130 Q40 115 64 124 Q77 134 72 150 Q66 163 50 160 Q30 155 15 130Z" fill="url(#L1)"/>
-      <path d="M15 130 L50 160" stroke="#2A5010" stroke-width="0.75" opacity="0.52"/>
-    </g>
-    <!-- Leaf 10 side shoot -->
-    <g filter="url(#lsh)" opacity="0.75">
-      <path d="M22 155 Q45 140 68 150 Q80 160 75 175 Q68 188 52 185 Q34 180 22 155Z" fill="url(#L2)"/>
-      <path d="M22 155 L52 185" stroke="#2A5010" stroke-width="0.7" opacity="0.5"/>
-    </g>
-    <!-- Extra small accent leaves top-left -->
-    <g filter="url(#lsh)" opacity="0.7">
-      <path d="M70 15 Q90 2 108 12 Q118 22 112 36 Q104 46 90 42 Q74 36 70 15Z" fill="url(#Ls)"/>
-      <path d="M70 15 L90 42" stroke="#1A4808" stroke-width="0.7" opacity="0.5"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.65">
-      <path d="M95 -2 Q115 -14 132 -4 Q142 8 136 22 Q128 32 114 28 Q98 22 95 -2Z" fill="url(#L4)"/>
-      <path d="M95 -2 L114 28" stroke="#2A5010" stroke-width="0.65" opacity="0.48"/>
-    </g>
-    <!-- Side stem left going down -->
-    <path d="M12 165 Q-5 210 8 258 Q20 302 5 348 Q-8 390 10 435" stroke="url(#St)" stroke-width="3.5" fill="none" filter="url(#ssh)" stroke-linecap="round" opacity="0.8"/>
-    <path d="M-2 210 Q22 195 45 205 Q58 215 52 232 Q44 246 28 242 Q8 236 -2 210Z" fill="url(#L3)" filter="url(#lsh)" opacity="0.72"/>
-    <path d="M-2 210 L28 242" stroke="#2A5010" stroke-width="0.7" opacity="0.48"/>
-    <path d="M8 248 Q32 234 55 244 Q68 254 62 270 Q55 284 38 280 Q18 275 8 248Z" fill="url(#L1)" filter="url(#lsh)" opacity="0.68"/>
-    <path d="M8 248 L38 280" stroke="#2A5010" stroke-width="0.7" opacity="0.46"/>
-    <path d="M-5 292 Q18 278 40 288 Q52 298 47 314 Q40 326 24 323 Q5 318 -5 292Z" fill="url(#L4)" filter="url(#lsh)" opacity="0.64"/>
-    <path d="M-5 292 L24 323" stroke="#2A5010" stroke-width="0.65" opacity="0.44"/>
-    <path d="M5 335 Q28 322 50 332 Q62 342 56 358 Q49 370 33 367 Q14 362 5 335Z" fill="url(#L2)" filter="url(#lsh)" opacity="0.6"/>
-    <path d="M5 335 L33 367" stroke="#2A5010" stroke-width="0.65" opacity="0.42"/>
-    <path d="M-2 378 Q20 365 42 375 Q54 385 48 400 Q41 412 26 409 Q8 404 -2 378Z" fill="url(#L3)" filter="url(#lsh)" opacity="0.56"/>
-    <path d="M-2 378 L26 409" stroke="#2A5010" stroke-width="0.6" opacity="0.4"/>
-
-    <!-- ══ TOP RIGHT VINE CLUSTER ══ -->
-    <path d="M405 -10 Q375 25 385 70 Q395 115 372 165 Q355 210 375 260" stroke="url(#St)" stroke-width="5" fill="none" filter="url(#ssh)" stroke-linecap="round"/>
-    <path d="M380 -10 Q355 20 362 62 Q370 105 348 148 Q332 185 345 230" stroke="url(#St)" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
-
-    <!-- Top-right leaves mirror -->
-    <g filter="url(#lsh)">
-      <path d="M395 15 Q370 -5 345 5 Q332 15 338 32 Q345 48 362 44 Q382 38 395 15Z" fill="url(#L1)"/>
-      <path d="M395 15 L362 44" stroke="#2A5010" stroke-width="0.9" opacity="0.7"/>
-      <path d="M362 44 L368 50" stroke="#2A5010" stroke-width="0.6" opacity="0.5"/>
-      <path d="M362 44 L354 48" stroke="#2A5010" stroke-width="0.6" opacity="0.5"/>
-    </g>
-    <g filter="url(#lsh)">
-      <path d="M382 -8 Q352 -18 330 -5 Q318 8 325 24 Q334 38 350 33 Q372 25 382 -8Z" fill="url(#L2)"/>
-      <path d="M382 -8 L350 33" stroke="#2A5010" stroke-width="0.9" opacity="0.65"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.9">
-      <path d="M400 42 Q378 22 352 28 Q338 35 342 52 Q348 66 365 64 Q385 58 400 42Z" fill="url(#L3)"/>
-      <path d="M400 42 L365 64" stroke="#2A5010" stroke-width="0.8" opacity="0.6"/>
-    </g>
-    <g filter="url(#lsh)">
-      <path d="M385 62 Q362 48 338 55 Q325 64 330 80 Q336 94 354 92 Q376 88 385 62Z" fill="url(#L4)"/>
-      <path d="M385 62 L354 92" stroke="#2A5010" stroke-width="0.8" opacity="0.6"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.85">
-      <path d="M398 85 Q376 68 350 76 Q336 85 340 102 Q346 116 362 114 Q382 108 398 85Z" fill="url(#L1)"/>
-      <path d="M398 85 L362 114" stroke="#2A5010" stroke-width="0.8" opacity="0.58"/>
-    </g>
-    <g filter="url(#lsh)">
-      <path d="M362 38 Q335 20 310 30 Q298 42 305 58 Q314 70 330 66 Q350 60 362 38Z" fill="url(#L2)"/>
-      <path d="M362 38 L330 66" stroke="#2A5010" stroke-width="0.8" opacity="0.6"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.88">
-      <path d="M335 -5 Q308 -20 285 -8 Q272 5 280 20 Q290 32 306 28 Q326 22 335 -5Z" fill="url(#L3)"/>
-      <path d="M335 -5 L306 28" stroke="#2A5010" stroke-width="0.8" opacity="0.55"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.82">
-      <path d="M395 108 Q372 92 348 100 Q334 110 338 126 Q344 140 360 138 Q380 132 395 108Z" fill="url(#L4)"/>
-      <path d="M395 108 L360 138" stroke="#2A5010" stroke-width="0.75" opacity="0.55"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.78">
-      <path d="M375 130 Q350 115 326 124 Q313 134 318 150 Q324 163 340 160 Q360 155 375 130Z" fill="url(#L1)"/>
-      <path d="M375 130 L340 160" stroke="#2A5010" stroke-width="0.75" opacity="0.52"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.75">
-      <path d="M368 155 Q345 140 322 150 Q310 160 315 175 Q322 188 338 185 Q356 180 368 155Z" fill="url(#L2)"/>
-      <path d="M368 155 L338 185" stroke="#2A5010" stroke-width="0.7" opacity="0.5"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.7">
-      <path d="M320 15 Q300 2 282 12 Q272 22 278 36 Q286 46 300 42 Q316 36 320 15Z" fill="url(#Ls)"/>
-      <path d="M320 15 L300 42" stroke="#1A4808" stroke-width="0.7" opacity="0.5"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.65">
-      <path d="M295 -2 Q275 -14 258 -4 Q248 8 254 22 Q262 32 276 28 Q292 22 295 -2Z" fill="url(#L4)"/>
-    </g>
-    <!-- Right side stem going down -->
-    <path d="M378 165 Q395 210 382 258 Q370 302 385 348 Q398 390 380 435" stroke="url(#St)" stroke-width="3.5" fill="none" filter="url(#ssh)" stroke-linecap="round" opacity="0.8"/>
-    <path d="M392 210 Q368 195 345 205 Q332 215 338 232 Q346 246 362 242 Q382 236 392 210Z" fill="url(#L3)" filter="url(#lsh)" opacity="0.72"/>
-    <path d="M382 248 Q358 234 335 244 Q322 254 328 270 Q335 284 352 280 Q372 275 382 248Z" fill="url(#L1)" filter="url(#lsh)" opacity="0.68"/>
-    <path d="M395 292 Q372 278 350 288 Q338 298 343 314 Q350 326 366 323 Q385 318 395 292Z" fill="url(#L4)" filter="url(#lsh)" opacity="0.64"/>
-    <path d="M385 335 Q362 322 340 332 Q328 342 334 358 Q341 370 357 367 Q376 362 385 335Z" fill="url(#L2)" filter="url(#lsh)" opacity="0.6"/>
-    <path d="M392 378 Q370 365 348 375 Q336 385 342 400 Q349 412 364 409 Q382 404 392 378Z" fill="url(#L3)" filter="url(#lsh)" opacity="0.56"/>
-
-    <!-- ══ TOP CENTRE arch stems ══ -->
-    <path d="M-10 -5 Q80 -25 195 -18 Q305 -12 402 -5" stroke="url(#St)" stroke-width="3" fill="none" filter="url(#ssh)" stroke-linecap="round" opacity="0.55"/>
-    <!-- Centre top leaves -->
-    <g filter="url(#lsh)" opacity="0.62">
-      <path d="M148 -15 Q168 -28 188 -18 Q198 -8 192 6 Q184 16 170 12 Q154 6 148 -15Z" fill="url(#L2)"/>
-      <path d="M148 -15 L170 12" stroke="#2A5010" stroke-width="0.7" opacity="0.48"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.58">
-      <path d="M202 -14 Q222 -26 240 -16 Q250 -5 244 8 Q236 18 222 14 Q206 8 202 -14Z" fill="url(#L4)"/>
-      <path d="M202 -14 L222 14" stroke="#2A5010" stroke-width="0.65" opacity="0.44"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.54">
-      <path d="M110 -8 Q130 -20 148 -10 Q158 1 152 14 Q145 24 132 20 Q116 14 110 -8Z" fill="url(#L1)"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.54">
-      <path d="M242 -10 Q262 -22 280 -12 Q290 -1 284 12 Q276 22 263 18 Q247 12 242 -10Z" fill="url(#L3)"/>
-    </g>
-
-    <!-- ══ BOTTOM FOLIAGE ══ -->
-    <path d="M-10 840 Q20 818 50 828 Q80 838 110 820 Q140 805 170 820 Q195 832 220 818 Q245 804 275 820 Q305 836 335 820 Q362 806 390 830 L405 844 L-15 844Z" fill="url(#L2)" opacity="0.38"/>
-    <path d="M-10 844 Q25 828 55 836 Q82 842 108 828 Q132 816 158 828 Q182 840 208 826 Q232 813 258 828 Q282 842 310 828 Q336 815 362 828 Q385 840 405 832 L405 844 L-15 844Z" fill="url(#L1)" opacity="0.32"/>
-    <!-- Bottom left cluster -->
-    <g filter="url(#lsh)" opacity="0.6">
-      <path d="M-12 780 Q8 762 30 772 Q42 782 36 798 Q28 810 12 807 Q-8 802 -12 780Z" fill="url(#L3)"/>
-      <path d="M-12 780 L12 807" stroke="#2A5010" stroke-width="0.7" opacity="0.45"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.55">
-      <path d="M18 798 Q40 782 62 792 Q74 802 68 818 Q60 830 44 827 Q24 822 18 798Z" fill="url(#L1)"/>
-    </g>
-    <!-- Bottom right cluster -->
-    <g filter="url(#lsh)" opacity="0.6">
-      <path d="M402 780 Q382 762 360 772 Q348 782 354 798 Q362 810 378 807 Q398 802 402 780Z" fill="url(#L4)"/>
-      <path d="M402 780 L378 807" stroke="#2A5010" stroke-width="0.7" opacity="0.45"/>
-    </g>
-    <g filter="url(#lsh)" opacity="0.55">
-      <path d="M372 798 Q350 782 328 792 Q316 802 322 818 Q330 830 346 827 Q366 822 372 798Z" fill="url(#L2)"/>
-    </g>
-
+<!-- ══════════════════════════════════════════
+     HYPER-REALISTIC VINE BACKGROUND SVG
+══════════════════════════════════════════ -->
+<svg style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Warm cream wall -->
+    <radialGradient id="wall" cx="48%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#FAF7EE"/>
+      <stop offset="45%" stop-color="#F2EBD8"/>
+      <stop offset="100%" stop-color="#E6DABC"/>
+    </radialGradient>
+    <!-- Golden hour top right -->
+    <radialGradient id="ghr" cx="88%" cy="6%" r="38%">
+      <stop offset="0%" stop-color="rgba(228,205,140,0.45)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <!-- Ambient green left -->
+    <radialGradient id="agl" cx="4%" cy="52%" r="35%">
+      <stop offset="0%" stop-color="rgba(130,180,100,0.14)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
     <!-- Vignette -->
-    <rect width="390" height="844" fill="url(#vign)"/>
+    <radialGradient id="vig" cx="50%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(35,45,15,0.22)"/>
+    </radialGradient>
+    <!-- LEAF GRADIENTS — 6 variants for realism -->
+    <linearGradient id="lA" x1="15%" y1="5%" x2="85%" y2="95%">
+      <stop offset="0%" stop-color="#C2E890"/>
+      <stop offset="40%" stop-color="#88C850"/>
+      <stop offset="100%" stop-color="#4A8020"/>
+    </linearGradient>
+    <linearGradient id="lB" x1="10%" y1="10%" x2="90%" y2="90%">
+      <stop offset="0%" stop-color="#A8DC78"/>
+      <stop offset="45%" stop-color="#70B038"/>
+      <stop offset="100%" stop-color="#3E7018"/>
+    </linearGradient>
+    <linearGradient id="lC" x1="5%" y1="0%" x2="95%" y2="100%">
+      <stop offset="0%" stop-color="#B8E088"/>
+      <stop offset="50%" stop-color="#7AB848"/>
+      <stop offset="100%" stop-color="#488028"/>
+    </linearGradient>
+    <linearGradient id="lD" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#98D068"/>
+      <stop offset="50%" stop-color="#60A030"/>
+      <stop offset="100%" stop-color="#386810"/>
+    </linearGradient>
+    <linearGradient id="lE" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D0EEA8"/>
+      <stop offset="55%" stop-color="#98D068"/>
+      <stop offset="100%" stop-color="#58A030"/>
+    </linearGradient>
+    <linearGradient id="lF" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#80C048"/>
+      <stop offset="100%" stop-color="#305808"/>
+    </linearGradient>
+    <!-- STEM GRADIENTS -->
+    <linearGradient id="stA" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7A6030"/>
+      <stop offset="50%" stop-color="#8A7040"/>
+      <stop offset="100%" stop-color="#6A5020"/>
+    </linearGradient>
+    <linearGradient id="stB" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6A5828"/>
+      <stop offset="50%" stop-color="#7A6838"/>
+      <stop offset="100%" stop-color="#5A4818"/>
+    </linearGradient>
+    <!-- Leaf shadow for depth -->
+    <filter id="lsf" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="1.5" dy="2.5" stdDeviation="2.5" flood-color="rgba(20,40,5,0.3)"/>
+    </filter>
+    <filter id="lsf2" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="2" stdDeviation="1.8" flood-color="rgba(20,40,5,0.22)"/>
+    </filter>
+    <filter id="ssf" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="rgba(30,45,10,0.25)"/>
+    </filter>
+  </defs>
+
+  <!-- Wall + lighting -->
+  <rect width="390" height="844" fill="url(#wall)"/>
+  <rect width="390" height="844" fill="url(#ghr)"/>
+  <rect width="390" height="844" fill="url(#agl)"/>
+
+  <!-- ================================================================
+       LEFT SIDE — LUSH IVY CLIMBING UP THE WALL
+  ================================================================ -->
+  <!-- Main left stem — thick, curving, natural -->
+  <path d="M-12 844 Q12 760 2 672 Q-10 585 14 500 Q32 422 10 338 Q-8 260 18 180 Q35 115 12 50 Q4 25 22 -5" stroke="url(#stA)" stroke-width="5.5" fill="none" filter="url(#ssf)" stroke-linecap="round"/>
+  <!-- Secondary left stem -->
+  <path d="M16 844 Q36 768 26 688 Q14 602 36 520 Q54 446 32 364 Q14 288 38 210 Q55 148 34 82 Q24 55 40 20" stroke="url(#stB)" stroke-width="3.2" fill="none" opacity="0.65" filter="url(#ssf)" stroke-linecap="round"/>
+  <!-- Tertiary thin stem -->
+  <path d="M-5 700 Q18 648 8 590 Q-4 532 16 478" stroke="url(#stA)" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+
+  <!-- ── LEFT LEAVES — Bottom third (600–844) ── -->
+  <g filter="url(#lsf)">
+    <path d="M10 820 Q-15 795 -30 810 Q-35 828 -18 838 Q2 842 10 820Z" fill="url(#lA)" opacity="0.9"/>
+    <path d="M10 820 L-18 838" stroke="#204808" stroke-width="0.9" opacity="0.6"/>
+    <path d="M-18 838 L-24 844" stroke="#204808" stroke-width="0.6" opacity="0.4"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M4 800 Q32 778 50 790 Q60 804 50 818 Q38 828 20 822 Q4 812 4 800Z" fill="url(#lB)" opacity="0.88"/>
+    <path d="M4 800 L20 822" stroke="#204808" stroke-width="0.9" opacity="0.58"/>
+    <path d="M20 822 L14 830" stroke="#204808" stroke-width="0.55" opacity="0.38"/>
+    <path d="M20 822 L28 828" stroke="#204808" stroke-width="0.55" opacity="0.38"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M-8 768 Q-34 748 -46 762 Q-50 778 -34 786 Q-16 790 -8 768Z" fill="url(#lC)" opacity="0.85"/>
+    <path d="M-8 768 L-34 786" stroke="#204808" stroke-width="0.85" opacity="0.55"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M18 750 Q46 730 64 742 Q74 756 64 769 Q52 779 34 773 Q16 765 18 750Z" fill="url(#lD)" opacity="0.86"/>
+    <path d="M18 750 L34 773" stroke="#204808" stroke-width="0.9" opacity="0.56"/>
+    <path d="M34 773 L28 782" stroke="#204808" stroke-width="0.55" opacity="0.36"/>
+    <path d="M34 773 L42 780" stroke="#204808" stroke-width="0.55" opacity="0.36"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M-5 718 Q-28 698 -40 712 Q-44 726 -30 734 Q-12 738 -5 718Z" fill="url(#lE)" opacity="0.82"/>
+    <path d="M-5 718 L-30 734" stroke="#204808" stroke-width="0.8" opacity="0.52"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M12 700 Q38 682 56 694 Q66 706 56 720 Q44 730 26 724 Q10 716 12 700Z" fill="url(#lA)" opacity="0.84"/>
+    <path d="M12 700 L26 724" stroke="#204808" stroke-width="0.85" opacity="0.54"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M-10 672 Q-35 652 -48 666 Q-52 682 -36 690 Q-18 694 -10 672Z" fill="url(#lB)" opacity="0.80"/>
+    <path d="M-10 672 L-36 690" stroke="#204808" stroke-width="0.8" opacity="0.50"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M14 652 Q42 634 60 646 Q70 660 60 674 Q48 684 30 678 Q12 670 14 652Z" fill="url(#lC)" opacity="0.82"/>
+    <path d="M14 652 L30 678" stroke="#204808" stroke-width="0.85" opacity="0.52"/>
+    <path d="M30 678 L24 686" stroke="#204808" stroke-width="0.5" opacity="0.34"/>
+    <path d="M30 678 L38 684" stroke="#204808" stroke-width="0.5" opacity="0.34"/>
+  </g>
+
+  <!-- ── LEFT LEAVES — Middle third (340–600) ── -->
+  <g filter="url(#lsf)">
+    <path d="M8 618 Q-18 598 -32 612 Q-36 628 -20 636 Q-2 640 8 618Z" fill="url(#lD)" opacity="0.78"/>
+    <path d="M8 618 L-20 636" stroke="#204808" stroke-width="0.8" opacity="0.50"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M20 598 Q46 580 64 592 Q74 606 64 620 Q52 630 34 624 Q18 616 20 598Z" fill="url(#lE)" opacity="0.80"/>
+    <path d="M20 598 L34 624" stroke="#204808" stroke-width="0.82" opacity="0.50"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M-6 565 Q-30 546 -44 560 Q-48 576 -32 584 Q-14 588 -6 565Z" fill="url(#lA)" opacity="0.76"/>
+    <path d="M-6 565 L-32 584" stroke="#204808" stroke-width="0.78" opacity="0.48"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M16 545 Q44 527 62 540 Q72 554 62 568 Q50 578 32 572 Q14 563 16 545Z" fill="url(#lB)" opacity="0.78"/>
+    <path d="M16 545 L32 572" stroke="#204808" stroke-width="0.8" opacity="0.48"/>
+    <path d="M32 572 L26 580" stroke="#204808" stroke-width="0.5" opacity="0.32"/>
+    <path d="M32 572 L40 578" stroke="#204808" stroke-width="0.5" opacity="0.32"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M4 512 Q-22 493 -36 507 Q-40 523 -24 531 Q-6 535 4 512Z" fill="url(#lC)" opacity="0.74"/>
+    <path d="M4 512 L-24 531" stroke="#204808" stroke-width="0.76" opacity="0.46"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M22 490 Q50 472 68 485 Q78 499 68 513 Q56 522 38 516 Q20 508 22 490Z" fill="url(#lD)" opacity="0.76"/>
+    <path d="M22 490 L38 516" stroke="#204808" stroke-width="0.78" opacity="0.46"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M6 458 Q-18 440 -32 454 Q-36 470 -20 478 Q-2 482 6 458Z" fill="url(#lE)" opacity="0.72"/>
+    <path d="M6 458 L-20 478" stroke="#204808" stroke-width="0.74" opacity="0.44"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M18 438 Q46 420 64 433 Q74 447 64 461 Q52 470 34 464 Q16 456 18 438Z" fill="url(#lF)" opacity="0.74"/>
+    <path d="M18 438 L34 464" stroke="#204808" stroke-width="0.76" opacity="0.44"/>
+    <path d="M34 464 L28 472" stroke="#204808" stroke-width="0.48" opacity="0.30"/>
+    <path d="M34 464 L42 470" stroke="#204808" stroke-width="0.48" opacity="0.30"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M2 402 Q-24 384 -38 398 Q-42 414 -26 422 Q-8 426 2 402Z" fill="url(#lA)" opacity="0.70"/>
+    <path d="M2 402 L-26 422" stroke="#204808" stroke-width="0.72" opacity="0.42"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M20 382 Q48 364 66 377 Q76 391 66 405 Q54 414 36 408 Q18 400 20 382Z" fill="url(#lB)" opacity="0.72"/>
+    <path d="M20 382 L36 408" stroke="#204808" stroke-width="0.74" opacity="0.42"/>
+  </g>
+
+  <!-- ── LEFT LEAVES — Upper third (0–340) ── -->
+  <g filter="url(#lsf)">
+    <path d="M10 348 Q-16 330 -30 344 Q-34 360 -18 368 Q0 372 10 348Z" fill="url(#lC)" opacity="0.68"/>
+    <path d="M10 348 L-18 368" stroke="#204808" stroke-width="0.70" opacity="0.40"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M24 328 Q52 310 70 323 Q80 337 70 351 Q58 360 40 354 Q22 346 24 328Z" fill="url(#lD)" opacity="0.70"/>
+    <path d="M24 328 L40 354" stroke="#204808" stroke-width="0.72" opacity="0.40"/>
+    <path d="M40 354 L34 362" stroke="#204808" stroke-width="0.46" opacity="0.28"/>
+    <path d="M40 354 L48 360" stroke="#204808" stroke-width="0.46" opacity="0.28"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M8 292 Q-18 274 -32 288 Q-36 304 -20 312 Q-2 316 8 292Z" fill="url(#lE)" opacity="0.72"/>
+    <path d="M8 292 L-20 312" stroke="#204808" stroke-width="0.70" opacity="0.42"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M26 272 Q54 255 72 268 Q82 282 72 296 Q60 305 42 299 Q24 291 26 272Z" fill="url(#lA)" opacity="0.74"/>
+    <path d="M26 272 L42 299" stroke="#204808" stroke-width="0.72" opacity="0.42"/>
+  </g>
+  <!-- Branch left at mid-height -->
+  <path d="M14 240 Q42 218 72 228" stroke="url(#stB)" stroke-width="2.2" fill="none" opacity="0.55" stroke-linecap="round"/>
+  <g filter="url(#lsf)">
+    <path d="M76 224 Q100 205 118 218 Q128 232 118 246 Q106 255 88 248 Q70 240 76 224Z" fill="url(#lB)" opacity="0.76"/>
+    <path d="M76 224 L88 248" stroke="#204808" stroke-width="0.74" opacity="0.44"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M60 236 Q80 218 98 230 Q108 244 98 258 Q86 267 68 260 Q52 252 60 236Z" fill="url(#lC)" opacity="0.70"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M6 220 Q-20 202 -34 216 Q-38 232 -22 240 Q-4 244 6 220Z" fill="url(#lD)" opacity="0.74"/>
+    <path d="M6 220 L-22 240" stroke="#204808" stroke-width="0.72" opacity="0.44"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M22 198 Q50 180 68 193 Q78 207 68 221 Q56 230 38 224 Q20 216 22 198Z" fill="url(#lE)" opacity="0.76"/>
+    <path d="M22 198 L38 224" stroke="#204808" stroke-width="0.74" opacity="0.44"/>
+    <path d="M38 224 L32 232" stroke="#204808" stroke-width="0.46" opacity="0.30"/>
+    <path d="M38 224 L46 230" stroke="#204808" stroke-width="0.46" opacity="0.30"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M4 162 Q-22 144 -36 158 Q-40 174 -24 182 Q-6 186 4 162Z" fill="url(#lA)" opacity="0.78"/>
+    <path d="M4 162 L-24 182" stroke="#204808" stroke-width="0.74" opacity="0.46"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M28 142 Q56 124 74 138 Q84 152 74 166 Q62 175 44 168 Q26 160 28 142Z" fill="url(#lB)" opacity="0.80"/>
+    <path d="M28 142 L44 168" stroke="#204808" stroke-width="0.76" opacity="0.46"/>
+  </g>
+  <!-- Big decorative leaves upper-left -->
+  <g filter="url(#lsf)">
+    <path d="M-5 108 Q25 82 52 96 Q68 112 58 132 Q46 146 24 140 Q2 130 -5 108Z" fill="url(#lC)" opacity="0.82"/>
+    <path d="M-5 108 L24 140" stroke="#1A4006" stroke-width="0.88" opacity="0.52"/>
+    <path d="M24 140 L16 150" stroke="#1A4006" stroke-width="0.55" opacity="0.36"/>
+    <path d="M24 140 L34 148" stroke="#1A4006" stroke-width="0.55" opacity="0.36"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M18 82 Q50 58 76 72 Q90 88 80 108 Q68 122 46 115 Q24 106 18 82Z" fill="url(#lD)" opacity="0.84"/>
+    <path d="M18 82 L46 115" stroke="#1A4006" stroke-width="0.90" opacity="0.54"/>
+    <path d="M46 115 L38 125" stroke="#1A4006" stroke-width="0.58" opacity="0.38"/>
+    <path d="M46 115 L56 122" stroke="#1A4006" stroke-width="0.58" opacity="0.38"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M-12 55 Q16 32 42 46 Q56 62 46 80 Q34 92 12 86 Q-10 78 -12 55Z" fill="url(#lE)" opacity="0.86"/>
+    <path d="M-12 55 L12 86" stroke="#1A4006" stroke-width="0.90" opacity="0.56"/>
+    <path d="M12 86 L5 96" stroke="#1A4006" stroke-width="0.58" opacity="0.38"/>
+    <path d="M12 86 L22 94" stroke="#1A4006" stroke-width="0.58" opacity="0.38"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M8 28 Q36 6 62 20 Q76 36 66 54 Q54 66 32 60 Q10 52 8 28Z" fill="url(#lA)" opacity="0.88"/>
+    <path d="M8 28 L32 60" stroke="#1A4006" stroke-width="0.92" opacity="0.58"/>
+  </g>
+  <g filter="url(#lsf)">
+    <path d="M-8 5 Q18 -14 44 0 Q58 16 48 34 Q36 46 14 40 Q-8 32 -8 5Z" fill="url(#lB)" opacity="0.90"/>
+    <path d="M-8 5 L14 40" stroke="#1A4006" stroke-width="0.92" opacity="0.58"/>
+  </g>
+  <!-- Extra small leaves scattered upper left -->
+  <g filter="url(#lsf2)">
+    <path d="M55 30 Q76 12 96 26 Q106 40 96 54 Q84 62 64 56 Q48 48 55 30Z" fill="url(#lC)" opacity="0.78"/>
+    <path d="M55 30 L64 56" stroke="#1A4006" stroke-width="0.72" opacity="0.46"/>
+  </g>
+  <g filter="url(#lsf2)">
+    <path d="M82 8 Q104 -8 124 6 Q134 20 124 34 Q112 42 92 36 Q76 28 82 8Z" fill="url(#lD)" opacity="0.74"/>
+    <path d="M82 8 L92 36" stroke="#1A4006" stroke-width="0.68" opacity="0.44"/>
+  </g>
+  <g filter="url(#lsf2)">
+    <path d="M38 -5 Q58 -20 78 -8 Q88 6 78 20 Q66 28 48 22 Q34 14 38 -5Z" fill="url(#lF)" opacity="0.76"/>
+    <path d="M38 -5 L48 22" stroke="#1A4006" stroke-width="0.68" opacity="0.44"/>
+  </g>
+
+  <!-- ================================================================
+       RIGHT SIDE — LUSH IVY (MIRRORED)
+  ================================================================ -->
+  <!-- Main right stem -->
+  <path d="M402 844 Q378 760 388 672 Q400 585 376 500 Q358 422 380 338 Q398 260 372 180 Q355 115 378 50 Q386 25 368 -5" stroke="url(#stA)" stroke-width="5.5" fill="none" filter="url(#ssf)" stroke-linecap="round"/>
+  <!-- Secondary right stem -->
+  <path d="M374 844 Q354 768 364 688 Q376 602 354 520 Q336 446 358 364 Q376 288 352 210 Q335 148 356 82 Q366 55 350 20" stroke="url(#stB)" stroke-width="3.2" fill="none" opacity="0.65" filter="url(#ssf)" stroke-linecap="round"/>
+  <path d="M395 700 Q372 648 382 590 Q394 532 374 478" stroke="url(#stA)" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+
+  <!-- RIGHT leaves — Bottom -->
+  <g filter="url(#lsf)"><path d="M380 820 Q405 795 420 810 Q425 828 408 838 Q388 842 380 820Z" fill="url(#lA)" opacity="0.9"/><path d="M380 820 L408 838" stroke="#204808" stroke-width="0.9" opacity="0.6"/></g>
+  <g filter="url(#lsf)"><path d="M386 800 Q358 778 340 790 Q330 804 340 818 Q352 828 370 822 Q386 812 386 800Z" fill="url(#lB)" opacity="0.88"/><path d="M386 800 L370 822" stroke="#204808" stroke-width="0.9" opacity="0.58"/><path d="M370 822 L376 830" stroke="#204808" stroke-width="0.55" opacity="0.38"/><path d="M370 822 L362 828" stroke="#204808" stroke-width="0.55" opacity="0.38"/></g>
+  <g filter="url(#lsf)"><path d="M398 768 Q424 748 436 762 Q440 778 424 786 Q406 790 398 768Z" fill="url(#lC)" opacity="0.85"/><path d="M398 768 L424 786" stroke="#204808" stroke-width="0.85" opacity="0.55"/></g>
+  <g filter="url(#lsf)"><path d="M372 750 Q344 730 326 742 Q316 756 326 769 Q338 779 356 773 Q374 765 372 750Z" fill="url(#lD)" opacity="0.86"/><path d="M372 750 L356 773" stroke="#204808" stroke-width="0.9" opacity="0.56"/></g>
+  <g filter="url(#lsf)"><path d="M395 718 Q418 698 430 712 Q434 726 420 734 Q402 738 395 718Z" fill="url(#lE)" opacity="0.82"/><path d="M395 718 L420 734" stroke="#204808" stroke-width="0.8" opacity="0.52"/></g>
+  <g filter="url(#lsf)"><path d="M378 700 Q352 682 334 694 Q324 706 334 720 Q346 730 364 724 Q380 716 378 700Z" fill="url(#lA)" opacity="0.84"/><path d="M378 700 L364 724" stroke="#204808" stroke-width="0.85" opacity="0.54"/></g>
+  <g filter="url(#lsf)"><path d="M400 672 Q425 652 438 666 Q442 682 426 690 Q408 694 400 672Z" fill="url(#lB)" opacity="0.80"/><path d="M400 672 L426 690" stroke="#204808" stroke-width="0.8" opacity="0.50"/></g>
+  <g filter="url(#lsf)"><path d="M376 652 Q348 634 330 646 Q320 660 330 674 Q342 684 360 678 Q378 670 376 652Z" fill="url(#lC)" opacity="0.82"/><path d="M376 652 L360 678" stroke="#204808" stroke-width="0.85" opacity="0.52"/></g>
+  <!-- RIGHT middle -->
+  <g filter="url(#lsf)"><path d="M382 618 Q408 598 422 612 Q426 628 410 636 Q392 640 382 618Z" fill="url(#lD)" opacity="0.78"/><path d="M382 618 L410 636" stroke="#204808" stroke-width="0.8" opacity="0.50"/></g>
+  <g filter="url(#lsf)"><path d="M370 598 Q344 580 326 592 Q316 606 326 620 Q338 630 356 624 Q372 616 370 598Z" fill="url(#lE)" opacity="0.80"/><path d="M370 598 L356 624" stroke="#204808" stroke-width="0.82" opacity="0.50"/></g>
+  <g filter="url(#lsf)"><path d="M396 565 Q420 546 434 560 Q438 576 422 584 Q404 588 396 565Z" fill="url(#lA)" opacity="0.76"/><path d="M396 565 L422 584" stroke="#204808" stroke-width="0.78" opacity="0.48"/></g>
+  <g filter="url(#lsf)"><path d="M374 545 Q348 527 330 540 Q320 554 330 568 Q342 578 360 572 Q376 563 374 545Z" fill="url(#lB)" opacity="0.78"/><path d="M374 545 L360 572" stroke="#204808" stroke-width="0.8" opacity="0.48"/></g>
+  <g filter="url(#lsf)"><path d="M386 512 Q412 493 426 507 Q430 523 414 531 Q396 535 386 512Z" fill="url(#lC)" opacity="0.74"/><path d="M386 512 L414 531" stroke="#204808" stroke-width="0.76" opacity="0.46"/></g>
+  <g filter="url(#lsf)"><path d="M368 490 Q342 472 324 485 Q314 499 324 513 Q336 522 354 516 Q370 508 368 490Z" fill="url(#lD)" opacity="0.76"/><path d="M368 490 L354 516" stroke="#204808" stroke-width="0.78" opacity="0.46"/></g>
+  <g filter="url(#lsf)"><path d="M384 458 Q408 440 422 454 Q426 470 410 478 Q392 482 384 458Z" fill="url(#lE)" opacity="0.72"/><path d="M384 458 L410 478" stroke="#204808" stroke-width="0.74" opacity="0.44"/></g>
+  <g filter="url(#lsf)"><path d="M372 438 Q346 420 328 433 Q318 447 328 461 Q340 470 358 464 Q374 456 372 438Z" fill="url(#lF)" opacity="0.74"/><path d="M372 438 L358 464" stroke="#204808" stroke-width="0.76" opacity="0.44"/></g>
+  <g filter="url(#lsf)"><path d="M388 402 Q414 384 428 398 Q432 414 416 422 Q398 426 388 402Z" fill="url(#lA)" opacity="0.70"/><path d="M388 402 L416 422" stroke="#204808" stroke-width="0.72" opacity="0.42"/></g>
+  <g filter="url(#lsf)"><path d="M370 382 Q344 364 326 377 Q316 391 326 405 Q338 414 356 408 Q372 400 370 382Z" fill="url(#lB)" opacity="0.72"/><path d="M370 382 L356 408" stroke="#204808" stroke-width="0.74" opacity="0.42"/></g>
+  <!-- RIGHT upper -->
+  <g filter="url(#lsf)"><path d="M380 348 Q406 330 420 344 Q424 360 408 368 Q390 372 380 348Z" fill="url(#lC)" opacity="0.68"/><path d="M380 348 L408 368" stroke="#204808" stroke-width="0.70" opacity="0.40"/></g>
+  <g filter="url(#lsf)"><path d="M366 328 Q342 310 324 323 Q314 337 324 351 Q336 360 354 354 Q370 346 366 328Z" fill="url(#lD)" opacity="0.70"/><path d="M366 328 L354 354" stroke="#204808" stroke-width="0.72" opacity="0.40"/></g>
+  <!-- Branch right -->
+  <path d="M376 240 Q350 218 320 228" stroke="url(#stB)" stroke-width="2.2" fill="none" opacity="0.55" stroke-linecap="round"/>
+  <g filter="url(#lsf)"><path d="M316 224 Q292 205 274 218 Q264 232 274 246 Q286 255 304 248 Q322 240 316 224Z" fill="url(#lB)" opacity="0.76"/><path d="M316 224 L304 248" stroke="#204808" stroke-width="0.74" opacity="0.44"/></g>
+  <g filter="url(#lsf)"><path d="M330 236 Q310 218 292 230 Q282 244 292 258 Q304 267 322 260 Q338 252 330 236Z" fill="url(#lC)" opacity="0.70"/></g>
+  <g filter="url(#lsf)"><path d="M384 220 Q410 202 424 216 Q428 232 412 240 Q394 244 384 220Z" fill="url(#lD)" opacity="0.74"/><path d="M384 220 L412 240" stroke="#204808" stroke-width="0.72" opacity="0.44"/></g>
+  <g filter="url(#lsf)"><path d="M368 198 Q344 180 326 193 Q316 207 326 221 Q338 230 356 224 Q372 216 368 198Z" fill="url(#lE)" opacity="0.76"/><path d="M368 198 L356 224" stroke="#204808" stroke-width="0.74" opacity="0.44"/></g>
+  <g filter="url(#lsf)"><path d="M386 162 Q412 144 426 158 Q430 174 414 182 Q396 186 386 162Z" fill="url(#lA)" opacity="0.78"/><path d="M386 162 L414 182" stroke="#204808" stroke-width="0.74" opacity="0.46"/></g>
+  <g filter="url(#lsf)"><path d="M362 142 Q338 124 320 138 Q310 152 320 166 Q332 175 350 168 Q366 160 362 142Z" fill="url(#lB)" opacity="0.80"/><path d="M362 142 L350 168" stroke="#204808" stroke-width="0.76" opacity="0.46"/></g>
+  <!-- Big right upper leaves -->
+  <g filter="url(#lsf)"><path d="M395 108 Q368 82 342 96 Q328 112 338 132 Q350 146 372 140 Q394 130 395 108Z" fill="url(#lC)" opacity="0.82"/><path d="M395 108 L372 140" stroke="#1A4006" stroke-width="0.88" opacity="0.52"/><path d="M372 140 L380 150" stroke="#1A4006" stroke-width="0.55" opacity="0.36"/><path d="M372 140 L362 148" stroke="#1A4006" stroke-width="0.55" opacity="0.36"/></g>
+  <g filter="url(#lsf)"><path d="M372 82 Q344 58 318 72 Q304 88 314 108 Q326 122 348 115 Q370 106 372 82Z" fill="url(#lD)" opacity="0.84"/><path d="M372 82 L348 115" stroke="#1A4006" stroke-width="0.90" opacity="0.54"/></g>
+  <g filter="url(#lsf)"><path d="M402 55 Q376 32 352 46 Q338 62 348 80 Q360 92 382 86 Q402 78 402 55Z" fill="url(#lE)" opacity="0.86"/><path d="M402 55 L382 86" stroke="#1A4006" stroke-width="0.90" opacity="0.56"/></g>
+  <g filter="url(#lsf)"><path d="M382 28 Q358 6 334 20 Q320 36 330 54 Q342 66 364 60 Q384 52 382 28Z" fill="url(#lA)" opacity="0.88"/><path d="M382 28 L364 60" stroke="#1A4006" stroke-width="0.92" opacity="0.58"/></g>
+  <g filter="url(#lsf)"><path d="M398 5 Q374 -14 350 0 Q336 16 346 34 Q358 46 380 40 Q400 32 398 5Z" fill="url(#lB)" opacity="0.90"/><path d="M398 5 L380 40" stroke="#1A4006" stroke-width="0.92" opacity="0.58"/></g>
+  <g filter="url(#lsf2)"><path d="M335 30 Q314 12 294 26 Q284 40 294 54 Q306 62 326 56 Q342 48 335 30Z" fill="url(#lC)" opacity="0.78"/><path d="M335 30 L326 56" stroke="#1A4006" stroke-width="0.72" opacity="0.46"/></g>
+  <g filter="url(#lsf2)"><path d="M308 8 Q286 -8 266 6 Q256 20 266 34 Q278 42 298 36 Q312 28 308 8Z" fill="url(#lD)" opacity="0.74"/></g>
+  <g filter="url(#lsf2)"><path d="M352 -5 Q332 -20 312 -8 Q302 6 312 20 Q324 28 342 22 Q356 14 352 -5Z" fill="url(#lF)" opacity="0.76"/></g>
+
+  <!-- ================================================================
+       TOP — DENSE CANOPY SPANNING THE TOP EDGE
+  ================================================================ -->
+  <!-- Top horizontal stems -->
+  <path d="M-15 -8 Q55 15 130 5 Q195 -5 260 12 Q318 26 395 8" stroke="url(#stA)" stroke-width="3.8" fill="none" filter="url(#ssf)" stroke-linecap="round"/>
+  <path d="M-10 8 Q50 28 122 18 Q185 8 248 24 Q305 38 388 22" stroke="url(#stB)" stroke-width="2.2" fill="none" opacity="0.55" filter="url(#ssf)" stroke-linecap="round"/>
+  <!-- Hanging top vines -->
+  <path d="M88 5 Q82 40 90 75 Q96 105 84 138" stroke="url(#stB)" stroke-width="2.4" fill="none" opacity="0.6" stroke-linecap="round"/>
+  <path d="M168 -2 Q160 34 168 68 Q175 98 162 130" stroke="url(#stB)" stroke-width="2.2" fill="none" opacity="0.55" stroke-linecap="round"/>
+  <path d="M248 4 Q240 38 248 72 Q256 103 244 135" stroke="url(#stB)" stroke-width="2.2" fill="none" opacity="0.55" stroke-linecap="round"/>
+  <path d="M310 -2 Q304 32 312 65 Q318 94 308 125" stroke="url(#stB)" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+
+  <!-- Top canopy leaves — LEFT zone -->
+  <g filter="url(#lsf)"><path d="M12 -2 Q38 -20 60 -8 Q72 6 62 22 Q50 32 30 26 Q12 18 12 -2Z" fill="url(#lA)" opacity="0.92"/><path d="M12 -2 L30 26" stroke="#1A4006" stroke-width="0.9" opacity="0.6"/><path d="M30 26 L24 36" stroke="#1A4006" stroke-width="0.6" opacity="0.4"/><path d="M30 26 L40 34" stroke="#1A4006" stroke-width="0.6" opacity="0.4"/></g>
+  <g filter="url(#lsf)"><path d="M48 -14 Q76 -30 98 -18 Q110 -4 100 12 Q88 22 68 16 Q48 8 48 -14Z" fill="url(#lB)" opacity="0.90"/><path d="M48 -14 L68 16" stroke="#1A4006" stroke-width="0.9" opacity="0.58"/></g>
+  <g filter="url(#lsf)"><path d="M30 18 Q56 2 78 14 Q90 28 80 44 Q68 54 48 48 Q28 40 30 18Z" fill="url(#lC)" opacity="0.88"/><path d="M30 18 L48 48" stroke="#1A4006" stroke-width="0.88" opacity="0.56"/><path d="M48 48 L42 58" stroke="#1A4006" stroke-width="0.55" opacity="0.38"/><path d="M48 48 L58 56" stroke="#1A4006" stroke-width="0.55" opacity="0.38"/></g>
+  <g filter="url(#lsf)"><path d="M68 8 Q94 -8 116 4 Q128 18 118 34 Q106 44 86 38 Q66 30 68 8Z" fill="url(#lD)" opacity="0.86"/><path d="M68 8 L86 38" stroke="#1A4006" stroke-width="0.86" opacity="0.54"/></g>
+  <g filter="url(#lsf)"><path d="M82 26 Q108 10 130 22 Q142 36 132 52 Q120 62 100 56 Q80 48 82 26Z" fill="url(#lE)" opacity="0.84"/><path d="M82 26 L100 56" stroke="#1A4006" stroke-width="0.86" opacity="0.52"/><path d="M100 56 L94 66" stroke="#1A4006" stroke-width="0.54" opacity="0.36"/><path d="M100 56 L110 64" stroke="#1A4006" stroke-width="0.54" opacity="0.36"/></g>
+  <g filter="url(#lsf)"><path d="M96 -10 Q122 -24 144 -12 Q156 2 146 18 Q134 28 114 22 Q94 14 96 -10Z" fill="url(#lA)" opacity="0.82"/><path d="M96 -10 L114 22" stroke="#1A4006" stroke-width="0.82" opacity="0.50"/></g>
+  <g filter="url(#lsf)"><path d="M108 42 Q134 26 156 38 Q168 52 158 68 Q146 78 126 72 Q106 64 108 42Z" fill="url(#lF)" opacity="0.80"/><path d="M108 42 L126 72" stroke="#1A4006" stroke-width="0.80" opacity="0.50"/></g>
+  <!-- Top centre leaves -->
+  <g filter="url(#lsf)"><path d="M138 -6 Q164 -20 186 -8 Q198 6 188 22 Q176 32 156 26 Q136 18 138 -6Z" fill="url(#lB)" opacity="0.80"/><path d="M138 -6 L156 26" stroke="#1A4006" stroke-width="0.80" opacity="0.48"/></g>
+  <g filter="url(#lsf)"><path d="M152 14 Q178 -2 200 10 Q212 24 202 40 Q190 50 170 44 Q150 36 152 14Z" fill="url(#lC)" opacity="0.82"/><path d="M152 14 L170 44" stroke="#1A4006" stroke-width="0.80" opacity="0.50"/><path d="M170 44 L164 54" stroke="#1A4006" stroke-width="0.52" opacity="0.34"/><path d="M170 44 L180 52" stroke="#1A4006" stroke-width="0.52" opacity="0.34"/></g>
+  <g filter="url(#lsf)"><path d="M186 -4 Q212 -18 234 -6 Q246 8 236 24 Q224 34 204 28 Q184 20 186 -4Z" fill="url(#lD)" opacity="0.78"/><path d="M186 -4 L204 28" stroke="#1A4006" stroke-width="0.78" opacity="0.46"/></g>
+  <g filter="url(#lsf)"><path d="M204 16 Q230 2 252 14 Q264 28 254 44 Q242 54 222 48 Q202 40 204 16Z" fill="url(#lE)" opacity="0.80"/><path d="M204 16 L222 48" stroke="#1A4006" stroke-width="0.78" opacity="0.48"/></g>
+  <!-- Top right zone -->
+  <g filter="url(#lsf)"><path d="M238 -8 Q264 -22 286 -10 Q298 4 288 20 Q276 30 256 24 Q236 16 238 -8Z" fill="url(#lA)" opacity="0.78"/><path d="M238 -8 L256 24" stroke="#1A4006" stroke-width="0.76" opacity="0.46"/></g>
+  <g filter="url(#lsf)"><path d="M256 12 Q282 -2 304 10 Q316 24 306 40 Q294 50 274 44 Q254 36 256 12Z" fill="url(#lB)" opacity="0.80"/><path d="M256 12 L274 44" stroke="#1A4006" stroke-width="0.78" opacity="0.48"/><path d="M274 44 L268 54" stroke="#1A4006" stroke-width="0.50" opacity="0.32"/><path d="M274 44 L284 52" stroke="#1A4006" stroke-width="0.50" opacity="0.32"/></g>
+  <g filter="url(#lsf)"><path d="M290 -6 Q316 -20 338 -8 Q350 6 340 22 Q328 32 308 26 Q288 18 290 -6Z" fill="url(#lC)" opacity="0.76"/><path d="M290 -6 L308 26" stroke="#1A4006" stroke-width="0.74" opacity="0.44"/></g>
+  <g filter="url(#lsf)"><path d="M312 14 Q336 0 358 12 Q368 26 358 42 Q346 52 326 46 Q308 38 312 14Z" fill="url(#lD)" opacity="0.78"/><path d="M312 14 L326 46" stroke="#1A4006" stroke-width="0.76" opacity="0.46"/></g>
+  <g filter="url(#lsf)"><path d="M346 -12 Q370 -26 390 -14 Q400 0 390 16 Q378 26 360 20 Q342 12 346 -12Z" fill="url(#lE)" opacity="0.80"/><path d="M346 -12 L360 20" stroke="#1A4006" stroke-width="0.78" opacity="0.48"/></g>
+
+  <!-- ================================================================
+       BOTTOM GROUND FOLIAGE
+  ================================================================ -->
+  <g opacity="0.55">
+    <ellipse cx="38" cy="840" rx="65" ry="28" fill="#78B038"/>
+    <ellipse cx="5" cy="844" rx="44" ry="20" fill="#98C858"/>
+    <ellipse cx="80" cy="844" rx="52" ry="22" fill="#68A028"/>
+    <ellipse cx="145" cy="844" rx="36" ry="14" fill="#88B848" opacity="0.75"/>
+    <ellipse cx="352" cy="840" rx="65" ry="28" fill="#78B038"/>
+    <ellipse cx="386" cy="844" rx="44" ry="20" fill="#98C858"/>
+    <ellipse cx="310" cy="844" rx="52" ry="22" fill="#68A028"/>
+    <ellipse cx="245" cy="844" rx="36" ry="14" fill="#88B848" opacity="0.75"/>
+    <ellipse cx="195" cy="844" rx="30" ry="12" fill="#78B038" opacity="0.6"/>
+  </g>
+
+  <!-- Final vignette -->
+  <rect width="390" height="844" fill="url(#vig)"/>
+</svg>
+
+<!-- ══ NAME PROMPT MODAL ══ -->
+<div class="modal-bg" id="nameModal">
+  <!-- Vine SVG inside modal background -->
+  <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="mv1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#C2E890"/><stop offset="50%" stop-color="#88C850"/><stop offset="100%" stop-color="#4A8020"/></linearGradient>
+      <filter id="mlsf" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="rgba(20,40,5,0.28)"/></filter>
+    </defs>
+    <!-- Top left modal vines -->
+    <path d="M-10 0 Q15 45 5 100 Q-5 148 15 200" stroke="#8A7030" stroke-width="3.5" fill="none" opacity="0.55" stroke-linecap="round"/>
+    <g filter="url(#mlsf)"><path d="M-8 10 Q18 -8 40 4 Q52 18 42 34 Q30 44 10 38 Q-8 30 -8 10Z" fill="url(#mv1)" opacity="0.85"/><path d="M-8 10 L10 38" stroke="#1A4006" stroke-width="0.85" opacity="0.55"/><path d="M10 38 L4 48" stroke="#1A4006" stroke-width="0.55" opacity="0.38"/><path d="M10 38 L20 46" stroke="#1A4006" stroke-width="0.55" opacity="0.38"/></g>
+    <g filter="url(#mlsf)"><path d="M5 42 Q32 26 54 38 Q66 52 56 68 Q44 78 24 72 Q4 64 5 42Z" fill="url(#mv1)" opacity="0.80"/><path d="M5 42 L24 72" stroke="#1A4006" stroke-width="0.82" opacity="0.52"/></g>
+    <g filter="url(#mlsf)"><path d="M-5 78 Q22 62 44 74 Q56 88 46 104 Q34 114 14 108 Q-6 100 -5 78Z" fill="url(#mv1)" opacity="0.75"/><path d="M-5 78 L14 108" stroke="#1A4006" stroke-width="0.78" opacity="0.48"/></g>
+    <g filter="url(#mlsf)"><path d="M8 115 Q36 99 58 112 Q70 126 60 142 Q48 151 28 145 Q8 137 8 115Z" fill="url(#mv1)" opacity="0.70"/><path d="M8 115 L28 145" stroke="#1A4006" stroke-width="0.75" opacity="0.44"/></g>
+    <g filter="url(#mlsf)"><path d="M-2 155 Q24 140 46 152 Q58 166 48 182 Q36 191 16 185 Q-4 177 -2 155Z" fill="url(#mv1)" opacity="0.65"/></g>
+    <!-- Extra top-left leaves -->
+    <g filter="url(#mlsf)"><path d="M32 -5 Q58 -20 78 -8 Q88 6 78 22 Q66 32 46 26 Q28 18 32 -5Z" fill="url(#mv1)" opacity="0.78"/><path d="M32 -5 L46 26" stroke="#1A4006" stroke-width="0.75" opacity="0.46"/></g>
+    <g filter="url(#mlsf)"><path d="M62 8 Q88 -6 108 6 Q118 20 108 36 Q96 46 76 40 Q58 32 62 8Z" fill="url(#mv1)" opacity="0.72"/></g>
+    <!-- Top right modal vines -->
+    <path d="M400 0 Q375 45 385 100 Q395 148 375 200" stroke="#8A7030" stroke-width="3.5" fill="none" opacity="0.52" stroke-linecap="round"/>
+    <g filter="url(#mlsf)"><path d="M398 10 Q372 -8 350 4 Q338 18 348 34 Q360 44 380 38 Q398 30 398 10Z" fill="url(#mv1)" opacity="0.85"/><path d="M398 10 L380 38" stroke="#1A4006" stroke-width="0.85" opacity="0.55"/></g>
+    <g filter="url(#mlsf)"><path d="M385 42 Q358 26 336 38 Q324 52 334 68 Q346 78 366 72 Q386 64 385 42Z" fill="url(#mv1)" opacity="0.80"/><path d="M385 42 L366 72" stroke="#1A4006" stroke-width="0.82" opacity="0.52"/></g>
+    <g filter="url(#mlsf)"><path d="M395 78 Q368 62 346 74 Q334 88 344 104 Q356 114 376 108 Q396 100 395 78Z" fill="url(#mv1)" opacity="0.75"/></g>
+    <g filter="url(#mlsf)"><path d="M382 115 Q354 99 332 112 Q320 126 330 142 Q342 151 362 145 Q382 137 382 115Z" fill="url(#mv1)" opacity="0.70"/></g>
+    <g filter="url(#mlsf)"><path d="M358 -5 Q332 -20 312 -8 Q302 6 312 22 Q324 32 344 26 Q362 18 358 -5Z" fill="url(#mv1)" opacity="0.76"/></g>
+    <g filter="url(#mlsf)"><path d="M328 8 Q302 -6 282 6 Q272 20 282 36 Q294 46 314 40 Q332 32 328 8Z" fill="url(#mv1)" opacity="0.70"/></g>
+    <!-- Bottom left -->
+    <path d="M-10 844 Q14 800 4 755" stroke="#8A7030" stroke-width="2.8" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <g filter="url(#mlsf)"><path d="M-8 800 Q18 784 40 796 Q52 810 42 826 Q30 835 10 829 Q-10 821 -8 800Z" fill="url(#mv1)" opacity="0.65"/></g>
+    <g filter="url(#mlsf)"><path d="M-4 838 Q22 823 44 835 Q54 848 44 844 L-4 844Z" fill="url(#mv1)" opacity="0.58"/></g>
+    <!-- Bottom right -->
+    <path d="M400 844 Q376 800 386 755" stroke="#8A7030" stroke-width="2.8" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <g filter="url(#mlsf)"><path d="M398 800 Q372 784 350 796 Q338 810 348 826 Q360 835 380 829 Q400 821 398 800Z" fill="url(#mv1)" opacity="0.65"/></g>
+    <g filter="url(#mlsf)"><path d="M394 838 Q368 823 346 835 Q336 848 346 844 L394 844Z" fill="url(#mv1)" opacity="0.58"/></g>
   </svg>
+
+  <div class="modal-card">
+    <div style="font-size:52px;margin-bottom:14px;">🌿</div>
+    <div style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;color:#1A1A0E;margin-bottom:8px;letter-spacing:-0.5px;">Welcome to Thinko</div>
+    <div style="font-size:15px;color:#6A6050;line-height:1.7;margin-bottom:26px;font-weight:400;">Your calm space for thinking clearly,<br/>planning gently, and living fully.</div>
+    <div style="font-size:13px;font-weight:700;color:#3A6820;margin-bottom:12px;letter-spacing:0.2px;">What shall we call you? 🌱</div>
+    <input type="text" id="nameIn" placeholder="Your first name..." autocomplete="given-name"/>
+    <button class="modal-btn" onclick="saveName()">Begin my journey 🌿</button>
+    <div style="margin-top:12px;font-size:11px;color:#B0A898;">You can change this anytime in settings</div>
+  </div>
 </div>
 
-<!-- ══ PAGE ══ -->
+<!-- ══ PAGE CONTENT ══ -->
 <div class="page">
-  <!-- Glass panel -->
-  <div class="glass-panel" style="margin-top:60px;margin-bottom:90px;">
-
-    <!-- Back / menu -->
-    <div class="greeting-back">
-      <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M7 1L1 7l6 6M1 7h16" stroke="#3A3020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <svg width="16" height="12" viewBox="0 0 16 12" fill="none" style="margin-left:4px"><path d="M0 1h16M0 6h16M0 11h10" stroke="#3A3020" stroke-width="1.8" stroke-linecap="round"/></svg>
+  <div class="panel">
+    <!-- Top bar -->
+    <div class="topbar">
+      <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M7 1L1 7l6 6" stroke="#3A3020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 7h16" stroke="#3A3020" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg width="18" height="13" viewBox="0 0 18 13" fill="none" style="margin-left:3px;"><path d="M0 1h18M0 6.5h18M0 12h11" stroke="#3A3020" stroke-width="1.8" stroke-linecap="round"/></svg>
     </div>
 
     <!-- Greeting -->
-    <div class="greeting">
-      <div class="greeting-text" id="greetTxt">Good morning, Alex <span class="sparkle">✨</span></div>
-    </div>
+    <div class="greet" id="greetEl">Good morning ✨</div>
 
-    <!-- Grid -->
+    <!-- Grid of 10 modules -->
     <div class="grid">
-      <div class="mcard" onclick="location.hash='prioritizer'">
-        <div class="mcard-icon">📋</div>
-        <div class="mcard-name">Prioritizer</div>
-      </div>
-      <div class="mcard" onclick="location.hash='mindmap'">
-        <div class="mcard-icon">🧠</div>
-        <div class="mcard-name">Mind Map</div>
-      </div>
-      <div class="mcard" onclick="location.hash='vault'">
-        <div class="mcard-icon">📚</div>
-        <div class="mcard-name">The Vault</div>
-      </div>
-      <div class="mcard" onclick="location.hash='meals'">
-        <div class="mcard-icon">🍽️</div>
-        <div class="mcard-name">Meal Planner</div>
-      </div>
-      <div class="mcard" onclick="location.hash='goals'">
-        <div class="mcard-icon">🎯</div>
-        <div class="mcard-name">Goals</div>
-      </div>
-      <div class="mcard" onclick="location.hash='matrix'">
-        <div class="mcard-icon">⚡</div>
-        <div class="mcard-name">Matrix</div>
-      </div>
-      <div class="mcard" onclick="location.hash='charge'">
-        <div class="mcard-icon">⚡</div>
-        <div class="mcard-name">The Charge</div>
-      </div>
-      <div class="mcard" onclick="location.hash='budget'">
-        <div class="mcard-icon">💰</div>
-        <div class="mcard-name">Budget</div>
-      </div>
-      <div class="mcard" onclick="location.hash='shopping'">
-        <div class="mcard-icon">🛒</div>
-        <div class="mcard-name">Shopping</div>
-      </div>
-      <div class="mcard" onclick="location.hash='tools'">
-        <div class="mcard-icon">🔧</div>
-        <div class="mcard-name">Tools</div>
-      </div>
+      <div class="card"><div class="card-ico">📋</div><div class="card-name">Prioritizer</div></div>
+      <div class="card"><div class="card-ico">🧠</div><div class="card-name">Mind Map</div></div>
+      <div class="card"><div class="card-ico">📚</div><div class="card-name">The Vault</div></div>
+      <div class="card"><div class="card-ico">🍽️</div><div class="card-name">Meal Planner</div></div>
+      <div class="card"><div class="card-ico">🎯</div><div class="card-name">Goals</div></div>
+      <div class="card"><div class="card-ico">⚡</div><div class="card-name">Matrix</div></div>
+      <div class="card"><div class="card-ico">⚡</div><div class="card-name">The Charge</div></div>
+      <div class="card"><div class="card-ico">💰</div><div class="card-name">Budget</div></div>
+      <div class="card"><div class="card-ico">🛒</div><div class="card-name">Shopping</div></div>
+      <div class="card"><div class="card-ico">🔧</div><div class="card-name">Tools</div></div>
     </div>
   </div>
+</div>
 
-  <!-- Bottom Nav -->
-  <div class="nav">
-    <div class="ni on">
-      <svg class="ni-ico" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" fill="#3A6830" stroke="#3A6830" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 21V12h6v9" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <div class="ni-lbl" style="color:#3A6830;">Home</div>
-    </div>
-    <div class="ni">
-      <svg class="ni-ico" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#3A3020" stroke-width="1.8"/><path d="M20 20l-3-3" stroke="#3A3020" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <div class="ni-lbl">Search</div>
-    </div>
-    <div class="ni">
-      <svg class="ni-ico" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#3A3020" stroke-width="1.8"/><path d="M12 8v8M8 12h8" stroke="#3A3020" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <div class="ni-lbl">Add</div>
-    </div>
-    <div class="ni">
-      <svg class="ni-ico" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 21C12 21 4 15 4 9a8 8 0 0116 0c0 6-8 12-8 12z" stroke="#3A3020" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" stroke="#3A3020" stroke-width="1.5"/></svg>
-      <div class="ni-lbl">Veart</div>
-    </div>
-    <div class="ni">
-      <svg class="ni-ico" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="#3A3020" stroke-width="1.8"/><path d="M5 20c0-4 3.1-7 7-7s7 3 7 7" stroke="#3A3020" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <div class="ni-lbl">Profile</div>
-    </div>
+<!-- ══ BOTTOM NAV ══ -->
+<div class="nav">
+  <div class="ni on">
+    <svg width="24" height="22" viewBox="0 0 24 22" fill="none"><path d="M1 10L12 1l11 9" stroke="#3A6820" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 8v12a1 1 0 001 1h5v-6h6v6h5a1 1 0 001-1V8" stroke="#3A6820" stroke-width="2" stroke-linecap="round"/></svg>
+    <div class="ni-lbl" style="color:#3A6820;font-weight:800;">Home</div>
+  </div>
+  <div class="ni">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#3A3020" stroke-width="1.9"/><path d="M19 19l-3.5-3.5" stroke="#3A3020" stroke-width="1.9" stroke-linecap="round"/></svg>
+    <div class="ni-lbl">Search</div>
+  </div>
+  <div class="ni">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#3A3020" stroke-width="1.9"/><path d="M11 7v8M7 11h8" stroke="#3A3020" stroke-width="1.9" stroke-linecap="round"/></svg>
+    <div class="ni-lbl">Add</div>
+  </div>
+  <div class="ni">
+    <svg width="22" height="20" viewBox="0 0 22 20" fill="none"><path d="M11 18S2 12.5 2 6.5A5 5 0 0111 3.8 5 5 0 0120 6.5C20 12.5 11 18 11 18z" stroke="#3A3020" stroke-width="1.9" stroke-linejoin="round"/></svg>
+    <div class="ni-lbl">Veart</div>
+  </div>
+  <div class="ni">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7.5" r="3.5" stroke="#3A3020" stroke-width="1.9"/><path d="M3 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#3A3020" stroke-width="1.9" stroke-linecap="round"/></svg>
+    <div class="ni-lbl">Profile</div>
   </div>
 </div>
 
 <script>
-// Greeting
-function updateGreeting(){
+function getGreeting(name){
   const h=new Date().getHours();
-  const name=localStorage.getItem('thinko_username')||'';
   let word,emoji;
   if(h>=5&&h<12){word='Good morning';emoji='✨';}
   else if(h>=12&&h<17){word='Good afternoon';emoji='☀️';}
   else if(h>=17&&h<21){word='Good evening';emoji='🌅';}
   else{word='Good night';emoji='🌙';}
-  const el=document.getElementById('greetTxt');
-  el.innerHTML=`${word}${name?', '+name:''} <span class="sparkle">${emoji}</span>`;
+  return `${word}${name?', '+name:''} ${emoji}`;
 }
-updateGreeting();
-setInterval(updateGreeting,60000);
+
+function saveName(){
+  const n=document.getElementById('nameIn').value.trim();
+  if(!n)return;
+  try{localStorage.setItem('thinko_username',n);}catch{}
+  document.getElementById('nameModal').style.display='none';
+  document.getElementById('greetEl').textContent=getGreeting(n);
+}
+
+document.getElementById('nameIn').addEventListener('keydown',e=>{
+  if(e.key==='Enter')saveName();
+});
+
+window.addEventListener('DOMContentLoaded',()=>{
+  let name='';
+  try{name=localStorage.getItem('thinko_username')||'';}catch{}
+  if(name){
+    document.getElementById('nameModal').style.display='none';
+  }
+  document.getElementById('greetEl').textContent=getGreeting(name);
+  setTimeout(()=>document.getElementById('nameIn').focus(),400);
+});
+
+setInterval(()=>{
+  let name='';try{name=localStorage.getItem('thinko_username')||'';}catch{}
+  document.getElementById('greetEl').textContent=getGreeting(name);
+},60000);
 </script>
 </body>
 </html>
