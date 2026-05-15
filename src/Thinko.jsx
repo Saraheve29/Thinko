@@ -6336,377 +6336,251 @@ function TheCharge({priData,matrixData,setScreen}){
   };
 
   const Row=({name,src,done,onCharge})=>(
-    <div style={{display:"flex",alignItems:"center",gap:10,background:done?"rgba(39,174,96,0.1)":"rgba(255,255,255,0.06)",borderRadius:14,padding:"10px 14px",marginBottom:8,border:`1.5px solid ${done?"rgba(39,174,96,0.5)":"rgba(160,190,140,0.35)"}`}}>
-      <button onClick={()=>!done&&onCharge()} style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${done?"#27ae60":"#c4aee8"}`,background:done?"#27ae60":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>{done?"✓":""}</button>
+    <div style={{display:"flex",alignItems:"center",gap:12,background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",marginBottom:9,border:`1.5px solid ${done?"rgba(90,160,80,0.3)":"rgba(255,255,255,0.9)"}`,backdropFilter:"blur(8px)"}}>
+      <button onClick={()=>!done&&onCharge()} style={{width:30,height:30,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.4)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>{done?"✓":""}</button>
       <div style={{flex:1}}>
-        <div style={{color:done?"rgba(255,255,255,0.35)":"#fff",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.3}}>{name}</div>
-        {src&&<div style={{color:"rgba(255,255,255,0.35)",fontSize:11,marginTop:1}}>{src}</div>}
+        <div style={{color:done?"#9A9080":"#1A1A10",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.35}}>{name}</div>
+        {src&&<div style={{color:"#9A9080",fontSize:11,marginTop:2}}>{src}</div>}
       </div>
-      {!done&&<span style={{fontSize:16,opacity:0.7}}>⚡</span>}
+      {!done&&<span style={{fontSize:18}}>⚡</span>}
     </div>
   );
 
   return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0a0118 0%,#1a0336 50%,#2d0a5e 100%)",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
-      {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#3D5A2A,#5A7848)",padding:"18px 16px 12px",boxShadow:"0 4px 24px rgba(90,120,72,0.20)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-
-          <div style={{fontSize:32}}>⚡</div>
-          <button onClick={()=>setScreen&&setScreen("home")} style={{marginLeft:"auto",background:"rgba(255,255,255,0.18)",color:"#fff",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"6px 12px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>🏠 <span>Home</span></button>
-          <div style={{flex:1}}>
-            <div style={{color:"#fff",fontWeight:900,fontSize:22,letterSpacing:0.3}}>The Charge</div>
-            <div style={{color:"rgba(255,255,255,0.55)",fontSize:12}}>Tackle what you've been avoiding</div>
+      {/* ── Header ── */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 16px",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
+          <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",marginRight:8}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{flex:1,textAlign:"center"}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.1}}>The Charge ✨</div>
+            <div style={{fontSize:14,color:"#8A8070",marginTop:3,fontWeight:400}}>Tackle what you've been avoiding</div>
           </div>
-          {data.streak>0&&<div style={{background:"rgba(255,215,0,0.15)",border:"1.5px solid rgba(255,215,0,0.4)",borderRadius:12,padding:"6px 10px",textAlign:"center",flexShrink:0}}>
-            <div style={{color:"#FFD700",fontWeight:900,fontSize:20}}>🔥{data.streak}</div>
-            <div style={{color:"rgba(255,255,255,0.5)",fontSize:9,fontWeight:700}}>STREAK</div>
-          </div>}
+          <button style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",color:"#5A7848",fontSize:20}}>🌿</button>
         </div>
-        <div style={{display:"flex",gap:0,background:"rgba(90,80,60,0.06)",borderRadius:12,padding:3}}>
-          {[["today","⚡ Today"],["week","🔮 Week"],["settings","⚙️ Setup"]].map(([k,l])=>(
-            <button key={k} onClick={()=>setView(k)} style={{flex:1,padding:"8px 4px",background:view===k?"rgba(160,190,140,0.35)":"transparent",color:view===k?"#fff":"rgba(255,255,255,0.45)",border:"none",borderRadius:10,fontWeight:view===k?800:600,fontSize:12,cursor:"pointer"}}>{l}</button>
+
+        {/* Tabs — Today | Week | Setup */}
+        <div style={{display:"flex",gap:4,background:"rgba(90,80,60,0.07)",borderRadius:100,padding:"4px",marginTop:12}}>
+          {[["today","Today"],["week","Week"],["settings","Setup"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setView(k)} style={{
+              flex:1,padding:"10px 8px",
+              background:view===k?"#6A8858":"transparent",
+              color:view===k?"#fff":"#6A6050",
+              border:"none",borderRadius:100,
+              fontWeight:view===k?700:500,
+              fontSize:14,cursor:"pointer",
+              transition:"all 0.15s",
+            }}>{l}</button>
           ))}
         </div>
       </div>
 
-      <div style={{padding:"14px"}}>
+      <div style={{padding:"16px 16px 0"}}>
 
         {/* ══ TODAY ══ */}
         {view==="today"&&<>
 
-          {/* Orb + status */}
-          <div style={{display:"flex",alignItems:"center",gap:16,background:"rgba(255,255,255,0.05)",borderRadius:20,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(160,190,140,0.35)"}}>
-            <OrbOfLight pct={pct} size={110}/>
-            <div style={{flex:1}}>
-              <div style={{color:"#fff",fontWeight:900,fontSize:19,marginBottom:5}}>
-                {hitTarget?"🔮 Light earned today!":"⚡ Build the light"}
+          {/* Build the light card */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:12,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
+              {/* Purple orb */}
+              <div style={{
+                width:44,height:44,borderRadius:"50%",flexShrink:0,
+                background:hitTarget
+                  ?"radial-gradient(circle at 38% 32%,#e8d0ff,#9b59b6)"
+                  :"radial-gradient(circle at 38% 32%,rgba(180,140,240,0.7),rgba(120,60,200,0.4))",
+                boxShadow:hitTarget
+                  ?"0 0 24px rgba(155,89,182,0.7),0 0 8px rgba(155,89,182,0.4)"
+                  :"0 0 18px rgba(130,70,200,0.35),0 0 6px rgba(130,70,200,0.2)",
+              }}/>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:2}}>
+                  {hitTarget?"Light earned today! ⚡":"Build the light ⚡"}
+                </div>
+                <div style={{fontSize:13,color:"#7A7060"}}>
+                  {hitTarget
+                    ?`${charged.length} tasks charged — light blazing ✨`
+                    :`${target-charged.length} more task${target-charged.length!==1?"s":""} to earn today's light`}
+                </div>
               </div>
-              <div style={{color:"rgba(255,255,255,0.6)",fontSize:13,lineHeight:1.6,marginBottom:6}}>
-                {hitTarget
-                  ?`${charged.length} tasks charged — today's light earned ✨`
-                  :`${target-charged.length} more task${target-charged.length!==1?"s":""} to earn today's light`}
+            </div>
+            {/* Progress bar */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{flex:1,height:8,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${pct}%`,background:hitTarget?"#5A7848":"#6A8858",borderRadius:100,transition:"width 0.4s"}}/>
               </div>
-              <div style={{height:5,background:"rgba(255,255,255,0.1)",borderRadius:3,overflow:"hidden",marginBottom:4}}>
-                <div style={{height:"100%",width:`${pct}%`,background:hitTarget?"#FFD700":"#c4aee8",borderRadius:3,transition:"width 0.4s"}}/>
-              </div>
-              <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{charged.length} / {target} tasks today</div>
+              <span style={{fontSize:13,fontWeight:600,color:"#7A7060",flexShrink:0}}>{charged.length}/{target}</span>
             </div>
           </div>
 
-          {/* Reward + lights progress card */}
-          {(()=>{
-            const orbTarget=data.orbTarget||5;
-            const lightsEarned=weekDays.filter(d=>(data.days[d]?.charged||[]).length>=target).length;
-            const orbPct=Math.min(100,Math.round((lightsEarned/orbTarget)*100));
-            const rewardUnlocked=orbPct>=100;
-            const daysLeft=data.rewardDeadline?Math.ceil((new Date(data.rewardDeadline)-new Date())/(1000*60*60*24)):null;
-            return(
-              <div style={{background:rewardUnlocked?"linear-gradient(135deg,#1e8449,#27ae60)":"rgba(255,255,255,0.07)",borderRadius:18,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${rewardUnlocked?"rgba(39,174,96,0.8)":"rgba(160,190,140,0.35)"}`}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
-                  <span style={{fontSize:20}}>🎁</span>
-                  <div style={{flex:1}}>
-                    <div style={{color:"#fff",fontWeight:800,fontSize:14,marginBottom:2}}>{data.weeklyAward||"No reward set yet — tap ⚙️ Setup"}</div>
-                    {rewardUnlocked?<div style={{color:"rgba(255,255,255,0.85)",fontSize:13}}>🎉 All lights earned — go claim it!</div>
-                    :<div style={{color:"#7A7060",fontSize:12}}>{orbTarget-lightsEarned} more light{orbTarget-lightsEarned!==1?"s":""} to unlock</div>}
-                  </div>
+          {/* Reward card */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:16,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+              <span style={{fontSize:28}}>🎁</span>
+              <div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>
+                  {data.weeklyAward?data.weeklyAward:"No reward set yet — tap Setup"}
                 </div>
-                {/* Lights dots */}
-                <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:daysLeft!==null?8:0}}>
-                  {Array.from({length:Math.min(orbTarget,15)}).map((_,i)=>(
-                    <div key={i} style={{width:22,height:22,borderRadius:"50%",background:i<lightsEarned?"#FFD700":"rgba(255,255,255,0.12)",border:`1.5px solid ${i<lightsEarned?"#FFD700":"rgba(255,255,255,0.2)"}`,boxShadow:i<lightsEarned?"0 0 8px #FFD700":"none",transition:"all 0.3s",flexShrink:0}}/>
-                  ))}
-                  {orbTarget>15&&<span style={{color:"#7A7060",fontSize:12,alignSelf:"center"}}>+{orbTarget-15} more</span>}
+                <div style={{fontSize:13,color:"#7A7060",marginTop:2}}>
+                  {Math.max(0,5-daysHit)} more lights to unlock
                 </div>
-                {daysLeft!==null&&(
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
-                    <span style={{fontSize:13}}>📅</span>
-                    <span style={{color:daysLeft<3?"#FF6B6B":daysLeft<7?"#FFD700":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700}}>
-                      {daysLeft<=0?"Deadline passed!":daysLeft===1?"1 day left to deadline":`${daysLeft} days left`}
-                    </span>
-                  </div>
-                )}
               </div>
-            );
-          })()}
+            </div>
+            {/* 5 circle progress lights */}
+            <div style={{display:"flex",gap:12}}>
+              {[0,1,2,3,4].map(i=>(
+                <div key={i} style={{
+                  width:36,height:36,borderRadius:"50%",
+                  border:`2.5px solid ${i<daysHit?"#6A8858":"rgba(90,80,60,0.2)"}`,
+                  background:i<daysHit?"rgba(106,136,88,0.18)":"transparent",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                }}>{i<daysHit&&<div style={{width:14,height:14,borderRadius:"50%",background:"#6A8858"}}/>}</div>
+              ))}
+            </div>
+          </div>
 
-          {/* Overdue tasks */}
+          {/* Stale/overdue tasks */}
           {allStale.length>0&&(
-            <div style={{marginBottom:16}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <span style={{color:"#FF9100",fontWeight:800,fontSize:14}}>⏰ Over a week old</span>
-                <span style={{background:"rgba(255,145,0,0.2)",color:"#FF9100",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700}}>{allStale.length}</span>
+            <div style={{marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <span style={{fontFamily:"Georgia,serif",color:"#7A5820",fontWeight:700,fontSize:15}}>⏰ Overdue tasks</span>
+                <span style={{background:"rgba(192,120,40,0.12)",color:"#7A5820",borderRadius:100,padding:"2px 10px",fontSize:12,fontWeight:600}}>{allStale.length}</span>
               </div>
-              {allStale.map((t,i)=>(<Row key={i} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}/>) )}
+              {allStale.map((t,i)=>(<Row key={i} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}/>))}
             </div>
           )}
 
-          {/* What are you putting off */}
+          {/* What are you putting off? */}
           <div style={{marginBottom:16}}>
-            <div style={{color:"rgba(255,255,255,0.8)",fontWeight:800,fontSize:14,marginBottom:8}}>💭 What are you putting off?</div>
-            <div style={{display:"flex",gap:8,marginBottom:8,background:"rgba(255,255,255,0.07)",borderRadius:12,padding:"10px 14px",border:"1px solid rgba(160,190,140,0.35)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:12}}>What are you putting off?</div>
+            <div style={{display:"flex",gap:10,alignItems:"center",background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"4px 4px 4px 20px",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
               <input value={whatOff} onChange={e=>setWhatOff(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addFrog()}
                 placeholder="Write what you've been avoiding..."
-                style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#fff",fontSize:14,fontWeight:600}}/>
-              <button onClick={addFrog} style={{background:"#7c5cbf",color:"#fff",border:"none",borderRadius:9,width:32,height:32,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
+                style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:15,fontWeight:400}}/>
+              <button onClick={addFrog} style={{background:"#7c5cbf",color:"#fff",border:"none",borderRadius:"50%",width:44,height:44,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0,boxShadow:"0 3px 12px rgba(124,92,191,0.38)"}}>+</button>
             </div>
             {frogs.map(f=>(
-              <div key={f.id} style={{display:"flex",alignItems:"center",gap:10,background:f.done?"rgba(39,174,96,0.1)":"rgba(255,255,255,0.06)",borderRadius:12,padding:"10px 14px",marginBottom:7,border:`1.5px solid ${f.done?"rgba(39,174,96,0.5)":"rgba(160,190,140,0.35)"}`}}>
-                <button onClick={()=>toggleFrog(f.id)} style={{width:26,height:26,borderRadius:"50%",border:`2.5px solid ${f.done?"#27ae60":"#c4aee8"}`,background:f.done?"#27ae60":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{f.done?"✓":""}</button>
-                <span style={{flex:1,color:f.done?"rgba(255,255,255,0.35)":"#fff",fontWeight:600,fontSize:14,textDecoration:f.done?"line-through":"none"}}>{f.text}</span>
-                {!f.done&&<span style={{fontSize:14,opacity:0.6}}>⚡</span>}
-                <button onClick={()=>delFrog(f.id)} style={{background:"transparent",color:"rgba(255,100,100,0.6)",border:"none",cursor:"pointer",fontSize:14,padding:0}}>🗑</button>
+              <div key={f.id} style={{display:"flex",alignItems:"center",gap:12,background:f.done?"rgba(90,160,80,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 16px",marginTop:9,border:`1px solid ${f.done?"rgba(90,160,80,0.25)":"rgba(255,255,255,0.9)"}`,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
+                <button onClick={()=>toggleFrog(f.id)} style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${f.done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:f.done?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{f.done?"✓":""}</button>
+                <span style={{flex:1,color:f.done?"#A0907A":"#1A1A10",fontWeight:600,fontSize:14,textDecoration:f.done?"line-through":"none"}}>{f.text}</span>
+                {!f.done&&<span style={{fontSize:16}}>⚡</span>}
+                <button onClick={()=>delFrog(f.id)} style={{background:"transparent",color:"rgba(192,57,43,0.5)",border:"none",cursor:"pointer",fontSize:14,padding:0}}>🗑</button>
               </div>
             ))}
           </div>
 
-          {/* AI suggestions */}
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-              <div style={{color:"rgba(255,255,255,0.8)",fontWeight:800,fontSize:14,flex:1}}>🤖 AI Task Picks</div>
-              <button onClick={getAiSugg} disabled={aiLoad} style={{background:"rgba(90,120,72,0.20)",color:"#fff",border:"1px solid rgba(160,190,140,0.35)",borderRadius:20,padding:"5px 13px",fontSize:11,fontWeight:700,cursor:"pointer",opacity:aiLoad?0.6:1}}>
+          {/* AI Task Picks */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+              <span style={{fontSize:26}}>🤖</span>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",flex:1}}>AI Task Picks</div>
+              <button onClick={getAiSugg} disabled={aiLoad} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"9px 20px",fontWeight:700,fontSize:14,cursor:"pointer",opacity:aiLoad?0.6:1,boxShadow:"0 2px 10px rgba(90,120,72,0.28)"}}>
                 {aiLoad?"Thinking…":"Ask AI"}
               </button>
             </div>
             {aiSugg.length>0?aiSugg.map((s,i)=>(
               <Row key={i} name={s} src="🤖 AI pick" done={charged.includes(s)} onCharge={()=>chargeIt(s)}/>
             )):(
-              <div style={{color:"rgba(255,255,255,0.3)",fontSize:13,fontStyle:"italic",padding:"6px 0"}}>
-                Tap "Ask AI" — it'll study your tasks and pick the ones you're most likely avoiding
+              <div style={{color:"#8A8070",fontSize:13,lineHeight:1.6}}>
+                Tap "Ask AI" — it'll study your tasks and pick the ones you're most likely avoiding.
               </div>
             )}
           </div>
 
           {/* Charged today summary */}
           {charged.length>0&&(
-            <GlassCard>
-              <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:8}}>✅ Charged today ({charged.length})</div>
+            <div style={{background:"rgba(90,160,80,0.08)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(90,160,80,0.2)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A6020",fontSize:15,marginBottom:10}}>✅ Charged today ({charged.length})</div>
               {charged.map((n,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<charged.length-1?`1px solid ${C.ll}`:"none"}}>
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<charged.length-1?"1px solid rgba(90,120,72,0.12)":"none"}}>
                   <span style={{fontSize:14}}>⚡</span>
-                  <span style={{fontSize:13,fontWeight:600,color:C.txt}}>{n}</span>
+                  <span style={{fontSize:13,fontWeight:600,color:"#3A5020"}}>{n}</span>
                 </div>
               ))}
-            </GlassCard>
+            </div>
           )}
         </>}
 
         {/* ══ WEEK ══ */}
         {view==="week"&&<>
-          {/* Orb for week */}
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:16,background:"rgba(255,255,255,0.05)",borderRadius:20,padding:"20px",border:"1px solid rgba(160,190,140,0.35)"}}>
-            <OrbOfLight pct={weekPcts.reduce((a,b)=>a+b,0)/7} size={150}/>
-            <div style={{color:"#fff",fontWeight:900,fontSize:20,marginTop:10}}>Weekly Light</div>
-            <div style={{color:"rgba(255,255,255,0.55)",fontSize:13,marginTop:4}}>{daysHit}/7 days fully charged · {weekTotal} total tasks</div>
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"22px 20px",marginBottom:14,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
+            <OrbOfLight pct={weekPcts.reduce((a,b)=>a+b,0)/7} size={140}/>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginTop:12}}>Weekly Light</div>
+            <div style={{color:"#8A8070",fontSize:13,marginTop:4}}>{daysHit}/7 days fully charged · {weekTotal} total tasks</div>
             {daysHit>=5&&data.weeklyAward&&(
-              <div style={{marginTop:12,background:"rgba(255,215,0,0.15)",border:"1.5px solid rgba(255,215,0,0.45)",borderRadius:14,padding:"10px 18px",textAlign:"center"}}>
-                <div style={{color:"#FFD700",fontWeight:900,fontSize:15,marginBottom:2}}>🎁 Weekly reward unlocked!</div>
-                <div style={{color:"rgba(255,255,255,0.8)",fontSize:14}}>{data.weeklyAward}</div>
+              <div style={{marginTop:14,background:"rgba(90,120,72,0.10)",borderRadius:16,padding:"12px 18px"}}>
+                <div style={{fontFamily:"Georgia,serif",color:"#3A6020",fontWeight:700,fontSize:15}}>🎁 Weekly reward unlocked!</div>
+                <div style={{color:"#5A7040",fontSize:14,marginTop:4}}>{data.weeklyAward}</div>
               </div>
             )}
           </div>
-
-          {/* Day bars */}
-          <GlassCard style={{marginBottom:14}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:12}}>📊 This week</div>
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:14}}>This week</div>
             <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
               {weekDays.map((d,i)=>{
                 const p=weekPcts[i];
                 const isToday=d===today;
-                const dayDate=new Date(d);
                 return(
-                  <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                    <div style={{width:"100%",height:60,background:C.ll,borderRadius:6,display:"flex",alignItems:"flex-end",overflow:"hidden"}}>
-                      <div style={{width:"100%",height:`${Math.max(4,p)}%`,background:p>=100?"#FFD700":p>0?"#c4aee8":C.ll,borderRadius:"4px 4px 0 0",transition:"height 0.4s"}}/>
+                  <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                    <div style={{width:"100%",height:60,background:"rgba(90,80,60,0.08)",borderRadius:8,display:"flex",alignItems:"flex-end",overflow:"hidden"}}>
+                      <div style={{width:"100%",height:`${Math.max(4,p)}%`,background:p>=100?"#5A7848":p>0?"#8AAA78":"rgba(90,80,60,0.1)",borderRadius:"6px 6px 0 0",transition:"height 0.4s"}}/>
                     </div>
-                    <div style={{fontSize:9,fontWeight:isToday?800:600,color:isToday?C.dp:C.soft}}>{dayNames[dayDate.getDay()]}</div>
+                    <div style={{fontSize:9,fontWeight:isToday?800:500,color:isToday?"#3A6020":"#9A9080"}}>{dayNames[new Date(d).getDay()]}</div>
                   </div>
                 );
               })}
             </div>
-            <div style={{display:"flex",justifyContent:"space-between",marginTop:10}}>
-              <span style={{fontSize:12,color:C.soft}}>Target: {target}/day</span>
-              <span style={{fontSize:12,fontWeight:700,color:C.dp}}>{weekTotal} tasks charged this week</span>
-            </div>
-          </GlassCard>
-
-          {/* Streak */}
-          <GlassCard style={{marginBottom:14}}>
+          </div>
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{fontSize:42}}>🔥</div>
+              <div style={{fontSize:40}}>🔥</div>
               <div>
-                <div style={{fontWeight:900,color:C.dp,fontSize:22}}>{data.streak} day streak</div>
-                <div style={{color:C.soft,fontSize:13}}>Days in a row hitting your target</div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20}}>{data.streak} day streak</div>
+                <div style={{color:"#8A8070",fontSize:13}}>Days in a row hitting your target</div>
               </div>
             </div>
-          </GlassCard>
-
-          {/* Reward section */}
-          <GlassCard>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:4}}>🎁 Weekly Reward</div>
-            <div style={{color:C.soft,fontSize:13,marginBottom:10}}>Hit your daily target 5+ days to unlock it</div>
-            {data.weeklyAward?(
-              <div style={{background:"rgba(255,215,0,0.1)",border:"1.5px solid rgba(255,215,0,0.4)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
-                <div style={{fontWeight:700,fontSize:15,color:C.dp}}>{data.weeklyAward}</div>
-              </div>
-            ):(
-              <div style={{color:C.soft,fontSize:13,fontStyle:"italic",marginBottom:10}}>No reward set yet — go to Setup</div>
-            )}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-              <span style={{fontSize:13,fontWeight:700,color:daysHit>=5?"#27ae60":C.soft}}>{daysHit>=5?"✅ Reward unlocked!":` ${5-daysHit} more days to unlock`}</span>
-              <button onClick={getAwardIdeas} disabled={awardLoad} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:20,padding:"6px 14px",fontWeight:800,fontSize:12,cursor:"pointer",opacity:awardLoad?0.6:1}}>
-                {awardLoad?"…":"🤖 Reward ideas"}
-              </button>
-            </div>
-            {awardIdeas.length>0&&(
-              <div style={{marginTop:10}}>
-                {awardIdeas.map((a,i)=>(
-                  <button key={i} onClick={()=>{upd({weeklyAward:a});setAwardIdeas([]);showToast("🎁 Reward set!");}}
-                    style={{display:"block",width:"100%",textAlign:"left",padding:"9px 12px",background:C.pale,border:`1px solid ${C.ll}`,borderRadius:10,marginBottom:6,cursor:"pointer",fontSize:13,fontWeight:600,color:C.txt}}>
-                    {a}
-                  </button>
-                ))}
-              </div>
-            )}
-          </GlassCard>
+          </div>
         </>}
 
-        {/* ══ SETTINGS ══ */}
+        {/* ══ SETUP ══ */}
         {view==="settings"&&<>
-
-          {/* ── What will you reward yourself with? ── */}
-          <GlassCard style={{marginBottom:14}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:15,marginBottom:4}}>🎁 What will you reward yourself with?</div>
-            <div style={{color:C.soft,fontSize:13,marginBottom:10}}>Write your reward — what will you give yourself when the orb is fully lit?</div>
-            <textarea
-              value={editAward?draftAward:data.weeklyAward}
-              onChange={e=>setDraftAward(e.target.value)}
-              onFocus={()=>{setEditAward(true);setDraftAward(data.weeklyAward);}}
-              placeholder="e.g. Long bath with candles, a new book, favourite meal out, cinema trip..."
-              rows={3}
-              style={{width:"100%",boxSizing:"border-box",padding:"11px 13px",borderRadius:11,border:`1.5px solid ${C.lp}`,fontSize:14,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}
-            />
-            {editAward&&(
-              <div style={{display:"flex",gap:8,marginBottom:8}}>
-                <button onClick={()=>setEditAward(false)} style={{flex:1,background:C.ll,color:C.mid,border:"none",borderRadius:10,padding:"10px",fontWeight:700,cursor:"pointer"}}>Cancel</button>
-                <button onClick={()=>{upd({weeklyAward:draftAward.trim()});setEditAward(false);showToast("🎁 Reward saved!");}} style={{flex:2,background:btnGrad,color:"#1A1A10",border:"none",borderRadius:10,padding:"10px",fontWeight:800,cursor:"pointer"}}>Save Reward</button>
-              </div>
-            )}
-            <button onClick={getAwardIdeas} disabled={awardLoad} style={{width:"100%",background:"rgba(255,255,255,0.7)",color:C.dp,border:`1.5px solid ${C.lp}`,borderRadius:10,padding:"9px",fontWeight:700,fontSize:13,cursor:"pointer",opacity:awardLoad?0.6:1}}>
-              {awardLoad?"Getting ideas…":"🤖 Get AI reward ideas"}
-            </button>
-            {awardIdeas.length>0&&(
-              <div style={{marginTop:8}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Tap one to use it</div>
-                {awardIdeas.map((a,i)=>(
-                  <button key={i} onClick={()=>{upd({weeklyAward:a});setAwardIdeas([]);setEditAward(false);showToast("🎁 Reward set!");}}
-                    style={{display:"block",width:"100%",textAlign:"left",padding:"10px 12px",background:C.pale,border:`1.5px solid ${C.lp}`,borderRadius:10,marginBottom:6,cursor:"pointer",fontSize:13,fontWeight:600,color:C.txt}}>
-                    {a}
-                  </button>
-                ))}
-              </div>
-            )}
-          </GlassCard>
-
-          {/* ── How many lights to earn it? ── */}
-          <GlassCard style={{marginBottom:14}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:15,marginBottom:4}}>🔮 How many lights to earn the reward?</div>
-            <div style={{color:C.soft,fontSize:13,marginBottom:14}}>Each day you hit your daily target = 1 light. Set how many lights it takes to unlock your reward.</div>
-            <div style={{display:"flex",alignItems:"center",gap:0,justifyContent:"center",marginBottom:10}}>
-              <button onClick={()=>upd({orbTarget:Math.max(1,(data.orbTarget||5)-1)})} style={{background:C.ll,color:C.dp,border:`1.5px solid ${C.lp}`,borderRadius:"10px 0 0 10px",width:48,height:52,fontSize:24,fontWeight:900,cursor:"pointer"}}>−</button>
-              <div style={{background:C.pale,border:`1.5px solid ${C.lp}`,borderTop:`1.5px solid ${C.lp}`,borderBottom:`1.5px solid ${C.lp}`,padding:"0 24px",height:52,display:"flex",alignItems:"center",justifyContent:"center",minWidth:80}}>
-                <span style={{fontFamily:"monospace",fontSize:38,fontWeight:900,color:C.dp}}>{data.orbTarget||5}</span>
-              </div>
-              <button onClick={()=>upd({orbTarget:Math.min(30,(data.orbTarget||5)+1)})} style={{background:C.ll,color:C.dp,border:`1.5px solid ${C.lp}`,borderRadius:"0 10px 10px 0",width:48,height:52,fontSize:24,fontWeight:900,cursor:"pointer"}}>+</button>
-            </div>
-            {/* Quick presets */}
-            <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
-              {[3,5,7,10,14,21].map(n=>(
-                <button key={n} onClick={()=>upd({orbTarget:n})} style={{border:`1.5px solid ${(data.orbTarget||5)===n?C.pp:C.lp}`,borderRadius:20,padding:"4px 12px",fontSize:12,cursor:"pointer",fontWeight:(data.orbTarget||5)===n?800:600,background:(data.orbTarget||5)===n?C.pp:"transparent",color:(data.orbTarget||5)===n?C.wh:C.mp}}>
-                  {n} {n===7?"(1 week)":n===14?"(2 weeks)":n===21?"(3 weeks)":""}
-                </button>
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:14}}>⚡ Daily target</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {[1,2,3,4,5].map(n=>(
+                <button key={n} onClick={()=>upd({dailyTarget:n})} style={{flex:1,minWidth:48,padding:"12px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:15,cursor:"pointer"}}>{n}</button>
               ))}
             </div>
-            {/* Progress towards orb target */}
-            {(data.orbTarget||5)>0&&(()=>{
-              const lightsEarned=weekDays.filter(d=>(data.days[d]?.charged||[]).length>=target).length;
-              const orbPct=Math.min(100,Math.round((lightsEarned/(data.orbTarget||5))*100));
-              return(
-                <div style={{marginTop:14,padding:"12px 14px",background:C.pale,borderRadius:12,border:`1px solid ${C.lp}`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                    <span style={{fontSize:13,fontWeight:700,color:C.dp}}>Progress to reward</span>
-                    <span style={{fontSize:13,fontWeight:800,color:C.pp}}>{lightsEarned} / {data.orbTarget||5} lights</span>
-                  </div>
-                  <div style={{height:8,background:C.ll,borderRadius:4,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${orbPct}%`,background:orbPct>=100?"#FFD700":btnGrad,borderRadius:4,transition:"width 0.4s"}}/>
-                  </div>
-                  {orbPct>=100&&<div style={{color:"#27ae60",fontWeight:800,fontSize:13,marginTop:6,textAlign:"center"}}>🎉 Reward unlocked! Go claim it!</div>}
+          </div>
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:6}}>🎁 Weekly reward</div>
+            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>Hit your target 5+ days to unlock it</div>
+            {editAward?(
+              <>
+                <input value={draftAward} onChange={e=>setDraftAward(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(upd({weeklyAward:draftAward}),setEditAward(false))}
+                  placeholder="e.g. Movie night, massage..."
+                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setEditAward(false)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                  <button onClick={()=>{upd({weeklyAward:draftAward});setEditAward(false);}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save reward</button>
                 </div>
-              );
-            })()}
-          </GlassCard>
-
-          {/* ── Deadline ── */}
-          <GlassCard style={{marginBottom:14}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:15,marginBottom:4}}>📅 Set a deadline</div>
-            <div style={{color:C.soft,fontSize:13,marginBottom:10}}>When do you want to have earned your reward by?</div>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <input type="date" value={data.rewardDeadline||""} onChange={e=>upd({rewardDeadline:e.target.value})}
-                style={{flex:1,padding:"11px 14px",borderRadius:11,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",background:C.pale}}/>
-              {data.rewardDeadline&&(()=>{
-                const days=Math.ceil((new Date(data.rewardDeadline)-new Date())/(1000*60*60*24));
-                const col=days<3?"#e74c3c":days<7?"#f39c12":"#27ae60";
-                return <div style={{background:col+"22",border:`1.5px solid ${col}`,borderRadius:10,padding:"6px 12px",textAlign:"center",flexShrink:0}}>
-                  <div style={{color:col,fontWeight:900,fontSize:18,lineHeight:1}}>{days}</div>
-                  <div style={{color:col,fontWeight:700,fontSize:10}}>days left</div>
-                </div>;
-              })()}
-            </div>
-            {/* Quick deadline presets */}
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
-              {[[7,"1 week"],[14,"2 weeks"],[30,"1 month"],[90,"3 months"]].map(([d,l])=>(
-                <button key={d} onClick={()=>{const dt=new Date();dt.setDate(dt.getDate()+d);upd({rewardDeadline:dt.toISOString().slice(0,10)});}}
-                  style={{border:`1.5px solid ${C.lp}`,borderRadius:20,padding:"4px 12px",fontSize:12,cursor:"pointer",fontWeight:600,background:"transparent",color:C.mp}}>
-                  {l}
-                </button>
-              ))}
-              {data.rewardDeadline&&<button onClick={()=>upd({rewardDeadline:""})} style={{border:`1.5px solid #f1948a`,borderRadius:20,padding:"4px 12px",fontSize:12,cursor:"pointer",fontWeight:600,background:"transparent",color:"#c0392b"}}>✕ Clear</button>}
-            </div>
-          </GlassCard>
-
-          {/* ── Daily target ── */}
-          <GlassCard style={{marginBottom:14}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:15,marginBottom:4}}>⚡ Daily task target</div>
-            <div style={{color:C.soft,fontSize:13,marginBottom:14}}>How many tasks must you charge each day to earn a light?</div>
-            <div style={{display:"flex",alignItems:"center",gap:16,justifyContent:"center"}}>
-              <button onClick={()=>upd({dailyTarget:Math.max(1,target-1)})} style={{background:C.ll,color:C.dp,border:`1.5px solid ${C.lp}`,borderRadius:10,width:44,height:44,fontSize:22,fontWeight:900,cursor:"pointer"}}>−</button>
-              <div style={{fontFamily:"monospace",fontSize:48,fontWeight:900,color:C.dp,minWidth:70,textAlign:"center"}}>{target}</div>
-              <button onClick={()=>upd({dailyTarget:Math.min(10,target+1)})} style={{background:C.ll,color:C.dp,border:`1.5px solid ${C.lp}`,borderRadius:10,width:44,height:44,fontSize:22,fontWeight:900,cursor:"pointer"}}>+</button>
-            </div>
-            <div style={{textAlign:"center",color:C.soft,fontSize:13,marginTop:8}}>tasks per day = 1 light 🔮</div>
-          </GlassCard>
-
-          {/* ── Streak ── */}
-          <GlassCard>
-            <div style={{fontWeight:800,color:C.dp,fontSize:15,marginBottom:10}}>🔥 Current streak</div>
-            <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{fontSize:44}}>🔥</div>
-              <div>
-                <div style={{fontWeight:900,color:C.dp,fontSize:28}}>{data.streak} days</div>
-                <div style={{color:C.soft,fontSize:13}}>consecutive days hitting target</div>
-              </div>
-            </div>
-          </GlassCard>
+              </>
+            ):(
+              <button onClick={()=>{setDraftAward(data.weeklyAward||"");setEditAward(true);}} style={{width:"100%",padding:"13px",background:data.weeklyAward?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:data.weeklyAward?"#3A6020":"#8A8070",border:`1.5px dashed ${data.weeklyAward?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
+                {data.weeklyAward?`🎁 ${data.weeklyAward}`:"+ Set your weekly reward"}
+              </button>
+            )}
+          </div>
         </>}
-      </div>
 
-      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:C.dp,color:"#1A1A10",borderRadius:12,padding:"10px 20px",fontWeight:700,fontSize:14,boxShadow:"0 4px 20px rgba(45,10,94,0.4)",zIndex:400,whiteSpace:"nowrap"}}>{toast}</div>}
+      </div>
+      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:"rgba(42,56,28,0.92)",color:"#fff",borderRadius:100,padding:"11px 22px",fontWeight:700,fontSize:14,zIndex:500,whiteSpace:"nowrap",backdropFilter:"blur(8px)",boxShadow:"0 4px 20px rgba(0,0,0,0.18)"}}>{toast}</div>}
     </div>
   );
 }
-
-
 
 /* ═══════════════════════════════════════════════════════
    🌿 REST SPACE  — Guided rest · Nature sounds · Break timer
