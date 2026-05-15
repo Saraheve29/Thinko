@@ -3506,71 +3506,160 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,setScre
   };
 
   return(
-    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <HomeBar setScreen={setScreen} title="🎯 Goals" onBack={()=>setScreen("home")}/>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
-      {/* Gorgeous gradient header */}
-      <div style={{background:h.grad,padding:"24px 20px 16px",boxShadow:"0 4px 24px rgba(0,0,0,0.3)"}}>
-        <div style={{fontSize:36,textAlign:"center",marginBottom:4}}>{h.icon}</div>
-        <div style={{color:C.wh,fontWeight:900,fontSize:22,textAlign:"center",marginBottom:2}}>Smart Goals</div>
-        <div style={{color:"rgba(255,255,255,0.7)",fontSize:13,textAlign:"center"}}>{h.question}</div>
+      {/* ── HEADER — elegant serif matching reference ── */}
+      <div style={{
+        background:"rgba(248,245,236,0.88)",
+        backdropFilter:"blur(16px)",
+        WebkitBackdropFilter:"blur(16px)",
+        padding:"22px 20px 18px",
+        textAlign:"center",
+        borderBottom:"1px solid rgba(90,80,60,0.08)",
+        position:"sticky",top:0,zIndex:50,
+      }}>
+        <button onClick={()=>setScreen("home")} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:10}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,display:"inline-flex",alignItems:"center",gap:10}}>
+          Smart Goals <span style={{fontSize:22}}>♥</span>
+        </div>
       </div>
 
-      {/* Horizon tabs */}
-      <div style={{display:"flex",overflowX:"auto",background:"rgba(0,0,0,0.2)",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
-        {GOAL_HORIZONS.map(horizon=>(
-          <button key={horizon.key} onClick={()=>setActiveHorizon(horizon.key)} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"10px 14px",background:"none",border:"none",borderBottom:activeHorizon===horizon.key?`3px solid ${horizon.color}`:"3px solid transparent",cursor:"pointer",transition:"all 0.15s"}}>
-            <span style={{fontSize:18}}>{horizon.icon}</span>
-            <span style={{fontSize:10,fontWeight:activeHorizon===horizon.key?800:600,color:activeHorizon===horizon.key?C.wh:"rgba(255,255,255,0.5)",whiteSpace:"nowrap"}}>{horizon.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* ── TABS — 2 rows like reference, no scroll ── */}
+      <div style={{padding:"18px 20px 8px"}}>
+        {/* Row 1: Next Week | 6 Months */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          {[{key:"week",label:"Next Week"},{key:"month6",label:"6 Months"}].map(({key,label})=>(
+            <button key={key} onClick={()=>setActiveHorizon(key)} style={{
+              background:"rgba(248,245,236,0.88)",
+              border:"1.5px solid rgba(90,80,60,0.12)",
+              borderRadius:18,
+              padding:"18px 12px",
+              cursor:"pointer",
+              transition:"all 0.15s",
+              position:"relative",
+              boxShadow:activeHorizon===key?"0 2px 14px rgba(90,80,60,0.12)":"none",
+            }}>
+              <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:activeHorizon===key?700:500,color:activeHorizon===key?"#1A1A10":"#7A7060",textAlign:"center"}}>{label}</div>
+              {activeHorizon===key&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:40,height:3,background:"#2A1A08",borderRadius:2}}/>}
+            </button>
+          ))}
+        </div>
+        {/* Row 2: 1 Year | 3 Years | 5 Years */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:18}}>
+          {[{key:"year1",label:"1 Year"},{key:"year3",label:"3 Years"},{key:"year5",label:"5 Years"}].map(({key,label})=>(
+            <button key={key} onClick={()=>setActiveHorizon(key)} style={{
+              background:"rgba(248,245,236,0.88)",
+              border:"1.5px solid rgba(90,80,60,0.12)",
+              borderRadius:18,
+              padding:"16px 8px",
+              cursor:"pointer",
+              transition:"all 0.15s",
+              position:"relative",
+              boxShadow:activeHorizon===key?"0 2px 14px rgba(90,80,60,0.12)":"none",
+            }}>
+              <div style={{fontFamily:"Georgia,serif",fontSize:16,fontWeight:activeHorizon===key?700:500,color:activeHorizon===key?"#1A1A10":"#7A7060",textAlign:"center"}}>{label}</div>
+              {activeHorizon===key&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:32,height:3,background:"#2A1A08",borderRadius:2}}/>}
+            </button>
+          ))}
+        </div>
 
-      <div style={{padding:"16px 14px"}}>
-        {/* Add goal button */}
-        <button onClick={addGoal} style={{width:"100%",padding:"14px",background:h.grad,color:C.wh,border:"none",borderRadius:16,fontWeight:800,fontSize:15,cursor:"pointer",marginBottom:16,boxShadow:`0 4px 18px ${h.color}`,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          <span style={{fontSize:20}}>+</span> Add {h.label} Goal
+        {/* ── ADD GOAL BUTTON — gorgeous pastel gradient like reference ── */}
+        <button onClick={addGoal} style={{
+          width:"100%",
+          padding:"19px 24px",
+          background:"linear-gradient(135deg,rgba(230,200,180,0.85) 0%,rgba(210,195,220,0.85) 40%,rgba(190,215,200,0.85) 70%,rgba(220,210,185,0.85) 100%)",
+          color:"#2A1A08",
+          border:"1.5px solid rgba(180,160,140,0.35)",
+          borderRadius:100,
+          fontFamily:"Georgia,serif",
+          fontWeight:600,
+          fontSize:18,
+          cursor:"pointer",
+          marginBottom:32,
+          boxShadow:"0 4px 24px rgba(90,80,60,0.12)",
+          backdropFilter:"blur(8px)",
+          display:"flex",alignItems:"center",justifyContent:"center",gap:14,
+          letterSpacing:0.2,
+          transition:"all 0.15s",
+        }}>
+          <span style={{fontSize:22,fontWeight:300}}>+</span>
+          Add {h.label} Goal
         </button>
 
+        {/* ── EMPTY STATE — seedling + gentle prompt ── */}
         {horizonGoals.length===0&&(
-          <div style={{textAlign:"center",color:"rgba(255,255,255,0.5)",marginTop:40,fontSize:14,lineHeight:2}}>
-            No {h.label.toLowerCase()} goals yet.<br/>Tap the button above to set one {h.icon}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 0 24px"}}>
+            {/* Seedling SVG — like the reference */}
+            <svg width="60" height="72" viewBox="0 0 60 72" fill="none" style={{marginBottom:20}}>
+              <defs>
+                <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8E068"/><stop offset="100%" stopColor="#5A9830"/></linearGradient>
+                <linearGradient id="sg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8F098"/><stop offset="100%" stopColor="#78B848"/></linearGradient>
+                <filter id="sgf"><feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#1A3A08" floodOpacity="0.2"/></filter>
+              </defs>
+              {/* Stem */}
+              <path d="M30 70 Q30 50 30 35" stroke="#5A8830" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+              {/* Left leaf */}
+              <g filter="url(#sgf)">
+                <path d="M30 38 Q18 28 14 18 Q22 16 30 26 Q30 32 30 38Z" fill="url(#sg1)"/>
+                <path d="M30 38 Q22 30 14 18" stroke="#2A5010" strokeWidth="0.8" opacity="0.6"/>
+              </g>
+              {/* Right leaf */}
+              <g filter="url(#sgf)">
+                <path d="M30 42 Q42 30 46 18 Q38 17 30 28 Q30 35 30 42Z" fill="url(#sg2)"/>
+                <path d="M30 42 Q38 32 46 18" stroke="#2A5010" strokeWidth="0.8" opacity="0.6"/>
+              </g>
+              {/* Small left sprout */}
+              <g filter="url(#sgf)" opacity="0.85">
+                <path d="M30 52 Q22 44 19 36 Q25 35 30 44 Q30 48 30 52Z" fill="url(#sg2)"/>
+                <path d="M30 52 Q24 46 19 36" stroke="#2A5010" strokeWidth="0.65" opacity="0.55"/>
+              </g>
+              {/* Ground */}
+              <ellipse cx="30" cy="70" rx="8" ry="2.5" fill="#C8A870" opacity="0.35"/>
+            </svg>
+
+            <div style={{fontFamily:"Georgia,serif",fontSize:20,color:"#2A1A08",textAlign:"center",lineHeight:1.55,maxWidth:260,fontWeight:500}}>
+              {h.question}
+            </div>
           </div>
         )}
 
+        {/* ── GOALS LIST ── */}
         {horizonGoals.map(goal=>{
           const doneCount=goal.subtasks.filter(s=>s.done).length;
           const pct=goal.subtasks.length>0?Math.round((doneCount/goal.subtasks.length)*100):0;
           return(
             <div key={goal.id} onClick={()=>setDetailId(goal.id)}
-              style={{background:"rgba(255,255,255,0.92)",borderRadius:18,marginBottom:12,overflow:"hidden",boxShadow:"0 4px 16px rgba(45,10,94,0.10)",border:`1.5px solid ${C.ll}`,cursor:"pointer",transition:"transform 0.15s"}}
+              style={{
+                background:"rgba(248,245,236,0.92)",
+                borderRadius:22,marginBottom:12,overflow:"hidden",
+                boxShadow:"0 3px 18px rgba(90,80,60,0.09)",
+                border:"1.5px solid rgba(255,255,255,0.9)",
+                cursor:"pointer",transition:"transform 0.15s",
+              }}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-
-              {/* Cover */}
               {goal.cover&&<img src={goal.cover} alt="" style={{width:"100%",height:80,objectFit:"cover"}}/>}
-
-              {/* Progress bar */}
               {goal.subtasks.length>0&&(
-                <div style={{height:4,background:C.ll}}>
-                  <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#27ae60":h.color,transition:"width 0.4s"}}/>
+                <div style={{height:4,background:"rgba(90,80,60,0.1)"}}>
+                  <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A7848":h.color,borderRadius:2,transition:"width 0.4s"}}/>
                 </div>
               )}
-
-              <div style={{padding:"12px 14px"}}>
+              <div style={{padding:"14px 18px"}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:900,fontSize:16,color:goal.status==="done"?C.soft:C.dp,textDecoration:goal.status==="done"?"line-through":"none",marginBottom:4,lineHeight:1.3}}>
-                      {goal.title||"(No title yet — tap to edit)"}
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:goal.status==="done"?"#9A9080":"#1A1A10",textDecoration:goal.status==="done"?"line-through":"none",marginBottom:4,lineHeight:1.4}}>
+                      {goal.title||"(Tap to edit)"}
                     </div>
-                    {goal.description&&<div style={{fontSize:12,color:C.soft,lineHeight:1.4,marginBottom:4}}>{goal.description.slice(0,70)}{goal.description.length>70?"…":""}</div>}
+                    {goal.description&&<div style={{fontSize:12,color:"#8A8070",lineHeight:1.5,marginBottom:4}}>{goal.description.slice(0,70)}{goal.description.length>70?"…":""}</div>}
                     <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                      {goal.dueDate&&<span style={{fontSize:11,color:C.mid,fontWeight:700}}>📅 {new Date(goal.dueDate).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>}
-                      {goal.subtasks.length>0&&<span style={{fontSize:11,color:C.mid,fontWeight:700}}>{doneCount}/{goal.subtasks.length} subtasks · {pct}%</span>}
-                      {goal.links.length>0&&<span style={{fontSize:11,color:C.mid}}>🔗 {goal.links.length}</span>}
+                      {goal.dueDate&&<span style={{fontSize:11,color:"#7A7060",fontWeight:600}}>📅 {new Date(goal.dueDate).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>}
+                      {goal.subtasks.length>0&&<span style={{fontSize:11,color:"#7A7060",fontWeight:600}}>{doneCount}/{goal.subtasks.length} steps · {pct}%</span>}
+                      {goal.links.length>0&&<span style={{fontSize:11,color:"#7A7060"}}>🔗 {goal.links.length}</span>}
                     </div>
                   </div>
-                  <span style={{fontSize:26,flexShrink:0}}>{h.icon}</span>
+                  <span style={{fontSize:22,flexShrink:0}}>{h.icon}</span>
                 </div>
               </div>
             </div>
