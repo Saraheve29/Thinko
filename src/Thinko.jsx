@@ -1,19 +1,95 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-// Thinko v2.6 — Pro login + localStorage + alarms
+// Thinko v2.5 — Top3 Prioritizer · MindMap Goals · SendToDropdown · Ideas fix
 
 /* ═══════════════════════════════════════════════════════
    THEME
 ═══════════════════════════════════════════════════════ */
 const C = {
-  dp:"#2d0a5e", mp:"#5a3d9a", pp:"#7c5cbf",
-  lp:"#b39ddb", ll:"#ddd6f3", pale:"#f3f0fb",
-  wh:"#ffffff", txt:"#1a0840", mid:"#5a4080",
-  soft:"#9e8ec0", done:"#e0dcea",
+  dp:"#2C3820", mp:"#4A7038", pp:"#6A9058",
+  lp:"#A8C5B0", ll:"#D4E4D8", pale:"#F0EBE0",
+  wh:"#FFFFFF", txt:"#1A1A10", mid:"#5A5040",
+  soft:"#8A8070", done:"#D8D0C0",
 };
-const headerGrad  = `linear-gradient(135deg,${C.dp} 0%,${C.mp} 60%,${C.pp} 100%)`;
-const pageGrad    = `linear-gradient(180deg,${C.mp} 0%,${C.lp} 35%,${C.ll} 65%,${C.pale} 100%)`;
-const btnGrad     = `linear-gradient(135deg,${C.dp},${C.pp})`;
-const cardGlass   = "rgba(255,255,255,0.18)";
+const headerGrad  = `linear-gradient(135deg,#3A5030 0%,#4A6840 50%,#5A7850 100%)`;
+const pageGrad    = `linear-gradient(180deg,#F5F0E4 0%,#EDE8D8 40%,#E5DFC8 100%)`;
+const btnGrad     = `linear-gradient(135deg,#3D5A2A,#6A9058)`;
+const cardGlass   = "rgba(252,248,238,0.75)";
+
+/* ── GARDEN VINE BACKGROUND ── */
+const GardenBg=()=>(
+  <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
+    <svg width="100%" height="100%" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="gardenBg" cx="50%" cy="42%" r="58%"><stop offset="0%" stopColor="#F8F4EC"/><stop offset="50%" stopColor="#F0EBE0"/><stop offset="100%" stopColor="#E8E0D0"/></radialGradient>
+        <radialGradient id="gGold" cx="78%" cy="12%" r="42%"><stop offset="0%" stopColor="rgba(215,195,130,0.28)"/><stop offset="100%" stopColor="transparent"/></radialGradient>
+        <radialGradient id="gL" cx="5%" cy="45%" r="40%"><stop offset="0%" stopColor="rgba(140,170,120,0.14)"/><stop offset="100%" stopColor="transparent"/></radialGradient>
+        <radialGradient id="gVig" cx="50%" cy="50%" r="70%"><stop offset="0%" stopColor="transparent"/><stop offset="100%" stopColor="rgba(40,50,25,0.18)"/></radialGradient>
+        <linearGradient id="lf1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8DEB8"/><stop offset="100%" stopColor="#9ABB90"/></linearGradient>
+        <linearGradient id="lf2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#D0E8C0"/><stop offset="100%" stopColor="#A8C898"/></linearGradient>
+        <linearGradient id="lf3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#B8D0A8"/><stop offset="100%" stopColor="#8AAA80"/></linearGradient>
+        <linearGradient id="lfD" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8C090"/><stop offset="100%" stopColor="#7A9870"/></linearGradient>
+      </defs>
+      <rect width="390" height="844" fill="url(#gardenBg)"/>
+      <rect width="390" height="844" fill="url(#gGold)"/>
+      <rect width="390" height="844" fill="url(#gL)"/>
+      <g fill="none" stroke="#C8B88A" strokeLinecap="round" opacity="0.4">
+        <path d="M28 844 Q26 680 42 520 Q52 400 46 260 Q40 160 78 80 Q108 20 195 8" strokeWidth="2.5"/>
+        <path d="M362 844 Q364 680 348 520 Q338 400 344 260 Q350 160 312 80 Q282 20 195 8" strokeWidth="2.5"/>
+        <path d="M78 80 Q137 28 195 12 Q253 28 312 80" strokeWidth="2"/>
+      </g>
+      <g opacity="0.48">
+        <path d="M-8 844 Q18 720 6 600 Q-6 480 16 365 Q34 258 10 148" stroke="#A8BBA0" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+        <path d="M80 38 Q68 28 54 32 Q44 42 51 55 Q62 62 75 55 Q85 45 80 38Z" fill="url(#lf1)" opacity="0.62"/>
+        <path d="M106 22 Q94 12 78 16 Q68 26 75 39 Q86 46 99 39 Q109 29 106 22Z" fill="url(#lf2)" opacity="0.55"/>
+        <path d="M56 62 Q44 52 30 56 Q20 66 27 79 Q38 86 51 79 Q61 69 56 62Z" fill="url(#lfD)" opacity="0.52"/>
+        <path d="M36 88 Q24 78 10 82 Q0 92 7 105 Q18 112 31 105 Q41 95 36 88Z" fill="url(#lf3)" opacity="0.5"/>
+        <path d="M16 118 Q4 108 -10 112 Q-20 122 -13 135 Q-2 142 11 135 Q21 125 16 118Z" fill="url(#lf1)" opacity="0.47"/>
+        <path d="M20 155 Q8 145 -6 149 Q-16 159 -9 172 Q2 179 15 172 Q25 162 20 155Z" fill="url(#lf2)" opacity="0.45"/>
+        <path d="M44 142 Q32 132 18 136 Q8 146 15 159 Q26 166 39 159 Q49 149 44 142Z" fill="url(#lfD)" opacity="0.48"/>
+        <path d="M36 205 Q24 195 10 199 Q0 209 7 222 Q18 229 31 222 Q41 212 36 205Z" fill="url(#lf3)" opacity="0.45"/>
+        <path d="M18 268 Q6 258 -8 262 Q-18 272 -11 285 Q0 292 13 285 Q23 275 18 268Z" fill="url(#lf1)" opacity="0.44"/>
+        <path d="M46 256 Q34 246 20 250 Q10 260 17 273 Q28 280 41 273 Q51 263 46 256Z" fill="url(#lf2)" opacity="0.42"/>
+        <path d="M20 418 Q8 408 -6 412 Q-16 422 -9 435 Q2 442 15 435 Q25 425 20 418Z" fill="url(#lf3)" opacity="0.42"/>
+        <path d="M48 405 Q36 395 22 399 Q12 409 19 422 Q30 429 43 422 Q53 412 48 405Z" fill="url(#lf1)" opacity="0.4"/>
+        <path d="M22 588 Q10 578 -4 582 Q-14 592 -7 605 Q4 612 17 605 Q27 595 22 588Z" fill="url(#lfD)" opacity="0.4"/>
+        <path d="M50 575 Q38 565 24 569 Q14 579 21 592 Q32 599 45 592 Q55 582 50 575Z" fill="url(#lf2)" opacity="0.38"/>
+        <path d="M-6 748 Q-18 738 -32 742 Q-42 752 -35 765 Q-24 772 -11 765 Q-1 755 -6 748Z" fill="url(#lf1)" opacity="0.42"/>
+        <path d="M24 738 Q12 728 -2 732 Q-12 742 -5 755 Q6 762 19 755 Q29 745 24 738Z" fill="url(#lfD)" opacity="0.4"/>
+        <path d="M54 728 Q42 718 28 722 Q18 732 25 745 Q36 752 49 745 Q59 735 54 728Z" fill="url(#lf3)" opacity="0.38"/>
+      </g>
+      <g opacity="0.45">
+        <path d="M398 844 Q372 720 384 600 Q396 480 374 365 Q356 258 380 148" stroke="#A8BBA0" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+        <path d="M310 38 Q322 28 336 32 Q346 42 339 55 Q328 62 315 55 Q305 45 310 38Z" fill="url(#lf2)" opacity="0.62"/>
+        <path d="M284 22 Q296 12 312 16 Q322 26 315 39 Q304 46 291 39 Q281 29 284 22Z" fill="url(#lf1)" opacity="0.55"/>
+        <path d="M334 62 Q346 52 360 56 Q370 66 363 79 Q352 86 339 79 Q329 69 334 62Z" fill="url(#lfD)" opacity="0.52"/>
+        <path d="M354 88 Q366 78 380 82 Q390 92 383 105 Q372 112 359 105 Q349 95 354 88Z" fill="url(#lf3)" opacity="0.5"/>
+        <path d="M374 118 Q386 108 400 112 Q410 122 403 135 Q392 142 379 135 Q369 125 374 118Z" fill="url(#lf1)" opacity="0.47"/>
+        <path d="M370 155 Q382 145 396 149 Q406 159 399 172 Q388 179 375 172 Q365 162 370 155Z" fill="url(#lf2)" opacity="0.45"/>
+        <path d="M346 142 Q358 132 372 136 Q382 146 375 159 Q364 166 351 159 Q341 149 346 142Z" fill="url(#lfD)" opacity="0.48"/>
+        <path d="M354 205 Q366 195 380 199 Q390 209 383 222 Q372 229 359 222 Q349 212 354 205Z" fill="url(#lf3)" opacity="0.45"/>
+        <path d="M372 268 Q384 258 398 262 Q408 272 401 285 Q390 292 377 285 Q367 275 372 268Z" fill="url(#lf1)" opacity="0.44"/>
+        <path d="M344 256 Q356 246 370 250 Q380 260 373 273 Q362 280 349 273 Q339 263 344 256Z" fill="url(#lf2)" opacity="0.42"/>
+        <path d="M370 418 Q382 408 396 412 Q406 422 399 435 Q388 442 375 435 Q365 425 370 418Z" fill="url(#lf3)" opacity="0.42"/>
+        <path d="M342 405 Q354 395 368 399 Q378 409 371 422 Q360 429 347 422 Q337 412 342 405Z" fill="url(#lf1)" opacity="0.4"/>
+        <path d="M368 588 Q380 578 394 582 Q404 592 397 605 Q386 612 373 605 Q363 595 368 588Z" fill="url(#lfD)" opacity="0.4"/>
+        <path d="M340 575 Q352 565 366 569 Q376 579 369 592 Q358 599 345 592 Q335 582 340 575Z" fill="url(#lf2)" opacity="0.38"/>
+        <path d="M394 748 Q406 738 420 742 Q430 752 423 765 Q412 772 399 765 Q389 755 394 748Z" fill="url(#lf1)" opacity="0.42"/>
+        <path d="M366 738 Q378 728 392 732 Q402 742 395 755 Q384 762 371 755 Q361 745 366 738Z" fill="url(#lfD)" opacity="0.4"/>
+        <path d="M336 728 Q348 718 362 722 Q372 732 365 745 Q354 752 341 745 Q331 735 336 728Z" fill="url(#lf3)" opacity="0.38"/>
+      </g>
+      <g opacity="0.32">
+        <ellipse cx="42" cy="840" rx="58" ry="26" fill="#9ABB8A"/>
+        <ellipse cx="8" cy="844" rx="38" ry="18" fill="#B8D0A8"/>
+        <ellipse cx="85" cy="844" rx="50" ry="22" fill="#8AAA80"/>
+        <ellipse cx="348" cy="840" rx="58" ry="26" fill="#9ABB8A"/>
+        <ellipse cx="382" cy="844" rx="38" ry="18" fill="#B8D0A8"/>
+        <ellipse cx="305" cy="844" rx="50" ry="22" fill="#8AAA80"/>
+        <ellipse cx="195" cy="844" rx="30" ry="12" fill="#B8D0A8"/>
+      </g>
+      <rect width="390" height="844" fill="url(#gVig)"/>
+    </svg>
+  </div>
+);
 
 /* ═══════════════════════════════════════════════════════
    SHARED COMPONENTS
@@ -133,56 +209,26 @@ function ScrollPicker({value,max,onChange,label}){
   );
 }
 
-/* ── Alarm sound — loops until stopped ── */
+/* ── Alarm — loops until stopped ── */
 let _alarmInterval=null;
-function stopAlarm(){
-  if(_alarmInterval){clearInterval(_alarmInterval);_alarmInterval=null;}
-}
+function stopAlarm(){if(_alarmInterval){clearInterval(_alarmInterval);_alarmInterval=null;}}
 function playAlarm(type){
-  stopAlarm(); // stop any previous alarm first
-  const ring=()=>{
-    try{
-      const ctx=new(window.AudioContext||window.webkitAudioContext)();
-      const master=ctx.createGain();
-      master.gain.setValueAtTime(0.6,ctx.currentTime);
-      master.connect(ctx.destination);
-      if(type==="gentle"){
-        [0,0.3,0.6,0.9].forEach((t,i)=>{
-          const osc=ctx.createOscillator();const g=ctx.createGain();
-          osc.connect(g);g.connect(master);osc.type="sine";
-          osc.frequency.setValueAtTime([528,660,792,528][i],ctx.currentTime+t);
-          g.gain.setValueAtTime(0.5,ctx.currentTime+t);
-          g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.6);
-          osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.6);
-        });
-        setTimeout(()=>ctx.close(),2000);
-      } else if(type==="focus"){
-        [0,0.2,0.4].forEach(t=>{
-          const osc=ctx.createOscillator();const g=ctx.createGain();
-          osc.connect(g);g.connect(master);osc.type="square";
-          osc.frequency.setValueAtTime(660,ctx.currentTime+t);
-          g.gain.setValueAtTime(0.3,ctx.currentTime+t);
-          g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.15);
-          osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.15);
-        });
-        setTimeout(()=>ctx.close(),1500);
-      } else {
-        [0,0.5,1.0].forEach(t=>{
-          const osc=ctx.createOscillator();const g=ctx.createGain();
-          osc.connect(g);g.connect(master);osc.type="sine";
-          osc.frequency.setValueAtTime(880,ctx.currentTime+t);
-          osc.frequency.exponentialRampToValueAtTime(440,ctx.currentTime+t+0.4);
-          g.gain.setValueAtTime(0.8,ctx.currentTime+t);
-          g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.8);
-          osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.8);
-        });
-        setTimeout(()=>ctx.close(),3000);
-      }
-    }catch(e){console.log("Audio error",e);}
-  };
-  ring(); // play immediately
-  // repeat every 3 seconds until stopAlarm() is called
-  _alarmInterval=setInterval(ring,3000);
+  stopAlarm();
+  const ring=()=>{try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const master=ctx.createGain();master.gain.setValueAtTime(0.6,ctx.currentTime);master.connect(ctx.destination);
+    if(type==="gentle"){
+      [0,0.3,0.6,0.9].forEach((t,i)=>{const osc=ctx.createOscillator();const g=ctx.createGain();osc.connect(g);g.connect(master);osc.type="sine";osc.frequency.setValueAtTime([528,660,792,528][i],ctx.currentTime+t);g.gain.setValueAtTime(0.5,ctx.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.6);osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.6);});
+      setTimeout(()=>ctx.close(),2000);
+    } else if(type==="focus"){
+      [0,0.2,0.4].forEach(t=>{const osc=ctx.createOscillator();const g=ctx.createGain();osc.connect(g);g.connect(master);osc.type="square";osc.frequency.setValueAtTime(660,ctx.currentTime+t);g.gain.setValueAtTime(0.3,ctx.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.15);osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.15);});
+      setTimeout(()=>ctx.close(),1500);
+    } else {
+      [0,0.5,1.0].forEach(t=>{const osc=ctx.createOscillator();const g=ctx.createGain();osc.connect(g);g.connect(master);osc.type="sine";osc.frequency.setValueAtTime(880,ctx.currentTime+t);osc.frequency.exponentialRampToValueAtTime(440,ctx.currentTime+t+0.4);g.gain.setValueAtTime(0.8,ctx.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.8);osc.start(ctx.currentTime+t);osc.stop(ctx.currentTime+t+0.8);});
+      setTimeout(()=>ctx.close(),3000);
+    }
+  }catch(e){console.log("Audio",e);}};
+  ring();_alarmInterval=setInterval(ring,3000);
 }
 
 
@@ -190,7 +236,6 @@ function TimerWidget({icon,label,mins,setMins,left,start,stop,fmt,glass,accent,a
   const [h,setH]=useState(0);
   const [m,setM]=useState(mins||5);
   const [s,setS]=useState(0);
-  const [ringing,setRinging]=useState(false);
   const pct=left!==null?(left/((h*3600+m*60+s)||1))*100:100;
   const totalSecs=h*3600+m*60+s;
   const bg=glass?"rgba(255,255,255,0.18)":`${accent}`;
@@ -198,39 +243,27 @@ function TimerWidget({icon,label,mins,setMins,left,start,stop,fmt,glass,accent,a
   const numColor=glass?C.wh:C.dp;
   const barFill=glass?"rgba(255,255,255,0.85)":accent;
 
-  useEffect(()=>{
-    if(left===0&&!ringing){setRinging(true);}
-    if(left===null){setRinging(false);stopAlarm();}
-  },[left]);
-
-  const handleStop=()=>{stop();setRinging(false);stopAlarm();};
-
   const handleStart=()=>{
+    // sync mins for backwards compat
     if(setMins)setMins(Math.max(1,Math.round(totalSecs/60)));
     start(totalSecs);
-    setRinging(false);stopAlarm();
   };
 
   return (
-    <div style={{background:ringing?"rgba(255,50,50,0.15)":bg,backdropFilter:glass?"blur(8px)":"none",border:ringing?"2px solid #e74c3c":border,borderRadius:18,padding:"13px 14px",boxShadow:glass?"0 4px 20px rgba(45,10,94,0.18)":"none",transition:"all 0.3s"}}>
+    <div style={{background:bg,backdropFilter:glass?"blur(8px)":"none",border,borderRadius:18,padding:"13px 14px",boxShadow:glass?"0 4px 20px rgba(45,10,94,0.18)":"none"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-        <span style={{fontSize:20}}>{ringing?"🔔":icon}</span>
-        <div style={{fontSize:11,fontWeight:800,color:ringing?"#e74c3c":glass?"rgba(255,255,255,0.75)":accent,textTransform:"uppercase",letterSpacing:1.4,flex:1}}>{ringing?"⏰ Timer done!":label}</div>
-        {setScreen&&!left&&!ringing&&(
+        <span style={{fontSize:20}}>{icon}</span>
+        <div style={{fontSize:11,fontWeight:800,color:glass?"rgba(255,255,255,0.75)":accent,textTransform:"uppercase",letterSpacing:1.4,flex:1}}>{label}</div>
+        {setScreen&&!left&&(
           <button onClick={()=>setScreen("rest")} style={{background:"rgba(30,92,58,0.4)",color:"#52c47a",border:"1px solid rgba(82,196,122,0.4)",borderRadius:10,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🌿 Rest</button>
         )}
       </div>
-      {ringing&&(
-        <button onClick={handleStop} style={{width:"100%",padding:"14px",background:"#e74c3c",color:"#fff",border:"none",borderRadius:14,fontWeight:900,fontSize:16,cursor:"pointer",marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:10,animation:"pulse 0.6s infinite alternate"}}>
-          🔕 Stop Alarm
-        </button>
-      )}
-      {left!==null&&!ringing?(
+      {left!==null?(
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{fontFamily:"monospace",fontSize:36,fontWeight:900,lineHeight:1,color:left<60?(glass?"#ffb3b3":"#c0392b"):numColor,flex:1,textAlign:"center"}}>{fmt(left)}</div>
-          <button onClick={handleStop} style={{background:accentText,color:C.wh,border:"none",borderRadius:12,width:46,height:46,fontSize:18,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          <button onClick={stop} style={{background:accentText,color:C.wh,border:"none",borderRadius:12,width:46,height:46,fontSize:18,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
         </div>
-      ):!ringing&&(
+      ):(
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{display:"flex",flex:1,gap:0,background:"rgba(0,0,0,0.25)",borderRadius:14,overflow:"hidden",padding:"0 8px"}}>
             <ScrollPicker value={h} max={23} onChange={setH} label="h"/>
@@ -312,7 +345,7 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
   const ref=useRef(null);
   useEffect(()=>{
     if(on&&left>0)ref.current=setInterval(()=>setLeft(l=>l-1),1000);
-    else{clearInterval(ref.current);if(left===0){setOn(false);playAlarm('bell');}}
+    else{clearInterval(ref.current);if(left===0)setOn(false);}
     return()=>clearInterval(ref.current);
   },[on,left]);
   const start=(secs)=>{const t=secs||mins*60;if(t<1)return;setLeft(t);setOn(true);};
@@ -480,7 +513,7 @@ function PriCompare({tasks,onDone}) {
   };
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,display:"flex",flexDirection:"column",alignItems:"center",fontFamily:"'Segoe UI',sans-serif",paddingBottom:40}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",display:"flex",flexDirection:"column",alignItems:"center",fontFamily:"'Segoe UI',sans-serif",paddingBottom:40}}>
 
       {/* Header */}
       <div style={{width:"100%",background:"rgba(0,0,0,0.2)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
@@ -584,7 +617,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
   const active=list.tasks.filter(t=>!t.done);
   const done=list.tasks.filter(t=>t.done);
   return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
       <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
       <div style={{padding:"18px 14px"}}>
         <BreakTimer setScreen={setScreen}/>
@@ -646,8 +679,8 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen}) {
   if(active) return <PriList list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ls=>ls.map(l=>l.id===u.id?u:l))} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/>;
   const shades=[{from:"#9b7dd4",to:"#5a3d9a"},{from:"#b48abf",to:"#7a4a8a"},{from:"#7e8fd4",to:"#4a5aaf"},{from:"#c4aee8",to:"#8a6cbd"}];
   return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif"}}>
-      <Header title="📋 Prioritizer" right={<button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>}/>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
+      <Header title="📋 Prioritizer" onBack={()=>setScreen("home")} right={<button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>}/>
       <div style={{padding:"20px 16px"}}>
         {adding&&(
           <GlassCard style={{marginBottom:18}}>
@@ -708,9 +741,9 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
   if(map) return <MindMapCanvas map={map} onBack={()=>setMapId(null)} onUpdate={u=>setData(ms=>ms.map(m=>m.id===u.id?u:m))} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/>;
 
   return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif"}}>
-      <HomeBar setScreen={setScreen} title="🧠 Mind Map" />
-      <Header title="🧠 Mind Map" right={
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
+      <HomeBar setScreen={setScreen} title="🧠 Mind Map" onBack={()=>setScreen("home")}/>
+      <Header title="🧠 Mind Map" onBack={()=>setScreen("home")} right={
         <button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
       }/>
       <div style={{padding:"20px 16px"}}>
@@ -1658,7 +1691,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
 
   /* ── Files inside sub-category ── */
   if(sub&&drawer) return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title={sub.name} onBack={()=>setActiveSubId(null)} right={
         <div style={{display:"flex",gap:8}}>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
@@ -1671,7 +1704,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
       <div style={{padding:"10px 14px 0"}}>
         <div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",marginBottom:14}}>
           <span style={{fontSize:16}}>{drawer.icon}</span>
-          <span style={{color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600}}>{drawer.name}</span>
+          <span style={{color:"#7A7060",fontSize:12,fontWeight:600}}>{drawer.name}</span>
           <span style={{color:"rgba(255,255,255,0.3)"}}>›</span>
           <span style={{color:C.wh,fontWeight:700,fontSize:12}}>{sub.name}</span>
           <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.15)",color:C.wh,borderRadius:20,padding:"1px 8px",fontSize:11,fontWeight:700}}>{sub.files.length} files</span>
@@ -1710,7 +1743,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
 
   /* ── Sub-categories inside a drawer ── */
   if(drawer) return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title={`${drawer.icon} ${drawer.name}`} onBack={()=>setActiveDrawerId(null)} right={
         <div style={{display:"flex",gap:8}}>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
@@ -1761,7 +1794,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
 
   /* ── Cabinet home — the drawers ── */
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title="🗄️ Filing Cabinet" onBack={onBack} right={
         <div style={{display:"flex",gap:8}}>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
@@ -2220,7 +2253,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   // Page editor
   const updatePageUrl=(id,url)=>setData(ds=>ds.map(s=>s.id===sectionId?{...s,pages:s.pages.map(p=>p.id===id?{...p,url}:p)}:s));
   if(page&&section) return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
       {studioOpen&&<StudyStudio page={page} onClose={()=>setStudioOpen(false)}/>}
       {/* Page editor nav bar */}
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"10px 12px",display:"flex",alignItems:"center",gap:8,boxShadow:"0 3px 16px rgba(45,10,94,0.35)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
@@ -2356,7 +2389,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 
   // Page list
   if(section) return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 3px 16px rgba(45,10,94,0.35)",position:"sticky",top:0,zIndex:50}}>
         <button onClick={()=>setSectionId(null)} style={{background:"rgba(255,255,255,0.2)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
         <span style={{flex:1,color:C.wh,fontWeight:900,fontSize:17,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{section.name}</span>
@@ -2411,7 +2444,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   };
 
   if(notesMode==="notes") return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 3px 16px rgba(45,10,94,0.35)",position:"sticky",top:0,zIndex:50}}>
         <button onClick={()=>setNotesMode(null)} style={{background:"rgba(255,255,255,0.2)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
         <span style={{flex:1,color:C.wh,fontWeight:900,fontSize:17}}>📓 Notes</span>
@@ -2464,7 +2497,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     {id:"studio",  icon:"🎓", name:"Study Studio",   desc:"Flashcards, quiz, slides — AI powered",grad:`linear-gradient(135deg,#0d3b0d,#1e8449)`, count:"Open a note first"},
   ];
   return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       {/* Top nav bar with home button */}
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 24px rgba(45,10,94,0.35)"}}>
         <div style={{flex:1,textAlign:"center"}}>
@@ -2587,7 +2620,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
   if(recipeDetail){
     const r=recipeDetail;
     return(
-      <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
         <Header title={r.name} onBack={()=>setRecipeDetail(null)} right={
           <button onClick={()=>{setRecipes(rs=>rs.filter(x=>x.id!==r.id));setRecipeDetail(null);}} style={{background:"rgba(192,57,43,0.3)",color:C.wh,border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Delete</button>
         }/>
@@ -2611,9 +2644,9 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
   }
 
   return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <HomeBar setScreen={setScreen} title="🍽️ Meal Planner"/>
-      <Header title="🍽️ Meal Planner" right={
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <HomeBar setScreen={setScreen} title="🍽️ Meal Planner" onBack={()=>setScreen("home")}/>
+      <Header title="🍽️ Meal Planner" onBack={()=>setScreen("home")} right={
         <div style={{display:"flex",gap:8}}>
           {mealTab==='week'&&<button onClick={()=>save(init())} style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Reset</button>}
           {mealTab==='recipes'&&<button onClick={()=>setAddingRecipe(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>}
@@ -3045,8 +3078,8 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,setScre
   };
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <HomeBar setScreen={setScreen} title="🎯 Goals"/>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <HomeBar setScreen={setScreen} title="🎯 Goals" onBack={()=>setScreen("home")}/>
 
       {/* Gorgeous gradient header */}
       <div style={{background:h.grad,padding:"24px 20px 16px",boxShadow:"0 4px 24px rgba(0,0,0,0.3)"}}>
@@ -3233,7 +3266,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
   const st=statusByKey(idea.status);
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
       {/* ── Header bar ── */}
       <div style={{background:`linear-gradient(135deg,${TAG_COLORS[idea.tag]||C.pp},${C.dp})`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>
@@ -3475,7 +3508,7 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
     .filter(d=>!search||(d.text+d.ramble).toLowerCase().includes(search.toLowerCase()));
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title="💡 Ideas" onBack={onBack||null} right={
         <button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
       }/>
@@ -3614,7 +3647,7 @@ function MatrixTimer({setScreen}) {
 
   useEffect(()=>{
     if(on&&left>0){ref.current=setInterval(()=>setLeft(l=>l-1),1000);}
-    else{clearInterval(ref.current);if(left===0){setOn(false);playAlarm(mode==='focus'?'focus':'gentle');}}
+    else{clearInterval(ref.current);if(left===0)setOn(false);}
     return()=>clearInterval(ref.current);
   },[on,left]);
 
@@ -3778,8 +3811,8 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   );
 
   return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <Header title="🎯 Matrix" />
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <Header title="🎯 Matrix" onBack={()=>setScreen("home")} />
 
       <div style={{padding:"12px 12px 0"}}>
 
@@ -3973,9 +4006,9 @@ function BudgetPlanner({data,setData,setScreen}){
   const active=data.find(b=>b.id===activeId);
   if(active) return <BudgetDetail budget={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(b=>b.id===u.id?u:b))} onDelete={id=>{setData(ds=>ds.filter(b=>b.id!==id));setActiveId(null);}}/>;
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <HomeBar setScreen={setScreen} title="💰 Budget"/>
-      <Header title="💰 Budget" right={
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <HomeBar setScreen={setScreen} title="💰 Budget" onBack={()=>setScreen("home")}/>
+      <Header title="💰 Budget" onBack={()=>setScreen("home")} right={
         <button onClick={()=>{const b=mkBudget();setData(ds=>[...ds,b]);setActiveId(b.id);}} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
       }/>
       <div style={{padding:"20px 16px"}}>
@@ -4040,7 +4073,7 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
   const SectionLabel=({n,label})=><div style={{marginBottom:6,fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1.5}}>{n} · {label}</div>;
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title={b.name} onBack={onBack} right={
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>upd({saved:!b.saved})} style={{background:b.saved?"rgba(39,174,96,0.35)":"rgba(255,255,255,0.18)",color:C.wh,border:`1.5px solid ${b.saved?"#27ae60":"rgba(255,255,255,0.35)"}`,borderRadius:10,padding:"6px 12px",fontWeight:800,fontSize:12,cursor:"pointer"}}>{b.saved?"✅ Saved":"💾 Save"}</button>
@@ -4179,9 +4212,9 @@ function ShoppingList({data,setData,setScreen}){
   };
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <HomeBar setScreen={setScreen} title="🛒 Shopping"/>
-      <Header title="🛒 Shopping" right={
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <HomeBar setScreen={setScreen} title="🛒 Shopping" onBack={()=>setScreen("home")}/>
+      <Header title="🛒 Shopping" onBack={()=>setScreen("home")} right={
         <button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
       }/>
       <div style={{padding:"20px 16px"}}>
@@ -4323,7 +4356,7 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
     : [{cat:null,items:visible}];
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title={`${list.icon} ${list.name}`} onBack={onBack} right={
         <button onClick={()=>{if(window.confirm("Delete this list?"))onDelete(list.id);}} style={{background:"rgba(192,57,43,0.3)",color:C.wh,border:"1.5px solid rgba(255,100,100,0.4)",borderRadius:10,padding:"6px 10px",fontWeight:800,fontSize:13,cursor:"pointer"}}>🗑</button>
       }/>
@@ -4626,7 +4659,7 @@ function CountdownTool() {
 
   useEffect(()=>{
     if(on&&left>0){ref.current=setInterval(()=>setLeft(l=>l-1),1000);}
-    else{ clearInterval(ref.current); if(left===0&&on){setOn(false);setDone(true);playAlarm('bell');}}
+    else{ clearInterval(ref.current); if(left===0&&on){setOn(false);setDone(true);}}
     return()=>clearInterval(ref.current);
   },[on,left]);
 
@@ -4920,8 +4953,8 @@ function Tools({setScreen}) {
 
   return(
     <div style={{minHeight:"100vh",background:`linear-gradient(160deg,#1a0336 0%,#4a148c 50%,#7b1fa2 100%)`,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <HomeBar setScreen={setScreen} title="🔧 Tools"/>
-      <Header title="🔧 Tools" />
+      <HomeBar setScreen={setScreen} title="🔧 Tools" onBack={()=>setScreen("home")}/>
+      <Header title="🔧 Tools" onBack={()=>setScreen("home")} />
 
       {/* Tool tab bar */}
       <div style={{display:"flex",overflowX:"auto",gap:0,padding:"10px 12px",background:"rgba(0,0,0,0.2)",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
@@ -5062,7 +5095,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
   const accentCol=h.color;
 
   return(
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
       {/* Cover photo header */}
       {/* ── Header bar ── */}
@@ -5442,7 +5475,7 @@ function TheCharge({priData,matrixData,setScreen}){
                   <div style={{flex:1}}>
                     <div style={{color:"#fff",fontWeight:800,fontSize:14,marginBottom:2}}>{data.weeklyAward||"No reward set yet — tap ⚙️ Setup"}</div>
                     {rewardUnlocked?<div style={{color:"rgba(255,255,255,0.85)",fontSize:13}}>🎉 All lights earned — go claim it!</div>
-                    :<div style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{orbTarget-lightsEarned} more light{orbTarget-lightsEarned!==1?"s":""} to unlock</div>}
+                    :<div style={{color:"#7A7060",fontSize:12}}>{orbTarget-lightsEarned} more light{orbTarget-lightsEarned!==1?"s":""} to unlock</div>}
                   </div>
                 </div>
                 {/* Lights dots */}
@@ -5450,7 +5483,7 @@ function TheCharge({priData,matrixData,setScreen}){
                   {Array.from({length:Math.min(orbTarget,15)}).map((_,i)=>(
                     <div key={i} style={{width:22,height:22,borderRadius:"50%",background:i<lightsEarned?"#FFD700":"rgba(255,255,255,0.12)",border:`1.5px solid ${i<lightsEarned?"#FFD700":"rgba(255,255,255,0.2)"}`,boxShadow:i<lightsEarned?"0 0 8px #FFD700":"none",transition:"all 0.3s",flexShrink:0}}/>
                   ))}
-                  {orbTarget>15&&<span style={{color:"rgba(255,255,255,0.5)",fontSize:12,alignSelf:"center"}}>+{orbTarget-15} more</span>}
+                  {orbTarget>15&&<span style={{color:"#7A7060",fontSize:12,alignSelf:"center"}}>+{orbTarget-15} more</span>}
                 </div>
                 {daysLeft!==null&&(
                   <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
@@ -5793,7 +5826,7 @@ function RestSpace({setScreen}){
   // Break timer
   useEffect(()=>{
     if(breakOn&&breakLeft>0){breakRef.current=setInterval(()=>setBreakLeft(l=>l-1),1000);}
-    else{clearInterval(breakRef.current);if(breakLeft===0&&breakOn){setBreakOn(false);playAlarm('gentle');}}
+    else{clearInterval(breakRef.current);if(breakLeft===0&&breakOn)setBreakOn(false);}
     return()=>clearInterval(breakRef.current);
   },[breakOn,breakLeft]);
 
@@ -5829,7 +5862,7 @@ function RestSpace({setScreen}){
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0a1a0a 0%,#0d2b1a 40%,#1a3d2a 100%)",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
       {/* Header */}
-      <HomeBar setScreen={setScreen} title="🌿 Rest Space"/>
+      <HomeBar setScreen={setScreen} title="🌿 Rest Space" onBack={()=>setScreen("home")}/>
       <div style={{background:"linear-gradient(135deg,#0d2b1a,#1e5c3a)",padding:"18px 16px 14px",textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
         <div style={{fontSize:13,color:"rgba(255,255,255,0.6)",fontStyle:"italic",lineHeight:1.6}}>
           "Rest is not a reward for finishing — it's part of the work" 🌿
@@ -5855,7 +5888,7 @@ function RestSpace({setScreen}){
                 <span style={{fontSize:30}}>{activeMed.icon}</span>
                 <div style={{flex:1}}>
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{activeMed.title}</div>
-                  <div style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
+                  <div style={{color:"#7A7060",fontSize:12}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
                 </div>
                 <button onClick={stopMed} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕ End</button>
               </div>
@@ -5912,7 +5945,7 @@ function RestSpace({setScreen}){
                   <div style={{width:52,height:52,borderRadius:14,background:"linear-gradient(135deg,#1e5c3a,#52c47a)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{med.icon}</div>
                   <div style={{flex:1}}>
                     <div style={{color:"#fff",fontWeight:800,fontSize:15,marginBottom:3}}>{med.title}</div>
-                    <div style={{color:"rgba(255,255,255,0.5)",fontSize:12,marginBottom:3}}>{med.desc}</div>
+                    <div style={{color:"#7A7060",fontSize:12,marginBottom:3}}>{med.desc}</div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{color:"rgba(82,196,122,0.8)",fontSize:11,fontWeight:700}}>{Math.round(med.duration/60)} min</span>
                       {audioFiles[med.id]&&<span style={{background:"rgba(82,196,122,0.25)",color:"#52c47a",fontSize:10,fontWeight:800,borderRadius:10,padding:"2px 8px"}}>🎵 Audio ready</span>}
@@ -6043,8 +6076,7 @@ function usePro() {
   const [limitHit, setLimitHit]   = useState("");
 
   const canDo = (feature, currentCount=0) => {
-    if (TESTING_MODE) return true;
-    if (isPro) return true;                // 🔓 Pro subscribers unlocked
+    if (TESTING_MODE) return true;          // 🔓 all unlocked
     const limit = FREE_LIMITS[feature];
     if (limit === undefined) return true;
     return currentCount < limit;
@@ -6110,176 +6142,70 @@ function ProUpgradeModal({ limitHit, onClose }) {
 
 
 /* ═══════════════════════════════════════════════════════
-   🔐 AUTH SYSTEM — Supabase + Google login for Pro users
-   Free users: full app, limited features
-   Pro users: sign in with Google to unlock everything
+   🔐 AUTH SYSTEM — Supabase + Google
 ═══════════════════════════════════════════════════════ */
-
-// ── Supabase config — replace with your project URL + anon key ──
-const SUPABASE_URL = "https://qlgvcwfmgamfarlrcqoy.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_zFA1_iBaYLUcjdqaS35Gtw_vtt_duJm";
-
-// ── Simple Supabase auth helper (no SDK needed) ──────────
-const supabase = {
-  async signInWithGoogle() {
-    const redirectTo = window.location.origin;
-    const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
-    window.location.href = url;
-  },
-  async signOut() {
-    const token = localStorage.getItem("thinko_access_token");
-    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
-      method:"POST",
-      headers:{"Authorization":`Bearer ${token}`,"apikey":SUPABASE_ANON_KEY}
-    });
-    localStorage.removeItem("thinko_access_token");
-    localStorage.removeItem("thinko_user");
-  },
-  async getUser() {
-    const token = localStorage.getItem("thinko_access_token");
-    if(!token) return null;
-    try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers:{"Authorization":`Bearer ${token}`,"apikey":SUPABASE_ANON_KEY}
-      });
-      if(!res.ok) return null;
-      return await res.json();
-    } catch { return null; }
-  },
-  handleAuthCallback() {
-    // Parse token from URL hash after Google redirect
-    const hash = window.location.hash;
-    if(hash.includes("access_token")) {
-      const params = new URLSearchParams(hash.replace("#",""));
-      const token = params.get("access_token");
-      if(token) {
-        localStorage.setItem("thinko_access_token", token);
-        window.history.replaceState(null,"",window.location.pathname);
-        return true;
-      }
-    }
-    return false;
-  }
+const SUPABASE_URL="https://qlgvcwfmgamfarlrcqoy.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_zFA1_iBaYLUcjdqaS35Gtw_vtt_duJm";
+const supabase={
+  async signInWithGoogle(){window.location.href=`${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(window.location.origin)}`;},
+  async signOut(){const t=localStorage.getItem("thinko_access_token");await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:{"Authorization":`Bearer ${t}`,"apikey":SUPABASE_ANON_KEY}});localStorage.removeItem("thinko_access_token");},
+  async getUser(){const t=localStorage.getItem("thinko_access_token");if(!t)return null;try{const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{"Authorization":`Bearer ${t}`,"apikey":SUPABASE_ANON_KEY}});return r.ok?await r.json():null;}catch{return null;}},
+  handleAuthCallback(){const h=window.location.hash;if(h.includes("access_token")){const p=new URLSearchParams(h.replace("#",""));const t=p.get("access_token");if(t){localStorage.setItem("thinko_access_token",t);window.history.replaceState(null,"",window.location.pathname);return true;}}return false;}
 };
-
-// ── useAuth hook ─────────────────────────────────────────
-function useAuth() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(()=>{
-    // Check for auth callback from Google
-    supabase.handleAuthCallback();
-    // Load user
-    supabase.getUser().then(u=>{
-      setUser(u);
-      setLoading(false);
-    });
-  },[]);
-
-  const signIn = () => supabase.signInWithGoogle();
-  const signOut = async () => { await supabase.signOut(); setUser(null); };
-  const isPro = !!user; // signed in = Pro
-
-  return { user, loading, signIn, signOut, isPro };
+function useAuth(){
+  const [user,setUser]=useState(null);
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{supabase.handleAuthCallback();supabase.getUser().then(u=>{setUser(u);setLoading(false);});},[]);
+  const signIn=()=>supabase.signInWithGoogle();
+  const signOut=async()=>{await supabase.signOut();setUser(null);};
+  const isPro=!!user;
+  return{user,loading,signIn,signOut,isPro};
 }
 
-// ── Pro Login Modal ──────────────────────────────────────
-function ProLoginModal({onClose, onSignIn}) {
+const TESTING_MODE=true;
+const FREE_LIMITS={aiCallsPerDay:3,mindMaps:3,prioritizerLists:1,matrixTasks:10,goalsTotal:5,restSessions:5,filingDrawers:2,noteSections:3};
+function usePro(){
+  const[showModal,setShowModal]=useState(false);
+  const[limitHit,setLimitHit]=useState("");
+  const canDo=(feature,count=0)=>{if(TESTING_MODE)return true;const l=FREE_LIMITS[feature];return l===undefined||count<l;};
+  const gate=(feature,count,action)=>{if(canDo(feature,count)){action();return;}setLimitHit(feature);setShowModal(true);};
+  return{canDo,gate,showModal,setShowModal,limitHit};
+}
+function ProLoginModal({onClose,onSignIn}){
   return(
-    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(10,2,30,0.92)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{background:C.wh,borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:380,textAlign:"center",boxShadow:"0 16px 60px rgba(45,10,94,0.6)"}}>
-
-        {/* Logo */}
-        <div style={{fontSize:52,marginBottom:8}}>🧠</div>
-        <div style={{fontWeight:900,color:C.dp,fontSize:26,marginBottom:4}}>Thinko Pro</div>
-        <div style={{color:C.soft,fontSize:14,marginBottom:24,lineHeight:1.6}}>
-          Sign in with Google to unlock all features
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(232,225,212,0.9)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{background:"rgba(252,249,242,0.96)",borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:380,textAlign:"center",boxShadow:"0 12px 48px rgba(60,50,30,0.15)",border:"1px solid rgba(255,255,255,0.9)"}}>
+        <div style={{fontSize:48,marginBottom:12}}>💎</div>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:22,marginBottom:8}}>Unlock Thinko Pro</div>
+        <div style={{color:"#6A6050",fontSize:14,lineHeight:1.6,marginBottom:20}}>Sign in to unlock unlimited features</div>
+        <div style={{background:"linear-gradient(135deg,#2C3820,#4A7038)",borderRadius:16,padding:"16px",marginBottom:16,color:"#fff"}}>
+          <div style={{fontSize:28,fontWeight:900,marginBottom:2}}>£4.99<span style={{fontSize:13,fontWeight:400}}>/month</span></div>
+          <div style={{fontSize:11,opacity:0.65}}>or £39.99/year</div>
         </div>
-
-        {/* Features list */}
-        <div style={{background:C.pale,borderRadius:16,padding:"14px 16px",marginBottom:24,textAlign:"left"}}>
-          {[
-            "✨ Unlimited AI features",
-            "🧠 Unlimited Mind Maps",
-            "📋 Unlimited Prioritizer lists",
-            "🎯 Unlimited Goals",
-            "🌿 Full Rest Space library",
-            "🗄️ Filing Cabinet uploads",
-            "🎓 Study Studio unlimited",
-            "☁️ Data synced across devices",
-          ].map((f,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:6,fontSize:13,color:C.txt,fontWeight:600}}>
-              {f}
-            </div>
-          ))}
-        </div>
-
-        {/* Pricing */}
-        <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,borderRadius:16,padding:"12px 16px",marginBottom:20,color:C.wh,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div>
-            <div style={{fontWeight:900,fontSize:22}}>£4.99<span style={{fontSize:13,fontWeight:600}}>/month</span></div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.65)"}}>or £39.99/year — save £20</div>
-          </div>
-          <div style={{fontSize:32}}>💎</div>
-        </div>
-
-        {/* Google Sign In button */}
-        <button onClick={onSignIn}
-          style={{width:"100%",padding:"14px",background:"#fff",color:"#444",border:"2px solid #ddd",borderRadius:14,fontWeight:800,fontSize:15,cursor:"pointer",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:12,boxShadow:"0 2px 12px rgba(0,0,0,0.1)"}}>
-          <svg width="20" height="20" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
+        <button onClick={onSignIn} style={{width:"100%",padding:"14px",background:"#4A7038",color:"#fff",border:"none",borderRadius:14,fontWeight:700,fontSize:16,cursor:"pointer",marginBottom:10,boxShadow:"0 4px 16px rgba(74,112,56,0.3)"}}>
           Continue with Google
         </button>
-
-        <button onClick={onClose}
-          style={{width:"100%",padding:"11px",background:"transparent",color:C.soft,border:`1px solid ${C.ll}`,borderRadius:14,fontWeight:700,fontSize:14,cursor:"pointer"}}>
-          Continue as guest — free features only
+        <button onClick={onClose} style={{width:"100%",padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(160,152,140,0.3)",borderRadius:14,fontWeight:600,fontSize:14,cursor:"pointer"}}>
+          Maybe later
         </button>
-
-        <div style={{marginTop:14,fontSize:11,color:C.soft,lineHeight:1.5}}>
-          By signing in you agree to our terms. Cancel anytime.
-        </div>
       </div>
     </div>
   );
 }
-
-// ── User avatar / sign in button for home screen ─────────
-function AuthButton({user, onSignIn, onSignOut}) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  if(!user) return(
-    <button onClick={onSignIn}
-      style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:12,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
-      💎 Go Pro
-    </button>
-  );
+function AuthButton({user,onSignIn,onSignOut}){
+  const[menuOpen,setMenuOpen]=useState(false);
+  if(!user)return(<button onClick={onSignIn} style={{background:"rgba(74,112,56,0.15)",color:"#4A7038",border:"1.5px solid rgba(74,112,56,0.3)",borderRadius:12,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>💎 Go Pro</button>);
   return(
     <div style={{position:"relative"}}>
-      <button onClick={()=>setMenuOpen(m=>!m)}
-        style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:12,padding:"6px 12px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
-        {user.user_metadata?.avatar_url
-          ? <img src={user.user_metadata.avatar_url} style={{width:24,height:24,borderRadius:"50%"}} alt="avatar"/>
-          : <span style={{fontSize:20}}>👤</span>}
-        <span style={{maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12}}>
-          {user.user_metadata?.full_name?.split(" ")[0] || "Pro"}
-        </span>
-        💎
+      <button onClick={()=>setMenuOpen(m=>!m)} style={{background:"rgba(74,112,56,0.12)",color:"#4A7038",border:"1.5px solid rgba(74,112,56,0.25)",borderRadius:12,padding:"6px 12px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+        {user.user_metadata?.avatar_url?<img src={user.user_metadata.avatar_url} style={{width:22,height:22,borderRadius:"50%"}} alt="avatar"/>:<span>👤</span>}
+        <span style={{maxWidth:70,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12}}>{user.user_metadata?.full_name?.split(" ")[0]||"Pro"}</span>💎
       </button>
       {menuOpen&&(
-        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:C.wh,borderRadius:14,padding:"8px",boxShadow:"0 8px 32px rgba(45,10,94,0.25)",minWidth:180,zIndex:100}} onClick={()=>setMenuOpen(false)}>
-          <div style={{padding:"8px 12px",fontSize:13,color:C.soft,borderBottom:`1px solid ${C.ll}`,marginBottom:4}}>
-            {user.email}
-          </div>
-          <div style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:"#27ae60"}}>✓ Pro subscriber</div>
-          <button onClick={onSignOut}
-            style={{width:"100%",padding:"8px 12px",background:"transparent",color:"#e74c3c",border:"none",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",textAlign:"left"}}>
-            Sign out
-          </button>
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"rgba(252,249,242,0.98)",borderRadius:14,padding:"8px",boxShadow:"0 8px 32px rgba(60,50,30,0.15)",minWidth:180,zIndex:100,border:"1px solid rgba(255,255,255,0.9)"}} onClick={()=>setMenuOpen(false)}>
+          <div style={{padding:"8px 12px",fontSize:12,color:"#8A8070",borderBottom:"1px solid rgba(160,152,140,0.2)",marginBottom:4}}>{user.email}</div>
+          <div style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:"#4A7038"}}>✓ Pro subscriber</div>
+          <button onClick={onSignOut} style={{width:"100%",padding:"8px 12px",background:"transparent",color:"#c0392b",border:"none",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",textAlign:"left"}}>Sign out</button>
         </div>
       )}
     </div>
@@ -6305,39 +6231,19 @@ export default function App() {
   const [screen,setScreen]=useState("home");
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
-
-  // ── localStorage helpers ──────────────────────────────
-  const load=(key,def)=>{try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch{return def;}};
-  const save=(key,val)=>{try{localStorage.setItem(key,JSON.stringify(val));}catch{}};
-
-  // ── Persisted state ───────────────────────────────────
-  const [priData,setPriDataRaw]=useState(()=>load('thinko_pri',[]));
-  const [mapData,setMapDataRaw]=useState(()=>load('thinko_map',[]));
-  const [notesData,setNotesDataRaw]=useState(()=>load('thinko_notes',[]));
-  const [mealData,setMealDataRaw]=useState(()=>load('thinko_meal',{}));
-  const [ideasData,setIdeasDataRaw]=useState(()=>load('thinko_ideas',[]));
-  const [matrixData,setMatrixDataRaw]=useState(()=>load('thinko_matrix',[]));
-  const [budgetData,setBudgetDataRaw]=useState(()=>load('thinko_budget',[]));
-  const [shopData,setShopDataRaw]=useState(()=>load('thinko_shop',[]));
-  const [goalsData,setGoalsDataRaw]=useState(()=>load('thinko_goals',[]));
-  const [chargeData,setChargeDataRaw]=useState(()=>load('thinko_charge',{dailyTarget:3,weeklyAward:'',days:{},streak:0}));
-  const [moduleOrder,setModuleOrderRaw]=useState(()=>load('thinko_order',MODULES.map(m=>m.id)));
-
-  // ── Auto-save wrappers ────────────────────────────────
-  const setPriData=v=>{setPriDataRaw(v);save('thinko_pri',typeof v==='function'?v(priData):v);};
-  const setMapData=v=>{setMapDataRaw(v);save('thinko_map',typeof v==='function'?v(mapData):v);};
-  const setNotesData=v=>{setNotesDataRaw(v);save('thinko_notes',typeof v==='function'?v(notesData):v);};
-  const setMealData=v=>{setMealDataRaw(v);save('thinko_meal',typeof v==='function'?v(mealData):v);};
-  const setIdeasData=v=>{setIdeasDataRaw(v);save('thinko_ideas',typeof v==='function'?v(ideasData):v);};
-  const setMatrixData=v=>{setMatrixDataRaw(v);save('thinko_matrix',typeof v==='function'?v(matrixData):v);};
-  const setBudgetData=v=>{setBudgetDataRaw(v);save('thinko_budget',typeof v==='function'?v(budgetData):v);};
-  const setShopData=v=>{setShopDataRaw(v);save('thinko_shop',typeof v==='function'?v(shopData):v);};
-  const setGoalsData=v=>{setGoalsDataRaw(v);save('thinko_goals',typeof v==='function'?v(goalsData):v);};
-  const setChargeData=v=>{setChargeDataRaw(v);save('thinko_charge',typeof v==='function'?v(chargeData):v);};
-  const setModuleOrder=v=>{setModuleOrderRaw(v);save('thinko_order',typeof v==='function'?v(moduleOrder):v);};
-
+  const [priData,setPriData]=useState([]);
+  const [mapData,setMapData]=useState([]);
+  const [notesData,setNotesData]=useState([]);
+  const [mealData,setMealData]=useState({});
+  const [ideasData,setIdeasData]=useState([]);
+  const [matrixData,setMatrixData]=useState([]);
+  const [budgetData,setBudgetData]=useState([]);
+  const [shopData,setShopData]=useState([]);
+  const [goalsData,setGoalsData]=useState([]);
+  const [chargeData,setChargeData]=useState({dailyTarget:3,weeklyAward:'',days:{},streak:0});
   const [showProModal,setShowProModal]=useState(false);
   const [proLimitHit,setProLimitHit]=useState('');
+  const [moduleOrder,setModuleOrder]=useState(MODULES.map(m=>m.id));
   const [dragHome,setDragHome]=useState(null);
   const orderedModules=moduleOrder.map(id=>MODULES.find(m=>m.id===id)).filter(Boolean);
 
@@ -6349,30 +6255,61 @@ export default function App() {
   };
   const homeDragEnd=()=>setDragHome(null);
 
-  if(screen==="prioritizer") return <div><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="prioritizer" setScreen={setScreen}/></div>;
-  if(screen==="mindmap")     return <div><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div>;
-  if(screen==="notes")       return <div><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div>;
-  if(screen==="meals")       return <div><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div>;
-  if(screen==="goals")       return <div><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div>;
-  if(screen==="matrix")      return <div><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div>;
-  if(screen==="charge")      return <div><TheCharge priData={priData} matrixData={matrixData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div>;
-  if(screen==="budget")      return <div><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div>;
-  if(screen==="shopping")    return <div><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div>;
-  if(screen==="tools")       return <div><Tools setScreen={setScreen}/><NavBar current="tools" setScreen={setScreen}/></div>;
-  if(screen==="rest")        return <div><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div>;
+  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
+  if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
+  if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div></>);
+  if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
+  if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
+  if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
+  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} matrixData={matrixData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
+  if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div></>);
+  if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
+  if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen}/><NavBar current="tools" setScreen={setScreen}/></div></>);
+  if(screen==="rest") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
 
   return (
-    <div style={{minHeight:"100vh",background:pageGrad,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <div style={{background:headerGrad,padding:"28px 20px 24px",textAlign:"center",boxShadow:"0 4px 24px rgba(45,10,94,0.35)"}}>
-        <div style={{fontSize:40,marginBottom:6}}>🧠</div>
-        <div style={{fontSize:32,fontWeight:900,color:C.wh,letterSpacing:1}}>Thinko</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,0.6)",marginTop:4,letterSpacing:0.5}}>🤔 Think it · 📋 Plan it · ✨ Live it</div>
-        {TESTING_MODE&&<div style={{marginTop:8,background:"rgba(255,215,0,0.2)",border:"1px solid rgba(255,215,0,0.4)",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:700,color:"#FFD700",display:"inline-block"}}>🔓 Tester Mode — all features unlocked</div>}
-        <div style={{marginTop:12}}><AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/></div>
+    <>
+    <GardenBg/>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",zIndex:10}}>
+
+      {/* ── NAME MODAL with vines ── */}
+      {showNameModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:300,background:"rgba(232,225,212,0.9)",backdropFilter:"blur(16px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
+          <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}} viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+            <defs><linearGradient id="mv1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8DDB8"/><stop offset="100%" stopColor="#9ABB90"/></linearGradient></defs>
+            <path d="M-5 0 Q18 60 6 130 Q-4 200 13 270" stroke="#A8C0A0" strokeWidth="1.8" fill="none" opacity="0.5" strokeLinecap="round"/>
+            <path d="M60 8 Q48 -2 34 2 Q24 12 31 25 Q42 32 55 25 Q65 15 60 8Z" fill="url(#mv1)" opacity="0.6"/>
+            <path d="M16 80 Q4 70 -10 74 Q-20 84 -13 97 Q-2 104 11 97 Q21 87 16 80Z" fill="url(#mv1)" opacity="0.55"/>
+            <path d="M54 81 Q42 71 28 75 Q18 85 25 98 Q36 105 49 98 Q59 88 54 81Z" fill="url(#mv1)" opacity="0.5"/>
+            <path d="M-5 844 Q20 780 8 710 Q-4 640 16 570" stroke="#A8C0A0" strokeWidth="1.5" fill="none" opacity="0.4" strokeLinecap="round"/>
+            <path d="M40 764 Q28 754 14 758 Q4 768 11 781 Q22 788 35 781 Q45 771 40 764Z" fill="url(#mv1)" opacity="0.45"/>
+            <path d="M395 0 Q372 58 384 128 Q394 198 377 268" stroke="#A8C0A0" strokeWidth="1.8" fill="none" opacity="0.48" strokeLinecap="round"/>
+            <path d="M328 6 Q340 -4 354 0 Q364 10 357 23 Q346 30 333 23 Q323 13 328 6Z" fill="url(#mv1)" opacity="0.58"/>
+            <path d="M372 77 Q384 67 398 71 Q408 81 401 94 Q390 101 377 94 Q367 84 372 77Z" fill="url(#mv1)" opacity="0.52"/>
+            <path d="M395 844 Q370 780 382 710 Q394 640 374 570" stroke="#A8C0A0" strokeWidth="1.5" fill="none" opacity="0.4" strokeLinecap="round"/>
+            <path d="M350 764 Q362 754 376 758 Q386 768 379 781 Q368 788 355 781 Q345 771 350 764Z" fill="url(#mv1)" opacity="0.45"/>
+          </svg>
+          <div style={{background:"rgba(252,249,242,0.96)",borderRadius:32,padding:"40px 28px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 8px 40px rgba(60,50,30,0.14)",border:"1px solid rgba(255,255,255,0.9)",position:"relative",zIndex:1}}>
+            <div style={{fontSize:52,marginBottom:14}}>🌿</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,color:"#1A1A10",marginBottom:8}}>Welcome to Thinko</div>
+            <div style={{fontSize:15,color:"#6A6050",lineHeight:1.7,marginBottom:28,fontWeight:300}}>Your calm space for thinking clearly, planning gently, and living fully.</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#4A7038",marginBottom:12}}>What shall we call you? 🌱</div>
+            <input value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveName()} placeholder="Your first name..." style={{width:"100%",padding:"14px 20px",borderRadius:100,border:"1.5px solid rgba(160,172,140,0.4)",background:"rgba(242,238,228,0.8)",fontFamily:"inherit",fontSize:16,color:"#1A1A10",outline:"none",textAlign:"center",marginBottom:14}}/>
+            <button onClick={saveName} style={{width:"100%",padding:"16px",borderRadius:100,background:"#4A7038",color:"white",fontFamily:"inherit",fontSize:16,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 16px rgba(74,112,56,0.32)"}}>Begin my journey 🌿</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── GREETING ── */}
+      <div style={{padding:"22px 22px 8px"}}>
+        {(()=>{const {word,emoji}=getGreeting();return(<div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2}}>{word}{userName?`, ${userName}`:""} {emoji}</div>);})()}
+        <div style={{fontSize:12,color:"#8A8070",marginTop:4}}>Your calm space is ready</div>
+        {TESTING_MODE&&<div style={{marginTop:8,display:"inline-flex",alignItems:"center",gap:6,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.25)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
+        <div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/></div>
         {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
       </div>
-      <div style={{padding:"10px 12px 4px",textAlign:"center"}}>
-        <span style={{fontSize:11,color:"rgba(255,255,255,0.4)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
+      <div style={{padding:"4px 12px 2px",textAlign:"center"}}>
+        <span style={{fontSize:11,color:"rgba(60,56,40,0.45)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
       </div>
       <div style={{padding:"8px 16px"}}>
         {orderedModules.map(m=>(
@@ -6382,39 +6319,40 @@ export default function App() {
             onDragOver={e=>homeDragOver(e,m.id)}
             onDragEnd={homeDragEnd}
             onClick={()=>setScreen(m.id)}
-            style={{display:"flex",alignItems:"center",gap:14,background:dragHome===m.id?"rgba(255,255,255,0.35)":cardGlass,backdropFilter:"blur(8px)",borderRadius:20,padding:"16px 18px",marginBottom:12,border:"1px solid rgba(255,255,255,0.28)",cursor:"grab",transition:"all 0.15s",boxShadow:dragHome===m.id?"0 8px 28px rgba(45,10,94,0.3)":"0 4px 18px rgba(45,10,94,0.13)",transform:dragHome===m.id?"scale(1.02)":"scale(1)"}}>
+            style={{display:"flex",alignItems:"center",gap:14,background:dragHome===m.id?"rgba(255,255,255,0.92)":"rgba(252,248,238,0.82)",backdropFilter:"blur(8px)",borderRadius:100,padding:"14px 18px",marginBottom:10,border:"1px solid rgba(255,255,255,0.9)",cursor:"grab",transition:"all 0.15s",boxShadow:dragHome===m.id?"0 6px 22px rgba(60,70,40,0.14)":"0 2px 12px rgba(60,70,40,0.09)",transform:dragHome===m.id?"scale(1.01)":"scale(1)"}}>
             {/* Drag handle */}
-            <div style={{color:"rgba(255,255,255,0.3)",fontSize:18,flexShrink:0,cursor:"grab",lineHeight:1}}>⠿</div>
+            <div style={{color:"rgba(60,56,40,0.28)",fontSize:16,flexShrink:0,cursor:"grab",lineHeight:1}}>⠿</div>
             <div style={{width:48,height:48,borderRadius:14,background:m.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0,boxShadow:"0 4px 14px rgba(45,10,94,0.25)"}}>
               {m.icon}
             </div>
             <div style={{flex:1}}>
-              <div style={{color:C.wh,fontWeight:900,fontSize:17,marginBottom:2}}>{m.name}</div>
-              <div style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{m.desc}</div>
+              <div style={{color:"#1A1A10",fontWeight:700,fontSize:17,marginBottom:1}}>{m.name}</div>
+              <div style={{color:"#7A7060",fontSize:12}}>{m.desc}</div>
             </div>
-            <div style={{color:"rgba(255,255,255,0.35)",fontSize:20}}>›</div>
+            <div style={{color:"rgba(60,56,40,0.4)",fontSize:18}}>›</div>
           </div>
         ))}
       </div>
+      <NavBar current="home" setScreen={setScreen}/>
     </div>
+    </>
   );
 }
-
 function NavBar({current,setScreen}) {
   return (
-    <div style={{position:"fixed",bottom:0,left:0,right:0,background:`linear-gradient(135deg,${C.dp},${C.mp})`,borderTop:"1px solid rgba(255,255,255,0.2)",zIndex:100,boxShadow:"0 -4px 20px rgba(45,10,94,0.3)"}}>
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(238,232,218,0.96)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",zIndex:100,boxShadow:"0 -2px 16px rgba(60,70,40,0.1)"}}>
       <div style={{display:"flex",overflowX:"auto",padding:"8px 4px 12px",gap:0,scrollbarWidth:"none",msOverflowStyle:"none"}}>
         <style>{`.navscroll::-webkit-scrollbar{display:none}`}</style>
         <div className="navscroll" style={{display:"flex",minWidth:"100%",justifyContent:"space-around"}}>
           {MODULES.map(m=>(
             <button key={m.id} onClick={()=>setScreen(m.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 10px",opacity:current===m.id?1:0.5,transition:"opacity 0.15s",flexShrink:0}}>
               <span style={{fontSize:20}}>{m.icon}</span>
-              <span style={{fontSize:8,color:C.wh,fontWeight:current===m.id?800:600,letterSpacing:0.3,whiteSpace:"nowrap"}}>{m.name}</span>
+              <span style={{fontSize:8,color:current===m.id?C.mp:"rgba(60,56,40,0.5)",fontWeight:current===m.id?800:500,letterSpacing:0.3,whiteSpace:"nowrap"}}>{m.name}</span>
             </button>
           ))}
           <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 10px",opacity:current==="home"?1:0.5,transition:"opacity 0.15s",flexShrink:0}}>
             <span style={{fontSize:20}}>🏠</span>
-            <span style={{fontSize:8,color:C.wh,fontWeight:600,letterSpacing:0.3}}>Home</span>
+            <span style={{fontSize:8,color:current==="home"?C.mp:"rgba(60,56,40,0.5)",fontWeight:600,letterSpacing:0.3}}>Home</span>
           </button>
         </div>
       </div>
