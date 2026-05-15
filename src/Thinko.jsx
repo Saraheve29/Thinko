@@ -965,58 +965,177 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
   if(map) return <MindMapCanvas map={map} onBack={()=>setMapId(null)} onUpdate={u=>setData(ms=>ms.map(m=>m.id===u.id?u:m))} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/>;
 
   return (
-    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
-      <HomeBar setScreen={setScreen} title="🧠 Mind Map" onBack={()=>setScreen("home")}/>
-      <Header title="🧠 Mind Map" onBack={()=>setScreen("home")} right={
-        <button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
+      <Header title="Mind Map" onBack={()=>setScreen("home")} right={
+        <button onClick={()=>setAdding(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:50,width:40,height:40,fontSize:24,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,boxShadow:"0 3px 12px rgba(58,80,38,0.35)"}}>+</button>
       }/>
       <div style={{padding:"20px 16px"}}>
+
+        {/* New map form */}
         {adding&&(
-          <GlassCard style={{marginBottom:18}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1.2,marginBottom:10}}>New Mind Map</div>
+          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:18,boxShadow:"0 4px 24px rgba(0,0,0,0.1)",border:"1px solid rgba(90,120,72,0.2)"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:1.4,marginBottom:12}}>New Mind Map</div>
             <input ref={inputRef} value={name} onChange={e=>setName(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter")submit();if(e.key==="Escape"){setAdding(false);setName("");}}}
-              placeholder="Central topic..." style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:11,border:`2px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:10}}/>
+              placeholder="Central topic..." style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.3)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:12,background:"rgba(255,255,255,0.9)"}}/>
             {/* Cover photo */}
             {newCover?(
-              <div style={{position:"relative",marginBottom:10}}>
-                <img src={newCover} alt="" style={{width:"100%",height:100,objectFit:"cover",borderRadius:10,border:`1.5px solid ${C.ll}`}}/>
-                <button onClick={()=>setNewCover(null)} style={{position:"absolute",top:4,right:4,background:"#e74c3c",color:C.wh,border:"none",borderRadius:"50%",width:22,height:22,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+              <div style={{position:"relative",marginBottom:12}}>
+                <img src={newCover} alt="" style={{width:"100%",height:100,objectFit:"cover",borderRadius:14,border:"1.5px solid rgba(90,120,72,0.2)"}}/>
+                <button onClick={()=>setNewCover(null)} style={{position:"absolute",top:6,right:6,background:"rgba(192,57,43,0.9)",color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
               </div>
             ):(
-              <label style={{display:"flex",alignItems:"center",gap:8,padding:"9px 13px",background:C.pale,border:`1.5px dashed ${C.lp}`,borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,color:C.pp,marginBottom:10}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,padding:"11px 16px",background:"rgba(90,120,72,0.06)",border:"1.5px dashed rgba(90,120,72,0.3)",borderRadius:14,cursor:"pointer",fontSize:13,fontWeight:600,color:"#5A7848",marginBottom:12}}>
                 📸 Add cover photo
                 <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>setNewCover(ev.target.result);r.readAsDataURL(file);}}/>
               </label>
             )}
             {/* Link */}
-            <div style={{display:"flex",gap:8,marginBottom:14}}>
-              <span style={{fontSize:16,alignSelf:"center"}}>🔗</span>
+            <div style={{display:"flex",gap:10,marginBottom:16,background:"rgba(255,255,255,0.8)",borderRadius:100,padding:"10px 16px",border:"1.5px solid rgba(90,120,72,0.15)"}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.45,alignSelf:"center"}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
               <input value={newLink} onChange={e=>setNewLink(e.target.value)} placeholder="Add a link (optional)"
-                style={{flex:1,padding:"8px 12px",borderRadius:10,border:`1.5px solid ${C.ll}`,fontSize:13,color:C.txt,outline:"none"}}/>
+                style={{flex:1,border:"none",fontSize:13,color:"#1A1A10",outline:"none",background:"transparent"}}/>
             </div>
             <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
-              <button onClick={()=>{setAdding(false);setName("");setNewCover(null);setNewLink("");}} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,fontSize:14,cursor:"pointer",padding:"6px 14px"}}>CANCEL</button>
-              <PurpleBtn onClick={submit}>CREATE</PurpleBtn>
+              <button onClick={()=>{setAdding(false);setName("");setNewCover(null);setNewLink("");}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,fontSize:14,cursor:"pointer",padding:"8px 16px"}}>Cancel</button>
+              <button onClick={submit} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 24px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.3)"}}>Create Map</button>
             </div>
-          </GlassCard>
+          </div>
         )}
+
+        {/* EMPTY STATE — garden landing */}
         {data.length===0&&!adding&&(
-          <div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:80,fontSize:15,lineHeight:2}}>
-            Tap <strong style={{color:C.wh}}>+</strong> to create a mind map
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"28px 16px 0"}}>
+
+            {/* Mind map illustration with vines */}
+            <svg width="240" height="180" viewBox="0 0 240 180" fill="none" style={{marginBottom:6,overflow:"visible"}}>
+              <defs>
+                <linearGradient id="mg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8EC98"/><stop offset="100%" stopColor="#5A8830"/></linearGradient>
+                <linearGradient id="mg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8D870"/><stop offset="100%" stopColor="#4A7820"/></linearGradient>
+                <linearGradient id="mg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#D8F0A8"/><stop offset="100%" stopColor="#78B040"/></linearGradient>
+                <linearGradient id="mgn" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#8A9E78"/><stop offset="100%" stopColor="#5A7848"/></linearGradient>
+                <filter id="mgs"><feDropShadow dx="1" dy="2" stdDeviation="2.5" floodColor="#1A3A08" floodOpacity="0.25"/></filter>
+              </defs>
+
+              {/* Side vine stems */}
+              <path d="M10 180 Q8 140 16 105 Q22 76 12 45 Q8 28 18 10" stroke="#7A6030" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+              <path d="M230 180 Q232 140 224 105 Q218 76 228 45 Q232 28 222 10" stroke="#7A6030" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+
+              {/* Left leaves */}
+              <g filter="url(#mgs)"><path d="M14 30 Q-4 16 -12 26 Q-14 40 2 46 Q14 48 14 30Z" fill="url(#mg1)"/><line x1="14" y1="30" x2="2" y2="46" stroke="#1A3A08" strokeWidth="0.8" opacity="0.6"/><line x1="8" y1="38" x2="2" y2="46" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/><line x1="8" y1="38" x2="14" y2="44" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/></g>
+              <g filter="url(#mgs)"><path d="M16 62 Q-2 50 -10 60 Q-12 74 4 80 Q16 81 16 62Z" fill="url(#mg2)"/><line x1="16" y1="62" x2="4" y2="80" stroke="#1A3A08" strokeWidth="0.75" opacity="0.55"/></g>
+              <g filter="url(#mgs)"><path d="M14 96 Q-4 84 -12 94 Q-14 108 2 114 Q14 115 14 96Z" fill="url(#mg3)"/><line x1="14" y1="96" x2="2" y2="114" stroke="#1A3A08" strokeWidth="0.72" opacity="0.52"/></g>
+              <g filter="url(#mgs)"><path d="M18 130 Q0 118 -8 128 Q-10 142 6 148 Q18 149 18 130Z" fill="url(#mg1)"/><line x1="18" y1="130" x2="6" y2="148" stroke="#1A3A08" strokeWidth="0.7" opacity="0.5"/></g>
+              <g filter="url(#mgs)"><path d="M16 160 Q-2 148 -10 158 Q-12 172 4 178 Q16 179 16 160Z" fill="url(#mg2)"/></g>
+
+              {/* Right leaves */}
+              <g filter="url(#mgs)"><path d="M226 30 Q244 16 252 26 Q254 40 238 46 Q226 48 226 30Z" fill="url(#mg1)"/><line x1="226" y1="30" x2="238" y2="46" stroke="#1A3A08" strokeWidth="0.8" opacity="0.6"/><line x1="232" y1="38" x2="238" y2="46" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/><line x1="232" y1="38" x2="226" y2="44" stroke="#1A3A08" strokeWidth="0.5" opacity="0.4"/></g>
+              <g filter="url(#mgs)"><path d="M224 62 Q242 50 250 60 Q252 74 236 80 Q224 81 224 62Z" fill="url(#mg2)"/><line x1="224" y1="62" x2="236" y2="80" stroke="#1A3A08" strokeWidth="0.75" opacity="0.55"/></g>
+              <g filter="url(#mgs)"><path d="M226 96 Q244 84 252 94 Q254 108 238 114 Q226 115 226 96Z" fill="url(#mg3)"/><line x1="226" y1="96" x2="238" y2="114" stroke="#1A3A08" strokeWidth="0.72" opacity="0.52"/></g>
+              <g filter="url(#mgs)"><path d="M222 130 Q240 118 248 128 Q250 142 234 148 Q222 149 222 130Z" fill="url(#mg1)"/><line x1="222" y1="130" x2="234" y2="148" stroke="#1A3A08" strokeWidth="0.7" opacity="0.5"/></g>
+              <g filter="url(#mgs)"><path d="M224 160 Q242 148 250 158 Q252 172 236 178 Q224 179 224 160Z" fill="url(#mg2)"/></g>
+
+              {/* Top arch */}
+              <path d="M18 12 Q60 -10 120 -8 Q180 -10 222 12" stroke="#8A7040" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.8"/>
+              <g filter="url(#mgs)"><path d="M55 4 Q50 -14 64 -20 Q78 -18 80 -2 Q78 10 66 10 Q55 8 55 4Z" fill="url(#mg3)"/><line x1="55" y1="4" x2="66" y2="10" stroke="#1A3A08" strokeWidth="0.7" opacity="0.5"/></g>
+              <g filter="url(#mgs)"><path d="M95 -2 Q92 -20 106 -24 Q120 -22 120 -6 Q118 6 106 6 Q95 4 95 -2Z" fill="url(#mg1)"/><line x1="95" y1="-2" x2="106" y2="6" stroke="#1A3A08" strokeWidth="0.68" opacity="0.48"/></g>
+              <g filter="url(#mgs)"><path d="M145 -2 Q148 -20 162 -24 Q176 -22 174 -6 Q172 6 160 6 Q147 4 145 -2Z" fill="url(#mg2)"/></g>
+              <g filter="url(#mgs)"><path d="M182 4 Q186 -14 200 -20 Q214 -18 212 -2 Q210 10 198 10 Q184 8 182 4Z" fill="url(#mg3)"/></g>
+
+              {/* Mind map nodes */}
+              {/* Central node */}
+              <rect x="82" y="76" width="76" height="30" rx="15" fill="url(#mgn)" filter="url(#mgs)"/>
+              <text x="120" y="91" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="11" fontWeight="700" style={{fontFamily:"Georgia,serif"}}>Your Ideas</text>
+
+              {/* Branch curves with leaves */}
+              <path d="M82 91 C60 91 44 68 38 60" stroke="#7A9068" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.8"/>
+              <ellipse cx="62" cy="78" rx="5" ry="8" fill="url(#mg2)" opacity="0.85" transform="rotate(-30 62 78)"/>
+              <line x1="62" y1="83" x2="62" y2="71" stroke="#2A5010" strokeWidth="0.6" opacity="0.5"/>
+
+              <path d="M82 84 C58 76 44 52 40 42" stroke="#7A9068" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.8"/>
+              <ellipse cx="60" cy="64" rx="4" ry="7" fill="url(#mg1)" opacity="0.85" transform="rotate(-40 60 64)"/>
+
+              <path d="M158 91 C178 91 194 68 202 60" stroke="#7A9068" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.8"/>
+              <ellipse cx="178" cy="78" rx="5" ry="8" fill="url(#mg3)" opacity="0.85" transform="rotate(30 178 78)"/>
+              <line x1="178" y1="83" x2="178" y2="71" stroke="#2A5010" strokeWidth="0.6" opacity="0.5"/>
+
+              <path d="M158 84 C182 76 196 52 200 42" stroke="#7A9068" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.8"/>
+              <ellipse cx="180" cy="64" rx="4" ry="7" fill="url(#mg2)" opacity="0.85" transform="rotate(40 180 64)"/>
+
+              <path d="M120 106 C120 126 120 140 120 152" stroke="#7A9068" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.8"/>
+              <ellipse cx="120" cy="130" rx="5" ry="8" fill="url(#mg1)" opacity="0.85" transform="rotate(5 120 130)"/>
+
+              {/* Branch nodes */}
+              <rect x="18" y="52" width="52" height="22" rx="11" fill="rgba(248,245,236,0.92)" stroke="rgba(90,120,72,0.35)" strokeWidth="1.2" filter="url(#mgs)"/>
+              <text x="44" y="63" textAnchor="middle" dominantBaseline="middle" fill="#2A3A18" fontSize="9.5" fontWeight="600">Thoughts</text>
+
+              <rect x="16" y="30" width="52" height="22" rx="11" fill="rgba(248,245,236,0.92)" stroke="rgba(90,120,72,0.35)" strokeWidth="1.2" filter="url(#mgs)"/>
+              <text x="42" y="41" textAnchor="middle" dominantBaseline="middle" fill="#2A3A18" fontSize="9.5" fontWeight="600">Projects</text>
+
+              <rect x="172" y="52" width="52" height="22" rx="11" fill="url(#mgn)" filter="url(#mgs)"/>
+              <text x="198" y="63" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="9.5" fontWeight="600">Goals</text>
+
+              <rect x="170" y="30" width="52" height="22" rx="11" fill="rgba(248,245,236,0.92)" stroke="rgba(90,120,72,0.35)" strokeWidth="1.2" filter="url(#mgs)"/>
+              <text x="196" y="41" textAnchor="middle" dominantBaseline="middle" fill="#2A3A18" fontSize="9.5" fontWeight="600">Ideas</text>
+
+              <rect x="90" y="147" width="60" height="22" rx="11" fill="rgba(248,245,236,0.92)" stroke="rgba(90,120,72,0.35)" strokeWidth="1.2" filter="url(#mgs)"/>
+              <text x="120" y="158" textAnchor="middle" dominantBaseline="middle" fill="#2A3A18" fontSize="9.5" fontWeight="600">Plans</text>
+            </svg>
+
+            {/* Headline */}
+            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#1A1A10",textAlign:"center",marginBottom:10,letterSpacing:-0.4,lineHeight:1.25}}>
+              Think visually, think freely
+            </div>
+
+            {/* Description */}
+            <div style={{fontSize:15,color:"#6A6050",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,fontWeight:400}}>
+              Create multiple mind maps — one for each project, idea, or dream. Let your thoughts branch naturally, like vines finding the light.
+            </div>
+
+            {/* CTA */}
+            <button onClick={()=>setAdding(true)} style={{
+              background:"#5A7848",color:"#fff",border:"none",
+              borderRadius:100,padding:"17px 40px",
+              fontSize:17,fontWeight:700,cursor:"pointer",
+              boxShadow:"0 6px 24px rgba(58,80,38,0.38)",
+              display:"flex",alignItems:"center",gap:12,
+              letterSpacing:0.2,marginBottom:16,
+            }}>
+              <span style={{fontSize:20}}>+</span>
+              Create your first mind map
+            </button>
+
+            {/* Hint */}
+            <div style={{fontSize:12,color:"rgba(90,80,60,0.55)",textAlign:"center",display:"flex",alignItems:"center",gap:6}}>
+              <span>🌿</span>
+              <span>You can create as many maps as you like</span>
+              <span>🌿</span>
+            </div>
           </div>
         )}
-        {data.map(m=>(
-          <div key={m.id} onClick={()=>setMapId(m.id)} style={{display:"flex",alignItems:"center",gap:12,background:cardGlass,backdropFilter:"blur(8px)",borderRadius:18,padding:"15px 16px",marginBottom:12,border:"1px solid rgba(255,255,255,0.3)",cursor:"pointer",transition:"all 0.15s",boxShadow:"0 4px 16px rgba(45,10,94,0.12)"}}
-            onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.28)"}
-            onMouseLeave={e=>e.currentTarget.style.background=cardGlass}>
-            <div style={{width:40,height:40,borderRadius:11,background:`linear-gradient(135deg,${C.pp},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🧠</div>
-            <span style={{flex:1,color:C.wh,fontWeight:700,fontSize:17}}>{m.name}</span>
-            <span style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>{m.nodes.length} nodes</span>
-            <button onClick={e=>{e.stopPropagation();setData(ms=>ms.filter(x=>x.id!==m.id));}}
-              style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:9,width:32,height:32,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+
+        {/* MAPS LIST */}
+        {data.length>0&&(
+          <div style={{fontSize:11,color:"rgba(60,50,30,0.45)",textAlign:"center",marginBottom:12,letterSpacing:0.5}}>
+            Tap a map to open it
           </div>
-        ))}
+        )}
+        {data.map((m,i)=>{
+          const cols=["#5A7848","#7A6038","#486878","#6A5870","#486050"];
+          const col=cols[i%cols.length];
+          return(
+            <div key={m.id} onClick={()=>setMapId(m.id)}
+              style={{display:"flex",alignItems:"center",gap:14,background:"rgba(248,245,236,0.88)",backdropFilter:"blur(12px)",borderRadius:22,padding:"16px 18px",marginBottom:12,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",transition:"all 0.15s",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+              <div style={{width:44,height:44,borderRadius:14,flexShrink:0,background:col,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 2px 10px ${col}55`}}>🧠</div>
+              <div style={{flex:1}}>
+                <div style={{color:"#1A1A10",fontWeight:700,fontSize:17,marginBottom:2}}>{m.name}</div>
+                <div style={{color:"#8A8070",fontSize:12}}>{m.nodes.length} node{m.nodes.length!==1?"s":""}</div>
+              </div>
+              <button onClick={e=>{e.stopPropagation();setData(ms=>ms.filter(x=>x.id!==m.id));}}
+                style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
