@@ -123,12 +123,32 @@ const GardenBg=()=>(
 ═══════════════════════════════════════════════════════ */
 function Header({ title, onBack, right }) {
   return (
-    <div style={{ background:headerGrad, padding:"15px 16px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 4px 20px rgba(45,10,94,0.3)", position:"sticky", top:0, zIndex:50 }}>
-      {onBack && (
-        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.18)", color:C.wh, border:"1.5px solid rgba(255,255,255,0.3)", borderRadius:10, width:36, height:36, fontSize:18, cursor:"pointer", flexShrink:0 }}>←</button>
+    <div style={{
+      background:"rgba(248,245,236,0.92)",
+      backdropFilter:"blur(16px)",
+      WebkitBackdropFilter:"blur(16px)",
+      padding:"16px 20px",
+      display:"flex",alignItems:"center",gap:12,
+      boxShadow:"0 1px 12px rgba(0,0,0,0.06)",
+      position:"sticky",top:0,zIndex:50,
+      borderBottom:"1px solid rgba(90,120,72,0.1)",
+    }}>
+      {onBack&&(
+        <button onClick={onBack} style={{
+          background:"none",color:"#1A1A10",border:"none",
+          width:36,height:36,fontSize:22,cursor:"pointer",
+          flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+          borderRadius:10,
+        }}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
       )}
-      <span style={{ flex:1, color:C.wh, fontWeight:900, fontSize:20, letterSpacing:0.3 }}>{title}</span>
-      {right}
+      <span style={{flex:1,color:"#1A1A10",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,textAlign:"center",letterSpacing:0.2}}>{title}</span>
+      {right || (
+        <button style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",color:"#1A1A10",opacity:0.7}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="18" cy="5" r="3" stroke="#1A1A10" strokeWidth="1.8"/><circle cx="6" cy="12" r="3" stroke="#1A1A10" strokeWidth="1.8"/><circle cx="18" cy="19" r="3" stroke="#1A1A10" strokeWidth="1.8"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" stroke="#1A1A10" strokeWidth="1.8" strokeLinecap="round"/></svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -319,26 +339,98 @@ function BreakTimer({setScreen}) {
   const ref=useRef(null);
   useEffect(()=>{
     if(on&&left>0)ref.current=setInterval(()=>setLeft(l=>l-1),1000);
-    else{clearInterval(ref.current);if(left===0)setOn(false);}
+    else{clearInterval(ref.current);if(left===0){setOn(false);playAlarm("gentle");}}
     return()=>clearInterval(ref.current);
   },[on,left]);
-  const start=(secs)=>{if(!secs)return;setLeft(secs);setOn(true);};
-  const stop=()=>{setOn(false);setLeft(null);};
-  const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"00")}:${String(s%60).padStart(2,"00")}`;
+  const toggle=()=>{
+    if(on){setOn(false);clearInterval(ref.current);}
+    else{
+      if(left===null)setLeft(mins*60);
+      setOn(true);
+    }
+  };
+  const reset=()=>{setOn(false);setLeft(null);clearInterval(ref.current);};
+  const totalSecs=mins*60;
+  const displaySecs=left!==null?left:totalSecs;
+  const hh=String(Math.floor(displaySecs/3600)).padStart(2,"0");
+  const mm=String(Math.floor((displaySecs%3600)/60)).padStart(2,"0");
+  const ss=String(displaySecs%60).padStart(2,"0");
   return (
-    <div style={{marginBottom:14}}>
-      <TimerWidget icon="☕" label="Break Timer" mins={mins} setMins={setMins} left={left} start={start} stop={stop} fmt={fmt} glass={true} accent="rgba(255,255,255,0.85)" accentText={C.pp} setScreen={setScreen}/>
-      {setScreen&&(
-        <button onClick={()=>setScreen("rest")} style={{width:"100%",marginTop:8,background:"rgba(30,92,58,0.35)",color:"#52c47a",border:"1.5px solid rgba(82,196,122,0.5)",borderRadius:12,padding:"10px 16px",fontWeight:800,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          🌿 Open Rest Space
-        </button>
-      )}
-      {left===null&&(
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8,paddingLeft:4}}>
-          {BREAK_PRESETS.map(p=>(
-            <button key={p} onClick={()=>setMins(p)} style={{border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:20,padding:"4px 12px",fontSize:12,cursor:"pointer",background:mins===p?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.2)",color:mins===p?C.dp:C.wh,fontWeight:mins===p?800:600}}>{p}m</button>
-          ))}
+    <div style={{marginBottom:18}}>
+      {/* Break Timer header row */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3}}>Break Timer</span>
+          <span style={{fontSize:20}}>☕</span>
         </div>
+        {/* Play/Pause button — large sage circle */}
+        <button onClick={toggle} style={{
+          width:56,height:56,borderRadius:"50%",
+          background:"#5A7848",
+          border:"none",cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          boxShadow:"0 4px 18px rgba(58,80,38,0.35)",
+          flexShrink:0,
+          transition:"all 0.15s",
+        }}>
+          {on
+            ? <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>
+            : <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M5 3l11 6-11 6V3z"/></svg>
+          }
+        </button>
+      </div>
+      {/* Large timer display */}
+      <div style={{
+        fontFamily:"Georgia,serif",
+        fontSize:72,
+        fontWeight:400,
+        color:"#5A7848",
+        letterSpacing:4,
+        textAlign:"center",
+        lineHeight:1,
+        marginBottom:28,
+        opacity:on?1:0.85,
+      }}>
+        {hh}<span style={{opacity:0.5,margin:"0 6px"}}>:</span>{mm}<span style={{opacity:0.5,margin:"0 6px"}}>:</span>{ss}
+      </div>
+      {/* Pill time buttons */}
+      <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:16}}>
+        {[5,10,15,20,30].map(p=>(
+          <button key={p} onClick={()=>{setMins(p);setLeft(null);setOn(false);}} style={{
+            border:"1.5px solid",
+            borderColor:mins===p?"transparent":"rgba(90,120,72,0.3)",
+            borderRadius:100,
+            padding:"9px 18px",
+            fontSize:14,
+            fontWeight:600,
+            cursor:"pointer",
+            background:mins===p?"#5A7848":"rgba(255,255,255,0.75)",
+            color:mins===p?"#fff":"#3A3020",
+            boxShadow:mins===p?"0 2px 10px rgba(58,80,38,0.28)":"none",
+            transition:"all 0.15s",
+          }}>{p}m</button>
+        ))}
+      </div>
+      {/* Open Rest Space */}
+      {setScreen&&(
+        <button onClick={()=>setScreen("rest")} style={{
+          width:"100%",
+          padding:"16px",
+          background:"#5A7848",
+          color:"#fff",
+          border:"none",
+          borderRadius:100,
+          fontWeight:700,
+          fontSize:16,
+          cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+          boxShadow:"0 4px 18px rgba(58,80,38,0.32)",
+          marginBottom:4,
+          letterSpacing:0.2,
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3c-5 4-7 8-7 12a7 7 0 0014 0c0-4-2-8-7-12z" stroke="white" strokeWidth="1.8" fill="none" strokeLinejoin="round"/><path d="M12 10v6M9 13h6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          Open Rest Space
+        </button>
       )}
     </div>
   );
@@ -644,15 +736,20 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
   const active=list.tasks.filter(t=>!t.done);
   const done=list.tasks.filter(t=>t.done);
   return (
-    <div style={{minHeight:"100vh",background:"#F3EAD8",fontFamily:"'Segoe UI',sans-serif"}}>
-      <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.18)",color:C.wh,border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
-      <div style={{padding:"18px 14px"}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
+      <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.25)",color:"#1A1A10",border:"1px solid rgba(90,120,72,0.25)",borderRadius:10,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
+      <div style={{padding:"18px 16px"}}>
         <BreakTimer setScreen={setScreen}/>
-        <div style={{display:"flex",gap:10,marginBottom:14,background:"rgba(255,255,255,0.88)",borderRadius:14,padding:"10px 14px",border:`1.5px solid ${C.ll}`,boxShadow:"0 2px 10px rgba(45,10,94,0.08)"}}>
-          <input value={newTask} onChange={e=>setNewTask(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTask()} placeholder="Add goal / item..." style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:600,color:C.txt,background:"transparent"}}/>
-          <button onClick={addTask} style={{background:btnGrad,color:C.wh,border:"none",borderRadius:10,width:36,height:36,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+        {/* Add task input */}
+        <div style={{display:"flex",gap:10,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 14px 12px 20px",border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
+          <input value={newTask} onChange={e=>setNewTask(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTask()} placeholder="Add task..." style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:500,color:"#1A1A10",background:"transparent"}}/>
+          <button onClick={addTask} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:38,height:38,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.3)"}}>+</button>
         </div>
-        <UrlField value={newUrl} onChange={setNewUrl} style={{marginBottom:14,padding:"0 2px"}}/>
+        {/* URL input */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"rgba(255,255,255,0.75)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.12)",boxShadow:"0 1px 6px rgba(0,0,0,0.04)"}}>
+          <input value={newUrl} onChange={e=>setNewUrl(e.target.value)} placeholder="Paste website address (optional)" style={{flex:1,border:"none",outline:"none",fontSize:14,color:"#5A5040",background:"transparent"}}/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.45}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
+        </div>
         {active.map((task,i)=>(
           <div key={task.id}>
             {i===0&&active.length>0&&(
