@@ -20,73 +20,174 @@ const GardenBg=()=>(
   <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
     <svg width="100%" height="100%" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="gardenBg" cx="50%" cy="42%" r="58%"><stop offset="0%" stopColor="#F8F4EC"/><stop offset="50%" stopColor="#F0EBE0"/><stop offset="100%" stopColor="#E8E0D0"/></radialGradient>
-        <radialGradient id="gGold" cx="78%" cy="12%" r="42%"><stop offset="0%" stopColor="rgba(215,195,130,0.28)"/><stop offset="100%" stopColor="transparent"/></radialGradient>
-        <radialGradient id="gL" cx="5%" cy="45%" r="40%"><stop offset="0%" stopColor="rgba(140,170,120,0.14)"/><stop offset="100%" stopColor="transparent"/></radialGradient>
-        <radialGradient id="gVig" cx="50%" cy="50%" r="70%"><stop offset="0%" stopColor="transparent"/><stop offset="100%" stopColor="rgba(40,50,25,0.18)"/></radialGradient>
-        <linearGradient id="lf1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8DEB8"/><stop offset="100%" stopColor="#9ABB90"/></linearGradient>
-        <linearGradient id="lf2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#D0E8C0"/><stop offset="100%" stopColor="#A8C898"/></linearGradient>
-        <linearGradient id="lf3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#B8D0A8"/><stop offset="100%" stopColor="#8AAA80"/></linearGradient>
-        <linearGradient id="lfD" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8C090"/><stop offset="100%" stopColor="#7A9870"/></linearGradient>
+        <radialGradient id="gBg" cx="50%" cy="38%" r="62%"><stop offset="0%" stopColor="#FAF7F0"/><stop offset="55%" stopColor="#F2EBD8"/><stop offset="100%" stopColor="#E8DFCA"/></radialGradient>
+        <radialGradient id="gGl" cx="78%" cy="10%" r="40%"><stop offset="0%" stopColor="rgba(218,200,148,0.3)"/><stop offset="100%" stopColor="transparent"/></radialGradient>
+        <radialGradient id="gGr" cx="5%" cy="50%" r="38%"><stop offset="0%" stopColor="rgba(148,185,148,0.16)"/><stop offset="100%" stopColor="transparent"/></radialGradient>
+        <radialGradient id="gVi" cx="50%" cy="50%" r="68%"><stop offset="0%" stopColor="transparent"/><stop offset="100%" stopColor="rgba(38,48,22,0.2)"/></radialGradient>
+        <linearGradient id="la" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#BFDA9A"/><stop offset="100%" stopColor="#8AAA6A"/></linearGradient>
+        <linearGradient id="lb" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#CEEAA8"/><stop offset="100%" stopColor="#98C278"/></linearGradient>
+        <linearGradient id="lc" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#AACF8A"/><stop offset="100%" stopColor="#789858"/></linearGradient>
+        <linearGradient id="ld" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#98BE7A"/><stop offset="100%" stopColor="#688848"/></linearGradient>
       </defs>
-      <rect width="390" height="844" fill="url(#gardenBg)"/>
-      <rect width="390" height="844" fill="url(#gGold)"/>
-      <rect width="390" height="844" fill="url(#gL)"/>
-      <g fill="none" stroke="#C8B88A" strokeLinecap="round" opacity="0.4">
-        <path d="M28 844 Q26 680 42 520 Q52 400 46 260 Q40 160 78 80 Q108 20 195 8" strokeWidth="2.5"/>
-        <path d="M362 844 Q364 680 348 520 Q338 400 344 260 Q350 160 312 80 Q282 20 195 8" strokeWidth="2.5"/>
-        <path d="M78 80 Q137 28 195 12 Q253 28 312 80" strokeWidth="2"/>
+      <rect width="390" height="844" fill="url(#gBg)"/>
+      <rect width="390" height="844" fill="url(#gGl)"/>
+      <rect width="390" height="844" fill="url(#gGr)"/>
+      {/* ══ TOP CANOPY — dense hanging ivy across entire top ══ */}
+      <g>
+        {/* Thick woody horizontal stems */}
+        <path d="M-10 0 Q50 20 120 10 Q185 2 250 16 Q310 28 370 10 Q400 2 420 14" stroke="#8AA86A" strokeWidth="4.5" fill="none" opacity="0.65" strokeLinecap="round"/>
+        <path d="M-10 4 Q55 26 128 16 Q192 7 256 22 Q316 34 374 16 Q405 8 420 20" stroke="#9ABB7A" strokeWidth="2.5" fill="none" opacity="0.42" strokeLinecap="round"/>
+        {/* Dense hanging vines — vine 1 far left */}
+        <path d="M8 0 Q0 52 12 102 Q22 145 6 192 Q-6 234 10 278" stroke="#8AA86A" strokeWidth="2.5" fill="none" opacity="0.65" strokeLinecap="round"/>
+        <path d="M12 30 Q-2 20 -8 34 Q-10 48 4 50 Q14 44 12 30Z" fill="url(#la)" opacity="0.82"/>
+        <path d="M12 30 L4 46" stroke="#4A6830" strokeWidth="0.8" opacity="0.5"/>
+        <path d="M6 56 Q20 46 26 60 Q28 74 14 76 Q4 70 6 56Z" fill="url(#lb)" opacity="0.78"/>
+        <path d="M6 56 L18 72" stroke="#4A6830" strokeWidth="0.7" opacity="0.45"/>
+        <path d="M10 86 Q-4 76 -8 90 Q-10 104 4 106 Q14 100 10 86Z" fill="url(#lc)" opacity="0.74"/>
+        <path d="M4 118 Q18 108 24 122 Q26 136 12 138 Q2 132 4 118Z" fill="url(#la)" opacity="0.7"/>
+        <path d="M8 150 Q-6 140 -10 154 Q-12 168 2 170 Q12 164 8 150Z" fill="url(#ld)" opacity="0.66"/>
+        <path d="M2 184 Q16 174 22 188 Q24 202 10 204 Q0 198 2 184Z" fill="url(#lb)" opacity="0.62"/>
+        <path d="M8 218 Q-6 208 -10 222 Q-12 236 2 238 Q12 232 8 218Z" fill="url(#lc)" opacity="0.58"/>
+        <path d="M2 252 Q16 242 22 256 Q24 270 10 272 Q0 266 2 252Z" fill="url(#la)" opacity="0.54"/>
+        {/* vine 2 */}
+        <path d="M62 4 Q52 56 66 106 Q78 150 60 196 Q46 238 62 282" stroke="#8AA86A" strokeWidth="2.2" fill="none" opacity="0.6" strokeLinecap="round"/>
+        <path d="M66 28 Q80 18 86 32 Q88 46 74 48 Q64 42 66 28Z" fill="url(#lb)" opacity="0.8"/>
+        <path d="M60 60 Q46 50 42 64 Q40 78 54 80 Q64 74 60 60Z" fill="url(#la)" opacity="0.76"/>
+        <path d="M66 90 Q80 80 86 94 Q88 108 74 110 Q64 104 66 90Z" fill="url(#lc)" opacity="0.72"/>
+        <path d="M58 122 Q44 112 40 126 Q38 140 52 142 Q62 136 58 122Z" fill="url(#ld)" opacity="0.68"/>
+        <path d="M64 154 Q78 144 84 158 Q86 172 72 174 Q62 168 64 154Z" fill="url(#lb)" opacity="0.64"/>
+        <path d="M58 186 Q44 176 40 190 Q38 204 52 206 Q62 200 58 186Z" fill="url(#la)" opacity="0.6"/>
+        <path d="M64 220 Q78 210 84 224 Q86 238 72 240 Q62 234 64 220Z" fill="url(#lc)" opacity="0.56"/>
+        {/* vine 3 centre-left */}
+        <path d="M128 2 Q118 54 132 104 Q144 148 126 194 Q112 236 128 280" stroke="#8AA86A" strokeWidth="2" fill="none" opacity="0.55" strokeLinecap="round"/>
+        <path d="M132 26 Q146 16 152 30 Q154 44 140 46 Q130 40 132 26Z" fill="url(#lc)" opacity="0.78"/>
+        <path d="M126 58 Q112 48 108 62 Q106 76 120 78 Q130 72 126 58Z" fill="url(#la)" opacity="0.74"/>
+        <path d="M132 88 Q146 78 152 92 Q154 106 140 108 Q130 102 132 88Z" fill="url(#lb)" opacity="0.7"/>
+        <path d="M124 120 Q110 110 106 124 Q104 138 118 140 Q128 134 124 120Z" fill="url(#ld)" opacity="0.66"/>
+        <path d="M130 152 Q144 142 150 156 Q152 170 138 172 Q128 166 130 152Z" fill="url(#lc)" opacity="0.62"/>
+        {/* vine 4 centre */}
+        <path d="M196 8 Q186 58 200 108 Q212 152 194 196" stroke="#8AA86A" strokeWidth="2" fill="none" opacity="0.5" strokeLinecap="round"/>
+        <path d="M200 32 Q214 22 220 36 Q222 50 208 52 Q198 46 200 32Z" fill="url(#lb)" opacity="0.76"/>
+        <path d="M192 64 Q178 54 174 68 Q172 82 186 84 Q196 78 192 64Z" fill="url(#lc)" opacity="0.72"/>
+        <path d="M200 96 Q214 86 220 100 Q222 114 208 116 Q198 110 200 96Z" fill="url(#la)" opacity="0.68"/>
+        <path d="M192 128 Q178 118 174 132 Q172 146 186 148 Q196 142 192 128Z" fill="url(#ld)" opacity="0.64"/>
+        {/* vine 5 centre-right */}
+        <path d="M264 4 Q254 56 268 106 Q280 150 262 196 Q248 238 264 282" stroke="#8AA86A" strokeWidth="2.2" fill="none" opacity="0.58" strokeLinecap="round"/>
+        <path d="M268 28 Q282 18 288 32 Q290 46 276 48 Q266 42 268 28Z" fill="url(#la)" opacity="0.79"/>
+        <path d="M262 60 Q248 50 244 64 Q242 78 256 80 Q266 74 262 60Z" fill="url(#lb)" opacity="0.75"/>
+        <path d="M268 90 Q282 80 288 94 Q290 108 276 110 Q266 104 268 90Z" fill="url(#lc)" opacity="0.71"/>
+        <path d="M260 122 Q246 112 242 126 Q240 140 254 142 Q264 136 260 122Z" fill="url(#ld)" opacity="0.67"/>
+        <path d="M266 154 Q280 144 286 158 Q288 172 274 174 Q264 168 266 154Z" fill="url(#la)" opacity="0.63"/>
+        <path d="M260 186 Q246 176 242 190 Q240 204 254 206 Q264 200 260 186Z" fill="url(#lb)" opacity="0.59"/>
+        <path d="M266 220 Q280 210 286 224 Q288 238 274 240 Q264 234 266 220Z" fill="url(#lc)" opacity="0.55"/>
+        {/* vine 6 */}
+        <path d="M328 2 Q318 54 332 104 Q344 148 326 194 Q312 236 328 278" stroke="#8AA86A" strokeWidth="2.2" fill="none" opacity="0.62" strokeLinecap="round"/>
+        <path d="M332 26 Q346 16 352 30 Q354 44 340 46 Q330 40 332 26Z" fill="url(#ld)" opacity="0.81"/>
+        <path d="M326 58 Q312 48 308 62 Q306 76 320 78 Q330 72 326 58Z" fill="url(#la)" opacity="0.77"/>
+        <path d="M332 88 Q346 78 352 92 Q354 106 340 108 Q330 102 332 88Z" fill="url(#lc)" opacity="0.73"/>
+        <path d="M324 120 Q310 110 306 124 Q304 138 318 140 Q328 134 324 120Z" fill="url(#lb)" opacity="0.69"/>
+        <path d="M330 152 Q344 142 350 156 Q352 170 338 172 Q328 166 330 152Z" fill="url(#ld)" opacity="0.65"/>
+        <path d="M324 184 Q310 174 306 188 Q304 202 318 204 Q328 198 324 184Z" fill="url(#la)" opacity="0.61"/>
+        <path d="M330 218 Q344 208 350 222 Q352 236 338 238 Q328 232 330 218Z" fill="url(#lc)" opacity="0.57"/>
+        {/* vine 7 far right */}
+        <path d="M382 0 Q374 52 386 102 Q396 146 380 192 Q368 234 382 278" stroke="#8AA86A" strokeWidth="2.5" fill="none" opacity="0.66" strokeLinecap="round"/>
+        <path d="M378 28 Q364 18 360 32 Q358 46 372 48 Q382 42 378 28Z" fill="url(#lb)" opacity="0.83"/>
+        <path d="M384 60 Q398 50 404 64 Q406 78 392 80 Q382 74 384 60Z" fill="url(#la)" opacity="0.79"/>
+        <path d="M378 92 Q364 82 360 96 Q358 110 372 112 Q382 106 378 92Z" fill="url(#ld)" opacity="0.75"/>
+        <path d="M384 124 Q398 114 404 128 Q406 142 392 144 Q382 138 384 124Z" fill="url(#lc)" opacity="0.71"/>
+        <path d="M378 156 Q364 146 360 160 Q358 174 372 176 Q382 170 378 156Z" fill="url(#lb)" opacity="0.67"/>
+        <path d="M384 190 Q398 180 404 194 Q406 208 392 210 Q382 204 384 190Z" fill="url(#la)" opacity="0.63"/>
+        <path d="M378 224 Q364 214 360 228 Q358 242 372 244 Q382 238 378 224Z" fill="url(#ld)" opacity="0.59"/>
+        {/* Big top canopy leaves filling gaps */}
+        <path d="M34 6 Q48 -4 54 10 Q56 24 42 26 Q32 20 34 6Z" fill="url(#lc)" opacity="0.74"/>
+        <path d="M90 2 Q104 -8 110 6 Q112 20 98 22 Q88 16 90 2Z" fill="url(#ld)" opacity="0.7"/>
+        <path d="M152 6 Q166 -4 172 10 Q174 24 160 26 Q150 20 152 6Z" fill="url(#la)" opacity="0.72"/>
+        <path d="M218 2 Q232 -8 238 6 Q240 20 226 22 Q216 16 218 2Z" fill="url(#lb)" opacity="0.68"/>
+        <path d="M284 4 Q298 -6 304 8 Q306 22 292 24 Q282 18 284 4Z" fill="url(#lc)" opacity="0.72"/>
+        <path d="M348 2 Q362 -8 368 6 Q370 20 356 22 Q346 16 348 2Z" fill="url(#ld)" opacity="0.74"/>
+        <path d="M404 4 Q418 -6 424 8 Q426 22 412 24 Q402 18 404 4Z" fill="url(#la)" opacity="0.7"/>
+        {/* Leaf vein lines */}
+        <path d="M34 6 L42 22" stroke="#3A5828" strokeWidth="0.7" opacity="0.4"/>
+        <path d="M152 6 L160 22" stroke="#3A5828" strokeWidth="0.7" opacity="0.4"/>
+        <path d="M284 4 L292 20" stroke="#3A5828" strokeWidth="0.7" opacity="0.4"/>
       </g>
-      <g opacity="0.48">
-        <path d="M-8 844 Q18 720 6 600 Q-6 480 16 365 Q34 258 10 148" stroke="#A8BBA0" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-        <path d="M80 38 Q68 28 54 32 Q44 42 51 55 Q62 62 75 55 Q85 45 80 38Z" fill="url(#lf1)" opacity="0.62"/>
-        <path d="M106 22 Q94 12 78 16 Q68 26 75 39 Q86 46 99 39 Q109 29 106 22Z" fill="url(#lf2)" opacity="0.55"/>
-        <path d="M56 62 Q44 52 30 56 Q20 66 27 79 Q38 86 51 79 Q61 69 56 62Z" fill="url(#lfD)" opacity="0.52"/>
-        <path d="M36 88 Q24 78 10 82 Q0 92 7 105 Q18 112 31 105 Q41 95 36 88Z" fill="url(#lf3)" opacity="0.5"/>
-        <path d="M16 118 Q4 108 -10 112 Q-20 122 -13 135 Q-2 142 11 135 Q21 125 16 118Z" fill="url(#lf1)" opacity="0.47"/>
-        <path d="M20 155 Q8 145 -6 149 Q-16 159 -9 172 Q2 179 15 172 Q25 162 20 155Z" fill="url(#lf2)" opacity="0.45"/>
-        <path d="M44 142 Q32 132 18 136 Q8 146 15 159 Q26 166 39 159 Q49 149 44 142Z" fill="url(#lfD)" opacity="0.48"/>
-        <path d="M36 205 Q24 195 10 199 Q0 209 7 222 Q18 229 31 222 Q41 212 36 205Z" fill="url(#lf3)" opacity="0.45"/>
-        <path d="M18 268 Q6 258 -8 262 Q-18 272 -11 285 Q0 292 13 285 Q23 275 18 268Z" fill="url(#lf1)" opacity="0.44"/>
-        <path d="M46 256 Q34 246 20 250 Q10 260 17 273 Q28 280 41 273 Q51 263 46 256Z" fill="url(#lf2)" opacity="0.42"/>
-        <path d="M20 418 Q8 408 -6 412 Q-16 422 -9 435 Q2 442 15 435 Q25 425 20 418Z" fill="url(#lf3)" opacity="0.42"/>
-        <path d="M48 405 Q36 395 22 399 Q12 409 19 422 Q30 429 43 422 Q53 412 48 405Z" fill="url(#lf1)" opacity="0.4"/>
-        <path d="M22 588 Q10 578 -4 582 Q-14 592 -7 605 Q4 612 17 605 Q27 595 22 588Z" fill="url(#lfD)" opacity="0.4"/>
-        <path d="M50 575 Q38 565 24 569 Q14 579 21 592 Q32 599 45 592 Q55 582 50 575Z" fill="url(#lf2)" opacity="0.38"/>
-        <path d="M-6 748 Q-18 738 -32 742 Q-42 752 -35 765 Q-24 772 -11 765 Q-1 755 -6 748Z" fill="url(#lf1)" opacity="0.42"/>
-        <path d="M24 738 Q12 728 -2 732 Q-12 742 -5 755 Q6 762 19 755 Q29 745 24 738Z" fill="url(#lfD)" opacity="0.4"/>
-        <path d="M54 728 Q42 718 28 722 Q18 732 25 745 Q36 752 49 745 Q59 735 54 728Z" fill="url(#lf3)" opacity="0.38"/>
+      {/* ══ LEFT SIDE VINES ══ */}
+      <g>
+        <path d="M-6 844 Q18 730 6 618 Q-6 508 16 400 Q34 300 10 195 Q0 130 24 68" stroke="#8AA86A" strokeWidth="2.8" fill="none" opacity="0.6" strokeLinecap="round"/>
+        <path d="M12 230 Q48 212 70 192" stroke="#8AA86A" strokeWidth="1.8" fill="none" opacity="0.58"/>
+        <path d="M74 188 Q60 178 48 182 Q38 192 44 204 Q54 210 66 204 Q74 196 74 188Z" fill="url(#lb)" opacity="0.72"/>
+        <path d="M74 188 L58 202" stroke="#3A5828" strokeWidth="0.7" opacity="0.45"/>
+        <path d="M88 178 Q74 168 62 172 Q52 182 58 194 Q68 200 80 194 Q88 186 88 178Z" fill="url(#la)" opacity="0.65"/>
+        <path d="M56 210 Q42 200 30 204 Q20 214 26 226 Q36 232 48 226 Q56 218 56 210Z" fill="url(#lc)" opacity="0.6"/>
+        <path d="M8 340 Q44 324 66 306" stroke="#8AA86A" strokeWidth="1.8" fill="none" opacity="0.54"/>
+        <path d="M70 302 Q56 292 44 296 Q34 306 40 318 Q50 324 62 318 Q70 310 70 302Z" fill="url(#ld)" opacity="0.68"/>
+        <path d="M84 292 Q70 282 58 286 Q48 296 54 308 Q64 314 76 308 Q84 300 84 292Z" fill="url(#lb)" opacity="0.62"/>
+        <path d="M52 322 Q38 312 26 316 Q16 326 22 338 Q32 344 44 338 Q52 330 52 322Z" fill="url(#la)" opacity="0.57"/>
+        <path d="M14 456 Q48 440 68 422" stroke="#8AA86A" strokeWidth="1.8" fill="none" opacity="0.5"/>
+        <path d="M72 418 Q58 408 46 412 Q36 422 42 434 Q52 440 64 434 Q72 426 72 418Z" fill="url(#lc)" opacity="0.65"/>
+        <path d="M86 408 Q72 398 60 402 Q50 412 56 424 Q66 430 78 424 Q86 416 86 408Z" fill="url(#ld)" opacity="0.59"/>
+        <path d="M54 438 Q40 428 28 432 Q18 442 24 454 Q34 460 46 454 Q54 446 54 438Z" fill="url(#lb)" opacity="0.54"/>
+        <path d="M10 572 Q46 556 66 538" stroke="#8AA86A" strokeWidth="1.6" fill="none" opacity="0.46"/>
+        <path d="M70 534 Q56 524 44 528 Q34 538 40 550 Q50 556 62 550 Q70 542 70 534Z" fill="url(#la)" opacity="0.62"/>
+        <path d="M52 554 Q38 544 26 548 Q16 558 22 570 Q32 576 44 570 Q52 562 52 554Z" fill="url(#lc)" opacity="0.57"/>
+        <path d="M14 688 Q48 672 66 654" stroke="#8AA86A" strokeWidth="1.6" fill="none" opacity="0.44"/>
+        <path d="M70 650 Q56 640 44 644 Q34 654 40 666 Q50 672 62 666 Q70 658 70 650Z" fill="url(#ld)" opacity="0.6"/>
+        <path d="M84 640 Q70 630 58 634 Q48 644 54 656 Q64 662 76 656 Q84 648 84 640Z" fill="url(#lb)" opacity="0.54"/>
+        <path d="M52 670 Q38 660 26 664 Q16 674 22 686 Q32 692 44 686 Q52 678 52 670Z" fill="url(#la)" opacity="0.5"/>
+        {/* Lower left clusters */}
+        <path d="M-8 756 Q-20 746 -34 750 Q-44 760 -38 772 Q-28 778 -16 772 Q-8 764 -8 756Z" fill="url(#lc)" opacity="0.5"/>
+        <path d="M18 748 Q4 738 -10 742 Q-20 752 -14 764 Q-4 770 8 764 Q16 756 18 748Z" fill="url(#lb)" opacity="0.46"/>
+        <path d="M46 738 Q32 728 20 732 Q10 742 16 754 Q26 760 38 754 Q46 746 46 738Z" fill="url(#ld)" opacity="0.44"/>
+        <path d="M-4 802 Q-18 792 -32 796 Q-42 806 -36 818 Q-26 824 -14 818 Q-4 810 -4 802Z" fill="url(#la)" opacity="0.48"/>
+        <path d="M24 794 Q10 784 -4 788 Q-14 798 -8 810 Q2 816 14 810 Q22 802 24 794Z" fill="url(#lc)" opacity="0.44"/>
+        <path d="M52 784 Q38 774 26 778 Q16 788 22 800 Q32 806 44 800 Q52 792 52 784Z" fill="url(#lb)" opacity="0.42"/>
       </g>
+      {/* ══ RIGHT SIDE VINES ══ */}
+      <g>
+        <path d="M396 844 Q372 730 384 618 Q396 508 374 400 Q356 300 380 195 Q390 130 366 68" stroke="#8AA86A" strokeWidth="2.8" fill="none" opacity="0.58" strokeLinecap="round"/>
+        <path d="M378 230 Q342 212 320 192" stroke="#8AA86A" strokeWidth="1.8" fill="none" opacity="0.56"/>
+        <path d="M316 188 Q330 178 342 182 Q352 192 346 204 Q336 210 324 204 Q316 196 316 188Z" fill="url(#lb)" opacity="0.7"/>
+        <path d="M316 188 L332 202" stroke="#3A5828" strokeWidth="0.7" opacity="0.42"/>
+        <path d="M302 178 Q316 168 328 172 Q338 182 332 194 Q322 200 310 194 Q302 186 302 178Z" fill="url(#la)" opacity="0.63"/>
+        <path d="M334 210 Q348 200 360 204 Q370 214 364 226 Q354 232 342 226 Q334 218 334 210Z" fill="url(#lc)" opacity="0.58"/>
+        <path d="M382 340 Q346 324 324 306" stroke="#8AA86A" strokeWidth="1.8" fill="none" opacity="0.52"/>
+        <path d="M320 302 Q334 292 346 296 Q356 306 350 318 Q340 324 328 318 Q320 310 320 302Z" fill="url(#ld)" opacity="0.66"/>
+        <path d="M306 292 Q320 282 332 286 Q342 296 336 308 Q326 314 314 308 Q306 300 306 292Z" fill="url(#lb)" opacity="0.6"/>
+        <path d="M338 322 Q352 312 364 316 Q374 326 368 338 Q358 344 346 338 Q338 330 338 322Z" fill="url(#la)" opacity="0.55"/>
+        <path d="M376 456 Q342 440 322 422" stroke="#8AA86A" strokeWidth="1.8" fill="none" opacity="0.48"/>
+        <path d="M318 418 Q332 408 344 412 Q354 422 348 434 Q338 440 326 434 Q318 426 318 418Z" fill="url(#lc)" opacity="0.63"/>
+        <path d="M304 408 Q318 398 330 402 Q340 412 334 424 Q324 430 312 424 Q304 416 304 408Z" fill="url(#ld)" opacity="0.57"/>
+        <path d="M336 438 Q350 428 362 432 Q372 442 366 454 Q356 460 344 454 Q336 446 336 438Z" fill="url(#lb)" opacity="0.52"/>
+        <path d="M380 572 Q344 556 324 538" stroke="#8AA86A" strokeWidth="1.6" fill="none" opacity="0.44"/>
+        <path d="M320 534 Q334 524 346 528 Q356 538 350 550 Q340 556 328 550 Q320 542 320 534Z" fill="url(#la)" opacity="0.6"/>
+        <path d="M338 554 Q352 544 364 548 Q374 558 368 570 Q358 576 346 570 Q338 562 338 554Z" fill="url(#lc)" opacity="0.55"/>
+        <path d="M376 688 Q342 672 322 654" stroke="#8AA86A" strokeWidth="1.6" fill="none" opacity="0.42"/>
+        <path d="M318 650 Q332 640 344 644 Q354 654 348 666 Q338 672 326 666 Q318 658 318 650Z" fill="url(#ld)" opacity="0.58"/>
+        <path d="M304 640 Q318 630 330 634 Q340 644 334 656 Q324 662 312 656 Q304 648 304 640Z" fill="url(#lb)" opacity="0.52"/>
+        <path d="M336 670 Q350 660 362 664 Q372 674 366 686 Q356 692 344 686 Q336 678 336 670Z" fill="url(#la)" opacity="0.48"/>
+        {/* Lower right clusters */}
+        <path d="M398 756 Q410 746 424 750 Q434 760 428 772 Q418 778 406 772 Q398 764 398 756Z" fill="url(#lc)" opacity="0.48"/>
+        <path d="M372 748 Q386 738 400 742 Q410 752 404 764 Q394 770 382 764 Q374 756 372 748Z" fill="url(#lb)" opacity="0.44"/>
+        <path d="M344 738 Q358 728 372 732 Q382 742 376 754 Q366 760 354 754 Q346 746 344 738Z" fill="url(#ld)" opacity="0.42"/>
+        <path d="M394 802 Q408 792 422 796 Q432 806 426 818 Q416 824 404 818 Q396 810 394 802Z" fill="url(#la)" opacity="0.46"/>
+        <path d="M366 794 Q380 784 394 788 Q404 798 398 810 Q388 816 376 810 Q368 802 366 794Z" fill="url(#lc)" opacity="0.42"/>
+        <path d="M338 784 Q352 774 366 778 Q376 788 370 800 Q360 806 348 800 Q340 792 338 784Z" fill="url(#lb)" opacity="0.4"/>
+      </g>
+      {/* ══ BOTTOM GROUND FOLIAGE ══ */}
       <g opacity="0.45">
-        <path d="M398 844 Q372 720 384 600 Q396 480 374 365 Q356 258 380 148" stroke="#A8BBA0" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-        <path d="M310 38 Q322 28 336 32 Q346 42 339 55 Q328 62 315 55 Q305 45 310 38Z" fill="url(#lf2)" opacity="0.62"/>
-        <path d="M284 22 Q296 12 312 16 Q322 26 315 39 Q304 46 291 39 Q281 29 284 22Z" fill="url(#lf1)" opacity="0.55"/>
-        <path d="M334 62 Q346 52 360 56 Q370 66 363 79 Q352 86 339 79 Q329 69 334 62Z" fill="url(#lfD)" opacity="0.52"/>
-        <path d="M354 88 Q366 78 380 82 Q390 92 383 105 Q372 112 359 105 Q349 95 354 88Z" fill="url(#lf3)" opacity="0.5"/>
-        <path d="M374 118 Q386 108 400 112 Q410 122 403 135 Q392 142 379 135 Q369 125 374 118Z" fill="url(#lf1)" opacity="0.47"/>
-        <path d="M370 155 Q382 145 396 149 Q406 159 399 172 Q388 179 375 172 Q365 162 370 155Z" fill="url(#lf2)" opacity="0.45"/>
-        <path d="M346 142 Q358 132 372 136 Q382 146 375 159 Q364 166 351 159 Q341 149 346 142Z" fill="url(#lfD)" opacity="0.48"/>
-        <path d="M354 205 Q366 195 380 199 Q390 209 383 222 Q372 229 359 222 Q349 212 354 205Z" fill="url(#lf3)" opacity="0.45"/>
-        <path d="M372 268 Q384 258 398 262 Q408 272 401 285 Q390 292 377 285 Q367 275 372 268Z" fill="url(#lf1)" opacity="0.44"/>
-        <path d="M344 256 Q356 246 370 250 Q380 260 373 273 Q362 280 349 273 Q339 263 344 256Z" fill="url(#lf2)" opacity="0.42"/>
-        <path d="M370 418 Q382 408 396 412 Q406 422 399 435 Q388 442 375 435 Q365 425 370 418Z" fill="url(#lf3)" opacity="0.42"/>
-        <path d="M342 405 Q354 395 368 399 Q378 409 371 422 Q360 429 347 422 Q337 412 342 405Z" fill="url(#lf1)" opacity="0.4"/>
-        <path d="M368 588 Q380 578 394 582 Q404 592 397 605 Q386 612 373 605 Q363 595 368 588Z" fill="url(#lfD)" opacity="0.4"/>
-        <path d="M340 575 Q352 565 366 569 Q376 579 369 592 Q358 599 345 592 Q335 582 340 575Z" fill="url(#lf2)" opacity="0.38"/>
-        <path d="M394 748 Q406 738 420 742 Q430 752 423 765 Q412 772 399 765 Q389 755 394 748Z" fill="url(#lf1)" opacity="0.42"/>
-        <path d="M366 738 Q378 728 392 732 Q402 742 395 755 Q384 762 371 755 Q361 745 366 738Z" fill="url(#lfD)" opacity="0.4"/>
-        <path d="M336 728 Q348 718 362 722 Q372 732 365 745 Q354 752 341 745 Q331 735 336 728Z" fill="url(#lf3)" opacity="0.38"/>
+        <ellipse cx="40" cy="840" rx="62" ry="28" fill="#8AA86A"/>
+        <ellipse cx="5" cy="844" rx="42" ry="20" fill="#9ABB7A"/>
+        <ellipse cx="82" cy="844" rx="54" ry="24" fill="#7A9858"/>
+        <ellipse cx="140" cy="844" rx="38" ry="16" fill="#9ABB7A" opacity="0.7"/>
+        <ellipse cx="350" cy="840" rx="62" ry="28" fill="#8AA86A"/>
+        <ellipse cx="385" cy="844" rx="42" ry="20" fill="#9ABB7A"/>
+        <ellipse cx="308" cy="844" rx="54" ry="24" fill="#7A9858"/>
+        <ellipse cx="250" cy="844" rx="38" ry="16" fill="#9ABB7A" opacity="0.7"/>
+        <ellipse cx="195" cy="844" rx="32" ry="12" fill="#8AA86A" opacity="0.5"/>
       </g>
-      <g opacity="0.32">
-        <ellipse cx="42" cy="840" rx="58" ry="26" fill="#9ABB8A"/>
-        <ellipse cx="8" cy="844" rx="38" ry="18" fill="#B8D0A8"/>
-        <ellipse cx="85" cy="844" rx="50" ry="22" fill="#8AAA80"/>
-        <ellipse cx="348" cy="840" rx="58" ry="26" fill="#9ABB8A"/>
-        <ellipse cx="382" cy="844" rx="38" ry="18" fill="#B8D0A8"/>
-        <ellipse cx="305" cy="844" rx="50" ry="22" fill="#8AAA80"/>
-        <ellipse cx="195" cy="844" rx="30" ry="12" fill="#B8D0A8"/>
-      </g>
-      <rect width="390" height="844" fill="url(#gVig)"/>
+      {/* Golden hour light */}
+      <ellipse cx="330" cy="80" rx="160" ry="110" fill="rgba(218,195,130,0.12)"/>
+      <rect width="390" height="844" fill="url(#gVi)"/>
     </svg>
   </div>
 );
@@ -6162,56 +6263,6 @@ function useAuth(){
   return{user,loading,signIn,signOut,isPro};
 }
 
-const TESTING_MODE=true;
-const FREE_LIMITS={aiCallsPerDay:3,mindMaps:3,prioritizerLists:1,matrixTasks:10,goalsTotal:5,restSessions:5,filingDrawers:2,noteSections:3};
-function usePro(){
-  const[showModal,setShowModal]=useState(false);
-  const[limitHit,setLimitHit]=useState("");
-  const canDo=(feature,count=0)=>{if(TESTING_MODE)return true;const l=FREE_LIMITS[feature];return l===undefined||count<l;};
-  const gate=(feature,count,action)=>{if(canDo(feature,count)){action();return;}setLimitHit(feature);setShowModal(true);};
-  return{canDo,gate,showModal,setShowModal,limitHit};
-}
-function ProLoginModal({onClose,onSignIn}){
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(232,225,212,0.9)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{background:"rgba(252,249,242,0.96)",borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:380,textAlign:"center",boxShadow:"0 12px 48px rgba(60,50,30,0.15)",border:"1px solid rgba(255,255,255,0.9)"}}>
-        <div style={{fontSize:48,marginBottom:12}}>💎</div>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:22,marginBottom:8}}>Unlock Thinko Pro</div>
-        <div style={{color:"#6A6050",fontSize:14,lineHeight:1.6,marginBottom:20}}>Sign in to unlock unlimited features</div>
-        <div style={{background:"linear-gradient(135deg,#2C3820,#4A7038)",borderRadius:16,padding:"16px",marginBottom:16,color:"#fff"}}>
-          <div style={{fontSize:28,fontWeight:900,marginBottom:2}}>£4.99<span style={{fontSize:13,fontWeight:400}}>/month</span></div>
-          <div style={{fontSize:11,opacity:0.65}}>or £39.99/year</div>
-        </div>
-        <button onClick={onSignIn} style={{width:"100%",padding:"14px",background:"#4A7038",color:"#fff",border:"none",borderRadius:14,fontWeight:700,fontSize:16,cursor:"pointer",marginBottom:10,boxShadow:"0 4px 16px rgba(74,112,56,0.3)"}}>
-          Continue with Google
-        </button>
-        <button onClick={onClose} style={{width:"100%",padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(160,152,140,0.3)",borderRadius:14,fontWeight:600,fontSize:14,cursor:"pointer"}}>
-          Maybe later
-        </button>
-      </div>
-    </div>
-  );
-}
-function AuthButton({user,onSignIn,onSignOut}){
-  const[menuOpen,setMenuOpen]=useState(false);
-  if(!user)return(<button onClick={onSignIn} style={{background:"rgba(74,112,56,0.15)",color:"#4A7038",border:"1.5px solid rgba(74,112,56,0.3)",borderRadius:12,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>💎 Go Pro</button>);
-  return(
-    <div style={{position:"relative"}}>
-      <button onClick={()=>setMenuOpen(m=>!m)} style={{background:"rgba(74,112,56,0.12)",color:"#4A7038",border:"1.5px solid rgba(74,112,56,0.25)",borderRadius:12,padding:"6px 12px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
-        {user.user_metadata?.avatar_url?<img src={user.user_metadata.avatar_url} style={{width:22,height:22,borderRadius:"50%"}} alt="avatar"/>:<span>👤</span>}
-        <span style={{maxWidth:70,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12}}>{user.user_metadata?.full_name?.split(" ")[0]||"Pro"}</span>💎
-      </button>
-      {menuOpen&&(
-        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"rgba(252,249,242,0.98)",borderRadius:14,padding:"8px",boxShadow:"0 8px 32px rgba(60,50,30,0.15)",minWidth:180,zIndex:100,border:"1px solid rgba(255,255,255,0.9)"}} onClick={()=>setMenuOpen(false)}>
-          <div style={{padding:"8px 12px",fontSize:12,color:"#8A8070",borderBottom:"1px solid rgba(160,152,140,0.2)",marginBottom:4}}>{user.email}</div>
-          <div style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:"#4A7038"}}>✓ Pro subscriber</div>
-          <button onClick={onSignOut} style={{width:"100%",padding:"8px 12px",background:"transparent",color:"#c0392b",border:"none",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",textAlign:"left"}}>Sign out</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 
 const MODULES=[
   {id:"prioritizer", icon:"📋", name:"Prioritizer",  desc:"Tasks, timers & priorities",       grad:`linear-gradient(135deg,#5a3d9a,#7c5cbf)`},
@@ -6227,25 +6278,74 @@ const MODULES=[
   {id:"rest",        icon:"🌿", name:"Rest Space",   desc:"Guided rest · Nature sounds · Break timer",grad:`linear-gradient(135deg,#0d2b1a,#1e5c3a)`},
 ];
 
+function ProLoginModal({onClose,onSignIn}){
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(232,225,212,0.9)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{background:"rgba(252,249,242,0.97)",borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:380,textAlign:"center",boxShadow:"0 12px 48px rgba(60,50,30,0.15)",border:"1px solid rgba(255,255,255,0.9)"}}>
+        <div style={{fontSize:48,marginBottom:12}}>💎</div>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:22,marginBottom:8}}>Unlock Thinko Pro</div>
+        <div style={{color:"#6A6050",fontSize:14,lineHeight:1.6,marginBottom:20}}>Sign in with Google to unlock all features</div>
+        <div style={{background:"linear-gradient(135deg,#2C3820,#4A7038)",borderRadius:16,padding:"14px 16px",marginBottom:16,color:"#fff",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div><div style={{fontWeight:900,fontSize:22}}>£4.99<span style={{fontSize:13,fontWeight:400}}>/month</span></div><div style={{fontSize:11,opacity:0.6}}>or £39.99/year — save £20</div></div>
+          <div style={{fontSize:28}}>🌿</div>
+        </div>
+        <button onClick={onSignIn} style={{width:"100%",padding:"14px",background:"#fff",color:"#444",border:"2px solid #ddd",borderRadius:14,fontWeight:800,fontSize:15,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:12,boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+        <button onClick={onClose} style={{width:"100%",padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(160,152,140,0.3)",borderRadius:14,fontWeight:600,fontSize:14,cursor:"pointer"}}>Continue as guest</button>
+      </div>
+    </div>
+  );
+}
+
+function AuthButton({user,onSignIn,onSignOut}){
+  const[menuOpen,setMenuOpen]=useState(false);
+  if(!user)return(<button onClick={onSignIn} style={{background:"rgba(74,112,56,0.15)",color:"#4A7038",border:"1.5px solid rgba(74,112,56,0.3)",borderRadius:12,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>💎 Go Pro</button>);
+  return(
+    <div style={{position:"relative"}}>
+      <button onClick={()=>setMenuOpen(m=>!m)} style={{background:"rgba(74,112,56,0.12)",color:"#4A7038",border:"1.5px solid rgba(74,112,56,0.25)",borderRadius:12,padding:"6px 12px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+        {user.user_metadata?.avatar_url?<img src={user.user_metadata.avatar_url} style={{width:22,height:22,borderRadius:"50%"}} alt="av"/>:<span>👤</span>}
+        <span style={{maxWidth:70,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12}}>{user.user_metadata?.full_name?.split(" ")[0]||"Pro"}</span>💎
+      </button>
+      {menuOpen&&(
+        <div style={{position:"absolute",top:"calc(100% + 8px)",right:0,background:"rgba(252,249,242,0.98)",borderRadius:14,padding:"8px",boxShadow:"0 8px 32px rgba(60,50,30,0.15)",minWidth:175,zIndex:200,border:"1px solid rgba(255,255,255,0.9)"}} onClick={()=>setMenuOpen(false)}>
+          <div style={{padding:"8px 12px",fontSize:12,color:"#8A8070",borderBottom:"1px solid rgba(160,152,140,0.2)",marginBottom:4}}>{user.email}</div>
+          <div style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:"#4A7038"}}>✓ Pro subscriber</div>
+          <button onClick={onSignOut} style={{width:"100%",padding:"8px 12px",background:"transparent",color:"#c0392b",border:"none",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",textAlign:"left"}}>Sign out</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function App() {
   const [screen,setScreen]=useState("home");
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
-  const [priData,setPriData]=useState([]);
-  const [mapData,setMapData]=useState([]);
-  const [notesData,setNotesData]=useState([]);
-  const [mealData,setMealData]=useState({});
-  const [ideasData,setIdeasData]=useState([]);
-  const [matrixData,setMatrixData]=useState([]);
-  const [budgetData,setBudgetData]=useState([]);
-  const [shopData,setShopData]=useState([]);
-  const [goalsData,setGoalsData]=useState([]);
-  const [chargeData,setChargeData]=useState({dailyTarget:3,weeklyAward:'',days:{},streak:0});
+  const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
+  const [mapData,setMapData]=useState(()=>{try{const v=localStorage.getItem('thinko_map');return v?JSON.parse(v):[];}catch{return [];}});
+  const [notesData,setNotesData]=useState(()=>{try{const v=localStorage.getItem('thinko_notes');return v?JSON.parse(v):[];}catch{return [];}});
+  const [mealData,setMealData]=useState(()=>{try{const v=localStorage.getItem('thinko_meal');return v?JSON.parse(v):{};}catch{return {};}});
+  const [ideasData,setIdeasData]=useState(()=>{try{const v=localStorage.getItem('thinko_ideas');return v?JSON.parse(v):[];}catch{return [];}});
+  const [matrixData,setMatrixData]=useState(()=>{try{const v=localStorage.getItem('thinko_matrix');return v?JSON.parse(v):[];}catch{return [];}});
+  const [budgetData,setBudgetData]=useState(()=>{try{const v=localStorage.getItem('thinko_budget');return v?JSON.parse(v):[];}catch{return [];}});
+  const [shopData,setShopData]=useState(()=>{try{const v=localStorage.getItem('thinko_shop');return v?JSON.parse(v):[];}catch{return [];}});
+  const [goalsData,setGoalsData]=useState(()=>{try{const v=localStorage.getItem('thinko_goals');return v?JSON.parse(v):[];}catch{return [];}});
+  const [chargeData,setChargeData]=useState(()=>{try{const v=localStorage.getItem('thinko_charge');return v?JSON.parse(v):{dailyTarget:3,weeklyAward:'',days:{},streak:0};}catch{return {dailyTarget:3,weeklyAward:'',days:{},streak:0};}});
+  const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
   const [showProModal,setShowProModal]=useState(false);
   const [proLimitHit,setProLimitHit]=useState('');
-  const [moduleOrder,setModuleOrder]=useState(MODULES.map(m=>m.id));
+  const [moduleOrder,setModuleOrder]=useState(()=>{try{const v=localStorage.getItem('thinko_order');return v?JSON.parse(v):MODULES.map(m=>m.id);}catch{return MODULES.map(m=>m.id);}});
   const [dragHome,setDragHome]=useState(null);
   const orderedModules=moduleOrder.map(id=>MODULES.find(m=>m.id===id)).filter(Boolean);
+  // ── Name & greeting ──
+  const [userName,setUserName]=useState(()=>{try{return localStorage.getItem('thinko_username')||'';}catch{return '';}});
+  const [showNameModal,setShowNameModal]=useState(()=>{try{return !localStorage.getItem('thinko_username');}catch{return true;}});
+  const [nameInput,setNameInput]=useState('');
+  const getGreeting=()=>{const h=new Date().getHours();if(h>=5&&h<12)return{word:'Good morning',emoji:'✨'};if(h>=12&&h<17)return{word:'Good afternoon',emoji:'☀️'};if(h>=17&&h<21)return{word:'Good evening',emoji:'🌅'};return{word:'Good night',emoji:'🌙'};};
+  const saveName=()=>{const n=nameInput.trim();if(!n)return;try{localStorage.setItem('thinko_username',n);}catch{}setUserName(n);setShowNameModal(false);};
 
   const homeDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragHome(id);};
   const homeDragOver=(e,id)=>{
