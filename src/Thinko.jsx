@@ -7076,6 +7076,8 @@ function Calculator() {
   const [disp,setDisp]=useState("0");
   const [expr,setExpr]=useState("");
   const [justEvaled,setJustEvaled]=useState(false);
+  const [lastResult,setLastResult]=useState(()=>{try{return localStorage.getItem('thinko_calc_last')||null;}catch{return null;}});
+  const [copied,setCopied]=useState(false);
 
   const press=btn=>{
     if(btn==="C"){setDisp("0");setExpr("");setJustEvaled(false);return;}
@@ -7083,10 +7085,14 @@ function Calculator() {
     if(btn==="="){
       try{
         const raw=expr+disp;
-        // safe eval via Function
         const result=Function('"use strict";return ('+raw+')')();
         const str=Number.isFinite(result)?parseFloat(result.toFixed(10)).toString():"Error";
         setDisp(str);setExpr("");setJustEvaled(true);
+        if(str!=="Error"){
+          const saved=raw+" = "+str;
+          setLastResult(saved);
+          try{localStorage.setItem('thinko_calc_last',saved);}catch{}
+        }
       }catch{setDisp("Error");setExpr("");setJustEvaled(true);}
       return;
     }
@@ -7095,10 +7101,7 @@ function Calculator() {
       setExpr(justEvaled?disp+op:expr+disp+op);
       setDisp("0");setJustEvaled(false);return;
     }
-    if(btn==="."){
-      if(disp.includes("."))return;
-      setDisp(d=>d+"."); setJustEvaled(false);return;
-    }
+    if(btn==="."){if(disp.includes("."))return;setDisp(d=>d+"."); setJustEvaled(false);return;}
     if(btn==="+/-"){setDisp(d=>d.startsWith("-")?d.slice(1):"-"+d);return;}
     if(btn==="%"){setDisp(d=>(parseFloat(d)/100).toString());return;}
     setDisp(d=>(justEvaled||d==="0")?btn:d+btn);
@@ -7117,28 +7120,40 @@ function Calculator() {
   const isGrey=b=>["C","+/-","%"].includes(b);
 
   return(
-    <div style={{background:"rgba(255,255,255,0.10)",borderRadius:22,overflow:"hidden",boxShadow:"0 4px 24px rgba(45,10,94,0.2)"}}>
-      {/* Display */}
-      <div style={{padding:"18px 20px 10px",textAlign:"right"}}>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.4)",minHeight:18,fontFamily:"monospace"}}>{expr}{expr?" ":""}</div>
-        <div style={{fontSize:44,fontWeight:300,color:"#1A1A10",fontFamily:"monospace",lineHeight:1.1,wordBreak:"break-all"}}>{disp}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.07)",border:"1px solid rgba(255,255,255,0.9)"}}>
+        {/* Display */}
+        <div style={{padding:"18px 20px 10px",textAlign:"right"}}>
+          <div style={{fontSize:13,color:"#8A8070",minHeight:18,fontFamily:"monospace"}}>{expr}{expr?" ":""}</div>
+          <div style={{fontSize:44,fontWeight:300,color:"#1A1A10",fontFamily:"monospace",lineHeight:1.1,wordBreak:"break-all"}}>{disp}</div>
+        </div>
+        {/* Buttons */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:2,padding:"0 2px 2px"}}>
+          {rows.flat().map((btn,i)=>(
+            <button key={i} onClick={()=>press(btn)} style={{
+              padding:"20px 0",fontSize:btn==="⌫"?18:20,fontWeight:isOp(btn)?400:600,
+              background:isOp(btn)?"#6A8858":isGrey(btn)?"rgba(90,80,60,0.12)":"rgba(248,245,236,0.95)",
+              color:isOp(btn)?"#fff":isGrey(btn)?"#2A2A18":"#1A1A10",
+              border:"none",cursor:"pointer",fontFamily:"monospace",
+              borderRadius:btn==="0"?0:4,
+              transition:"opacity 0.1s",
+            }}>{btn}</button>
+          ))}
+        </div>
       </div>
-      {/* Buttons */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:2,padding:"0 2px 2px"}}>
-        {rows.flat().map((btn,i)=>(
-          <button key={i} onClick={()=>press(btn)} style={{
-            padding:"20px 0",fontSize:btn==="⌫"?18:20,fontWeight:isOp(btn)?400:600,
-            background:isOp(btn)?"#5A7848":isGrey(btn)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.12)",
-            color:isGrey(btn)?"rgba(0,0,0,0.7)":C.wh,
-            border:"none",cursor:"pointer",borderRadius:4,
-            gridColumn:btn==="0"?"span 1":undefined,
-            transition:"opacity 0.1s",
-          }}
-          onMouseDown={e=>e.currentTarget.style.opacity="0.7"}
-          onMouseUp={e=>e.currentTarget.style.opacity="1"}
-          >{btn}</button>
-        ))}
-      </div>
+      {/* Last result — saved across sessions */}
+      {lastResult&&(
+        <div style={{background:"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",border:"1px solid rgba(255,255,255,0.9)",display:"flex",alignItems:"center",gap:10}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:"#8A8070",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Last calculation</div>
+            <div style={{fontFamily:"monospace",fontSize:14,color:"#1A1A10",fontWeight:600}}>{lastResult}</div>
+          </div>
+          <button onClick={()=>{navigator.clipboard?.writeText(lastResult);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:copied?"#2A7020":"#3A6020",border:"none",borderRadius:100,padding:"7px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+            {copied?"✅":"📋"}
+          </button>
+          <button onClick={()=>press(lastResult.split(" = ")[1]?.trim()||"0")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>Use</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -7497,7 +7512,7 @@ const TOOLS=[
   {id:"noise", name:"Sounds",     icon:"🎵"},
 ];
 
-function Tools({setScreen}) {
+function Tools({setScreen,notesData,setNotesData}) {
   const [active,setActive]=useState("voice");
 
   // ── GLOBAL VOICE TO TEXT ──────────────────────────────
@@ -7505,6 +7520,7 @@ function Tools({setScreen}) {
     const [listening,setListening]=useState(false);
     const [transcript,setTranscript]=useState("");
     const [copied,setCopied]=useState(false);
+    const [movedToNotes,setMovedToNotes]=useState(false);
     const [lang,setLang]=useState("en-GB");
     const recRef=useRef(null);
     const LANGS=[
@@ -7522,69 +7538,85 @@ function Tools({setScreen}) {
     ];
     const startListen=()=>{
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!SR){alert("Voice recognition not supported in this browser. Try Chrome.");return;}
+      if(!SR){alert("Voice recognition needs Chrome or Safari on iOS 17+.\n\nTip: On iPhone use Safari.");return;}
       const r=new SR();
       r.lang=lang;r.continuous=true;r.interimResults=true;
       r.onresult=e=>{
-        let final="",interim="";
+        let final="";
         for(let i=e.resultIndex;i<e.results.length;i++){
           if(e.results[i].isFinal)final+=e.results[i][0].transcript+" ";
-          else interim+=e.results[i][0].transcript;
         }
-        setTranscript(t=>t+final);
+        if(final)setTranscript(t=>t+final);
       };
       r.onerror=()=>setListening(false);
       r.onend=()=>setListening(false);
       r.start();recRef.current=r;setListening(true);
     };
     const stopListen=()=>{recRef.current?.stop();setListening(false);};
-    const copyText=()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);};
+
+    const moveToNotes=()=>{
+      if(!transcript.trim()||!setNotesData)return;
+      const title=transcript.trim().split(/[.!?\n]/)[0].slice(0,50)||"Voice Note";
+      const page={id:Date.now(),title,content:transcript.trim(),created:Date.now(),updated:Date.now()};
+      setNotesData(sections=>{
+        if(!sections||sections.length===0){
+          return [{id:Date.now(),name:"Voice Notes",color:"#5A7848",pages:[page]}];
+        }
+        // Add to first section
+        const updated=[...sections];
+        updated[0]={...updated[0],pages:[...(updated[0].pages||[]),page]};
+        return updated;
+      });
+      setMovedToNotes(true);
+      setTimeout(()=>setMovedToNotes(false),3000);
+    };
+
     return(
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>🎙️ Voice to Text</div>
-          <div style={{fontSize:13,color:"#8A8070",marginBottom:14}}>Speak — your words appear instantly</div>
-          {/* Language selector */}
+          <div style={{fontSize:12,color:"#8A8070",marginBottom:14}}>Speak — your words appear instantly. Works in Chrome & Safari.</div>
           <select value={lang} onChange={e=>setLang(e.target.value)}
             style={{width:"100%",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:13,color:"#1A1A10",outline:"none",marginBottom:14}}>
             {LANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
-          {/* Big mic button */}
           <div style={{textAlign:"center",marginBottom:14}}>
             <button onClick={listening?stopListen:startListen} style={{
               width:80,height:80,borderRadius:"50%",
               background:listening?"rgba(192,57,43,0.85)":"#5A7848",
-              color:"#fff",border:"none",cursor:"pointer",
-              fontSize:32,
-              boxShadow:listening?"0 0 0 8px rgba(192,57,43,0.18), 0 4px 20px rgba(192,57,43,0.35)":"0 4px 20px rgba(58,80,38,0.30)",
+              color:"#fff",border:"none",cursor:"pointer",fontSize:32,
+              boxShadow:listening?"0 0 0 8px rgba(192,57,43,0.18)":"0 4px 20px rgba(58,80,38,0.30)",
               transition:"all 0.2s",
-            }}>
-              {listening?"⏹":"🎙️"}
-            </button>
+            }}>{listening?"⏹":"🎙️"}</button>
             <div style={{marginTop:10,fontSize:13,fontWeight:700,color:listening?"#c0392b":"#5A7848"}}>
-              {listening?"● Recording — tap to stop":"Tap to start recording"}
+              {listening?"● Recording — tap to stop":"Tap to start"}
             </div>
           </div>
-          {/* Transcript */}
           <textarea value={transcript} onChange={e=>setTranscript(e.target.value)}
-            placeholder="Your words will appear here as you speak…" rows={6}
+            placeholder="Your words appear here as you speak…" rows={6}
             style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",lineHeight:1.7,marginBottom:10}}/>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={copyText} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:copied?"#2A7020":"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+            <button onClick={()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:copied?"#2A7020":"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
               {copied?"✅ Copied":"📋 Copy"}
+            </button>
+            <button onClick={moveToNotes} disabled={!transcript.trim()} style={{flex:1,padding:"12px",background:movedToNotes?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:movedToNotes?"#2A7020":"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",opacity:!transcript.trim()?0.5:1}}>
+              {movedToNotes?"✅ Saved!":"📓 → Notes"}
             </button>
             <button onClick={()=>setTranscript("")} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Clear</button>
           </div>
         </div>
-        <div style={{background:"rgba(248,245,236,0.80)",borderRadius:20,padding:"14px 16px",border:"1px solid rgba(90,120,72,0.12)"}}>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:6}}>💡 Works everywhere</div>
-          <div style={{fontSize:12,color:"#8A8070",lineHeight:1.7}}>Use this to dictate notes, tasks, goals, or anything. Copy and paste into any screen in Thinko.</div>
-        </div>
+        {movedToNotes&&(
+          <div style={{background:"rgba(90,160,80,0.10)",borderRadius:18,padding:"12px 16px",border:"1px solid rgba(90,160,80,0.2)",display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20}}>✅</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#2A7020"}}>Saved to Notes!</div>
+              <button onClick={()=>setScreen&&setScreen("notes")} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,textDecoration:"underline"}}>Open Notes →</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
-
-  // ── TRANSLATOR ────────────────────────────────────────
   const Translator=()=>{
     const [srcText,setSrcText]=useState("");
     const [result,setResult]=useState("");
@@ -8121,34 +8153,35 @@ async function aiAwardSuggestions(style){
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
-function TheCharge({priData,matrixData,setScreen}){
-  const [data,setData]=useState({dailyTarget:3,weeklyAward:"",days:{},streak:0});
+function TheCharge({priData,setPriData,matrixData,setMatrixData,goalsData,ideasData,setIdeasData,setScreen}){
+  const [data,setData]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_charge')||'null')||{dailyTarget:3,targetTask:"",targetLinked:"",rewardType:"weekly",rewardFreq:5,days:{},streak:0,reward:{name:"",cost:"",url:"",photo:"",note:""}};}catch{return {dailyTarget:3,targetTask:"",targetLinked:"",rewardType:"weekly",rewardFreq:5,days:{},streak:0,reward:{name:"",cost:"",url:"",photo:"",note:""}};}});
   const [view,setView]=useState("today");
   const [aiSugg,setAiSugg]=useState([]);
   const [aiLoad,setAiLoad]=useState(false);
-  const [awardIdeas,setAwardIdeas]=useState([]);
-  const [awardLoad,setAwardLoad]=useState(false);
+  const [aiSuggDetail,setAiSuggDetail]=useState({}); // {taskId: {action:"delete"|"schedule", reason}}
   const [whatOff,setWhatOff]=useState("");
-  const [editTarget,setEditTarget]=useState(false);
-  const [editAward,setEditAward]=useState(false);
-  const [draftAward,setDraftAward]=useState("");
+  const [editReward,setEditReward]=useState(false);
+  const [rewardDraft,setRewardDraft]=useState({name:"",cost:"",url:"",photo:"",note:""});
   const [toast,setToast]=useState("");
+  const [briefingOpen,setBriefingOpen]=useState(false);
+  const [briefingText,setBriefingText]=useState("");
+  const [briefingLoading,setBriefingLoading]=useState(false);
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
 
-  const upd=ch=>setData(d=>({...d,...ch}));
+  const upd=ch=>{const nd={...data,...ch};setData(nd);try{localStorage.setItem('thinko_charge',JSON.stringify(nd));}catch{}};
   const today=todayStr();
   const todayD=data.days[today]||{charged:[],frogs:[]};
   const updToday=ch=>upd({days:{...data.days,[today]:{...todayD,...ch}}});
 
-  /* Pull overdue + active tasks */
   const now=Date.now();
-  const stalePri=(priData||[]).flatMap(l=>(l.tasks||[]).filter(t=>!t.done&&(now-t.id)>STALE_7).map(t=>({...t,src:"📋 "+l.name})));
-  const staleMatrix=(matrixData||[]).filter(t=>(now-(t.touched||t.created||now))>STALE_7).map(t=>({...t,name:t.text,src:"🎯 Matrix"}));
-  const allStale=[...stalePri,...staleMatrix];
-  const allActive=[
-    ...(priData||[]).flatMap(l=>(l.tasks||[]).filter(t=>!t.done).map(t=>({...t}))),
-    ...(matrixData||[]).map(t=>({...t,name:t.text})),
-  ];
+  const STALE_CHARGE=2*24*60*60*1000; // 2 days for charge picks
+
+  // All active tasks across Prioritizer + Matrix
+  const allPriTasks=(priData||[]).flatMap(l=>(l.tasks||[]).filter(t=>!t.done).map(t=>({...t,src:"📋 "+l.name,srcId:l.id,srcType:"pri"})));
+  const allMatrixTasks=(matrixData||[]).map(t=>({...t,name:t.text,src:"⚖️ Matrix",srcType:"matrix"}));
+  const allActive=[...allPriTasks,...allMatrixTasks];
+  // Overdue = not touched in 2+ days
+  const allStale=allActive.filter(t=>(now-(t.touched||t.id||now))>STALE_CHARGE);
 
   const charged=todayD.charged||[];
   const frogs=todayD.frogs||[];
@@ -8156,52 +8189,111 @@ function TheCharge({priData,matrixData,setScreen}){
   const pct=Math.min(100,Math.round((charged.length/target)*100));
   const hitTarget=charged.length>=target;
 
-  /* Weekly stats */
   const weekDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
   const dayNames=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const weekPcts=weekDays.map(d=>Math.min(100,Math.round(((data.days[d]?.charged||[]).length/target)*100)));
   const daysHit=weekPcts.filter(p=>p>=100).length;
   const weekTotal=weekDays.reduce((s,d)=>s+(data.days[d]?.charged||[]).length,0);
 
+  // Reward unlock logic
+  const isWeekly=data.rewardType==="weekly";
+  const rewardFreq=data.rewardFreq||5;
+  const daysUntilReward=Math.max(0,rewardFreq-daysHit);
+  const rewardUnlocked=daysHit>=rewardFreq;
+  const rewardName=data.reward?.name||data.weeklyAward||"";
+
   const chargeIt=name=>{
     if(charged.includes(name))return;
     const nc=[...charged,name];
     updToday({charged:nc});
-    if(nc.length>=target)showToast("🔮 Orb fully lit — your light is blazing!");
+    if(nc.length>=target)showToast("🔮 Orb fully lit! "+rewardUnlocked?"You've earned your reward!":"Keep going!");
     else showToast(`⚡ Charged! ${nc.length}/${target} today`);
   };
-  const addFrog=()=>{
-    if(!whatOff.trim())return;
-    updToday({frogs:[...frogs,{id:Date.now(),text:whatOff.trim(),done:false}]});
-    setWhatOff("");
-  };
-  const toggleFrog=id=>{
-    const nf=frogs.map(f=>f.id===id?{...f,done:!f.done}:f);
-    updToday({frogs:nf});
-    if(nf.find(f=>f.id===id)?.done)showToast("⚡ Charged!");
-  };
+  const addFrog=()=>{if(!whatOff.trim())return;updToday({frogs:[...frogs,{id:Date.now(),text:whatOff.trim(),done:false}]});setWhatOff("");};
+  const toggleFrog=id=>{const nf=frogs.map(f=>f.id===id?{...f,done:!f.done}:f);updToday({frogs:nf});if(nf.find(f=>f.id===id)?.done)showToast("⚡ Charged!");};
   const delFrog=id=>updToday({frogs:frogs.filter(f=>f.id!==id)});
 
-  const getAiSugg=async()=>{
-    if(!allActive.length){showToast("Add tasks to Prioritizer or Matrix first!");return;}
-    setAiLoad(true);
-    try{setAiSugg(await aiChargePicks(allActive));}catch{showToast("AI error — try again");}
-    setAiLoad(false);
+  // Transfer task to Prioritizer
+  const toPri=(task)=>{
+    if(!priData?.length)return;
+    setPriData&&setPriData(ls=>[{...ls[0],tasks:[...ls[0].tasks,{id:Date.now(),name:task.name||task.text,done:false,color:"lilac",url:""}]},...ls.slice(1)]);
+    showToast("📋 Added to Prioritizer!");
   };
-  const getAwardIdeas=async()=>{
-    setAwardLoad(true);
-    try{setAwardIdeas(await aiAwardSuggestions(data.weeklyAward));}catch{showToast("AI error — try again");}
-    setAwardLoad(false);
+  // Transfer task to Matrix
+  const toMatrix=(task,quad="do")=>{
+    setMatrixData&&setMatrixData(ds=>[...ds,{id:Date.now(),text:task.name||task.text,quad,created:Date.now(),touched:Date.now()}]);
+    showToast("⚖️ Added to Matrix!");
+  };
+  // Delete from source
+  const deleteTask=(task)=>{
+    if(task.srcType==="pri"&&setPriData){
+      setPriData(ls=>ls.map(l=>({...l,tasks:l.tasks.filter(t=>t.id!==task.id)})));
+    } else if(task.srcType==="matrix"&&setMatrixData){
+      setMatrixData(ds=>ds.filter(d=>d.id!==task.id));
+    }
+    showToast("🗑 Task removed");
   };
 
-  const Row=({name,src,done,onCharge})=>(
-    <div style={{display:"flex",alignItems:"center",gap:12,background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",marginBottom:9,border:`1.5px solid ${done?"rgba(90,160,80,0.3)":"rgba(255,255,255,0.9)"}`,backdropFilter:"blur(8px)"}}>
-      <button onClick={()=>!done&&onCharge()} style={{width:30,height:30,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.4)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>{done?"✓":""}</button>
-      <div style={{flex:1}}>
-        <div style={{color:done?"#9A9080":"#1A1A10",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.35}}>{name}</div>
-        {src&&<div style={{color:"#9A9080",fontSize:11,marginTop:2}}>{src}</div>}
+  // AI picks — looks at tasks not completed in required time
+  const getAiSugg=async()=>{
+    if(!allActive.length){showToast("Add tasks to Prioritizer or Matrix first!");return;}
+    setAiLoad(true);setAiSugg([]);setAiSuggDetail({});
+    const taskList=allStale.concat(allActive.filter(t=>!allStale.find(s=>s.id===t.id))).slice(0,12)
+      .map(t=>`id:${t.id} "${t.name}" from:${t.src} days_old:${Math.floor((now-(t.touched||t.id||now))/86400000)}`).join("\n");
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,
+          messages:[{role:"user",content:`You are a gentle productivity assistant. Review these tasks and identify which ones the person is most likely avoiding. For each suggestion include whether to delete (if clearly irrelevant/outdated) or schedule (pick it for today's charge). Return JSON array of max 4: [{id:number,name:string,reason:string,action:"delete"|"schedule"|"charge",src:string}]. Be warm, not judgmental.\n\nTasks:\n${taskList}`}]})});
+      const j=await res.json();
+      const picks=JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
+      setAiSugg(picks);
+    }catch{showToast("AI unavailable — try again");}
+    setAiLoad(false);
+  };
+
+  // AI Morning Briefing
+  const getBriefing=async()=>{
+    setBriefingLoading(true);setBriefingText("");
+    const priTasks=allPriTasks.slice(0,5).map(t=>t.name).join(", ");
+    const rewardMsg=rewardName?`Reward: "${rewardName}" — ${daysUntilReward===0?"UNLOCKED today!":daysUntilReward===1?"1 day away!":daysUntilReward+" days away"}`:"No reward set";
+    const d=new Date();
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:350,
+          messages:[{role:"user",content:`Create a warm, personal 3-paragraph morning briefing. Today: ${d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}. Daily target: ${target} tasks. Today's charged: ${charged.length}. Priority tasks: ${priTasks||"none"}. ${rewardMsg}. Streak: ${data.streak} days. Be encouraging, friendly, mention the reward if close. Under 200 words.`}]})});
+      const j=await res.json();
+      setBriefingText(j.content?.[0]?.text||"Good morning! Let's have a great day 🌿");
+    }catch{setBriefingText("Good morning! Your tasks are ready — let's charge through today 🌿");}
+    setBriefingLoading(false);
+  };
+
+  // Reward photo upload
+  const handleRewardPhoto=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const r=new FileReader();
+    r.onload=ev=>setRewardDraft(d=>({...d,photo:ev.target.result}));
+    r.readAsDataURL(file);
+  };
+
+  const Row=({task,done,onCharge,showActions})=>(
+    <div style={{background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 14px",marginBottom:9,border:`1.5px solid ${done?"rgba(90,160,80,0.3)":"rgba(255,255,255,0.9)"}`,backdropFilter:"blur(8px)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>!done&&onCharge()} style={{width:30,height:30,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.4)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>{done?"✓":""}</button>
+        <div style={{flex:1}}>
+          <div style={{color:done?"#9A9080":"#1A1A10",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.35}}>{task.name||task.text}</div>
+          {task.src&&<div style={{color:"#9A9080",fontSize:11,marginTop:2}}>{task.src}</div>}
+        </div>
+        {!done&&<span style={{fontSize:16}}>⚡</span>}
       </div>
-      {!done&&<span style={{fontSize:18}}>⚡</span>}
+      {showActions&&!done&&(
+        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+          <button onClick={()=>toPri(task)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>📋 → Prioritizer</button>
+          <button onClick={()=>toMatrix(task)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>⚖️ → Matrix</button>
+          <button onClick={()=>deleteTask(task)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>🗑 Remove</button>
+        </div>
+      )}
     </div>
   );
 
@@ -8209,30 +8301,22 @@ function TheCharge({priData,matrixData,setScreen}){
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
       {/* ── Header ── */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 16px",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"18px 20px 14px",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
         <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
           <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",marginRight:8}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.1}}>The Charge ✨</div>
-            <div style={{fontSize:14,color:"#8A8070",marginTop:3,fontWeight:400}}>Tackle what you've been avoiding</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3}}>The Charge ✨</div>
+            <div style={{fontSize:13,color:"#8A8070",marginTop:2}}>Tackle what you've been avoiding</div>
           </div>
-          <button style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",color:"#5A7848",fontSize:20}}>🌿</button>
+          {/* Morning Briefing button */}
+          <button onClick={()=>{setBriefingOpen(true);getBriefing();}} style={{background:"rgba(230,200,140,0.20)",border:"1px solid rgba(200,170,100,0.3)",borderRadius:12,width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>☀️</button>
         </div>
-
-        {/* Tabs — Today | Week | Setup */}
+        {/* Tabs */}
         <div style={{display:"flex",gap:4,background:"rgba(90,80,60,0.07)",borderRadius:100,padding:"4px",marginTop:12}}>
           {[["today","Today"],["week","Week"],["settings","Setup"]].map(([k,l])=>(
-            <button key={k} onClick={()=>setView(k)} style={{
-              flex:1,padding:"10px 8px",
-              background:view===k?"#6A8858":"transparent",
-              color:view===k?"#fff":"#6A6050",
-              border:"none",borderRadius:100,
-              fontWeight:view===k?700:500,
-              fontSize:14,cursor:"pointer",
-              transition:"all 0.15s",
-            }}>{l}</button>
+            <button key={k} onClick={()=>setView(k)} style={{flex:1,padding:"10px 8px",background:view===k?"#6A8858":"transparent",color:view===k?"#fff":"#6A6050",border:"none",borderRadius:100,fontWeight:view===k?700:500,fontSize:14,cursor:"pointer",transition:"all 0.15s"}}>{l}</button>
           ))}
         </div>
       </div>
@@ -8241,32 +8325,19 @@ function TheCharge({priData,matrixData,setScreen}){
 
         {/* ══ TODAY ══ */}
         {view==="today"&&<>
-
-          {/* Build the light card */}
+          {/* Build the light */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:12,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
-              {/* Purple orb */}
-              <div style={{
-                width:44,height:44,borderRadius:"50%",flexShrink:0,
-                background:hitTarget
-                  ?"radial-gradient(circle at 38% 32%,#e8d0ff,#9b59b6)"
-                  :"radial-gradient(circle at 38% 32%,rgba(180,140,240,0.7),rgba(120,60,200,0.4))",
-                boxShadow:hitTarget
-                  ?"0 0 24px rgba(155,89,182,0.7),0 0 8px rgba(155,89,182,0.4)"
-                  :"0 0 18px rgba(130,70,200,0.35),0 0 6px rgba(130,70,200,0.2)",
-              }}/>
+              <div style={{width:44,height:44,borderRadius:"50%",flexShrink:0,background:hitTarget?"radial-gradient(circle at 38% 32%,#e8d0ff,#9b59b6)":"radial-gradient(circle at 38% 32%,rgba(180,140,240,0.7),rgba(120,60,200,0.4))",boxShadow:hitTarget?"0 0 24px rgba(155,89,182,0.7)":"0 0 18px rgba(130,70,200,0.35)"}}/>
               <div style={{flex:1}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:2}}>
-                  {hitTarget?"Light earned today! ⚡":"Build the light ⚡"}
-                </div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:2}}>{hitTarget?"Light earned today! ⚡":"Build the light ⚡"}</div>
                 <div style={{fontSize:13,color:"#7A7060"}}>
-                  {hitTarget
-                    ?`${charged.length} tasks charged — light blazing ✨`
-                    :`${target-charged.length} more task${target-charged.length!==1?"s":""} to earn today's light`}
+                  {hitTarget?`${charged.length} tasks charged ✨`:`${target-charged.length} more task${target-charged.length!==1?"s":""} to earn today's light`}
                 </div>
+                {/* Target task name */}
+                {data.targetTask&&<div style={{fontSize:12,color:"#5A7848",marginTop:2,fontStyle:"italic"}}>Focus: {data.targetTask}</div>}
               </div>
             </div>
-            {/* Progress bar */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <div style={{flex:1,height:8,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden"}}>
                 <div style={{height:"100%",width:`${pct}%`,background:hitTarget?"#5A7848":"#6A8858",borderRadius:100,transition:"width 0.4s"}}/>
@@ -8276,56 +8347,60 @@ function TheCharge({priData,matrixData,setScreen}){
           </div>
 
           {/* Reward card */}
-          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:16,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-              <span style={{fontSize:28}}>🎁</span>
-              <div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>
-                  {data.weeklyAward?data.weeklyAward:"No reward set yet — tap Setup"}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}>
+              {data.reward?.photo
+                ?<img src={data.reward.photo} alt="" style={{width:52,height:52,borderRadius:14,objectFit:"cover",flexShrink:0}}/>
+                :<span style={{fontSize:30,flexShrink:0}}>🎁</span>}
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>
+                  {rewardName||<span style={{color:"#8A8070"}}>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline"}}>tap Setup</button></span>}
                 </div>
-                <div style={{fontSize:13,color:"#7A7060",marginTop:2}}>
-                  {Math.max(0,5-daysHit)} more lights to unlock
+                <div style={{fontSize:12,color:"#7A7060",marginTop:2}}>
+                  {rewardUnlocked
+                    ?<span style={{color:"#3A8020",fontWeight:700}}>🎉 Reward unlocked — you've earned it!</span>
+                    :`${daysUntilReward} more day${daysUntilReward!==1?"s":""} to unlock${daysUntilReward===1?" — almost there! 🌿":""}`}
                 </div>
+                {data.reward?.cost&&<div style={{fontSize:11,color:"#8A8070",marginTop:2}}>💰 Cost: {data.reward.cost}</div>}
+                {data.reward?.url&&<a href={data.reward.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#5A7848",marginTop:2,display:"block"}}>🔗 View</a>}
               </div>
-            </div>
-            {/* 5 circle progress lights */}
-            <div style={{display:"flex",gap:12}}>
-              {[0,1,2,3,4].map(i=>(
-                <div key={i} style={{
-                  width:36,height:36,borderRadius:"50%",
-                  border:`2.5px solid ${i<daysHit?"#6A8858":"rgba(90,80,60,0.2)"}`,
-                  background:i<daysHit?"rgba(106,136,88,0.18)":"transparent",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                }}>{i<daysHit&&<div style={{width:14,height:14,borderRadius:"50%",background:"#6A8858"}}/>}</div>
-              ))}
+              {/* Progress circles */}
+              <div style={{display:"flex",gap:5,flexShrink:0}}>
+                {Array.from({length:rewardFreq}).map((_,i)=>(
+                  <div key={i} style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${i<daysHit?"#6A8858":"rgba(90,80,60,0.2)"}`,background:i<daysHit?"rgba(106,136,88,0.25)":"transparent"}}/>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Stale/overdue tasks */}
+          {/* Overdue tasks */}
           {allStale.length>0&&(
             <div style={{marginBottom:14}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                <span style={{fontFamily:"Georgia,serif",color:"#7A5820",fontWeight:700,fontSize:15}}>⏰ Overdue tasks</span>
-                <span style={{background:"rgba(192,120,40,0.12)",color:"#7A5820",borderRadius:100,padding:"2px 10px",fontSize:12,fontWeight:600}}>{allStale.length}</span>
-              </div>
-              {allStale.map((t,i)=>(<Row key={i} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}/>))}
+              <div style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,color:"#7A5820",marginBottom:10}}>⏰ Been sitting a while…</div>
+              {allStale.map(t=><Row key={t.id} task={t} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)} showActions/>)}
             </div>
           )}
 
           {/* What are you putting off? */}
           <div style={{marginBottom:16}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:12}}>What are you putting off?</div>
-            <div style={{display:"flex",gap:10,alignItems:"center",background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"4px 4px 4px 20px",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
-              <input value={whatOff} onChange={e=>setWhatOff(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addFrog()}
-                placeholder="Write what you've been avoiding..."
-                style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:15,fontWeight:400}}/>
-              <button onClick={addFrog} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:44,height:44,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0,boxShadow:"0 3px 12px rgba(90,120,72,0.38)"}}>+</button>
+            <div style={{display:"flex",gap:10,alignItems:"center",background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"4px 4px 4px 20px",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)",marginBottom:8}}>
+              <input value={whatOff} onChange={e=>setWhatOff(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addFrog()} placeholder="Write what you've been avoiding..." style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:15}}/>
+              <button onClick={addFrog} style={{background:"#7c5cbf",color:"#fff",border:"none",borderRadius:"50%",width:44,height:44,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0,boxShadow:"0 3px 12px rgba(124,92,191,0.38)"}}>+</button>
             </div>
+            {/* Transfer buttons */}
+            {frogs.length>0&&<div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+              <button onClick={()=>frogs.filter(f=>!f.done).forEach(f=>toPri({name:f.text}))} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>📋 All → Prioritizer</button>
+              <button onClick={()=>frogs.filter(f=>!f.done).forEach(f=>toMatrix({text:f.text}))} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>⚖️ All → Matrix</button>
+            </div>}
             {frogs.map(f=>(
-              <div key={f.id} style={{display:"flex",alignItems:"center",gap:12,background:f.done?"rgba(90,160,80,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 16px",marginTop:9,border:`1px solid ${f.done?"rgba(90,160,80,0.25)":"rgba(255,255,255,0.9)"}`,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
+              <div key={f.id} style={{display:"flex",alignItems:"center",gap:12,background:f.done?"rgba(90,160,80,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 16px",marginBottom:8,border:`1px solid ${f.done?"rgba(90,160,80,0.25)":"rgba(255,255,255,0.9)"}`,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
                 <button onClick={()=>toggleFrog(f.id)} style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${f.done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:f.done?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{f.done?"✓":""}</button>
                 <span style={{flex:1,color:f.done?"#A0907A":"#1A1A10",fontWeight:600,fontSize:14,textDecoration:f.done?"line-through":"none"}}>{f.text}</span>
-                {!f.done&&<span style={{fontSize:16}}>⚡</span>}
+                {!f.done&&<>
+                  <button onClick={()=>toPri({name:f.text})} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#5A7848"}} title="Send to Prioritizer">📋</button>
+                  <button onClick={()=>toMatrix({text:f.text})} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#5A7848"}} title="Send to Matrix">⚖️</button>
+                </>}
                 <button onClick={()=>delFrog(f.id)} style={{background:"transparent",color:"rgba(192,57,43,0.5)",border:"none",cursor:"pointer",fontSize:14,padding:0}}>🗑</button>
               </div>
             ))}
@@ -8334,30 +8409,38 @@ function TheCharge({priData,matrixData,setScreen}){
           {/* AI Task Picks */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
-              <span style={{fontSize:26}}>🤖</span>
+              <span style={{fontSize:24}}>🤖</span>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",flex:1}}>AI Task Picks</div>
-              <button onClick={getAiSugg} disabled={aiLoad} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"9px 20px",fontWeight:700,fontSize:14,cursor:"pointer",opacity:aiLoad?0.6:1,boxShadow:"0 2px 10px rgba(90,120,72,0.28)"}}>
+              <button onClick={getAiSugg} disabled={aiLoad} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"9px 18px",fontWeight:700,fontSize:13,cursor:"pointer",opacity:aiLoad?0.6:1,boxShadow:"0 2px 10px rgba(90,120,72,0.28)"}}>
                 {aiLoad?"Thinking…":"Ask AI"}
               </button>
             </div>
-            {aiSugg.length>0?aiSugg.map((s,i)=>(
-              <Row key={i} name={s} src="🤖 AI pick" done={charged.includes(s)} onCharge={()=>chargeIt(s)}/>
-            )):(
-              <div style={{color:"#8A8070",fontSize:13,lineHeight:1.6}}>Tap "Ask AI" — it'll study your tasks and pick the ones you're most likely avoiding.</div>
-            )}
-
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:aiSugg.length?10:0,lineHeight:1.6}}>
+              Looks at tasks not completed across Charge, Matrix & Prioritizer — suggests charge, schedule or delete.
+            </div>
+            {aiSugg.map((s,i)=>{
+              const task=allActive.find(t=>t.id===s.id)||{name:s.name||s.text,src:s.src};
+              return(
+                <div key={i} style={{background:"rgba(248,245,236,0.85)",borderRadius:18,padding:"12px 14px",marginBottom:8,border:"1px solid rgba(90,120,72,0.12)"}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{s.name}</div>
+                  <div style={{fontSize:12,color:"#5A7040",fontStyle:"italic",marginBottom:8}}>"{s.reason}"</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {s.action==="charge"&&<button onClick={()=>chargeIt(s.name)} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>⚡ Charge it</button>}
+                    {s.action==="schedule"&&<button onClick={()=>toPri(task)} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Schedule</button>}
+                    {s.action==="delete"&&<button onClick={()=>deleteTask(task)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>}
+                    <button onClick={()=>chargeIt(s.name)} style={{background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"none",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>⚡ Charge anyway</button>
+                    <button onClick={()=>toMatrix(task)} style={{background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"none",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>⚖️ → Matrix</button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Charged today summary */}
+          {/* Charged today */}
           {charged.length>0&&(
-            <div style={{background:"rgba(90,160,80,0.08)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(90,160,80,0.2)"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A6020",fontSize:15,marginBottom:10}}>✅ Charged today ({charged.length})</div>
-              {charged.map((n,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<charged.length-1?"1px solid rgba(90,120,72,0.12)":"none"}}>
-                  <span style={{fontSize:14}}>⚡</span>
-                  <span style={{fontSize:13,fontWeight:600,color:"#3A5020"}}>{n}</span>
-                </div>
-              ))}
+            <div style={{background:"rgba(90,160,80,0.08)",borderRadius:22,padding:"14px 16px",marginBottom:14,border:"1px solid rgba(90,160,80,0.2)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A6020",fontSize:14,marginBottom:8}}>✅ Charged today ({charged.length})</div>
+              {charged.map((n,i)=><div key={i} style={{fontSize:13,color:"#3A5020",padding:"4px 0",borderBottom:i<charged.length-1?"1px solid rgba(90,120,72,0.10)":"none",display:"flex",alignItems:"center",gap:8}}><span>⚡</span><span>{n}</span></div>)}
             </div>
           )}
         </>}
@@ -8365,39 +8448,42 @@ function TheCharge({priData,matrixData,setScreen}){
         {/* ══ WEEK ══ */}
         {view==="week"&&<>
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"22px 20px",marginBottom:14,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
-            <OrbOfLight pct={weekPcts.reduce((a,b)=>a+b,0)/7} size={140}/>
+            <OrbOfLight pct={weekPcts.reduce((a,b)=>a+b,0)/7} size={130}/>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginTop:12}}>Weekly Light</div>
-            <div style={{color:"#8A8070",fontSize:13,marginTop:4}}>{daysHit}/7 days fully charged · {weekTotal} total tasks</div>
-            {daysHit>=5&&data.weeklyAward&&(
-              <div style={{marginTop:14,background:"rgba(90,120,72,0.10)",borderRadius:16,padding:"12px 18px"}}>
-                <div style={{fontFamily:"Georgia,serif",color:"#3A6020",fontWeight:700,fontSize:15}}>🎁 Weekly reward unlocked!</div>
-                <div style={{color:"#5A7040",fontSize:14,marginTop:4}}>{data.weeklyAward}</div>
+            <div style={{color:"#8A8070",fontSize:13,marginTop:4}}>{daysHit}/{rewardFreq} days to unlock · {weekTotal} total tasks</div>
+            {rewardUnlocked&&rewardName&&(
+              <div style={{marginTop:14,background:"rgba(90,120,72,0.10)",borderRadius:16,padding:"12px 18px",border:"1px solid rgba(90,120,72,0.2)"}}>
+                <div style={{fontFamily:"Georgia,serif",color:"#3A6020",fontWeight:700,fontSize:15}}>🎁 Reward unlocked!</div>
+                <div style={{color:"#5A7040",fontSize:14,marginTop:4}}>{rewardName}</div>
+                {data.reward?.url&&<a href={data.reward.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#5A7848",marginTop:4,display:"block"}}>🔗 View</a>}
+              </div>
+            )}
+            {daysUntilReward===1&&rewardName&&!rewardUnlocked&&(
+              <div style={{marginTop:10,background:"rgba(230,200,140,0.15)",borderRadius:14,padding:"10px 14px",border:"1px solid rgba(200,170,100,0.25)"}}>
+                <div style={{fontFamily:"Georgia,serif",color:"#7A5820",fontWeight:700,fontSize:13}}>🌟 One more day — you're so close!</div>
+                <div style={{color:"#8A7060",fontSize:12,marginTop:2}}>"{rewardName}" is almost yours 🌿</div>
               </div>
             )}
           </div>
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:14}}>This week</div>
             <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
-              {weekDays.map((d,i)=>{
-                const p=weekPcts[i];
-                const isToday=d===today;
-                return(
-                  <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                    <div style={{width:"100%",height:60,background:"rgba(90,80,60,0.08)",borderRadius:8,display:"flex",alignItems:"flex-end",overflow:"hidden"}}>
-                      <div style={{width:"100%",height:`${Math.max(4,p)}%`,background:p>=100?"#5A7848":p>0?"#8AAA78":"rgba(90,80,60,0.1)",borderRadius:"6px 6px 0 0",transition:"height 0.4s"}}/>
-                    </div>
-                    <div style={{fontSize:9,fontWeight:isToday?800:500,color:isToday?"#3A6020":"#9A9080"}}>{dayNames[new Date(d).getDay()]}</div>
+              {weekDays.map((d,i)=>{const p=weekPcts[i];const isToday=d===today;return(
+                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+                  <div style={{width:"100%",height:60,background:"rgba(90,80,60,0.08)",borderRadius:8,display:"flex",alignItems:"flex-end",overflow:"hidden"}}>
+                    <div style={{width:"100%",height:`${Math.max(4,p)}%`,background:p>=100?"#5A7848":p>0?"#8AAA78":"rgba(90,80,60,0.1)",borderRadius:"6px 6px 0 0",transition:"height 0.4s"}}/>
                   </div>
-                );
-              })}
+                  <div style={{fontSize:9,fontWeight:isToday?800:500,color:isToday?"#3A6020":"#9A9080"}}>{dayNames[new Date(d).getDay()]}</div>
+                </div>
+              );})}
             </div>
           </div>
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{fontSize:40}}>🔥</div>
+              <div style={{fontSize:36}}>🔥</div>
               <div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20}}>{data.streak} day streak</div>
-                <div style={{color:"#8A8070",fontSize:13}}>Days in a row hitting your target</div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:18}}>{data.streak} day streak</div>
+                <div style={{color:"#8A8070",fontSize:13}}>Days hitting your target in a row</div>
               </div>
             </div>
           </div>
@@ -8405,37 +8491,127 @@ function TheCharge({priData,matrixData,setScreen}){
 
         {/* ══ SETUP ══ */}
         {view==="settings"&&<>
+          {/* Daily target with task link */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:14}}>⚡ Daily target</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:4}}>⚡ Daily target</div>
+            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>How many tasks to charge through each day?</div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
               {[1,2,3,4,5].map(n=>(
-                <button key={n} onClick={()=>upd({dailyTarget:n})} style={{flex:1,minWidth:48,padding:"12px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:15,cursor:"pointer"}}>{n}</button>
+                <button key={n} onClick={()=>upd({dailyTarget:n})} style={{flex:1,minWidth:48,padding:"14px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:17,cursor:"pointer"}}>{n}</button>
               ))}
             </div>
+            {/* Focus task */}
+            <div style={{fontFamily:"Georgia,serif",fontWeight:600,color:"#3A3020",fontSize:14,marginBottom:8}}>What's your main focus task? (optional)</div>
+            <input value={data.targetTask||""} onChange={e=>upd({targetTask:e.target.value})} placeholder="e.g. Work on Reframe app prototype…"
+              style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.88)"}}/>
+            {/* Link to Prioritizer task */}
+            {allPriTasks.length>0&&(
+              <select value={data.targetLinked||""} onChange={e=>upd({targetLinked:e.target.value,targetTask:e.target.value?allPriTasks.find(t=>t.id===parseInt(e.target.value))?.name||"":data.targetTask})}
+                style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(248,245,236,0.85)"}}>
+                <option value="">Or link to a Prioritizer task…</option>
+                {allPriTasks.map(t=><option key={t.id} value={t.id}>{t.name} ({t.src})</option>)}
+              </select>
+            )}
+            {/* Link to Matrix task */}
+            {allMatrixTasks.length>0&&(
+              <select value={""} onChange={e=>{if(e.target.value){const t=allMatrixTasks.find(x=>x.id===parseInt(e.target.value));if(t)upd({targetTask:t.text});}}} style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.12)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(248,245,236,0.85)",marginTop:8}}>
+                <option value="">Or link to a Matrix task…</option>
+                {allMatrixTasks.map(t=><option key={t.id} value={t.id}>{t.text} ({t.src})</option>)}
+              </select>
+            )}
           </div>
+
+          {/* Reward setup */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:6}}>🎁 Weekly reward</div>
-            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>Hit your target 5+ days to unlock it</div>
-            {editAward?(
-              <>
-                <input value={draftAward} onChange={e=>setDraftAward(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(upd({weeklyAward:draftAward}),setEditAward(false))}
-                  placeholder="e.g. Movie night, massage..."
-                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
-                <div style={{display:"flex",gap:8}}>
-                  <button onClick={()=>setEditAward(false)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                  <button onClick={()=>{upd({weeklyAward:draftAward});setEditAward(false);}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save reward</button>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:4}}>🎁 Your reward</div>
+            {/* Daily or weekly toggle */}
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              {["daily","weekly"].map(t=>(
+                <button key={t} onClick={()=>upd({rewardType:t})} style={{flex:1,padding:"10px",background:data.rewardType===t?"#6A8858":"rgba(248,245,236,0.95)",color:data.rewardType===t?"#fff":"#3A3020",border:`1.5px solid ${data.rewardType===t?"#6A8858":"rgba(90,80,60,0.15)"}`,borderRadius:14,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                  {t==="daily"?"Daily":"Weekly"}
+                </button>
+              ))}
+            </div>
+            {/* Days to unlock */}
+            <div style={{fontSize:13,color:"#8A8070",marginBottom:10}}>Unlock after hitting target for:</div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
+              {(data.rewardType==="daily"?[1]:[2,3,4,5,6,7]).map(n=>(
+                <button key={n} onClick={()=>upd({rewardFreq:n})} style={{flex:1,padding:"10px 6px",background:rewardFreq===n?"#6A8858":"rgba(248,245,236,0.95)",color:rewardFreq===n?"#fff":"#3A3020",border:`1.5px solid ${rewardFreq===n?"#6A8858":"rgba(90,80,60,0.15)"}`,borderRadius:14,fontWeight:700,fontSize:15,cursor:"pointer"}}>{n}{n===1?" day":" days"}</button>
+              ))}
+            </div>
+
+            {/* Reward editor */}
+            {!editReward?(
+              <button onClick={()=>{setRewardDraft({...(data.reward||{})});setEditReward(true);}} style={{width:"100%",padding:"13px",background:rewardName?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:rewardName?"#3A6020":"#8A8070",border:`1.5px dashed ${rewardName?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:18,fontWeight:600,fontSize:14,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                {data.reward?.photo&&<img src={data.reward.photo} alt="" style={{width:40,height:40,borderRadius:10,objectFit:"cover",flexShrink:0}}/>}
+                <div>
+                  <div>{rewardName||"+ Set your reward"}</div>
+                  {data.reward?.cost&&<div style={{fontSize:12,color:"#8A8070"}}>💰 {data.reward.cost}</div>}
                 </div>
-              </>
-            ):(
-              <button onClick={()=>{setDraftAward(data.weeklyAward||"");setEditAward(true);}} style={{width:"100%",padding:"13px",background:data.weeklyAward?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:data.weeklyAward?"#3A6020":"#8A8070",border:`1.5px dashed ${data.weeklyAward?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
-                {data.weeklyAward?`🎁 ${data.weeklyAward}`:"+ Set your weekly reward"}
+                <span style={{marginLeft:"auto",color:"#8A8070"}}>✏️</span>
               </button>
+            ):(
+              <div>
+                <input value={rewardDraft.name} onChange={e=>setRewardDraft(d=>({...d,name:e.target.value}))} placeholder="e.g. New book, massage, takeaway…"
+                  style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.88)"}}/>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                  <input value={rewardDraft.cost} onChange={e=>setRewardDraft(d=>({...d,cost:e.target.value}))} placeholder="💰 Cost (optional)"
+                    style={{padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+                  <input value={rewardDraft.url} onChange={e=>setRewardDraft(d=>({...d,url:e.target.value}))} placeholder="🔗 Link (optional)"
+                    style={{padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+                </div>
+                {/* Photo upload */}
+                <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1.5px dashed rgba(90,120,72,0.22)",cursor:"pointer",marginBottom:8}}>
+                  {rewardDraft.photo?<img src={rewardDraft.photo} alt="" style={{width:44,height:44,borderRadius:10,objectFit:"cover"}}/>:<span style={{fontSize:24}}>📷</span>}
+                  <span style={{fontSize:13,color:"#5A7848",fontWeight:600}}>{rewardDraft.photo?"Change photo":"Add a photo of your reward"}</span>
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={handleRewardPhoto}/>
+                </label>
+                {/* Budget link */}
+                <div style={{fontSize:12,color:"#8A8070",marginBottom:10,lineHeight:1.6}}>
+                  💡 Add a cost to track it in your Budget — open Budget to link this reward as a savings goal.
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setEditReward(false)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"12px",fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                  <button onClick={()=>{upd({reward:rewardDraft,weeklyAward:rewardDraft.name});setEditReward(false);showToast("🎁 Reward saved!");}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"12px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save Reward</button>
+                </div>
+              </div>
             )}
           </div>
         </>}
-
       </div>
-      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:"rgba(42,56,28,0.92)",color:"#fff",borderRadius:100,padding:"11px 22px",fontWeight:700,fontSize:14,zIndex:500,whiteSpace:"nowrap",backdropFilter:"blur(8px)",boxShadow:"0 4px 20px rgba(0,0,0,0.18)"}}>{toast}</div>}
+
+      {/* ── MORNING BRIEFING MODAL ── */}
+      {briefingOpen&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setBriefingOpen(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(200,170,100,0.4)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                <span style={{fontSize:26}}>☀️</span>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19}}>Morning Briefing</div>
+                <button onClick={getBriefing} style={{marginLeft:"auto",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Refresh</button>
+              </div>
+              <div style={{fontSize:12,color:"#8A8070"}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {briefingLoading?<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:14}}>🌿 Preparing your briefing…</div>
+                :<div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:14}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#1A2810",lineHeight:1.85}}>{briefingText}</div>
+                </div>}
+              {/* Quick links */}
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {[["📋","prioritizer"],["⚖️","matrix"],["🎯","goals"],["📅","Google Calendar","https://calendar.google.com"]].map(([icon,screen,url])=>(
+                  url
+                    ?<a key={screen} href={url} target="_blank" rel="noreferrer" style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,textDecoration:"none"}}>{icon} Calendar</a>
+                    :<button key={screen} onClick={()=>{setBriefingOpen(false);setScreen&&setScreen(screen);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{icon} {screen.charAt(0).toUpperCase()+screen.slice(1)}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:"rgba(42,56,28,0.92)",color:"#fff",borderRadius:100,padding:"11px 22px",fontWeight:700,fontSize:14,zIndex:500,whiteSpace:"nowrap",backdropFilter:"blur(8px)"}}>{toast}</div>}
     </div>
   );
 }
@@ -8944,7 +9120,7 @@ export default function App() {
   if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} matrixData={matrixData} goalsData={goalsData} setGoalsData={setGoalsData} ideasData={ideasData} setIdeasData={setIdeasData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
-  if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen}/><NavBar current="tools" setScreen={setScreen}/></div></>);
+  if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData}/><NavBar current="tools" setScreen={setScreen}/></div></>);
   if(screen==="rest") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
 
   return (
@@ -9103,6 +9279,15 @@ export default function App() {
         {(()=>{const {word,emoji}=getGreeting();return(<div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2}}>{word}{userName?`, ${userName}`:""} {emoji}</div>);})()}
         <div style={{fontSize:12,color:"#8A8070",marginTop:4}}>Your calm space is ready</div>
         {TESTING_MODE&&<div style={{marginTop:8,display:"inline-flex",alignItems:"center",gap:6,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.25)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
+        {/* Morning briefing shortcut */}
+        <button onClick={()=>setScreen("charge")} style={{marginTop:12,width:"100%",padding:"13px 18px",background:"linear-gradient(135deg,rgba(240,220,160,0.30),rgba(200,220,170,0.25))",border:"1.5px solid rgba(200,180,100,0.30)",borderRadius:22,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
+          <span style={{fontSize:24}}>☀️</span>
+          <div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>Today's Briefing</div>
+            <div style={{fontSize:11,color:"#8A8070",marginTop:1}}>Your tasks, reward & daily charge</div>
+          </div>
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{marginLeft:"auto",flexShrink:0}}><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
+        </button>
       </div>
       <div style={{padding:"4px 12px 2px",textAlign:"center"}}>
         <span style={{fontSize:11,color:"rgba(60,56,40,0.45)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
