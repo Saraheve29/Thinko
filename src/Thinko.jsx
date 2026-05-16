@@ -4008,20 +4008,70 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
   const handlePdf=async(e)=>{
     const file=e.target.files[0];if(!file)return;
     setPdfFile(file);setPdfPodcast("");setPdfLoading(true);
-    // Read PDF as text via FileReader (text extraction)
+
     const reader=new FileReader();
+
+    // PDFs are binary — read as base64 and send to Claude with document type
+    // Text files can be read as text directly
+    const isPDF=file.type==="application/pdf"||file.name.toLowerCase().endsWith(".pdf");
+
     reader.onload=async(ev)=>{
-      const text=ev.target.result.slice(0,3000); // first 3000 chars
       try{
-        const res=await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:`Convert this PDF text into a warm, engaging 2-minute podcast script. Spoken naturally, no headers, flowing narration:\n\n${text}`}]})
-        });
-        setPdfPodcast(j.content?.[0]?.text||"Could not convert.");
-      }catch{setPdfPodcast("AI unavailable.");}
-      setPdfLoading(false);
+        let prompt;
+        if(isPDF){
+          // Send as base64 document — Claude can read PDFs natively
+          const base64=ev.target.result.split(",")[1]; // strip data:...;base64,
+          const res=await fetch("https://api.anthropic.com/v1/messages",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+              model:"claude-sonnet-4-20250514",
+              max_tokens:700,
+              messages:[{
+                role:"user",
+                content:[
+                  {type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},
+                  {type:"text",text:"Convert the content of this PDF into a warm, engaging 2-minute podcast script. Spoken naturally, no headers, flowing narration like a friend sharing what they learned."}
+                ]
+              }]
+            })
+          });
+          if(res.ok){
+            const j=await res.json();
+            const txt=j.content?.[0]?.text;
+            if(txt){setPdfPodcast(txt);setPdfLoading(false);return;}
+          }
+          // Fallback: if Claude PDF reading fails, re-read as text
+          const r2=new FileReader();
+          r2.onload=async(ev2)=>{
+            const text=(ev2.target.result||"").slice(0,3000).replace(/[^\x20-\x7E\n]/g," ").trim();
+            if(text.length<50){
+              setPdfPodcast("Could not read this PDF — it may be a scanned image.\n\n📱 Android: open the PDF in Google Drive, tap ⋮ → Open with → Google Docs, then copy the text and paste it into a .txt file.\n\n🍎 iPhone: open in Files app, tap Share → Save to Files as .txt, then upload that here.");
+            }else{
+              const result=await callAI(`Convert this text into a warm 2-minute podcast script. Flowing narration, no headers:\n\n${text}`,700);
+              setPdfPodcast(result||"Could not convert — please try saving as a .txt file.");
+            }
+            setPdfLoading(false);
+          };
+          r2.readAsText(file);
+        }else{
+          // Plain text file — works perfectly on all devices
+          const text=(ev.target.result||"").slice(0,4000);
+          const result=await callAI(`Convert this text into a warm, engaging 2-minute podcast script. Spoken naturally, flowing narration like a friend sharing what they learned:\n\n${text}`,700);
+          setPdfPodcast(result||"Could not convert — try again.");
+          setPdfLoading(false);
+        }
+      }catch{
+        setPdfPodcast("Something went wrong reading the file.\n\n📱 Android tip: open the PDF in Google Drive → tap ⋮ → Open with Google Docs — it'll extract the text. Copy it into a .txt file and upload that instead.\n\n🍎 iPhone tip: open in Files app and share as .txt.");
+        setPdfLoading(false);
+      }
     };
-    reader.readAsText(file);
+
+    if(isPDF){
+      reader.readAsDataURL(file); // base64 for PDFs
+    }else{
+      reader.readAsText(file); // plain text for .txt files
+    }
   };
 
   const savePodcastToVault=(text,title)=>{
@@ -4037,7 +4087,7 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
     {id:"filing",  icon:"🗄️", name:"Filing Cabinet", desc:`${totalDrawers} drawers`,      color:"#486878",  action:()=>setNotesMode("filing")},
     {id:"podcast", icon:"🎙️", name:"Podcast Recap",  desc:"AI voice summaries",          color:"#6A5870",  action:()=>setPodcastOpen(true)},
     {id:"briefing",icon:"☀️", name:"Morning Briefing",desc:"Personal AI assistant",     color:"#7A5838",  action:()=>{setBriefingOpen(true);generateBriefing();}},
-    {id:"pdf",     icon:"📄", name:"PDF → Podcast",  desc:"Upload & convert",            color:"#486050",  action:()=>document.getElementById("vaultPdfIn").click()},
+    {id:"pdf",     icon:"📄", name:"PDF → Podcast",  desc:"PDF or .txt file → podcast script",  color:"#486050",  action:()=>document.getElementById("vaultPdfIn").click()},
   ];
   const orderedSections=dragOrder.map(i=>SECTIONS[i]);
 
@@ -4140,7 +4190,7 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
         </div>
 
         {/* Hidden PDF input */}
-        <input id="vaultPdfIn" type="file" accept=".pdf,.txt" style={{display:"none"}} onChange={handlePdf}/>
+        <input id="vaultPdfIn" type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
       </div>
 
       {/* ── MORNING BRIEFING MODAL ── */}
@@ -4246,7 +4296,10 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
               <div style={{color:"#8A8070",fontSize:13}}>{pdfFile?.name}</div>
             </div>
             <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
-              {pdfLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>🌿 Converting to podcast…</div>}
+              {pdfLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>
+                🌿 Reading your file and writing podcast…<br/>
+                <span style={{fontSize:12,color:"#8A8070",marginTop:8,display:"block"}}>This may take 10–20 seconds</span>
+              </div>}
               {pdfPodcast&&!pdfLoading&&(
                 <>
                   <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:12}}>
