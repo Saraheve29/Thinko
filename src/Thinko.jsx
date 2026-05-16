@@ -4748,7 +4748,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
         <div style={{
           display:"grid",
           gridTemplateColumns:"calc(50% - 4px) calc(50% - 4px)",
-          gridTemplateRows:"calc(50vh - 90px) calc(50vh - 90px)",
+          gridTemplateRows:"calc(50vh - 135px) calc(50vh - 135px)",
           gap:8,
           width:"100%",
           boxSizing:"border-box",
