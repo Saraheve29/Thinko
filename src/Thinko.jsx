@@ -35,21 +35,41 @@ const C = {
 
 async function callAI(prompt, maxTokens=600) {
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens,messages:[{role:"user",content:prompt}]})
-    });
-    if(!r.ok){
-      const err = await r.json().catch(()=>({}));
-      console.warn("AI error:", err);
-      return null;
+    // In Claude artifact context → call Anthropic directly (proxied automatically)
+    // On Vercel deployment → call our serverless proxy /api/ai which holds the key
+    const isVercel = typeof window !== "undefined" &&
+      !window.location.hostname.includes("localhost") &&
+      !window.location.hostname.includes("127.0.0.1") &&
+      !window.location.hostname.includes("claude.ai");
+
+    if (isVercel) {
+      // Use Vercel serverless proxy — key is stored as env var on Vercel, never exposed
+      const r = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, max_tokens: maxTokens }),
+      });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j.text || null;
+    } else {
+      // Claude artifact / local — direct call, auth handled by environment
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: maxTokens,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j.content?.[0]?.text || null;
     }
-    const j = await r.json();
-    return j.content?.[0]?.text || null;
-  } catch(e) { 
-    console.warn("AI fetch failed:", e.message);
-    return null; 
+  } catch(e) {
+    console.warn("AI unavailable:", e.message);
+    return null;
   }
 }
 async function callAIJson(prompt, maxTokens=500) {
@@ -7757,17 +7777,54 @@ function Tools({setScreen,notesData,setNotesData}) {
     ];
     const flagOf=code=>CURRENCIES.find(c=>c.code===code)?.flag||"💱";
     const convert=async()=>{
-      if(!amount||isNaN(amount))return;
+      if(!amount||isNaN(amount)||parseFloat(amount)<=0)return;
       setLoading(true);setResult(null);
       try{
-        // Use free Open Exchange Rates (no key needed for latest via frankfurter)
-        const url=`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${from.toLowerCase()}.json`;
-        const res=await fetch(url,{mode:"cors"});
-        if(!res.ok)throw new Error("Rate fetch failed");
-        const converted=j.rates?.[to];
-        if(converted!=null){setResult({value:converted,rate:converted/parseFloat(amount)});setRates(j.rates);}
-        else setResult({error:"Rate unavailable for that currency pair"});
-      }catch{setResult({error:"Couldn't fetch rates — check connection"});}
+        // Try Frankfurter first — works fine from Claude artifact (no CORS there)
+        // Also works from Vercel if api/currency.js proxy is deployed
+        let resultValue=null, resultRate=null;
+
+        // Method 1: try /api/currency proxy (works on Vercel after adding api/currency.js)
+        try{
+          const r=await fetch(`/api/currency?from=${from}&to=${to}&amount=${amount}`);
+          if(r.ok){
+            const j=await r.json();
+            if(j.result!=null){resultValue=j.result;resultRate=j.rate;}
+          }
+        }catch{}
+
+        // Method 2: try Frankfurter directly (works in Claude artifact)
+        if(resultValue==null){
+          try{
+            const r=await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}&amount=${amount}`);
+            if(r.ok){
+              const j=await r.json();
+              const v=j.rates?.[to];
+              if(v!=null){resultValue=v;resultRate=v/parseFloat(amount);}
+            }
+          }catch{}
+        }
+
+        // Method 3: try without amount param then multiply manually
+        if(resultValue==null){
+          try{
+            const r=await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+            if(r.ok){
+              const j=await r.json();
+              const rate=j.rates?.[to];
+              if(rate!=null){resultRate=rate;resultValue=rate*parseFloat(amount);}
+            }
+          }catch{}
+        }
+
+        if(resultValue!=null){
+          setResult({value:resultValue,rate:resultRate});
+        } else {
+          setResult({error:`Could not get ${from}→${to} rate. Check your connection or try a different pair.`});
+        }
+      }catch(e){
+        setResult({error:"Something went wrong — check your connection"});
+      }
       setLoading(false);
     };
     const swap=()=>{setFrom(to);setTo(from);setResult(null);};
