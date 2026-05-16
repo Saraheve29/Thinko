@@ -2089,6 +2089,15 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
   const [dragSendTarget,setDragSendTarget]=useState(null);
   const [sentMsg,setSentMsg]=useState("");
   const [templateModal,setTemplateModal]=useState(false);
+  const [gapModal,setGapModal]=useState(false);
+  const [gapLoading,setGapLoading]=useState(false);
+  const [gaps,setGaps]=useState([]);
+  const [mergeModal,setMergeModal]=useState(false);
+  const [mergeTargetId,setMergeTargetId]=useState(null);
+  const [goalLinkModal,setGoalLinkModal]=useState(false);
+  const [linkedGoalId,setLinkedGoalId]=useState(map.linkedGoalId||null);
+  const [priSelectModal,setPriSelectModal]=useState(false); // selective high-priority move
+  const [priSelected,setPriSelected]=useState(new Set());
   const showMsg=msg=>{setSentMsg(msg);setTimeout(()=>setSentMsg(""),2200);};
 
   // ── BRANCH TEMPLATES ──────────────────────────────────
@@ -2125,6 +2134,87 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
     setTemplateModal(false);
     showMsg(`🏗️ "${template.name}" template applied!`);
   };
+
+  // ── AI GAP CHECK ────────────────────────────────────────
+  const checkGaps=async()=>{
+    if(!root)return;
+    setGapModal(true);setGapLoading(true);setGaps([]);
+    const outline=nodes.map(n=>`${n.parent===null?"ROOT":nodes.find(p=>p.id===n.parent)?.text||"?"} → ${n.text}`).join("\n");
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
+          messages:[{role:"user",content:`You're a gentle thinking partner reviewing a mind map. Identify 3-5 gaps, missing connections, or underdeveloped branches. Be warm, curious, and encouraging — not critical. Format each as a short question or gentle nudge.\n\nMap topic: "${root.text}"\nBranches:\n${outline}\n\nReturn ONLY a JSON array of strings (the gentle prompts). No markdown.`}]})
+      });
+      const j=await res.json();
+      setGaps(JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim()));
+    }catch{setGaps(["Couldn't reach AI — try again 🌿"]);}
+    setGapLoading(false);
+  };
+
+  // ── MERGE MAPS ─────────────────────────────────────────
+  const mergeMaps=(targetMap)=>{
+    if(!targetMap||!root)return;
+    const targetRoot=targetMap.nodes.find(n=>n.parent===null);
+    if(!targetRoot)return;
+    // Offset merged nodes so they don't overlap
+    const offsetX=300,offsetY=0;
+    const mergedNodes=targetMap.nodes.map(n=>({
+      ...n,
+      id:Date.now()+Math.random(),
+      x:n.x+offsetX,
+      y:n.y+offsetY,
+      // reparent root of target map to current root
+      parent:n.parent===null?root.id:n.parent,
+    }));
+    // Fix internal parent refs: old targetRoot id → new id
+    const oldRootId=targetRoot.id;
+    const newRootId=mergedNodes[0].id; // first node is old root
+    const fixedNodes=mergedNodes.map(n=>n.parent===oldRootId?{...n,parent:newRootId}:n);
+    setNodes(ns=>[...ns,...fixedNodes]);
+    setMergeModal(false);
+    showMsg(`🔗 "${targetMap.name}" merged in!`);
+  };
+
+  // ── MAP → GOAL PROGRESS SYNC ───────────────────────────
+  // Syncs % of branch nodes marked done → linked goal's garden growth
+  const syncGoalProgress=useCallback(()=>{
+    if(!linkedGoalId||!setGoalsData)return;
+    const branchNodes=nodes.filter(n=>n.parent!==null);
+    if(!branchNodes.length)return;
+    const doneNodes=branchNodes.filter(n=>n.done);
+    const pct=Math.round((doneNodes.length/branchNodes.length)*100);
+    setGoalsData(gs=>gs.map(g=>g.id===linkedGoalId?{
+      ...g,
+      // Update subtasks to reflect map progress
+      subtasks:g.subtasks.length>0
+        ?g.subtasks.map((s,i)=>branchNodes[i]?{...s,done:branchNodes[i].done||s.done}:s)
+        :branchNodes.slice(0,8).map(n=>({id:n.id,text:n.text,done:n.done||false,microSteps:[],microExpanded:false})),
+    }:g));
+    showMsg(`🌱 Goal updated — ${pct}% growth synced!`);
+  },[linkedGoalId,nodes,setGoalsData]);
+
+  // Mark node done (for goal sync)
+  const toggleNodeDone=id=>{
+    setNodes(ns=>ns.map(n=>n.id===id?{...n,done:!n.done}:n));
+    if(linkedGoalId)setTimeout(syncGoalProgress,100);
+  };
+
+  // ── SELECTIVE HIGH-PRIORITY MOVE ───────────────────────
+  const branchNodes=nodes.filter(n=>n.parent!==null);
+  const openPriSelect=()=>{setPriSelected(new Set());setPriSelectModal(true);};
+  const confirmPriMove=listId=>{
+    if(!priSelected.size)return;
+    const tasks=[...priSelected].map(id=>{
+      const n=nodes.find(x=>x.id===id);
+      return{id:Date.now()+Math.random(),name:n?.text||"",done:false,color:"lilac",url:""};
+    });
+    setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,...tasks]}:l));
+    setPriSelectModal(false);setPriSelected(new Set());
+    showMsg(`📋 ${tasks.length} node${tasks.length>1?"s":""} moved to Prioritizer!`);
+  };
+
+  const root=nodes.find(n=>n.parent===null);
 
   // Branch colour palette — colour-coded with leaf icons
   const BRANCH_PALETTE=[
@@ -2240,7 +2330,6 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
     }
   };
 
-  const root=nodes.find(n=>n.parent===null);
 
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
@@ -2457,15 +2546,180 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
         </button>
         {/* Podcast Recap */}
         <button onClick={()=>{setPodcastModal(true);setPodcastText("");setPodcastSaved(false);}}
-          style={{background:"rgba(90,120,72,0.12)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.3)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,boxShadow:"0 2px 8px rgba(58,80,38,0.12)"}}>
-          🎙 Podcast Recap
+          style={{background:"rgba(90,120,72,0.12)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.3)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          🎙 Podcast
         </button>
         {/* Templates */}
         <button onClick={()=>setTemplateModal(true)}
-          style={{background:"rgba(90,120,72,0.12)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
           🏗️ Templates
         </button>
+        {/* AI Gap Check */}
+        <button onClick={checkGaps}
+          style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          🔍 Check Gaps
+        </button>
+        {/* Merge Maps */}
+        <button onClick={()=>setMergeModal(true)}
+          style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          🔗 Merge
+        </button>
+        {/* Link to Goal */}
+        <button onClick={()=>setGoalLinkModal(true)}
+          style={{background:linkedGoalId?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:linkedGoalId?"#2A6020":"#3A5020",border:`1.5px solid ${linkedGoalId?"rgba(90,160,80,0.4)":"rgba(90,120,72,0.22)"}`,borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          {linkedGoalId?"🌱 Goal Linked":"🌱 Link Goal"}
+        </button>
+        {/* Selective high-priority send to Prioritizer */}
+        <button onClick={openPriSelect}
+          style={{background:"rgba(90,120,72,0.12)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.28)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          📋 → Prioritizer
+        </button>
       </div>
+
+      {/* ── GAP CHECK MODAL ── */}
+      {gapModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setGapModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:2}}>🔍 Gap Check</div>
+              <div style={{color:"#8A8070",fontSize:13}}>Gentle prompts from your thinking partner</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {gapLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:14}}>🌿 Thinking about your map…</div>}
+              {gaps.map((g,i)=>(
+                <div key={i} style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"14px 18px",marginBottom:10,border:"1px solid rgba(90,120,72,0.12)"}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#1A2810",lineHeight:1.7,fontStyle:"italic"}}>"{g}"</div>
+                  <button onClick={()=>{
+                    if(!root)return;
+                    setNodes(ns=>[...ns,{id:Date.now(),text:"? "+g.slice(0,30),x:root.x+Math.random()*200-100,y:root.y+200+i*60,parent:root.id,color:BRANCH_PALETTE[i%BRANCH_PALETTE.length].color}]);
+                    setGapModal(false);showMsg("Branch added from gap!");
+                  }} style={{marginTop:8,background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:100,padding:"6px 14px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    + Add as branch
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MERGE MAPS MODAL ── */}
+      {mergeModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setMergeModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:2}}>🔗 Merge Maps</div>
+              <div style={{color:"#8A8070",fontSize:13}}>Choose a map to merge into "{root?.text}"</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {(mapData||[]).filter(m=>m.id!==map.id).map(m=>(
+                <div key={m.id} style={{background:"rgba(248,245,236,0.90)",borderRadius:18,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,0.9)",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>{m.name}</div>
+                    <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>{(m.nodes||[]).length-1} branches</div>
+                  </div>
+                  <button onClick={()=>mergeMaps(m)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(58,80,38,0.25)"}}>
+                    Merge in →
+                  </button>
+                </div>
+              ))}
+              {(mapData||[]).filter(m=>m.id!==map.id).length===0&&(
+                <div style={{textAlign:"center",color:"#8A8070",fontFamily:"Georgia,serif",fontSize:14,padding:"32px 0"}}>Create another map first 🌿</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── LINK TO GOAL MODAL ── */}
+      {goalLinkModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setGoalLinkModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,120,72,0.25)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:2}}>🌱 Link to Goal</div>
+              <div style={{color:"#8A8070",fontSize:13}}>Map progress will grow the goal's garden plant</div>
+              {linkedGoalId&&<div style={{marginTop:8,display:"flex",gap:8}}>
+                <button onClick={()=>{setLinkedGoalId(null);onUpdate({...map,linkedGoalId:null});setGoalLinkModal(false);showMsg("Goal unlinked");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1.5px solid rgba(192,57,43,0.2)",borderRadius:100,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Unlink current goal</button>
+                <button onClick={syncGoalProgress} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🌱 Sync now</button>
+              </div>}
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {(goalsData||[]).filter(g=>g.status!=="done").map(g=>{
+                const pct=g.subtasks.length>0?Math.round((g.subtasks.filter(s=>s.done).length/g.subtasks.length)*100):0;
+                const isLinked=g.id===linkedGoalId;
+                return(
+                  <div key={g.id} onClick={()=>{
+                    setLinkedGoalId(g.id);
+                    onUpdate({...map,linkedGoalId:g.id});
+                    setGoalLinkModal(false);
+                    showMsg(`🌱 Linked to "${g.title}" — map progress syncs garden!`);
+                  }} style={{background:isLinked?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"13px 16px",marginBottom:10,border:`1.5px solid ${isLinked?"rgba(90,160,80,0.4)":"rgba(255,255,255,0.9)"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{g.title||"(untitled)"}</div>
+                      <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>{g.horizon} · {pct}% complete</div>
+                    </div>
+                    {isLinked&&<span style={{color:"#3A8020",fontSize:18}}>✓</span>}
+                  </div>
+                );
+              })}
+              {(goalsData||[]).filter(g=>g.status!=="done").length===0&&(
+                <div style={{textAlign:"center",color:"#8A8070",fontFamily:"Georgia,serif",fontSize:14,padding:"32px 0"}}>Add goals first 🌱</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SELECTIVE PRIORITIZER MOVE MODAL ── */}
+      {priSelectModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setPriSelectModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"82vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:2}}>📋 Choose Nodes to Move</div>
+              <div style={{color:"#8A8070",fontSize:13}}>Select which branches to send to Prioritizer</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {branchNodes.map(n=>{
+                const isSel=priSelected.has(n.id);
+                return(
+                  <div key={n.id} onClick={()=>setPriSelected(s=>{const ns=new Set(s);ns.has(n.id)?ns.delete(n.id):ns.add(n.id);return ns;})}
+                    style={{background:isSel?"rgba(90,120,72,0.12)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 16px",marginBottom:8,border:`1.5px solid ${isSel?"rgba(90,120,72,0.4)":"rgba(255,255,255,0.9)"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${isSel?"#5A7848":"rgba(90,80,60,0.25)"}`,background:isSel?"#5A7848":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      {isSel&&<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/></svg>}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:600,fontSize:14,color:"#1A1A10"}}>{n.text}</div>
+                      <div style={{fontSize:11,color:"#8A8070"}}>from: {nodes.find(p=>p.id===n.parent)?.text||root?.text}</div>
+                    </div>
+                    <div style={{width:12,height:12,borderRadius:"50%",background:n.color||"#5A7848",flexShrink:0}}/>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Select all / none + confirm */}
+            <div style={{padding:"12px 20px 0",flexShrink:0}}>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <button onClick={()=>setPriSelected(new Set(branchNodes.map(n=>n.id)))} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#5A5040",border:"none",borderRadius:100,padding:"9px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Select all</button>
+                <button onClick={()=>setPriSelected(new Set())} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#5A5040",border:"none",borderRadius:100,padding:"9px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Clear</button>
+              </div>
+              {priData.length>0&&priSelected.size>0&&(
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {priData.map(l=>(
+                    <button key={l.id} onClick={()=>confirmPriMove(l.id)} style={{flex:1,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 12px",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>
+                      Move {priSelected.size} → {l.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!priSelected.size&&<div style={{textAlign:"center",color:"#8A8070",fontSize:13,padding:"8px 0"}}>Select nodes above to move them</div>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── TEMPLATE MODAL ── */}
       {templateModal&&(
