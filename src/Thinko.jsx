@@ -31,29 +31,23 @@ const C = {
 };
 // ── AI CALL HELPER ──────────────────────────────────────────────────────────
 // Gets API key from localStorage (user sets it once in Settings)
-const getAIKey=()=>{try{return localStorage.getItem('thinko_ai_key')||"";}catch{return "";}};
-const saveAIKey=k=>{try{localStorage.setItem('thinko_ai_key',k);}catch{}};
+
 
 async function callAI(prompt, maxTokens=600) {
-  const key = getAIKey();
   try {
-    const headers = {"Content-Type":"application/json","anthropic-version":"2023-06-01"};
-    if(key) headers["x-api-key"] = key;
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST", headers,
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens,messages:[{role:"user",content:prompt}]})
     });
-    const j = await res.json();
+    const j = await r.json();
     return j.content?.[0]?.text || null;
   } catch { return null; }
 }
-
-// Same as callAI but returns parsed JSON
 async function callAIJson(prompt, maxTokens=500) {
   const raw = await callAI(prompt, maxTokens);
   if(!raw) return null;
-  try { return JSON.parse(raw.replace(/```json|```/g,"").trim()); }
-  catch { return null; }
+  try { return JSON.parse(raw.replace(/```json|```/g,"").trim()); } catch { return null; }
 }
 
 
@@ -2189,7 +2183,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
     const outline=nodes.map(n=>`${n.parent===null?"ROOT":nodes.find(p=>p.id===n.parent)?.text||"?"} → ${n.text}`).join("\n");
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`You're a gentle thinking partner reviewing a mind map. Identify 3-5 gaps, missing connections, or underdeveloped branches. Be warm, curious, and encouraging — not critical. Format each as a short question or gentle nudge.\n\nMap topic: "${root.text}"\nBranches:\n${outline}\n\nReturn ONLY a JSON array of strings (the gentle prompts). No markdown.`}]})
       });
@@ -2283,7 +2277,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
       const allTexts=nodes.map(n=>n.text).join(", ");
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
-        headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:300,
           messages:[{role:"user",content:`Mind map topic: "${root.text}". Node: "${parent.text}". Existing nodes: ${allTexts}. Suggest 3 short, specific sub-ideas to branch off "${parent.text}". Return ONLY a JSON array of 3 strings, no markdown.`}]
@@ -2335,7 +2329,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
-        headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:700,
           messages:[{role:"user",content:`Create a ${podcastLength==="short"?"60-second (~${wordCount} word)":"3-minute (~${wordCount} word)"} podcast script based on this mind map.\nTopic: "${root.text}"\nKey points:\n${outline}\n\nWrite it in a warm, conversational tone as if speaking directly to a listener. Start with a hook, cover the key ideas, end with a takeaway. No headers, just flowing narration.`}]
@@ -3334,7 +3328,7 @@ async function aiStudy(content,title,type){
     slides:`Create a 5-slide deck from this note. Return ONLY a JSON array of objects with "title", "bullets" (array of 3-4 strings), "emoji" (one relevant emoji). No markdown.\n\nTitle: ${title}\n\n${content.slice(0,2000)}`,
   };
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+    method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,
       messages:[{role:"user",content:prompts[type]}]})
   });
@@ -3942,7 +3936,7 @@ function VaultHub({data,setData,priData,ideasData,setIdeasData,matrixData,goalsD
     const nextGoal=(goalsData||[]).filter(g=>g.status!=="done").slice(0,1).map(g=>g.title)[0];
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,messages:[{role:"user",content:`Create a warm, personal morning briefing for today (${today}). Tone: gentle, motivating, like a trusted personal assistant speaking naturally.
 
 Agenda items:
@@ -3965,7 +3959,7 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
     const words=podcastLength==="short"?200:500;
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:`Create a ${podcastLength==="short"?"60-second":"3-minute"} podcast-style spoken summary of these vault notes. Warm, conversational, like a friend sharing their notebook over coffee. No headers. Flowing narration only. Target ~${words} words.\n\n${allContent||"No notes yet — create a brief intro about starting a personal knowledge vault."}`}]})
       });
       setPodcastText(j.content?.[0]?.text||"Could not generate.");
@@ -3983,7 +3977,7 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
       const text=ev.target.result.slice(0,3000); // first 3000 chars
       try{
         const res=await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+          method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:`Convert this PDF text into a warm, engaging 2-minute podcast script. Spoken naturally, no headers, flowing narration:\n\n${text}`}]})
         });
         setPdfPodcast(j.content?.[0]?.text||"Could not convert.");
@@ -4693,7 +4687,7 @@ function MountainProgress({pct=0,size=160}){
 /* ── AI step generator ─────────────────────────────── */
 async function aiGenerateSteps(goalText){
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+    method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514",max_tokens:400,
       messages:[{role:"user",content:`Break this goal into 4–6 clear, actionable steps. Return ONLY a JSON array of strings (step descriptions). No markdown, no extra text.\n\nGoal: "${goalText}"`}]
@@ -4705,7 +4699,7 @@ async function aiGenerateSteps(goalText){
 
 async function aiGenerateMicroSteps(stepText){
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+    method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514",max_tokens:300,
       messages:[{role:"user",content:`Break this step into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown, no extra text.\n\nStep: "${stepText}"`}]
@@ -5096,7 +5090,7 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,notesDa
     if(!oldNotes.length){setNurseSuggestions([{title:"No old notes yet",reason:"Keep writing — I'll suggest revisits as your notes age 🌱"}]);setNurseLoading(false);return;}
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`These are notes the user hasn't touched in 2+ weeks. Suggest 3 gentle, specific reasons to revisit each. Return JSON array of objects: [{title, reason}]. Be warm and encouraging. No markdown.\n\nNotes: ${JSON.stringify(oldNotes.map(n=>({title:n.title,preview:n.content})))}`}]})
       });
@@ -5121,7 +5115,7 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,notesDa
     const words=podcastLength==="short"?200:500;
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,
           messages:[{role:"user",content:`Create a warm ${podcastLength==="short"?"60-second":"3-minute"} podcast-style spoken reflection. Tone: encouraging, personal, like a supportive friend. Flowing narration only, ~${words} words.\n\n${content||"Speak to the power of starting a goal-setting journey."}`}]})
       });
@@ -5137,7 +5131,7 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,notesDa
     const prevReviews=(goal.quarterlyReviews||[]).slice(-2).map(r=>r.reflection?.slice(0,200)).join(" | ");
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`Create 4 soft, kind quarterly review prompts for this goal. Previous reflections: "${prevReviews}". Goal: "${goal.title}" (${pct}% complete, ${goal.horizon}). Make prompts that build on previous answers if available. Warm, compassionate tone. Return ONLY a JSON array of 4 strings.`}]})
       });
@@ -6185,7 +6179,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,goalsData,se
     const taskList=data.map(t=>`id:${t.id} text:"${t.text}" quad:${t.quad} days_old:${Math.floor((now-(t.touched||now))/(86400000))}`).join("\n");
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+        method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`Review these Eisenhower Matrix tasks and suggest 3-5 gentle moves between quadrants. Only suggest if there's a clear mismatch (e.g. a task that sounds important but is in "drop", or something that could be delegated). Be warm and brief. Return ONLY JSON array: [{id:number,text:string,currentQuad:string,suggestedQuad:string,reason:string}]\n\nTasks:\n${taskList}`}]})
       });
@@ -7611,17 +7605,22 @@ function Tools({setScreen}) {
       if(!srcText.trim())return;
       setLoading(true);setResult("");
       try{
-        // MyMemory free translation API — no key, no CORS issues
-        const langPair=`${srcLang}|${tgtLang}`;
-        const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(srcText)}&langpair=${langPair}`;
-        const res=await fetch(url);
-        const txt=j.responseData?.translatedText;
-        if(txt&&txt!==srcText){
+        // Try Lingva first (Google Translate proxy, great CORS)
+        const encoded=encodeURIComponent(srcText.trim());
+        try{
+          const r=await fetch(`https://lingva.ml/api/v1/${srcLang}/${tgtLang}/${encoded}`);
+          if(r.ok){const j=await r.json();if(j.translation){setResult(j.translation);setLoading(false);return;}}
+        }catch{}
+        // Fallback: MyMemory (add email to get more quota)
+        const r2=await fetch(`https://api.mymemory.translated.net/get?q=${encoded}&langpair=${srcLang}|${tgtLang}&de=thinko@app.com`);
+        const j2=await r2.json();
+        const txt=j2.responseData?.translatedText;
+        if(txt&&txt.trim()&&!txt.toLowerCase().includes("invalid")){
           setResult(txt);
-        } else {
+        }else{
           setResult("Translation unavailable — try a shorter phrase");
         }
-      }catch{setResult("Translation failed — check connection");}
+      }catch{setResult("Translation failed — check your internet connection");}
       setLoading(false);
     };
     const swap=()=>{setSrcLang(tgtLang);setTgtLang(srcLang);setSrcText(result);setResult("");};
@@ -7696,8 +7695,7 @@ function Tools({setScreen}) {
       setLoading(true);setResult(null);
       try{
         // Use free Open Exchange Rates (no key needed for latest via frankfurter)
-        // Try exchangerate-api (free, reliable CORS)
-        const url=`https://open.er-api.com/v6/latest/${from}`;
+        const url=`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${from.toLowerCase()}.json`;
         const res=await fetch(url,{mode:"cors"});
         if(!res.ok)throw new Error("Rate fetch failed");
         const converted=j.rates?.[to];
@@ -7793,7 +7791,7 @@ function Tools({setScreen}) {
 async function aiGoalSubtasks(goalTitle,horizon){
   const h=horizonByKey(horizon);
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+    method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
       messages:[{role:"user",content:`Break this ${h.label} goal into 4–6 clear actionable subtasks. Return ONLY a JSON array of strings. No markdown.\n\nGoal: "${goalTitle}"`}]})
   });
@@ -7801,7 +7799,7 @@ async function aiGoalSubtasks(goalTitle,horizon){
 }
 async function aiMicroSteps(subtaskText){
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+    method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,
       messages:[{role:"user",content:`Break this into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown.\n\nTask: "${subtaskText}"`}]})
   });
@@ -8110,14 +8108,14 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
 /* ── Goals home — 5 horizon tabs ───────────────────── */
 
 async function aiChargePicks(tasks){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,
       messages:[{role:"user",content:`Pick the 3 tasks most likely being avoided and worth tackling today. Return ONLY a JSON array of 3 task name strings. No markdown.\n\nTasks: ${tasks.map(t=>t.name||t.text).slice(0,15).join(", ")}`}]})});
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
 async function aiAwardSuggestions(style){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,
       messages:[{role:"user",content:`Suggest 6 warm, specific, achievable self-care rewards for someone who hit their weekly goals. Style: "${style||"restorative and nurturing"}". Return ONLY a JSON array of 6 strings. No markdown.`}]})});
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
@@ -8345,10 +8343,9 @@ function TheCharge({priData,matrixData,setScreen}){
             {aiSugg.length>0?aiSugg.map((s,i)=>(
               <Row key={i} name={s} src="🤖 AI pick" done={charged.includes(s)} onCharge={()=>chargeIt(s)}/>
             )):(
-              <div style={{color:"#8A8070",fontSize:13,lineHeight:1.6}}>
-                Tap "Ask AI" — it'll study your tasks and pick the ones you're most likely avoiding.
-              </div>
+              <div style={{color:"#8A8070",fontSize:13,lineHeight:1.6}}>Tap "Ask AI" — it'll study your tasks and pick the ones you're most likely avoiding.</div>
             )}
+
           </div>
 
           {/* Charged today summary */}
@@ -8835,17 +8832,28 @@ function useAuth(){
 
 
 const MODULES=[
-  {id:"prioritizer", name:"Prioritizer",  desc:"Tasks, timers & priorities",       icon:"📋"},
-  {id:"mindmap",     name:"Mind Map",     desc:"Visual thinking & brainstorm",      icon:"🧠"},
-  {id:"notes",       name:"The Vault",    desc:"Notes, Ideas, Filing & Studio",     icon:"📚"},
-  {id:"meals",       name:"Meal Planner", desc:"Plan your week of meals",           icon:"🍽️"},
-  {id:"goals",       name:"Goals",        desc:"Smart goals · 5 horizons",          icon:"🎯"},
-  {id:"matrix",      name:"Matrix",       desc:"Eisenhower urgent-important grid",  icon:"⚡"},
-  {id:"charge",      name:"The Charge",   desc:"Daily challenge · orb of light",   icon:"⚡"},
-  {id:"budget",      name:"Budget",       desc:"Income, outgoing & AI review",     icon:"💰"},
-  {id:"shopping",    name:"Shopping",     desc:"Multiple lists, tick off as you go",icon:"🛒"},
-  {id:"tools",       name:"Tools",        desc:"Calculator, timer, alarm & sounds", icon:"🔧"},
-  {id:"rest",        name:"Rest Space",   desc:"Guided rest · Nature sounds",       icon:"🌿"},
+  {id:"prioritizer", name:"Prioritizer",  icon:"📋", color:"#5A7848",
+   summary:"Drag & rank tasks · Top 3 · Break timer · Send to Matrix or Goals"},
+  {id:"mindmap",     name:"Mind Map",     icon:"🧠", color:"#486878",
+   summary:"Visual thinking · AI branch grow · Voice notes · 8 branch templates"},
+  {id:"notes",       name:"The Vault",    icon:"📚", color:"#7A5838",
+   summary:"Notes · Ideas · Filing cabinet · AI morning briefing · Podcast recap"},
+  {id:"meals",       name:"Meal Planner", icon:"🍽️", color:"#6A8858",
+   summary:"7-day meal plan · Shopping export · Custom day labels · Reset"},
+  {id:"goals",       name:"Goals",        icon:"🎯", color:"#3A6848",
+   summary:"Garden growth · 5 horizons · Future Me letters · Quarterly reviews"},
+  {id:"matrix",      name:"Matrix",       icon:"⚖️", color:"#7A6038",
+   summary:"Eisenhower grid · Drag between boxes · Custom labels · Export to Vault"},
+  {id:"charge",      name:"The Charge",   icon:"⚡", color:"#6A5870",
+   summary:"Daily challenge · Orb of light · Avoiding tracker · AI task picks"},
+  {id:"budget",      name:"Budget",       icon:"💰", color:"#5A6878",
+   summary:"Income & bills · Expenses tracker · AI spending review · Forecasts"},
+  {id:"shopping",    name:"Shopping",     icon:"🛒", color:"#486050",
+   summary:"Multiple lists · Tick off items · Categories · Share lists"},
+  {id:"tools",       name:"Tools",        icon:"🔧", color:"#705848",
+   summary:"Calculator · Timer · Alarm · Voice to text · Translator · Currency"},
+  {id:"rest",        name:"Rest Space",   icon:"🌿", color:"#3A6828",
+   summary:"Guided meditation · Nature sounds · Break timer · Breathing exercises"},
 ];
 
 function ProLoginModal({onClose,onSignIn}){
@@ -8894,8 +8902,7 @@ export default function App() {
   const [screen,setScreen]=useState("home");
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
-  const [showAIKeyModal,setShowAIKeyModal]=useState(false);
-  const [aiKeyDraft,setAiKeyDraft]=useState("");
+
   const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
   const [mapData,setMapData]=useState(()=>{try{const v=localStorage.getItem('thinko_map');return v?JSON.parse(v):[];}catch{return [];}});
   const [notesData,setNotesData]=useState(()=>{try{const v=localStorage.getItem('thinko_notes');return v?JSON.parse(v):[];}catch{return [];}});
@@ -8946,36 +8953,6 @@ export default function App() {
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",zIndex:10}}>
 
       {/* ── NAME MODAL with vines ── */}
-      {/* ── AI KEY SETUP MODAL ── */}
-      {showAIKeyModal&&(
-        <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(30,40,20,0.60)",display:"flex",alignItems:"center",justifyContent:"center",padding:24,backdropFilter:"blur(8px)"}}>
-          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:28,padding:"28px 24px",width:"100%",maxWidth:360,boxShadow:"0 8px 48px rgba(0,0,0,0.18)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:4}}>🤖 AI Setup</div>
-            <div style={{fontSize:13,color:"#8A8070",lineHeight:1.7,marginBottom:16}}>
-              To use AI features (suggestions, podcast, gap check, etc.) paste your Anthropic API key below. Get one free at <strong>console.anthropic.com</strong> — it only costs fractions of a penny per use.
-            </div>
-            <div style={{fontSize:11,color:"#5A7848",background:"rgba(90,120,72,0.08)",borderRadius:12,padding:"10px 14px",marginBottom:14,lineHeight:1.6}}>
-              🔒 Your key is stored only on your device. Never sent anywhere except directly to Anthropic.
-            </div>
-            <input
-              value={aiKeyDraft||getAIKey()}
-              onChange={e=>setAiKeyDraft(e.target.value)}
-              placeholder="sk-ant-api03-..."
-              type="password"
-              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:12,background:"rgba(255,255,255,0.9)",fontFamily:"monospace"}}
-            />
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{saveAIKey("");setShowAIKeyModal(false);setAiKeyDraft("");}} style={{flex:1,padding:"13px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>
-                {getAIKey()?"Remove Key":"Cancel"}
-              </button>
-              <button onClick={()=>{if(aiKeyDraft.trim())saveAIKey(aiKeyDraft.trim());setShowAIKeyModal(false);setAiKeyDraft("");}} style={{flex:2,padding:"13px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.25)"}}>
-                Save Key ✓
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showNameModal&&(
         <div style={{position:"fixed",inset:0,zIndex:300,overflow:"hidden"}}>
           {/* Full bleed garden background */}
@@ -9112,9 +9089,7 @@ export default function App() {
           Thinko 🌿
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={()=>setShowAIKeyModal(true)} title="AI Settings" style={{background:getAIKey()?"rgba(90,160,80,0.14)":"rgba(200,100,50,0.10)",border:`1px solid ${getAIKey()?"rgba(90,160,80,0.3)":"rgba(200,100,50,0.25)"}`,borderRadius:100,padding:"6px 10px",fontSize:12,fontWeight:700,color:getAIKey()?"#2A6020":"#7A4020",cursor:"pointer"}}>
-            🤖 {getAIKey()?"AI ✓":"AI Key"}
-          </button>
+
           <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\niPhone/iPad: tap Share → Add to Home Screen\n\nAndroid/Chrome: tap ⋮ menu → Add to Home Screen\n\nThis saves Thinko as an app on your device — works offline!");}} style={{background:"rgba(90,120,72,0.12)",border:"1px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"6px 10px",fontSize:12,fontWeight:700,color:"#3A6020",cursor:"pointer"}} title="Install as app">
             📲 App
           </button>
@@ -9141,40 +9116,44 @@ export default function App() {
             onDragEnd={homeDragEnd}
             onClick={()=>setScreen(m.id)}
             style={{
-              background:dragHome===m.id?"rgba(255,255,255,0.92)":"rgba(248,245,236,0.88)",
+              background:"rgba(248,245,236,0.90)",
               backdropFilter:"blur(14px)",
               WebkitBackdropFilter:"blur(14px)",
               borderRadius:22,
-              padding:"18px 16px 16px 18px",
               border:"1px solid rgba(255,255,255,0.92)",
               cursor:"pointer",
               transition:"all 0.15s",
               boxShadow:dragHome===m.id
-                ?"0 8px 28px rgba(60,70,40,0.14),inset 0 1px 0 rgba(255,255,255,1)"
-                :"0 2px 12px rgba(60,70,40,0.07),inset 0 1px 0 rgba(255,255,255,0.95)",
+                ?"0 8px 28px rgba(60,70,40,0.14)"
+                :"0 2px 12px rgba(60,70,40,0.06)",
               transform:dragHome===m.id?"scale(1.03)":"scale(1)",
               display:"flex",flexDirection:"column",
-              justifyContent:"space-between",
+              overflow:"hidden",
               position:"relative",
-              minHeight:128,
             }}>
-            {/* Top: emoji icon + drag dots */}
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-              <span style={{fontSize:38,lineHeight:1,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.12))"}}>
-                {m.icon}
-              </span>
-              <div style={{opacity:0.35,marginTop:2}}>
-                <svg width="14" height="14" viewBox="0 0 14 14">
-                  <circle cx="4" cy="4" r="1.5" fill="#3A3020"/>
-                  <circle cx="10" cy="4" r="1.5" fill="#3A3020"/>
-                  <circle cx="4" cy="10" r="1.5" fill="#3A3020"/>
-                  <circle cx="10" cy="10" r="1.5" fill="#3A3020"/>
-                </svg>
+            {/* Coloured top bar */}
+            <div style={{height:4,background:m.color,width:"100%",flexShrink:0}}/>
+            <div style={{padding:"14px 14px 14px",display:"flex",flexDirection:"column",flex:1}}>
+              {/* Icon + drag handle */}
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+                <span style={{fontSize:30,lineHeight:1,filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.10))"}}>{m.icon}</span>
+                <div style={{opacity:0.25,marginTop:2}}>
+                  <svg width="12" height="12" viewBox="0 0 12 12">
+                    <circle cx="3.5" cy="3.5" r="1.3" fill="#3A3020"/>
+                    <circle cx="8.5" cy="3.5" r="1.3" fill="#3A3020"/>
+                    <circle cx="3.5" cy="8.5" r="1.3" fill="#3A3020"/>
+                    <circle cx="8.5" cy="8.5" r="1.3" fill="#3A3020"/>
+                  </svg>
+                </div>
               </div>
-            </div>
-            {/* Bottom: name */}
-            <div style={{fontSize:15,fontWeight:700,color:"#1A1A10",letterSpacing:-0.2,lineHeight:1.2,marginTop:10}}>
-              {m.name}
+              {/* Name */}
+              <div style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,color:"#1A1A10",letterSpacing:-0.2,lineHeight:1.2,marginBottom:5}}>
+                {m.name}
+              </div>
+              {/* Summary */}
+              <div style={{fontSize:10.5,color:"#7A7060",lineHeight:1.55,fontWeight:400}}>
+                {m.summary}
+              </div>
             </div>
           </div>
         ))}
