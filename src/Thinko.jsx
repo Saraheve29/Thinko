@@ -6907,14 +6907,23 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
     setAwardLoad(false);
   };
 
-  const Row=({name,src,done,onCharge})=>(
-    <div style={{display:"flex",alignItems:"center",gap:12,background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",marginBottom:9,border:`1.5px solid ${done?"rgba(90,160,80,0.3)":"rgba(255,255,255,0.9)"}`,backdropFilter:"blur(8px)"}}>
-      <button onClick={()=>!done&&onCharge()} style={{width:30,height:30,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.4)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>{done?"✓":""}</button>
-      <div style={{flex:1}}>
-        <div style={{color:done?"#9A9080":"#1A1A10",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.35}}>{name}</div>
-        {src&&<div style={{color:"#9A9080",fontSize:11,marginTop:2}}>{src}</div>}
+  const Row=({name,src,done,onCharge,onPri,onMatrix,onDelete})=>(
+    <div style={{background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 14px",marginBottom:9,border:`1.5px solid ${done?"rgba(90,160,80,0.3)":"rgba(255,255,255,0.9)"}`,backdropFilter:"blur(8px)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>!done&&onCharge()} style={{width:32,height:32,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.4)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:15,fontWeight:900,transition:"all 0.2s"}}>{done?"✓":""}</button>
+        <div style={{flex:1}}>
+          <div style={{color:done?"#9A9080":"#1A1A10",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.35}}>{name}</div>
+          {src&&<div style={{color:"#9A9080",fontSize:11,marginTop:1}}>{src}</div>}
+        </div>
+        {!done&&<span style={{fontSize:16}}>⚡</span>}
       </div>
-      {!done&&<span style={{fontSize:18}}>⚡</span>}
+      {!done&&(onPri||onMatrix||onDelete)&&(
+        <div style={{display:"flex",gap:6,marginTop:8,paddingLeft:42}}>
+          {onPri&&<button onClick={onPri} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Prioritize</button>}
+          {onMatrix&&<button onClick={onMatrix} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>⚖️ Matrix</button>}
+          {onDelete&&<button onClick={onDelete} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.15)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>}
+        </div>
+      )}
     </div>
   );
 
@@ -7007,31 +7016,58 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️ Edit</button>
             </div>
             {(data.targetTasks||[]).some(t=>t?.trim())
-              ?(data.targetTasks||[]).filter(t=>t?.trim()).map((task,i)=>{
-                const done=charged.includes(task);
-                return(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:done?"rgba(90,160,80,0.10)":"rgba(255,255,255,0.80)",borderRadius:18,padding:"14px 14px",marginBottom:8,border:`1.5px solid ${done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,transition:"all 0.3s"}}>
-                    {/* Big satisfying tick button */}
-                    <button onClick={()=>!done&&chargeIt(task)}
-                      style={{width:40,height:40,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:22,fontWeight:900,transition:"all 0.25s",boxShadow:done?"0 0 0 4px rgba(90,160,80,0.18)":"none"}}>
-                      {done?"✓":""}
-                    </button>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:14,fontWeight:done?600:700,color:done?"#6A9060":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
-                      {done&&<div style={{fontSize:11,color:"#5A9040",marginTop:2,fontWeight:600}}>⚡ Charged!</div>}
-                    </div>
-                    {!done&&(
-                      <div style={{display:"flex",gap:6,flexShrink:0}}>
-                        <button onClick={()=>{
-                          if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:task,done:false,color:"sage"}]}:l));showToast("📋 Added to Prioritizer!");}
-                          else showToast("Add a Prioritizer list first");
-                        }} style={{background:"rgba(90,120,72,0.08)",color:"#5A7848",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"6px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>📋</button>
-                        <button onClick={()=>chargeIt(task)} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(90,120,72,0.25)"}}>⚡ Charge</button>
+              ?(()=>{
+                const tasks=(data.targetTasks||[]);
+                const activeTasks=tasks.map((t,i)=>({text:t,origIdx:i})).filter(t=>t.text?.trim());
+                return activeTasks.map(({text:task,origIdx},i)=>{
+                  const done=charged.includes(task);
+                  const isFirst=i===0;
+                  const isLast=i===activeTasks.length-1;
+                  const moveTask=(dir)=>{
+                    // swap in the targetTasks array
+                    const next=[...tasks];
+                    const swapIdx=dir===-1
+                      ?(activeTasks[i-1]?.origIdx)
+                      :(activeTasks[i+1]?.origIdx);
+                    if(swapIdx===undefined)return;
+                    [next[origIdx],next[swapIdx]]=[next[swapIdx],next[origIdx]];
+                    upd({targetTasks:next});
+                  };
+                  return(
+                    <div key={origIdx} style={{background:done?"rgba(90,160,80,0.10)":"rgba(255,255,255,0.80)",borderRadius:18,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,transition:"all 0.3s"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        {/* Up/down reorder arrows */}
+                        {!done&&(
+                          <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
+                            <button onClick={()=>moveTask(-1)} disabled={isFirst} style={{background:"none",border:"none",cursor:isFirst?"default":"pointer",color:isFirst?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:14,lineHeight:1,padding:"1px 4px"}}>▲</button>
+                            <button onClick={()=>moveTask(1)} disabled={isLast} style={{background:"none",border:"none",cursor:isLast?"default":"pointer",color:isLast?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:14,lineHeight:1,padding:"1px 4px"}}>▼</button>
+                          </div>
+                        )}
+                        {/* Tick */}
+                        <button onClick={()=>!done&&chargeIt(task)}
+                          style={{width:38,height:38,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:20,fontWeight:900,transition:"all 0.25s",boxShadow:done?"0 0 0 4px rgba(90,160,80,0.18)":"none"}}>
+                          {done?"✓":""}
+                        </button>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:14,fontWeight:done?600:700,color:done?"#6A9060":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
+                          {done&&<div style={{fontSize:11,color:"#5A9040",marginTop:2,fontWeight:600}}>⚡ Charged!</div>}
+                        </div>
+                        {!done&&(
+                          <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
+                            <button onClick={()=>chargeIt(task)} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(90,120,72,0.25)"}}>⚡ Charge</button>
+                            <button onClick={()=>{
+                              if(window.confirm(`Delete "${task}"?`)){
+                                const next=[...tasks];next[origIdx]="";
+                                upd({targetTasks:next});showToast("🗑 Task deleted");
+                              }
+                            }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"7px 11px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑</button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })
+                    </div>
+                  );
+                });
+              })()
               :<div style={{textAlign:"center",padding:"16px 0"}}>
                 <div style={{color:"#8A8070",fontSize:13,marginBottom:10}}>No tasks set yet for today</div>
                 <button onClick={()=>setView("settings")} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ Set today's tasks</button>
@@ -7090,8 +7126,11 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                     ?<img src={reward.photo} alt="" style={{width:56,height:56,borderRadius:14,objectFit:"cover",flexShrink:0}}/>
                     :<span style={{fontSize:32,flexShrink:0}}>🎁</span>}
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>
-                      {rewardName||<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
+                    <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:2}}>
+                      <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>
+                        {rewardName||<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
+                      </div>
+                      {rewardName&&<button onClick={()=>{upd({weeklyAward:"",reward:{name:"",cost:"",url:"",photo:""},rewardDate:""});showToast("🗑 Reward cleared");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>🗑</button>}
                     </div>
                     {reward.cost&&<div style={{fontSize:12,color:"#8A8070",marginBottom:2}}>💰 {reward.cost} · <button onClick={()=>setScreen&&setScreen("budget")} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,textDecoration:"underline"}}>Budget it</button></div>}
                     {reward.url&&<a href={reward.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#5A7848",display:"block",marginBottom:2}}>🔗 View</a>}
@@ -7128,7 +7167,11 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 <span style={{fontFamily:"Georgia,serif",color:"#7A5820",fontWeight:700,fontSize:15}}>⏰ Overdue tasks</span>
                 <span style={{background:"rgba(192,120,40,0.12)",color:"#7A5820",borderRadius:100,padding:"2px 10px",fontSize:12,fontWeight:600}}>{allStale.length}</span>
               </div>
-              {allStale.map((t,i)=>(<Row key={i} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}/>))}
+              {allStale.map((t,i)=>(<Row key={i} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}
+                onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:t.name||t.text,done:false,color:"lilac"}]}:l));showToast("📋 Added to Prioritizer!");}else showToast("Add a Prioritizer list first");}}
+                onMatrix={()=>{if(setMatrixData){setMatrixData(ds=>[...ds,{id:Date.now(),text:t.name||t.text,quad:"do",created:Date.now(),touched:Date.now()}]);showToast("⚖️ Added to Matrix!");}}}
+                onDelete={()=>{if(t.srcType==="pri"&&setPriData)setPriData(ls=>ls.map(l=>({...l,tasks:l.tasks.filter(task=>task.id!==t.id)})));if(t.srcType==="matrix"&&setMatrixData)setMatrixData(ds=>ds.filter(d=>d.id!==t.id));showToast("🗑 Removed");}}
+              />))}
             </div>
           )}
 
@@ -7142,11 +7185,30 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               <button onClick={addFrog} style={{background:"#7c5cbf",color:"#fff",border:"none",borderRadius:"50%",width:44,height:44,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0,boxShadow:"0 3px 12px rgba(124,92,191,0.38)"}}>+</button>
             </div>
             {frogs.map(f=>(
-              <div key={f.id} style={{display:"flex",alignItems:"center",gap:12,background:f.done?"rgba(90,160,80,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 16px",marginTop:9,border:`1px solid ${f.done?"rgba(90,160,80,0.25)":"rgba(255,255,255,0.9)"}`,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
-                <button onClick={()=>toggleFrog(f.id)} style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${f.done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:f.done?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:900}}>{f.done?"✓":""}</button>
-                <span style={{flex:1,color:f.done?"#A0907A":"#1A1A10",fontWeight:600,fontSize:14,textDecoration:f.done?"line-through":"none"}}>{f.text}</span>
-                {!f.done&&<span style={{fontSize:16}}>⚡</span>}
-                <button onClick={()=>delFrog(f.id)} style={{background:"transparent",color:"rgba(192,57,43,0.5)",border:"none",cursor:"pointer",fontSize:14,padding:0}}>🗑</button>
+              <div key={f.id} style={{background:f.done?"rgba(90,160,80,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 14px",marginTop:9,border:`1px solid ${f.done?"rgba(90,160,80,0.25)":"rgba(255,255,255,0.9)"}`,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <button onClick={()=>toggleFrog(f.id)} style={{width:32,height:32,borderRadius:"50%",border:`2.5px solid ${f.done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:f.done?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:15,fontWeight:900,transition:"all 0.2s"}}>{f.done?"✓":""}</button>
+                  <span style={{flex:1,color:f.done?"#A0907A":"#1A1A10",fontWeight:600,fontSize:14,textDecoration:f.done?"line-through":"none",lineHeight:1.3}}>{f.text}</span>
+                  {!f.done&&<span style={{fontSize:16}}>⚡</span>}
+                </div>
+                {/* Action buttons row */}
+                {!f.done&&(
+                  <div style={{display:"flex",gap:6,marginTop:8,paddingLeft:42}}>
+                    <button onClick={()=>{
+                      if(setPriData&&(priData||[]).length){
+                        setPriData(ls=>ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:f.text,done:false,color:"lilac"}]}:l));
+                        showToast("📋 Added to Prioritizer!");
+                      } else showToast("Add a Prioritizer list first");
+                    }} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Prioritize</button>
+                    <button onClick={()=>{
+                      if(setMatrixData){
+                        setMatrixData(ds=>[...ds,{id:Date.now(),text:f.text,quad:"do",created:Date.now(),touched:Date.now()}]);
+                        showToast("⚖️ Added to Matrix!");
+                      }
+                    }} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>⚖️ Matrix</button>
+                    <button onClick={()=>delFrog(f.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.15)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -7161,7 +7223,11 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               </button>
             </div>
             {aiSugg.length>0?aiSugg.map((s,i)=>(
-              <Row key={i} name={s} src="🤖 AI pick" done={charged.includes(s)} onCharge={()=>chargeIt(s)}/>
+              <Row key={i} name={s.task||s} src={s.src||"🤖 AI pick"} done={charged.includes(s.task||s)} onCharge={()=>chargeIt(s.task||s)}
+                onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:s.task||s,done:false,color:"lilac"}]}:l));setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("📋 Scheduled!");}else showToast("Add a Prioritizer list first");}}
+                onMatrix={()=>{if(setMatrixData){setMatrixData(ds=>[...ds,{id:Date.now(),text:s.task||s,quad:"do",created:Date.now(),touched:Date.now()}]);setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("⚖️ Added to Matrix!");}}}
+                onDelete={()=>{if(s.srcType==="pri"&&setPriData)setPriData(ls=>ls.map(l=>({...l,tasks:l.tasks.filter(t=>t.id!==s.srcId)})));if(s.srcType==="matrix"&&setMatrixData)setMatrixData(ds=>ds.filter(d=>d.id!==s.srcId));setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("🗑 Removed");}}
+              />
             )):(
               <div style={{color:"#8A8070",fontSize:13,lineHeight:1.6}}>
                 Tap "Ask AI" — it'll study your tasks and pick the ones you're most likely avoiding.
@@ -7455,13 +7521,14 @@ function RestSpace({setScreen}){
 
   const startMed=(med)=>{
     setActiveMed(med);setMedStep(0);setMedRunning(true);setMedDone(false);
-    // If audio uploaded, play it
-    if(audioFiles[med.id]){
+    const file=audioFiles[med.id];
+    if(file&&file.type==="audio"){
       if(audioRef.current){audioRef.current.pause();audioRef.current=null;}
-      const audio=new Audio(audioFiles[med.id]);
+      const audio=new Audio(file.src);
       audio.onended=()=>{setMedDone(true);setMedRunning(false);setAudioPlaying(null);};
       audio.play();audioRef.current=audio;setAudioPlaying(med.id);
     }
+    // Video is handled inline in JSX via <video> tag
   };
 
   const stopMed=()=>{
@@ -7471,8 +7538,9 @@ function RestSpace({setScreen}){
 
   const uploadAudio=(medId,e)=>{
     const file=e.target.files[0];if(!file)return;
+    const isVideo=file.type.startsWith("video/");
     const r=new FileReader();
-    r.onload=ev=>setAudioFiles(a=>({...a,[medId]:ev.target.result}));
+    r.onload=ev=>setAudioFiles(a=>({...a,[medId]:{src:ev.target.result,type:isVideo?"video":"audio",name:file.name}}));
     r.readAsDataURL(file);
   };
 
@@ -7511,7 +7579,7 @@ function RestSpace({setScreen}){
                 <span style={{fontSize:30}}>{activeMed.icon}</span>
                 <div style={{flex:1}}>
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{activeMed.title}</div>
-                  <div style={{color:"#7A7060",fontSize:12}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
+                  <div style={{color:"#7A7060",fontSize:12}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?.type==="video"?"🎬 Video playing...":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
                 </div>
                 <button onClick={stopMed} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕ End</button>
               </div>
@@ -7523,16 +7591,21 @@ function RestSpace({setScreen}){
                   </div>
                 </div>
               )}
-              {/* Audio playing indicator */}
+              {/* Audio / Video player */}
               {!medDone&&audioFiles[activeMed.id]&&(
                 <div style={{background:"rgba(90,80,60,0.06)",borderRadius:16,padding:"18px 20px",marginBottom:16,display:"flex",flexDirection:"column",alignItems:"center",gap:12,border:"1px solid rgba(82,196,122,0.3)"}}>
-                  <div style={{display:"flex",gap:6,alignItems:"flex-end",height:32}}>
-                    {[0.4,0.7,1,0.8,0.5,0.9,0.6,0.75,0.45,0.85].map((h,i)=>(
-                      <div key={i} style={{width:4,borderRadius:2,background:"#52c47a",height:`${h*100}%`,opacity:0.7+i*0.03}}/>
-                    ))}
-                  </div>
-                  <div style={{color:"#e0f7e9",fontSize:14,fontWeight:600,textAlign:"center"}}>🎵 Your guided meditation is playing</div>
-                  <div style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>Close your eyes or keep them soft and unfocused</div>
+                  {audioFiles[activeMed.id]?.type==="video"
+                    ?<video src={audioFiles[activeMed.id]?.src} controls autoPlay style={{width:"100%",borderRadius:12,maxHeight:260,background:"#000"}} onEnded={()=>{setMedDone(true);setMedRunning(false);}}/>
+                    :<>
+                      <div style={{display:"flex",gap:6,alignItems:"flex-end",height:32}}>
+                        {[0.4,0.7,1,0.8,0.5,0.9,0.6,0.75,0.45,0.85].map((h,i)=>(
+                          <div key={i} style={{width:4,borderRadius:2,background:"#52c47a",height:`${h*100}%`,opacity:0.7+i*0.03}}/>
+                        ))}
+                      </div>
+                      <div style={{color:"#e0f7e9",fontSize:14,fontWeight:600,textAlign:"center"}}>🎵 Your guided meditation is playing</div>
+                      <div style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>Close your eyes or keep them soft and unfocused</div>
+                    </>
+                  }
                 </div>
               )}
               {medDone&&(
@@ -7581,15 +7654,17 @@ function RestSpace({setScreen}){
                 <div style={{display:"flex",gap:8,alignItems:"center",borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:10}}>
                   {audioFiles[med.id]?(
                     <>
-                      <div style={{flex:1,fontSize:11,color:"rgba(82,196,122,0.8)",fontWeight:700}}>🎵 ElevenLabs audio uploaded</div>
+                      <div style={{flex:1,fontSize:11,color:"rgba(82,196,122,0.8)",fontWeight:700}}>
+                        {audioFiles[med.id]?.type==="video"?"🎬 Video uploaded":"🎵 Audio uploaded"} — {audioFiles[med.id]?.name?.slice(0,20)||""}
+                      </div>
                       <button onClick={()=>removeAudio(med.id)} style={{background:"rgba(255,100,100,0.2)",color:"rgba(255,150,150,0.9)",border:"1px solid rgba(255,100,100,0.3)",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕ Remove</button>
                     </>
                   ):(
                     <>
-                      <div style={{flex:1,fontSize:11,color:"rgba(255,255,255,0.35)"}}>Upload your ElevenLabs MP3</div>
+                      <div style={{flex:1,fontSize:11,color:"rgba(255,255,255,0.35)"}}>Upload MP3, audio or your own video</div>
                       <label style={{background:"rgba(82,196,122,0.2)",color:"#52c47a",border:"1px solid rgba(82,196,122,0.4)",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
                         🎵 Upload audio
-                        <input type="file" accept="audio/*" style={{display:"none"}} onChange={e=>uploadAudio(med.id,e)}/>
+                        <input type="file" accept="audio/*,video/*" style={{display:"none"}} onChange={e=>uploadAudio(med.id,e)}/>
                       </label>
                     </>
                   )}
