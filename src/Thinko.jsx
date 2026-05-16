@@ -4731,137 +4731,134 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   );
 
   return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:110}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
 
-      {/* ── Header ── */}
-      <div style={{background:"rgba(248,245,236,0.88)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"18px 20px 14px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+      {/* ── HEADER — large serif exactly like reference ── */}
+      <div style={{background:"rgba(248,245,236,0.88)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"22px 20px 18px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
         <button onClick={()=>setScreen("home")} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.25}}>
+        <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.15}}>
           Matrix —<br/>Urgent vs Important
         </div>
       </div>
 
-      <div style={{padding:"14px 12px 0"}}>
-
-        {/* Stale banner */}
-        {staleTasks.length>0&&(
-          <div style={{background:"rgba(192,57,43,0.12)",borderRadius:18,padding:"12px 16px",marginBottom:12,border:"1.5px solid rgba(192,57,43,0.25)"}}>
-            <div style={{color:"#c0392b",fontWeight:700,fontSize:13,marginBottom:8}}>⏰ {staleTasks.length} task{staleTasks.length>1?"s":""} untouched 7+ days</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {staleTasks.map(t=><button key={t.id} onClick={()=>setStaleModal(t)} style={{background:"rgba(255,255,255,0.8)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.3)",borderRadius:100,padding:"4px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.text.slice(0,22)}{t.text.length>22?"…":""}</button>)}
-            </div>
-          </div>
-        )}
-
-        {/* Import from Prioritizer */}
-        {priData.some(l=>l.tasks.length>0)&&(
-          <div style={{background:"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",marginBottom:12,border:"1px solid rgba(90,120,72,0.2)"}}>
-            <div style={{color:"#5A7848",fontWeight:700,fontSize:12,marginBottom:8,letterSpacing:0.3,textTransform:"uppercase"}}>🌿 Pull from Prioritizer</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {priData.flatMap(l=>l.tasks.filter(t=>!t.done).slice(0,3)).map(t=>(
-                <button key={t.id} onClick={()=>importFromPri(t)} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.name.slice(0,20)}{t.name.length>20?"…":""} +</button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── 2×2 GRID matching reference ── */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:3,borderRadius:24,overflow:"hidden",boxShadow:"0 4px 28px rgba(0,0,0,0.08)",border:"1px solid rgba(255,255,255,0.7)",marginBottom:16}}>
-          {QUADS.map(q=>{
+      {/* ── 2×2 GRID — fills available space, no clipping ── */}
+      <div style={{flex:1,padding:"10px 10px 0",display:"flex",flexDirection:"column"}}>
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"1fr 1fr",
+          gridTemplateRows:"1fr 1fr",
+          gap:2,
+          borderRadius:20,
+          overflow:"hidden",
+          boxShadow:"0 4px 32px rgba(0,0,0,0.09)",
+          flex:1,
+          marginBottom:10,
+        }}>
+          {QUADS.map((q,qi)=>{
             const tasks=data.filter(d=>d.quad===q.key);
-            const isSage=q.key==="do"||q.key==="help";
+            const isSage=qi===0||qi===2; // top-left & bottom-left = sage
             return(
               <div key={q.key} style={{
-                background:isSage?"rgba(138,158,120,0.28)":"rgba(248,245,236,0.82)",
+                background:isSage?"rgba(124,148,104,0.32)":"rgba(245,242,234,0.82)",
                 padding:"16px 14px 14px",
                 position:"relative",
-                minHeight:180,
+                display:"flex",
+                flexDirection:"column",
+                minHeight:200,
                 backdropFilter:"blur(8px)",
                 WebkitBackdropFilter:"blur(8px)",
               }}>
-                {/* Small leaf icon top-right */}
-                <div style={{position:"absolute",top:12,right:12,opacity:0.7}}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3C12 3 4 8 4 15a8 8 0 0016 0C20 8 12 3 12 3z" fill={isSage?"#3A5828":"#5A7848"}/>
-                    <path d="M12 3C12 3 4 8 4 15" stroke={isSage?"#2A4018":"#3A6020"} strokeWidth="0.8" fill="none" opacity="0.5"/>
+                {/* Leaf icon top-right */}
+                <div style={{position:"absolute",top:12,right:12}}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={isSage?"rgba(255,255,255,0.6)":"#5A7848"}/>
+                    <path d="M12 3C12 3 5 9 5 17" stroke={isSage?"rgba(255,255,255,0.35)":"#3A5828"} strokeWidth="1" fill="none"/>
                   </svg>
                 </div>
 
-                {/* Quadrant label */}
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:isSage?"#2A3A18":"#1A1A10",lineHeight:1.3,marginBottom:3,paddingRight:24}}>
-                  {q.label}
+                {/* Label — large serif like reference */}
+                <div style={{paddingRight:28,marginBottom:8}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.3,marginBottom:2}}>
+                    {q.label}
+                  </div>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:14,color:isSage?"#3A5028":"#6A6050",fontWeight:400,lineHeight:1.3}}>
+                    {q.sub}
+                  </div>
                 </div>
-                <div style={{fontFamily:"Georgia,serif",fontSize:13,color:isSage?"#3A5028":"#5A5040",marginBottom:12,fontWeight:400}}>
-                  {q.sub}
-                </div>
+
+                {/* Divider */}
+                <div style={{height:1,background:isSage?"rgba(255,255,255,0.25)":"rgba(90,80,60,0.1)",marginBottom:10}}/>
 
                 {/* Tasks */}
-                {tasks.map(t=>{
-                  const stale=now-t.touched>STALE_MS;
-                  const expanded=expandedTask===t.id;
-                  return(
-                    <div key={t.id} style={{background:"rgba(255,255,255,0.75)",borderRadius:12,padding:"8px 10px",marginBottom:6,border:`1px solid ${stale?"rgba(192,57,43,0.4)":"rgba(255,255,255,0.9)"}`,position:"relative",backdropFilter:"blur(4px)"}}>
-                      {stale&&<div style={{position:"absolute",top:-6,right:6,background:"rgba(192,57,43,0.85)",color:"#fff",fontSize:8,fontWeight:700,borderRadius:8,padding:"1px 6px"}}>⏰</div>}
-                      <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{fontSize:13,fontWeight:600,color:"#1A1A10",lineHeight:1.45,marginBottom:expanded?6:0,cursor:"pointer"}}>{t.text}</div>
-                      {!expanded&&t.url&&<div style={{marginTop:4}}><UrlBadge url={t.url}/></div>}
-                      {expanded&&(
-                        <div style={{marginBottom:6}}>
-                          <UrlField value={taskUrls[t.id]??t.url??""} onChange={v=>{setTaskUrls(u=>({...u,[t.id]:v}));setData(ds=>ds.map(d=>d.id===t.id?{...d,url:v}:d));}}/>
-                        </div>
-                      )}
-                      {expanded&&(
-                        <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4}}>
-                          <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,-1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>▲</button>
-                          <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>▼</button>
-                          <button onClick={()=>touch(t.id)} style={{background:"rgba(90,160,80,0.15)",color:"#2A7020",border:"1px solid rgba(90,160,80,0.3)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✓ Done</button>
-                          <button onClick={()=>setMoveTask(t)} style={{background:"rgba(90,120,72,0.1)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>↔ Move</button>
-                          <button onClick={()=>setSendMenu(t)} style={{background:"rgba(90,120,72,0.1)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>↗ Send</button>
-                          <button onClick={()=>del(t.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.2)",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>🗑</button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                <div style={{flex:1}}>
+                  {tasks.map(t=>{
+                    const stale=now-t.touched>STALE_MS;
+                    const expanded=expandedTask===t.id;
+                    return(
+                      <div key={t.id} style={{background:"rgba(255,255,255,0.72)",borderRadius:12,padding:"8px 10px",marginBottom:7,border:"1px solid rgba(255,255,255,0.9)",position:"relative",backdropFilter:"blur(4px)"}}>
+                        {stale&&<div style={{position:"absolute",top:-5,right:5,background:"rgba(160,110,40,0.85)",color:"#fff",fontSize:8,fontWeight:700,borderRadius:8,padding:"1px 5px"}}>Old</div>}
+                        <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:600,color:"#1A1A10",lineHeight:1.4,cursor:"pointer",marginBottom:expanded?6:0}}>{t.text}</div>
+                        {!expanded&&t.url&&<UrlBadge url={t.url}/>}
+                        {expanded&&(
+                          <>
+                            <UrlField value={taskUrls[t.id]??t.url??""} onChange={v=>{setTaskUrls(u=>({...u,[t.id]:v}));setData(ds=>ds.map(d=>d.id===t.id?{...d,url:v}:d));}}/>
+                            <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:6}}>
+                              <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,-1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>▲</button>
+                              <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:700,cursor:"pointer"}}>▼</button>
+                              <button onClick={()=>touch(t.id)} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"none",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>✓</button>
+                              <button onClick={()=>setMoveTask(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>↔</button>
+                              <button onClick={()=>setSendMenu(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>↗</button>
+                              <button onClick={()=>del(t.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:6,padding:"3px 7px",fontSize:10,fontWeight:600,cursor:"pointer"}}>🗑</button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
 
-                {/* Add task input */}
-                <div style={{display:"flex",gap:5,marginTop:6}}>
+                {/* Add input — always visible */}
+                <div style={{display:"flex",gap:5,marginTop:"auto",paddingTop:6}}>
                   <input
                     value={inlineTexts[q.key]}
                     onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
                     onKeyDown={e=>e.key==="Enter"&&addInline(q.key)}
                     placeholder="Add task…"
-                    style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.2)",background:"rgba(255,255,255,0.75)",fontSize:12,color:"#1A1A10",outline:"none"}}
+                    style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(255,255,255,0.78)",fontSize:11,color:"#1A1A10",outline:"none",minWidth:0}}
                   />
                   <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,fontSize:18,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
-                {inlineUrls[q.key]!==undefined&&(
-                  <input
-                    value={inlineUrls[q.key]}
-                    onChange={e=>setInlineUrls(t=>({...t,[q.key]:e.target.value}))}
-                    placeholder="🔗 Link (optional)"
-                    style={{marginTop:4,width:"100%",boxSizing:"border-box",padding:"5px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.6)",fontSize:11,color:"#1A1A10",outline:"none"}}
-                  />
-                )}
               </div>
             );
           })}
         </div>
-
-        {/* ── Focus Timer ── */}
-        <MatrixTimer setScreen={setScreen}/>
-
       </div>
 
-      {/* ── Bottom action buttons matching reference ── */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:90,padding:"12px 14px 32px",background:"rgba(240,236,224,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10}}>
-        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"15px",background:"#7A9068",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(90,120,72,0.30)"}}>
-          Move to Prioritizer
-        </button>
-        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"15px",background:"rgba(248,245,236,0.95)",color:"#2A4820",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
-          Weekly Insights
-        </button>
+      {/* ── BOTTOM BUTTONS — exactly like reference ── */}
+      <div style={{padding:"10px 12px 32px",background:"rgba(238,234,222,0.94)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0}}>
+        <button onClick={()=>setScreen("prioritizer")} style={{
+          flex:1,padding:"17px 12px",
+          background:"#6A8858",
+          color:"#fff",
+          border:"none",
+          borderRadius:100,
+          fontFamily:"Georgia,serif",
+          fontWeight:700,fontSize:16,
+          cursor:"pointer",
+          boxShadow:"0 4px 16px rgba(90,120,72,0.32)",
+        }}>Move to Prioritizer</button>
+        <button onClick={()=>setScreen("goals")} style={{
+          flex:1,padding:"17px 12px",
+          background:"transparent",
+          color:"#3A6020",
+          border:"none",
+          borderRadius:100,
+          fontFamily:"Georgia,serif",
+          fontWeight:700,fontSize:16,
+          cursor:"pointer",
+        }}>Weekly Insights</button>
       </div>
 
       {/* Send menu */}
@@ -4870,7 +4867,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       {/* Move modal */}
       {moveTask&&(
         <div style={{position:"fixed",inset:0,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}}>
+          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}}>
             <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.2)"}}/></div>
             <div style={{padding:"0 20px"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>Move task</div>
@@ -4892,16 +4889,16 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       {/* Stale modal */}
       {staleModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(0,0,0,0.12)"}}>
-            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(192,57,43,0.3)"}}/></div>
+          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 40px rgba(0,0,0,0.12)"}}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(160,110,40,0.3)"}}/></div>
             <div style={{padding:"0 20px"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#c0392b",fontSize:17,marginBottom:4}}>⏰ Stale Task</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#7A5820",fontSize:17,marginBottom:4}}>⏰ Old Task</div>
               <div style={{color:"#8A8070",fontSize:13,marginBottom:10}}>Untouched for over a week:</div>
-              <div style={{background:"rgba(192,57,43,0.06)",borderRadius:16,padding:"13px 16px",fontWeight:600,fontSize:14,color:"#1A1A10",marginBottom:16,border:"1px solid rgba(192,57,43,0.2)"}}>{staleModal.text}</div>
+              <div style={{background:"rgba(160,120,40,0.06)",borderRadius:16,padding:"13px 16px",fontWeight:600,fontSize:14,color:"#1A1A10",marginBottom:16,border:"1px solid rgba(160,110,40,0.2)"}}>{staleModal.text}</div>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 <button onClick={()=>{touch(staleModal.id);setStaleModal(null);showToast("👍 Kept!");}} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"1.5px solid rgba(90,160,80,0.3)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ Still doing it — keep it</button>
                 <button onClick={()=>{setMoveTask(staleModal);setStaleModal(null);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>↔ Move to different quadrant</button>
-                <button onClick={()=>{del(staleModal.id);setStaleModal(null);showToast("🗑 Removed.");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1.5px solid rgba(192,57,43,0.2)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>🗑 Erase — it's not happening</button>
+                <button onClick={()=>{del(staleModal.id);setStaleModal(null);showToast("Removed.");}} style={{background:"rgba(90,80,60,0.08)",color:"#7A7060",border:"1.5px solid rgba(90,80,60,0.2)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>🗑 Remove this task</button>
               </div>
             </div>
           </div>
