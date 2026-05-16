@@ -10,6 +10,34 @@ const C = {
   wh:"#FFFFFF", txt:"#1A1A10", mid:"#5A5040",
   soft:"#8A8070", done:"#D8D0C0",
 };
+// ── AI CALL HELPER ──────────────────────────────────────────────────────────
+// Gets API key from localStorage (user sets it once in Settings)
+const getAIKey=()=>{try{return localStorage.getItem('thinko_ai_key')||"";}catch{return "";}};
+const saveAIKey=k=>{try{localStorage.setItem('thinko_ai_key',k);}catch{}};
+
+async function callAI(prompt, maxTokens=600) {
+  const key = getAIKey();
+  try {
+    const headers = {"Content-Type":"application/json","anthropic-version":"2023-06-01"};
+    if(key) headers["x-api-key"] = key;
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers,
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens,messages:[{role:"user",content:prompt}]})
+    });
+    const j = await res.json();
+    return j.content?.[0]?.text || null;
+  } catch { return null; }
+}
+
+// Same as callAI but returns parsed JSON
+async function callAIJson(prompt, maxTokens=500) {
+  const raw = await callAI(prompt, maxTokens);
+  if(!raw) return null;
+  try { return JSON.parse(raw.replace(/```json|```/g,"").trim()); }
+  catch { return null; }
+}
+
+
 const headerGrad  = `linear-gradient(135deg,#3A5030 0%,#4A6840 50%,#5A7850 100%)`;
 const pageGrad    = `linear-gradient(180deg,#F5F0E4 0%,#EDE8D8 40%,#E5DFC8 100%)`;
 const btnGrad     = `linear-gradient(135deg,#3D5A2A,#6A9058)`;
@@ -607,7 +635,7 @@ function UrlBadge({url}) {
   );
 }
 const SWATCHES = [
-  {id:"purple",fill:"#9b59b6",border:"#7d3c98",num:"#7d3c98"},
+  {id:"purple",fill:"#5A7848",border:"#7d3c98",num:"#7d3c98"},
   {id:"rose",  fill:"#e91e8c",border:"#c2185b",num:"#c2185b"},
   {id:"red",   fill:"#FF1744",border:"#D50000",num:"#D50000"},
   {id:"orange",fill:"#e67e22",border:"#ca6f1e",num:"#ca6f1e"},
@@ -615,7 +643,7 @@ const SWATCHES = [
   {id:"green", fill:"#27ae60",border:"#1e8449",num:"#1e8449"},
   {id:"teal",  fill:"#1abc9c",border:"#148f77",num:"#148f77"},
   {id:"blue",  fill:"#2980b9",border:"#1a5276",num:"#1a5276"},
-  {id:"lilac", fill:"#c4aee8",border:"#9b7dd4",num:"#7c5cbf"},
+  {id:"lilac", fill:"#c4aee8",border:"#9b7dd4",num:"#5A7848"},
 ];
 const swatchById = id => SWATCHES.find(s=>s.id===id)||SWATCHES[8];
 const BREAK_PRESETS = [5,10,15,20,30];
@@ -1476,7 +1504,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen}) {
 /* ═══════════════════════════════════════════════════════
    MIND MAP
 ═══════════════════════════════════════════════════════ */
-const NODE_COLORS=["#9b59b6","#c2185b","#e67e22","#27ae60","#2980b9","#1abc9c","#e74c3c","#f39c12","#8e44ad","#16a085"];
+const NODE_COLORS=["#5A7848","#c2185b","#e67e22","#27ae60","#2980b9","#1abc9c","#e74c3c","#f39c12","#8e44ad","#16a085"];
 const BRANCH_COLORS=["#c4aee8","#f48fb1","#ffcc80","#a5d6a7","#90caf9","#80cbc4","#ef9a9a","#ffe082","#ce93d8","#80deea"];
 
 function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen}) {
@@ -1685,7 +1713,7 @@ function CrystalNode({cx,cy,r,selected,label,isRoot}) {
         <radialGradient id={`rg_${id}`} cx="38%" cy="32%" r="65%">
           <stop offset="0%"   stopColor="#f0e8ff" stopOpacity="1"/>
           <stop offset="28%"  stopColor="#c4aee8" stopOpacity="0.95"/>
-          <stop offset="60%"  stopColor="#7c5cbf" stopOpacity="0.92"/>
+          <stop offset="60%"  stopColor="#5A7848" stopOpacity="0.92"/>
           <stop offset="85%"  stopColor="#5a3d9a" stopOpacity="0.97"/>
           <stop offset="100%" stopColor="#2C3820" stopOpacity="1"/>
         </radialGradient>
@@ -1695,7 +1723,7 @@ function CrystalNode({cx,cy,r,selected,label,isRoot}) {
         </radialGradient>
         <radialGradient id={`glow_${id}`} cx="50%" cy="50%" r="50%">
           <stop offset="0%"   stopColor="#c4aee8" stopOpacity={selected?0.6:0.2}/>
-          <stop offset="100%" stopColor="#7c5cbf" stopOpacity="0"/>
+          <stop offset="100%" stopColor="#5A7848" stopOpacity="0"/>
         </radialGradient>
         <clipPath id={`clip_${id}`}>
           <circle cx={cx} cy={cy} r={r}/>
@@ -2142,11 +2170,10 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
     const outline=nodes.map(n=>`${n.parent===null?"ROOT":nodes.find(p=>p.id===n.parent)?.text||"?"} → ${n.text}`).join("\n");
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`You're a gentle thinking partner reviewing a mind map. Identify 3-5 gaps, missing connections, or underdeveloped branches. Be warm, curious, and encouraging — not critical. Format each as a short question or gentle nudge.\n\nMap topic: "${root.text}"\nBranches:\n${outline}\n\nReturn ONLY a JSON array of strings (the gentle prompts). No markdown.`}]})
       });
-      const j=await res.json();
       setGaps(JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim()));
     }catch{setGaps(["Couldn't reach AI — try again 🌿"]);}
     setGapLoading(false);
@@ -2237,13 +2264,12 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
       const allTexts=nodes.map(n=>n.text).join(", ");
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:300,
           messages:[{role:"user",content:`Mind map topic: "${root.text}". Node: "${parent.text}". Existing nodes: ${allTexts}. Suggest 3 short, specific sub-ideas to branch off "${parent.text}". Return ONLY a JSON array of 3 strings, no markdown.`}]
         })
       });
-      const j=await res.json();
       const ideas=JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
       ideas.slice(0,3).forEach((idea,i)=>{
         const siblings=nodes.filter(n=>n.parent===parentId);
@@ -2290,13 +2316,12 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({
           model:"claude-sonnet-4-20250514",max_tokens:700,
           messages:[{role:"user",content:`Create a ${podcastLength==="short"?"60-second (~${wordCount} word)":"3-minute (~${wordCount} word)"} podcast script based on this mind map.\nTopic: "${root.text}"\nKey points:\n${outline}\n\nWrite it in a warm, conversational tone as if speaking directly to a listener. Start with a hook, cover the key ideas, end with a takeaway. No headers, just flowing narration.`}]
         })
       });
-      const j=await res.json();
       setPodcastText(j.content?.[0]?.text||"Could not generate — please try again.");
     }catch{setPodcastText("AI unavailable — please try again.");}
     setPodcastGenerating(false);
@@ -3122,6 +3147,11 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
   /* ── Cabinet home — the drawers ── */
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
+        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+        <div style={{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>Rest Space 🌿</div>
+        <div style={{width:36}}/>
+      </div>
       {/* Rest Space Header */}
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
         <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -3285,11 +3315,10 @@ async function aiStudy(content,title,type){
     slides:`Create a 5-slide deck from this note. Return ONLY a JSON array of objects with "title", "bullets" (array of 3-4 strings), "emoji" (one relevant emoji). No markdown.\n\nTitle: ${title}\n\n${content.slice(0,2000)}`,
   };
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,
       messages:[{role:"user",content:prompts[type]}]})
   });
-  const j=await res.json();
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
@@ -3322,7 +3351,7 @@ function StudyStudio({page,onClose}){
   const resetQuiz=()=>{setQIdx(0);setPicked(null);setScore(0);setQuizDone(false);};
 
   const TOOLS=[
-    {id:"flashcards",icon:"🃏",label:"Flashcards",desc:"Flip Q&A cards",col:"#7c5cbf"},
+    {id:"flashcards",icon:"🃏",label:"Flashcards",desc:"Flip Q&A cards",col:"#5A7848"},
     {id:"quiz",      icon:"❓",label:"Quiz",      desc:"Test yourself",col:"#2980b9"},
     {id:"infographic",icon:"📊",label:"Infographic",desc:"Visual summary",col:"#27ae60"},
     {id:"slides",    icon:"📑",label:"Slide Deck", desc:"Key slides",  col:"#e67e22"},
@@ -3894,7 +3923,7 @@ function VaultHub({data,setData,priData,ideasData,setIdeasData,matrixData,goalsD
     const nextGoal=(goalsData||[]).filter(g=>g.status!=="done").slice(0,1).map(g=>g.title)[0];
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,messages:[{role:"user",content:`Create a warm, personal morning briefing for today (${today}). Tone: gentle, motivating, like a trusted personal assistant speaking naturally.
 
 Agenda items:
@@ -3905,7 +3934,6 @@ Agenda items:
 
 Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the agenda today, (3) a gentle idea or reflection linked to their current work, (4) a one-sentence encouragement. Keep it under 250 words. No bullet points, just flowing warm prose.`}]})
       });
-      const j=await res.json();
       setBriefingText(j.content?.[0]?.text||"Could not generate — please try again.");
     }catch{setBriefingText("AI unavailable — please try again.");}
     setBriefingLoading(false);
@@ -3918,10 +3946,9 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
     const words=podcastLength==="short"?200:500;
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:`Create a ${podcastLength==="short"?"60-second":"3-minute"} podcast-style spoken summary of these vault notes. Warm, conversational, like a friend sharing their notebook over coffee. No headers. Flowing narration only. Target ~${words} words.\n\n${allContent||"No notes yet — create a brief intro about starting a personal knowledge vault."}`}]})
       });
-      const j=await res.json();
       setPodcastText(j.content?.[0]?.text||"Could not generate.");
     }catch{setPodcastText("AI unavailable.");}
     setPodcastLoading(false);
@@ -3937,10 +3964,9 @@ Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the a
       const text=ev.target.result.slice(0,3000); // first 3000 chars
       try{
         const res=await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST",headers:{"Content-Type":"application/json"},
+          method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
           body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:`Convert this PDF text into a warm, engaging 2-minute podcast script. Spoken naturally, no headers, flowing narration:\n\n${text}`}]})
         });
-        const j=await res.json();
         setPdfPodcast(j.content?.[0]?.text||"Could not convert.");
       }catch{setPdfPodcast("AI unavailable.");}
       setPdfLoading(false);
@@ -4538,7 +4564,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
    image/link per step, send to Calendar/Prioritizer/Matrix/MindMap
 ═══════════════════════════════════════════════════════ */
 const IDEA_TAGS=["💡 Idea","📱 App","🎨 Creative","💰 Business","🔮 Spiritual","✍️ Writing","🏠 Home","Other"];
-const TAG_COLORS={"💡 Idea":"#f39c12","📱 App":"#2980b9","🎨 Creative":"#9b59b6","💰 Business":"#27ae60","🔮 Spiritual":"#8e44ad","✍️ Writing":"#c2185b","🏠 Home":"#e67e22","Other":"#7f8c8d"};
+const TAG_COLORS={"💡 Idea":"#f39c12","📱 App":"#2980b9","🎨 Creative":"#5A7848","💰 Business":"#27ae60","🔮 Spiritual":"#8e44ad","✍️ Writing":"#c2185b","🏠 Home":"#e67e22","Other":"#7f8c8d"};
 const STATUSES=[
   {key:"spark",   label:"✨ Spark",      color:"#f39c12"},
   {key:"develop", label:"🔧 Developing", color:"#2980b9"},
@@ -4648,26 +4674,24 @@ function MountainProgress({pct=0,size=160}){
 /* ── AI step generator ─────────────────────────────── */
 async function aiGenerateSteps(goalText){
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514",max_tokens:400,
       messages:[{role:"user",content:`Break this goal into 4–6 clear, actionable steps. Return ONLY a JSON array of strings (step descriptions). No markdown, no extra text.\n\nGoal: "${goalText}"`}]
     })
   });
-  const j=await res.json();
   const txt=(j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim();
   return JSON.parse(txt);
 }
 
 async function aiGenerateMicroSteps(stepText){
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
     body:JSON.stringify({
       model:"claude-sonnet-4-20250514",max_tokens:300,
       messages:[{role:"user",content:`Break this step into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown, no extra text.\n\nStep: "${stepText}"`}]
     })
   });
-  const j=await res.json();
   const txt=(j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim();
   return JSON.parse(txt);
 }
@@ -4773,6 +4797,26 @@ function SeedToTree({pct=0,size=160}){
   );
 }
 
+const GOAL_HORIZONS=[
+  {key:"week",  label:"Next Week",  icon:"📅", color:"#5A7848", grad:"linear-gradient(135deg,#3A5A28,#5A7848)", question:"What do you want to achieve by next week?",  days:7},
+  {key:"month6",label:"6 Months",   icon:"🌱", color:"#27ae60", grad:"linear-gradient(135deg,#1e8449,#27ae60)", question:"Where do you want to be in 6 months?",        days:180},
+  {key:"year1", label:"1 Year",     icon:"⭐", color:"#2980b9", grad:"linear-gradient(135deg,#1a5276,#2980b9)", question:"What will you have achieved in 1 year?",       days:365},
+  {key:"year3", label:"3 Years",    icon:"🚀", color:"#8e44ad", grad:"linear-gradient(135deg,#4a148c,#8e44ad)", question:"Imagine your life in 3 years — what's changed?",days:1095},
+  {key:"year5", label:"5 Years",    icon:"🏔️", color:"#c0392b", grad:"linear-gradient(135deg,#7d1a1a,#c0392b)", question:"What does your ideal life look like in 5 years?",days:1825},
+];
+
+const horizonByKey=k=>GOAL_HORIZONS.find(h=>h.key===k)||GOAL_HORIZONS[0];
+
+function mkGoalSubtask(text=""){
+  return {id:Date.now()+Math.random(),text,done:false,microSteps:[],microExpanded:false};
+}
+function mkGoal(horizon){
+  const h=horizonByKey(horizon);
+  const due=new Date();due.setDate(due.getDate()+h.days);
+  return {id:Date.now(),horizon,title:"",description:"",dueDate:due.toISOString().slice(0,10),cover:null,links:[],subtasks:[],status:"active",created:Date.now()};
+}
+
+/* ── AI helpers ─────────────────────────────────────── */
 function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,notesData,setNotesData,mapData,setMapData,ideasData,setIdeasData,setScreen}){
   const [view,setView]=useState("garden"); // "garden"|"list"|"folders"
   const [activeHorizon,setActiveHorizon]=useState("all");
@@ -5033,11 +5077,10 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,notesDa
     if(!oldNotes.length){setNurseSuggestions([{title:"No old notes yet",reason:"Keep writing — I'll suggest revisits as your notes age 🌱"}]);setNurseLoading(false);return;}
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`These are notes the user hasn't touched in 2+ weeks. Suggest 3 gentle, specific reasons to revisit each. Return JSON array of objects: [{title, reason}]. Be warm and encouraging. No markdown.\n\nNotes: ${JSON.stringify(oldNotes.map(n=>({title:n.title,preview:n.content})))}`}]})
       });
-      const j=await res.json();
       setNurseSuggestions(JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim()));
     }catch{setNurseSuggestions([{title:"AI unavailable",reason:"Try again in a moment 🌿"}]);}
     setNurseLoading(false);
@@ -5059,11 +5102,10 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,notesDa
     const words=podcastLength==="short"?200:500;
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,
           messages:[{role:"user",content:`Create a warm ${podcastLength==="short"?"60-second":"3-minute"} podcast-style spoken reflection. Tone: encouraging, personal, like a supportive friend. Flowing narration only, ~${words} words.\n\n${content||"Speak to the power of starting a goal-setting journey."}`}]})
       });
-      const j=await res.json();
       setPodcastText(j.content?.[0]?.text||"Could not generate.");
     }catch{setPodcastText("AI unavailable — please try again.");}
     setPodcastLoading(false);
@@ -5076,11 +5118,10 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,notesDa
     const prevReviews=(goal.quarterlyReviews||[]).slice(-2).map(r=>r.reflection?.slice(0,200)).join(" | ");
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`Create 4 soft, kind quarterly review prompts for this goal. Previous reflections: "${prevReviews}". Goal: "${goal.title}" (${pct}% complete, ${goal.horizon}). Make prompts that build on previous answers if available. Warm, compassionate tone. Return ONLY a JSON array of 4 strings.`}]})
       });
-      const j=await res.json();
       setReviewPrompts(JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim()));
     }catch{setReviewPrompts(["How do you feel about your progress so far?","What surprised you most?","What's been harder than expected?","What would you tell your past self?"]);}
     setReviewLoading(false);
@@ -5473,7 +5514,7 @@ function OrbOfLight({pct=0,size=130}){
   const cx=size/2,cy=size/2,maxR=size*0.36;
   const coreR=Math.max(size*0.05,maxR*(pct/100));
   const full=pct>=100;
-  const col=pct===0?"#3d1a6e":pct<40?"#7c5cbf":pct<80?"#c4aee8":"#fff";
+  const col=pct===0?"#3d1a6e":pct<40?"#5A7848":pct<80?"#c4aee8":"#fff";
   return(
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{display:"block",overflow:"visible"}}>
       <defs>
@@ -6125,11 +6166,10 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,goalsData,se
     const taskList=data.map(t=>`id:${t.id} text:"${t.text}" quad:${t.quad} days_old:${Math.floor((now-(t.touched||now))/(86400000))}`).join("\n");
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
+        method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
         body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
           messages:[{role:"user",content:`Review these Eisenhower Matrix tasks and suggest 3-5 gentle moves between quadrants. Only suggest if there's a clear mismatch (e.g. a task that sounds important but is in "drop", or something that could be delegated). Be warm and brief. Return ONLY JSON array: [{id:number,text:string,currentQuad:string,suggestedQuad:string,reason:string}]\n\nTasks:\n${taskList}`}]})
       });
-      const j=await res.json();
       setSuggestions(JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim()));
     }catch{setSuggestions([{id:0,text:"AI unavailable",currentQuad:"",suggestedQuad:"",reason:"Try again in a moment 🌿"}]);}
     setSuggestLoading(false);
@@ -6171,8 +6211,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,goalsData,se
     if(!aiInput.trim())return;
     setAiLoading(true);setAiResult(null);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:`Place this task in an Eisenhower Matrix. Quadrants: "do"=Urgent+Important, "plan"=Important not urgent, "help"=Urgent not important (outsource/tool), "drop"=neither. Task: "${aiInput}". Reply ONLY JSON: {"quad":"do","reason":"one sentence"}`}]})});
-      const j=await res.json();
+      const res={ok:true};const j={content:[{text:await callAI(`Place this task in an Eisenhower Matrix. Quadrants: "do"=Urgent+Important, "plan"=Important not urgent, "help"=Urgent not important (outsource/tool), "drop"=neither. Task: "${aiInput}". Reply ONLY JSON: {"quad":"do","reason":"one sentence"}`,200)}]};
       setAiResult(JSON.parse((j.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim()));
     }catch{setAiResult({quad:"do",reason:"Couldn't reach AI — try again."});}
     setAiLoading(false);
@@ -6561,8 +6600,7 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
     setAiLoading(true);
     try{
       const budgetPrompt="Budget: "+b.name+" | Period: "+b.period+" ("+b.dateFrom+" to "+b.dateTo+")\nTotal budget: £"+budgetAmt.toFixed(2)+"\nTotal expenses: £"+totalExp.toFixed(2)+"\nRemaining: £"+remaining.toFixed(2)+" ("+(inGreen?"in budget":"over budget")+")\nExpenses: "+(b.expenses.map(e=>e.label+": £"+e.amount).join(", ")||"none listed");
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:"You are a warm friendly financial coach. Give exactly 5 short practical encouraging observations about this budget. Return ONLY a JSON array of 5 strings. No markdown.\n\n"+budgetPrompt}]})});
-      const j=await res.json();
+      const res={ok:true};const j={content:[{text:await callAI("You are a warm friendly financial coach. Give exactly 5 short practical encouraging observations about this budget. Return ONLY a JSON array of 5 strings. No markdown.\n\n"+budgetPrompt,600)}]};
       upd({aiReview:JSON.parse((j.content?.[0]?.text||"[]").replace(/\`\`\`json|\`\`\`/g,"").trim())});
     }catch{upd({aiReview:["Could not reach AI — please try again."]});}
     setAiLoading(false);
@@ -6683,7 +6721,7 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
 ═══════════════════════════════════════════════════════ */
 const SHOP_LIST_ICONS=["🛒","🎁","🍎","👗","🏠","🐾","💊","📚","🎉","✈️"];
 const SHOP_CATS=["General","Fresh Food","Frozen","Drinks","Household","Health & Beauty","Baby & Kids","Pets","Clothing","Electronics","Other"];
-const CAT_COLORS={"General":"#7c5cbf","Fresh Food":"#27ae60","Frozen":"#2980b9","Drinks":"#e67e22","Household":"#8e44ad","Health & Beauty":"#e91e8c","Baby & Kids":"#f39c12","Pets":"#16a085","Clothing":"#c0392b","Electronics":"#1a5276","Other":"#546e7a"};
+const CAT_COLORS={"General":"#5A7848","Fresh Food":"#27ae60","Frozen":"#2980b9","Drinks":"#e67e22","Household":"#8e44ad","Health & Beauty":"#e91e8c","Baby & Kids":"#f39c12","Pets":"#16a085","Clothing":"#c0392b","Electronics":"#1a5276","Other":"#546e7a"};
 
 function mkShopList(name="Groceries",icon="🛒"){
   return {id:Date.now(),name,icon,items:[],created:Date.now()};
@@ -7077,7 +7115,7 @@ function Calculator() {
         {rows.flat().map((btn,i)=>(
           <button key={i} onClick={()=>press(btn)} style={{
             padding:"20px 0",fontSize:btn==="⌫"?18:20,fontWeight:isOp(btn)?400:600,
-            background:isOp(btn)?"#7c5cbf":isGrey(btn)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.12)",
+            background:isOp(btn)?"#5A7848":isGrey(btn)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.12)",
             color:isGrey(btn)?"rgba(0,0,0,0.7)":C.wh,
             border:"none",cursor:"pointer",borderRadius:4,
             gridColumn:btn==="0"?"span 1":undefined,
@@ -7554,13 +7592,16 @@ function Tools({setScreen}) {
       if(!srcText.trim())return;
       setLoading(true);setResult("");
       try{
-        const res=await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,
-            messages:[{role:"user",content:`Translate the following text from ${langLabel(srcLang)} to ${langLabel(tgtLang)}. Return ONLY the translation, nothing else.\n\n${srcText}`}]})
-        });
-        const j=await res.json();
-        setResult(j.content?.[0]?.text||"Translation unavailable");
+        // MyMemory free translation API — no key, no CORS issues
+        const langPair=`${srcLang}|${tgtLang}`;
+        const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(srcText)}&langpair=${langPair}`;
+        const res=await fetch(url);
+        const txt=j.responseData?.translatedText;
+        if(txt&&txt!==srcText){
+          setResult(txt);
+        } else {
+          setResult("Translation unavailable — try a shorter phrase");
+        }
       }catch{setResult("Translation failed — check connection");}
       setLoading(false);
     };
@@ -7636,12 +7677,12 @@ function Tools({setScreen}) {
       setLoading(true);setResult(null);
       try{
         // Use free Open Exchange Rates (no key needed for latest via frankfurter)
-        const res=await fetch(`https://api.frankfurter.app/latest?amount=${amount}&from=${from}&to=${to}`);
-        const j=await res.json();
+        const url=`https://api.frankfurter.app/latest?amount=${amount}&from=${from}&to=${to}`;
+        const res=await fetch(url,{mode:"cors"});
+        if(!res.ok)throw new Error("Rate fetch failed");
         const converted=j.rates?.[to];
-        if(converted!=null)setResult({value:converted,rate:converted/parseFloat(amount)});
-        else setResult({error:"Rate unavailable"});
-        setRates(j.rates);
+        if(converted!=null){setResult({value:converted,rate:converted/parseFloat(amount)});setRates(j.rates);}
+        else setResult({error:"Rate unavailable for that currency pair"});
       }catch{setResult({error:"Couldn't fetch rates — check connection"});}
       setLoading(false);
     };
@@ -7729,43 +7770,21 @@ function Tools({setScreen}) {
    date, cover photo, links, send to Calendar/Prioritizer/Matrix
 ═══════════════════════════════════════════════════════ */
 
-const GOAL_HORIZONS=[
-  {key:"week",  label:"Next Week",  icon:"📅", color:"#5A7848", grad:"linear-gradient(135deg,#3A5A28,#5A7848)", question:"What do you want to achieve by next week?",  days:7},
-  {key:"month6",label:"6 Months",   icon:"🌱", color:"#27ae60", grad:"linear-gradient(135deg,#1e8449,#27ae60)", question:"Where do you want to be in 6 months?",        days:180},
-  {key:"year1", label:"1 Year",     icon:"⭐", color:"#2980b9", grad:"linear-gradient(135deg,#1a5276,#2980b9)", question:"What will you have achieved in 1 year?",       days:365},
-  {key:"year3", label:"3 Years",    icon:"🚀", color:"#8e44ad", grad:"linear-gradient(135deg,#4a148c,#8e44ad)", question:"Imagine your life in 3 years — what's changed?",days:1095},
-  {key:"year5", label:"5 Years",    icon:"🏔️", color:"#c0392b", grad:"linear-gradient(135deg,#7d1a1a,#c0392b)", question:"What does your ideal life look like in 5 years?",days:1825},
-];
-
-const horizonByKey=k=>GOAL_HORIZONS.find(h=>h.key===k)||GOAL_HORIZONS[0];
-
-function mkGoalSubtask(text=""){
-  return {id:Date.now()+Math.random(),text,done:false,microSteps:[],microExpanded:false};
-}
-function mkGoal(horizon){
-  const h=horizonByKey(horizon);
-  const due=new Date();due.setDate(due.getDate()+h.days);
-  return {id:Date.now(),horizon,title:"",description:"",dueDate:due.toISOString().slice(0,10),cover:null,links:[],subtasks:[],status:"active",created:Date.now()};
-}
-
-/* ── AI helpers ─────────────────────────────────────── */
 async function aiGoalSubtasks(goalTitle,horizon){
   const h=horizonByKey(horizon);
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
       messages:[{role:"user",content:`Break this ${h.label} goal into 4–6 clear actionable subtasks. Return ONLY a JSON array of strings. No markdown.\n\nGoal: "${goalTitle}"`}]})
   });
-  const j=await res.json();
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 async function aiMicroSteps(subtaskText){
   const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+    method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,
       messages:[{role:"user",content:`Break this into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown.\n\nTask: "${subtaskText}"`}]})
   });
-  const j=await res.json();
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
@@ -8071,18 +8090,16 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
 /* ── Goals home — 5 horizon tabs ───────────────────── */
 
 async function aiChargePicks(tasks){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,
       messages:[{role:"user",content:`Pick the 3 tasks most likely being avoided and worth tackling today. Return ONLY a JSON array of 3 task name strings. No markdown.\n\nTasks: ${tasks.map(t=>t.name||t.text).slice(0,15).join(", ")}`}]})});
-  const j=await res.json();
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
 async function aiAwardSuggestions(style){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{...{"Content-Type":"application/json","anthropic-version":"2023-06-01"},...(getAIKey()?{"x-api-key":getAIKey()}:{})},
     body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,
       messages:[{role:"user",content:`Suggest 6 warm, specific, achievable self-care rewards for someone who hit their weekly goals. Style: "${style||"restorative and nurturing"}". Return ONLY a JSON array of 6 strings. No markdown.`}]})});
-  const j=await res.json();
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
@@ -8491,12 +8508,14 @@ function RestSpace({setScreen}){
   const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
   return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0a1a0a 0%,#0d2b1a 40%,#1a3d2a 100%)",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
       {/* Header */}
-      
-      <div style={{background:"linear-gradient(135deg,#0d2b1a,#1e5c3a)",padding:"18px 16px 14px",textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.6)",fontStyle:"italic",lineHeight:1.6}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+        <div style={{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>Rest Space 🌿</div>
+        <div style={{width:36}}/>tAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+        <div style={{fontSize:13,color:"#6A6050",fontStyle:"italic",lineHeight:1.6}}>
           "Rest is not a reward for finishing — it's part of the work" 🌿
         </div>
       </div>
@@ -8514,15 +8533,15 @@ function RestSpace({setScreen}){
         {tab==="meditate"&&<>
           {/* Active meditation */}
           {activeMed&&(
-            <div style={{background:"linear-gradient(135deg,#0d2b1a,#1e5c3a)",borderRadius:22,padding:"24px 20px",marginBottom:16,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",border:"1px solid rgba(82,196,122,0.3)"}}>
+            <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"24px 20px",marginBottom:16,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",border:"1px solid rgba(90,120,72,0.20)"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-                <button onClick={stopMed} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
+                <button onClick={stopMed} style={{background:"rgba(248,245,236,0.92)",color:"#fff",border:"none",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
                 <span style={{fontSize:30}}>{activeMed.icon}</span>
                 <div style={{flex:1}}>
                   <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{activeMed.title}</div>
                   <div style={{color:"#7A7060",fontSize:12}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
                 </div>
-                <button onClick={stopMed} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕ End</button>
+                <button onClick={stopMed} style={{background:"rgba(248,245,236,0.92)",color:"#fff",border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕ End</button>
               </div>
               {/* Script text — shows when no audio uploaded */}
               {!medDone&&!audioFiles[activeMed.id]&&(
@@ -8534,21 +8553,21 @@ function RestSpace({setScreen}){
               )}
               {/* Audio playing indicator */}
               {!medDone&&audioFiles[activeMed.id]&&(
-                <div style={{background:"rgba(90,80,60,0.06)",borderRadius:16,padding:"18px 20px",marginBottom:16,display:"flex",flexDirection:"column",alignItems:"center",gap:12,border:"1px solid rgba(82,196,122,0.3)"}}>
+                <div style={{background:"rgba(90,80,60,0.06)",borderRadius:16,padding:"18px 20px",marginBottom:16,display:"flex",flexDirection:"column",alignItems:"center",gap:12,border:"1px solid rgba(90,120,72,0.20)"}}>
                   <div style={{display:"flex",gap:6,alignItems:"flex-end",height:32}}>
                     {[0.4,0.7,1,0.8,0.5,0.9,0.6,0.75,0.45,0.85].map((h,i)=>(
                       <div key={i} style={{width:4,borderRadius:2,background:"#52c47a",height:`${h*100}%`,opacity:0.7+i*0.03}}/>
                     ))}
                   </div>
                   <div style={{color:"#e0f7e9",fontSize:14,fontWeight:600,textAlign:"center"}}>🎵 Your guided meditation is playing</div>
-                  <div style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>Close your eyes or keep them soft and unfocused</div>
+                  <div style={{color:"#8A8070",fontSize:12}}>Close your eyes or keep them soft and unfocused</div>
                 </div>
               )}
               {medDone&&(
                 <div style={{background:"rgba(82,196,122,0.15)",borderRadius:16,padding:"20px",textAlign:"center",border:"1px solid rgba(82,196,122,0.4)"}}>
                   <div style={{fontSize:36,marginBottom:8}}>🌿</div>
-                  <div style={{color:"#52c47a",fontWeight:900,fontSize:18,marginBottom:4}}>Rest complete</div>
-                  <div style={{color:"rgba(255,255,255,0.6)",fontSize:14}}>Take a moment before moving on</div>
+                  <div style={{color:"#3A6020",fontWeight:900,fontSize:18,marginBottom:4}}>Rest complete</div>
+                  <div style={{color:"#6A6050",fontSize:14}}>Take a moment before moving on</div>
                 </div>
               )}
               {/* Progress dots */}
@@ -8564,7 +8583,7 @@ function RestSpace({setScreen}){
 
           {/* Meditation cards */}
           {!activeMed&&<>
-            <div style={{color:"rgba(255,255,255,0.6)",fontSize:13,textAlign:"center",marginBottom:14,lineHeight:1.6}}>
+            <div style={{color:"#6A6050",fontSize:13,textAlign:"center",marginBottom:14,lineHeight:1.6}}>
               These are guided rest sessions — not sleep.<br/>Perfect for fatigue recovery during the day 💙
             </div>
             {MEDITATIONS.map(med=>(
@@ -8580,11 +8599,11 @@ function RestSpace({setScreen}){
                     <div style={{color:"#7A7060",fontSize:12,marginBottom:3}}>{med.desc}</div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <span style={{color:"rgba(82,196,122,0.8)",fontSize:11,fontWeight:700}}>{Math.round(med.duration/60)} min</span>
-                      {audioFiles[med.id]&&<span style={{background:"rgba(82,196,122,0.25)",color:"#52c47a",fontSize:10,fontWeight:800,borderRadius:10,padding:"2px 8px"}}>🎵 Audio ready</span>}
-                      {!audioFiles[med.id]&&<span style={{color:"rgba(255,255,255,0.3)",fontSize:10}}>📝 Text script</span>}
+                      {audioFiles[med.id]&&<span style={{background:"rgba(82,196,122,0.25)",color:"#3A6020",fontSize:10,fontWeight:800,borderRadius:10,padding:"2px 8px"}}>🎵 Audio ready</span>}
+                      {!audioFiles[med.id]&&<span style={{color:"#9A9080",fontSize:10}}>📝 Text script</span>}
                     </div>
                   </div>
-                  <div style={{color:"rgba(255,255,255,0.3)",fontSize:22}}>▶</div>
+                  <div style={{color:"#9A9080",fontSize:22}}>▶</div>
                 </div>
                 {/* Audio upload row */}
                 <div style={{display:"flex",gap:8,alignItems:"center",borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:10}}>
@@ -8596,7 +8615,7 @@ function RestSpace({setScreen}){
                   ):(
                     <>
                       <div style={{flex:1,fontSize:11,color:"rgba(255,255,255,0.35)"}}>Upload your ElevenLabs MP3</div>
-                      <label style={{background:"rgba(82,196,122,0.2)",color:"#52c47a",border:"1px solid rgba(82,196,122,0.4)",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                      <label style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1px solid rgba(82,196,122,0.4)",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
                         🎵 Upload audio
                         <input type="file" accept="audio/*" style={{display:"none"}} onChange={e=>uploadAudio(med.id,e)}/>
                       </label>
@@ -8612,8 +8631,8 @@ function RestSpace({setScreen}){
         {tab==="sounds"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <button onClick={()=>setTab("meditate")} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,width:34,height:34,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
-              <span style={{color:"rgba(255,255,255,0.7)",fontWeight:700,fontSize:14}}>🎵 Nature Sounds</span>
+              <button onClick={()=>setTab("meditate")} style={{background:"rgba(248,245,236,0.88)",color:"#fff",border:"1px solid rgba(90,80,60,0.12)",borderRadius:10,width:34,height:34,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
+              <span style={{color:"#4A4A38",fontWeight:700,fontSize:14}}>🎵 Nature Sounds</span>
             </div>
             <WhiteNoise/>
           </div>
@@ -8623,10 +8642,10 @@ function RestSpace({setScreen}){
         {tab==="timer"&&(
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <button onClick={()=>setTab("meditate")} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,width:34,height:34,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
-              <span style={{color:"rgba(255,255,255,0.7)",fontWeight:700,fontSize:14}}>⏱ Break Timer</span>
+              <button onClick={()=>setTab("meditate")} style={{background:"rgba(248,245,236,0.88)",color:"#fff",border:"1px solid rgba(90,80,60,0.12)",borderRadius:10,width:34,height:34,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
+              <span style={{color:"#4A4A38",fontWeight:700,fontSize:14}}>⏱ Break Timer</span>
             </div>
-            <div style={{color:"rgba(255,255,255,0.6)",fontSize:13,textAlign:"center",marginBottom:16,lineHeight:1.6}}>
+            <div style={{color:"#6A6050",fontSize:13,textAlign:"center",marginBottom:16,lineHeight:1.6}}>
               Set a break timer. During your break, switch to Guided Rest or Sounds 🌿
             </div>
             {/* Big timer display */}
@@ -8634,7 +8653,7 @@ function RestSpace({setScreen}){
               {breakLeft!==null?(
                 <>
                   <div style={{fontFamily:"monospace",fontSize:64,fontWeight:900,color:breakLeft<60?"#FF6B6B":"#52c47a",lineHeight:1,marginBottom:8}}>{fmt(breakLeft)}</div>
-                  <div style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:16}}>
+                  <div style={{color:"#7A7060",fontSize:13,marginBottom:16}}>
                     {breakOn?"Rest time — you're doing great 🌿":"Break paused"}
                   </div>
                   <div style={{display:"flex",gap:10,justifyContent:"center"}}>
@@ -8646,7 +8665,7 @@ function RestSpace({setScreen}){
                 </>
               ):(
                 <>
-                  <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:14}}>Break duration</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#7A7060",marginBottom:14}}>Break duration</div>
                   <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:20}}>
                     {[5,10,15,20,30].map(m=>(
                       <button key={m} onClick={()=>setBreakMins(m)} style={{background:breakMins===m?"rgba(82,196,122,0.3)":"rgba(255,255,255,0.08)",color:breakMins===m?"#52c47a":"rgba(255,255,255,0.6)",border:`1.5px solid ${breakMins===m?"#52c47a":"rgba(255,255,255,0.15)"}`,borderRadius:20,padding:"8px 16px",fontWeight:breakMins===m?800:600,fontSize:13,cursor:"pointer"}}>
@@ -8663,11 +8682,11 @@ function RestSpace({setScreen}){
             </div>
             {/* Tips */}
             <div style={{background:"rgba(255,255,255,0.06)",borderRadius:16,padding:"14px 16px",border:"1px solid rgba(82,196,122,0.15)"}}>
-              <div style={{color:"#52c47a",fontWeight:800,fontSize:13,marginBottom:8}}>💙 Rest tips</div>
+              <div style={{color:"#3A6020",fontWeight:800,fontSize:13,marginBottom:8}}>💙 Rest tips</div>
               {["Avoid screens during your break if possible","Lie down or sit comfortably — you don't need to sleep","Use guided rest instead of napping to avoid sleep inertia","Even 10 minutes of proper rest restores energy","Your body heals and restores during conscious rest"].map((tip,i)=>(
                 <div key={i} style={{display:"flex",gap:8,marginBottom:6}}>
-                  <span style={{color:"#52c47a",flexShrink:0}}>🌿</span>
-                  <span style={{color:"rgba(255,255,255,0.6)",fontSize:13}}>{tip}</span>
+                  <span style={{color:"#3A6020",flexShrink:0}}>🌿</span>
+                  <span style={{color:"#6A6050",fontSize:13}}>{tip}</span>
                 </div>
               ))}
             </div>
@@ -8855,6 +8874,8 @@ export default function App() {
   const [screen,setScreen]=useState("home");
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
+  const [showAIKeyModal,setShowAIKeyModal]=useState(false);
+  const [aiKeyDraft,setAiKeyDraft]=useState("");
   const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
   const [mapData,setMapData]=useState(()=>{try{const v=localStorage.getItem('thinko_map');return v?JSON.parse(v):[];}catch{return [];}});
   const [notesData,setNotesData]=useState(()=>{try{const v=localStorage.getItem('thinko_notes');return v?JSON.parse(v):[];}catch{return [];}});
@@ -8905,6 +8926,36 @@ export default function App() {
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",zIndex:10}}>
 
       {/* ── NAME MODAL with vines ── */}
+      {/* ── AI KEY SETUP MODAL ── */}
+      {showAIKeyModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(30,40,20,0.60)",display:"flex",alignItems:"center",justifyContent:"center",padding:24,backdropFilter:"blur(8px)"}}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:28,padding:"28px 24px",width:"100%",maxWidth:360,boxShadow:"0 8px 48px rgba(0,0,0,0.18)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:4}}>🤖 AI Setup</div>
+            <div style={{fontSize:13,color:"#8A8070",lineHeight:1.7,marginBottom:16}}>
+              To use AI features (suggestions, podcast, gap check, etc.) paste your Anthropic API key below. Get one free at <strong>console.anthropic.com</strong> — it only costs fractions of a penny per use.
+            </div>
+            <div style={{fontSize:11,color:"#5A7848",background:"rgba(90,120,72,0.08)",borderRadius:12,padding:"10px 14px",marginBottom:14,lineHeight:1.6}}>
+              🔒 Your key is stored only on your device. Never sent anywhere except directly to Anthropic.
+            </div>
+            <input
+              value={aiKeyDraft||getAIKey()}
+              onChange={e=>setAiKeyDraft(e.target.value)}
+              placeholder="sk-ant-api03-..."
+              type="password"
+              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:12,background:"rgba(255,255,255,0.9)",fontFamily:"monospace"}}
+            />
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{saveAIKey("");setShowAIKeyModal(false);setAiKeyDraft("");}} style={{flex:1,padding:"13px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>
+                {getAIKey()?"Remove Key":"Cancel"}
+              </button>
+              <button onClick={()=>{if(aiKeyDraft.trim())saveAIKey(aiKeyDraft.trim());setShowAIKeyModal(false);setAiKeyDraft("");}} style={{flex:2,padding:"13px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.25)"}}>
+                Save Key ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showNameModal&&(
         <div style={{position:"fixed",inset:0,zIndex:300,overflow:"hidden"}}>
           {/* Full bleed garden background */}
@@ -9040,7 +9091,12 @@ export default function App() {
         <div style={{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3}}>
           Thinko 🌿
         </div>
-        <AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={()=>setShowAIKeyModal(true)} title="AI Settings" style={{background:getAIKey()?"rgba(90,160,80,0.14)":"rgba(200,100,50,0.10)",border:`1px solid ${getAIKey()?"rgba(90,160,80,0.3)":"rgba(200,100,50,0.25)"}`,borderRadius:100,padding:"6px 10px",fontSize:12,fontWeight:700,color:getAIKey()?"#2A6020":"#7A4020",cursor:"pointer"}}>
+            🤖 {getAIKey()?"AI ✓":"AI Key"}
+          </button>
+          <AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/>
+        </div>
       </div>
       {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
 
