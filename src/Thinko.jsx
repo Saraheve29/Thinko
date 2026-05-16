@@ -6970,34 +6970,82 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             {data.targetTask&&<div style={{fontSize:12,color:"#5A7848",marginTop:8,fontStyle:"italic"}}>🎯 Today's focus: {data.targetTask}</div>}
           </div>
 
+          {/* ── Today's named task slots ── always visible */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15}}>
+                Today's {target} task{target!==1?"s":""}
+              </div>
+              <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️ Edit tasks</button>
+            </div>
+            {(data.targetTasks||[]).some(t=>t?.trim())
+              ?(data.targetTasks||[]).filter(t=>t?.trim()).map((task,i)=>{
+                const done=charged.includes(task);
+                return(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.95)",borderRadius:16,padding:"11px 14px",marginBottom:8,border:`1.5px solid ${done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.15)"}`}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:done?"rgba(90,160,80,0.20)":"rgba(90,120,72,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:done?"#3A7020":"#3A6020",flexShrink:0}}>{done?"✓":i+1}</div>
+                    <div style={{flex:1,fontSize:14,fontWeight:600,color:done?"#9A9080":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
+                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                      {!done&&<button onClick={()=>{
+                        if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:task,done:false,color:"sage"}]}:l));showToast("📋 Added to Prioritizer!");}
+                        else showToast("Add a Prioritizer list first");
+                      }} style={{background:"rgba(90,120,72,0.08)",color:"#5A7848",border:"none",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}} title="Send to Prioritizer">📋</button>}
+                      <button onClick={()=>!done&&chargeIt(task)} style={{background:done?"rgba(90,160,80,0.15)":"#6A8858",color:done?"#3A7020":"#fff",border:"none",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:done?"default":"pointer"}}>
+                        {done?"✓ Done":"⚡ Charge"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+              :<div style={{textAlign:"center",padding:"16px 0"}}>
+                <div style={{color:"#8A8070",fontSize:13,marginBottom:10}}>No tasks set yet for today</div>
+                <button onClick={()=>setView("settings")} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ Set today's tasks</button>
+              </div>
+            }
+          </div>
+
           {/* Reward card */}
-          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:16,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}>
-              {reward.photo
-                ?<img src={reward.photo} alt="" style={{width:52,height:52,borderRadius:14,objectFit:"cover",flexShrink:0}}/>
-                :<span style={{fontSize:30,flexShrink:0}}>🎁</span>}
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>
-                  {rewardName||<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:16,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
+          {(()=>{
+            const unlockDate=new Date();
+            unlockDate.setDate(unlockDate.getDate()+daysUntilReward);
+            const dateStr=unlockDate.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+            return(
+              <div style={{background:rewardUnlocked?"linear-gradient(135deg,rgba(90,160,80,0.12),rgba(120,180,100,0.08))":"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:16,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:`1px solid ${rewardUnlocked?"rgba(90,160,80,0.30)":daysUntilReward===1?"rgba(200,160,60,0.30)":"rgba(255,255,255,0.9)"}`}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:12}}>
+                  {reward.photo
+                    ?<img src={reward.photo} alt="" style={{width:56,height:56,borderRadius:14,objectFit:"cover",flexShrink:0}}/>
+                    :<span style={{fontSize:32,flexShrink:0}}>🎁</span>}
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>
+                      {rewardName||<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
+                    </div>
+                    {reward.cost&&<div style={{fontSize:12,color:"#8A8070",marginBottom:2}}>💰 {reward.cost} · <button onClick={()=>setScreen&&setScreen("budget")} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,textDecoration:"underline"}}>Budget it</button></div>}
+                    {reward.url&&<a href={reward.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#5A7848",display:"block",marginBottom:2}}>🔗 View</a>}
+                    {/* Clear unlock message */}
+                    {rewardName&&(
+                      <div style={{marginTop:6,padding:"8px 12px",background:rewardUnlocked?"rgba(90,160,80,0.15)":daysUntilReward===1?"rgba(220,180,60,0.15)":"rgba(90,120,72,0.08)",borderRadius:12,border:`1px solid ${rewardUnlocked?"rgba(90,160,80,0.25)":daysUntilReward===1?"rgba(200,160,40,0.25)":"rgba(90,120,72,0.15)"}`}}>
+                        {rewardUnlocked
+                          ?<><div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#2A7020",fontSize:14}}>🎉 You can reward yourself now!</div><div style={{fontSize:12,color:"#3A8030",marginTop:2}}>You've earned it — enjoy every bit of it 🌿</div></>
+                          :daysUntilReward===1
+                          ?<><div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#7A5020",fontSize:14}}>🌟 One more day!</div><div style={{fontSize:12,color:"#8A6030",marginTop:2}}>Hit your {target} tasks today and unlock "{rewardName}" tomorrow — {dateStr}</div></>
+                          :<><div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A5020",fontSize:13}}>📅 Unlock on {dateStr}</div><div style={{fontSize:12,color:"#7A7060",marginTop:2}}>{daysUntilReward} more day{daysUntilReward!==1?"s":""} · hit {target} task{target!==1?"s":""}/day to unlock</div></>
+                        }
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {reward.cost&&<div style={{fontSize:12,color:"#8A8070",marginTop:2}}>💰 Cost: {reward.cost} · <button onClick={()=>setScreen&&setScreen("budget")} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,textDecoration:"underline"}}>Save to Budget</button></div>}
-                {reward.url&&<a href={reward.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#5A7848",display:"block",marginTop:2}}>🔗 View</a>}
-                <div style={{fontSize:13,color:rewardUnlocked?"#3A8020":daysUntilReward===1?"#7A5020":"#7A7060",marginTop:4,fontWeight:rewardUnlocked||daysUntilReward===1?700:400}}>
-                  {rewardUnlocked?"🎉 Reward unlocked — you've earned it!":daysUntilReward===1?"🌟 One more day — you're so close!":rewardName?`${daysUntilReward} more day${daysUntilReward!==1?"s":""} to unlock`:"Set a reward to stay motivated"}
+                {/* Progress bar */}
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <div style={{display:"flex",gap:4,flex:1}}>
+                    {Array.from({length:rewardFreq}).map((_,i)=>(
+                      <div key={i} style={{flex:1,height:6,borderRadius:100,background:i<daysHit?"#6A8858":"rgba(90,80,60,0.15)",transition:"background 0.3s"}}/>
+                    ))}
+                  </div>
+                  <span style={{fontSize:11,color:"#8A8070",flexShrink:0,marginLeft:4}}>{daysHit}/{rewardFreq}</span>
                 </div>
               </div>
-            </div>
-            {/* Progress lights */}
-            <div style={{display:"flex",gap:8}}>
-              {Array.from({length:rewardFreq}).map((_,i)=>(
-                <div key={i} style={{
-                  flex:1,height:6,borderRadius:100,
-                  background:i<daysHit?"#6A8858":"rgba(90,80,60,0.15)",
-                  transition:"background 0.3s",
-                }}/>
-              ))}
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Stale/overdue tasks */}
           {allStale.length>0&&(
@@ -7104,43 +7152,57 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
 
         {/* ══ SETUP ══ */}
         {view==="settings"&&<>
-          {/* ── Daily Target ── */}
+          {/* ── Daily Target — task slots ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:4}}>⚡ Daily target</div>
-            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>How many tasks to charge through each day?</div>
-            <div style={{display:"flex",gap:8,marginBottom:14}}>
+            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>Pick how many tasks — then name each one</div>
+            {/* Number selector */}
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
               {[1,2,3,4,5].map(n=>(
-                <button key={n} onClick={()=>upd({dailyTarget:n})} style={{flex:1,minWidth:48,padding:"13px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:16,cursor:"pointer"}}>{n}</button>
+                <button key={n} onClick={()=>{
+                  upd({dailyTarget:n});
+                  // Resize the task slots array
+                  const current=data.targetTasks||[];
+                  const resized=Array.from({length:n},(_,i)=>current[i]||"");
+                  upd({dailyTarget:n,targetTasks:resized});
+                }} style={{flex:1,minWidth:48,padding:"13px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:16,cursor:"pointer"}}>{n}</button>
               ))}
             </div>
-            {/* Focus task name */}
-            <div style={{fontFamily:"Georgia,serif",fontWeight:600,color:"#3A3020",fontSize:14,marginBottom:8}}>What's your main focus task today?</div>
-            <input value={data.targetTask||""} onChange={e=>upd({targetTask:e.target.value})}
-              placeholder="e.g. Finish Reframe prototype…"
-              style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.88)"}}/>
-            {/* Link from Prioritizer */}
-            {(priData||[]).flatMap(l=>l.tasks||[]).filter(t=>!t.done).length>0&&(
-              <select value={data.linkedPriTask||""} onChange={e=>{
-                const task=(priData||[]).flatMap(l=>l.tasks||[]).find(t=>t.id===parseInt(e.target.value));
-                if(task)upd({targetTask:task.name,linkedPriTask:e.target.value});
-              }} style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(248,245,236,0.85)",marginBottom:8}}>
-                <option value="">📋 Link from Prioritizer…</option>
-                {(priData||[]).flatMap(l=>(l.tasks||[]).filter(t=>!t.done).map(t=>(
-                  <option key={t.id} value={t.id}>{t.name} ({l.name})</option>
-                )))}
-              </select>
-            )}
-            {/* Link from Matrix */}
-            {(matrixData||[]).length>0&&(
-              <select value={data.linkedMatrixTask||""} onChange={e=>{
-                const task=(matrixData||[]).find(t=>t.id===parseInt(e.target.value));
-                if(task)upd({targetTask:task.text,linkedMatrixTask:e.target.value});
-              }} style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.12)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(248,245,236,0.85)"}}>
-                <option value="">⚖️ Link from Matrix…</option>
-                {(matrixData||[]).map(t=>(
-                  <option key={t.id} value={t.id}>{t.text}</option>
-                ))}
-              </select>
+            {/* Task input slots — one per target number */}
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+              {Array.from({length:target}).map((_,i)=>{
+                const tasks=data.targetTasks||[];
+                return(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#3A6020",flexShrink:0}}>{i+1}</div>
+                    <input
+                      value={tasks[i]||""}
+                      onChange={e=>{
+                        const next=[...(data.targetTasks||Array.from({length:target},()=>""))];
+                        next[i]=e.target.value;
+                        upd({targetTasks:next});
+                      }}
+                      placeholder={`Task ${i+1}…`}
+                      style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            {/* Prioritize button — send all tasks to Prioritizer */}
+            {(data.targetTasks||[]).some(t=>t.trim())&&(
+              <button onClick={()=>{
+                const tasks=(data.targetTasks||[]).filter(t=>t.trim());
+                if(!tasks.length)return;
+                if(setPriData&&(priData||[]).length){
+                  setPriData(ls=>ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,...tasks.map(name=>({id:Date.now()+Math.random(),name,done:false,color:"sage"}))]}:l));
+                  showToast(`📋 ${tasks.length} task${tasks.length!==1?"s":""} sent to Prioritizer!`);
+                } else {
+                  showToast("Add a Prioritizer list first");
+                }
+              }} style={{width:"100%",padding:"12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                <span>📋</span> Send all to Prioritizer (optional)
+              </button>
             )}
           </div>
 
@@ -7157,11 +7219,27 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             </div>
             {/* Days to unlock */}
             <div style={{fontSize:12,color:"#8A8070",marginBottom:8}}>Unlock after hitting target for:</div>
-            <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+            <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
               {((data.rewardType||"weekly")==="daily"?[1]:[2,3,4,5,6,7]).map(n=>(
                 <button key={n} onClick={()=>upd({rewardFreq:n})} style={{flex:1,minWidth:36,padding:"9px 6px",background:(data.rewardFreq||5)===n?"#6A8858":"rgba(248,245,236,0.95)",color:(data.rewardFreq||5)===n?"#fff":"#3A3020",border:`1.5px solid ${(data.rewardFreq||5)===n?"#6A8858":"rgba(90,80,60,0.15)"}`,borderRadius:12,fontWeight:700,fontSize:14,cursor:"pointer"}}>{n}d</button>
               ))}
             </div>
+            {/* Unlock date preview — clear and prominent */}
+            {(data.reward?.name||data.weeklyAward)&&(()=>{
+              const unlockDate=new Date();
+              unlockDate.setDate(unlockDate.getDate()+(daysUntilReward));
+              const dateStr=unlockDate.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+              return(
+                <div style={{background:rewardUnlocked?"rgba(90,160,80,0.12)":daysUntilReward===1?"rgba(220,180,80,0.12)":"rgba(90,120,72,0.07)",borderRadius:16,padding:"12px 16px",marginBottom:14,border:`1px solid ${rewardUnlocked?"rgba(90,160,80,0.25)":daysUntilReward===1?"rgba(200,160,60,0.25)":"rgba(90,120,72,0.15)"}`}}>
+                  {rewardUnlocked
+                    ?<div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#2A7020",fontSize:15}}>🎉 You've unlocked your reward!</div>
+                    :daysUntilReward===1
+                    ?<><div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#7A5020",fontSize:15}}>🌟 One more day!</div><div style={{fontSize:12,color:"#8A7060",marginTop:3}}>Hit today's {target} tasks and unlock your reward tomorrow — {dateStr}</div></>
+                    :<><div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A5020",fontSize:14}}>📅 Reward unlock date</div><div style={{fontSize:13,color:"#5A7040",marginTop:3,fontWeight:600}}>{dateStr}</div><div style={{fontSize:11,color:"#8A8070",marginTop:2}}>Hit {target} tasks/day for {daysUntilReward} more day{daysUntilReward!==1?"s":""}</div></>
+                  }
+                </div>
+              );
+            })()}
             {/* Reward editor */}
             {editAward?(
               <>
@@ -7726,13 +7804,28 @@ export default function App() {
     setHomeBriefingText("");
     const d=new Date();
     const dayStr=d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
-    // Gather context from data
     const priCount=(priData||[]).flatMap(l=>l.tasks||[]).filter(t=>!t.done).length;
     const goalCount=(goalsData||[]).filter(g=>g.status==="active").length;
+    // Pull reward + task info from localStorage
+    let chargeInfo="";
+    try{
+      const cd=JSON.parse(localStorage.getItem('thinko_charge')||'{}');
+      const rName=cd.reward?.name||cd.weeklyAward||"";
+      const rFreq=cd.rewardFreq||5;
+      const dt=cd.dailyTarget||3;
+      const weekDays=Array.from({length:7},(_,i)=>{const dd=new Date();dd.setDate(dd.getDate()-6+i);return dd.toISOString().slice(0,10);});
+      const dHit=weekDays.filter(dd=>(cd.days?.[dd]?.charged||[]).length>=dt).length;
+      const dLeft=Math.max(0,rFreq-dHit);
+      const tasks=(cd.targetTasks||[]).filter(t=>t?.trim());
+      if(tasks.length)chargeInfo+=`Today's ${dt} tasks: ${tasks.join(", ")}. `;
+      if(rName&&dLeft===0)chargeInfo+=`IMPORTANT: Their reward "${rName}" is UNLOCKED — they can treat themselves now! Celebrate this warmly.`;
+      else if(rName&&dLeft===1)chargeInfo+=`They are ONE day away from their reward "${rName}" — if they hit today's ${dt} tasks they unlock it tomorrow! Mention this excitedly.`;
+      else if(rName&&dLeft>0)chargeInfo+=`They have ${dLeft} days left to unlock their reward "${rName}".`;
+    }catch{}
     try{
       const result=await callAI(
-        `Write a warm, personal morning briefing for ${userName||"Sarah"}. Today is ${dayStr}. They have ${priCount} active tasks and ${goalCount} active goals. Keep it under 150 words. 3 short paragraphs: 1) a warm greeting for the time of day, 2) a gentle nudge about their day ahead, 3) an encouraging close. Friendly, like a supportive friend — not corporate.`,
-        300
+        `Write a warm personal morning briefing for ${userName||"Sarah"}. Today: ${dayStr}. ${priCount} active tasks, ${goalCount} active goals. ${chargeInfo} Under 180 words. 3 paragraphs: 1) warm greeting + mention today's tasks by name if known, 2) reward progress if relevant, 3) uplifting close. Friendly like a supportive friend, not corporate.`,
+        320
       );
       setHomeBriefingText(result||"Good morning! Your calm space is ready. Whatever today holds, you've got this 🌿");
     }catch{
