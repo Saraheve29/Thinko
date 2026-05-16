@@ -4731,7 +4731,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   );
 
   return (
-    <div style={{height:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden",boxSizing:"border-box"}}>
+    <div style={{minHeight:"100%",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",boxSizing:"border-box"}}>
 
       {/* ── HEADER — compact to save vertical space ── */}
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 16px 12px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
@@ -4744,16 +4744,15 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       </div>
 
       {/* ── 2×2 GRID — exact width, no overflow ── */}
-      <div style={{flex:1,padding:"8px",display:"flex",flexDirection:"column",overflow:"hidden",boxSizing:"border-box",width:"100%"}}>
+      <div style={{padding:"8px 8px 0",display:"flex",flexDirection:"column",boxSizing:"border-box",width:"100%"}}>
         <div style={{
           display:"grid",
           gridTemplateColumns:"calc(50% - 4px) calc(50% - 4px)",
-          gridTemplateRows:"1fr 1fr",
+          gridTemplateRows:"calc(50vh - 90px) calc(50vh - 90px)",
           gap:8,
-          flex:1,
-          overflow:"hidden",
           width:"100%",
           boxSizing:"border-box",
+          marginBottom:8,
         }}>
           {QUADS.map((q,qi)=>{
             const tasks=data.filter(d=>d.quad===q.key);
@@ -4766,9 +4765,9 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                 position:"relative",
                 display:"flex",
                 flexDirection:"column",
-                overflow:"hidden",
                 boxSizing:"border-box",
                 minWidth:0,
+                overflow:"hidden",
               }}>
                 {/* Leaf icon */}
                 <div style={{position:"absolute",top:10,right:10,opacity:0.8}}>
@@ -4824,7 +4823,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       </div>
 
       {/* ── BOTTOM BUTTONS ── */}
-      <div style={{padding:"10px 12px 28px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%"}}>
+      <div style={{position:"sticky",bottom:0,padding:"10px 12px 28px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%",zIndex:50}}>
         <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(90,120,72,0.30)"}}>Move to Prioritizer</button>
         <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"14px 8px",background:"transparent",color:"#3A6020",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>Weekly Insights</button>
       </div>
