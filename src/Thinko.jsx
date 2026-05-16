@@ -7052,17 +7052,17 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                           <div style={{fontSize:14,fontWeight:done?600:700,color:done?"#6A9060":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
                           {done&&<div style={{fontSize:11,color:"#5A9040",marginTop:2,fontWeight:600}}>⚡ Charged!</div>}
                         </div>
-                        {!done&&(
-                          <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
-                            <button onClick={()=>chargeIt(task)} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(90,120,72,0.25)"}}>⚡ Charge</button>
-                            <button onClick={()=>{
-                              if(window.confirm(`Delete "${task}"?`)){
-                                const next=[...tasks];next[origIdx]="";
-                                upd({targetTasks:next});showToast("🗑 Task deleted");
-                              }
-                            }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"7px 11px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑</button>
-                          </div>
-                        )}
+                        <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
+                          {!done&&<button onClick={()=>chargeIt(task)} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(90,120,72,0.25)"}}>⚡ Charge</button>}
+                          <button onClick={()=>{
+                            if(window.confirm(`Delete "${task}"?`)){
+                              const next=[...tasks];next[origIdx]="";
+                              // Also remove from charged if done
+                              if(done)updToday({charged:charged.filter(c=>c!==task)});
+                              upd({targetTasks:next});showToast("🗑 Task deleted");
+                            }
+                          }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"7px 11px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑</button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -7130,7 +7130,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                       <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>
                         {rewardName||<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:15,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
                       </div>
-                      {rewardName&&<button onClick={()=>{upd({weeklyAward:"",reward:{name:"",cost:"",url:"",photo:""},rewardDate:""});showToast("🗑 Reward cleared");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>🗑</button>}
+                      {rewardName&&<button onClick={()=>{if(window.confirm("Delete this reward?")){{upd({weeklyAward:"",reward:{name:"",cost:"",url:"",photo:""},rewardDate:""});showToast("🗑 Reward deleted");}}}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>🗑 Delete</button>}
                     </div>
                     {reward.cost&&<div style={{fontSize:12,color:"#8A8070",marginBottom:2}}>💰 {reward.cost} · <button onClick={()=>setScreen&&setScreen("budget")} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,textDecoration:"underline"}}>Budget it</button></div>}
                     {reward.url&&<a href={reward.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#5A7848",display:"block",marginBottom:2}}>🔗 View</a>}
@@ -7191,24 +7191,24 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                   <span style={{flex:1,color:f.done?"#A0907A":"#1A1A10",fontWeight:600,fontSize:14,textDecoration:f.done?"line-through":"none",lineHeight:1.3}}>{f.text}</span>
                   {!f.done&&<span style={{fontSize:16}}>⚡</span>}
                 </div>
-                {/* Action buttons row */}
-                {!f.done&&(
-                  <div style={{display:"flex",gap:6,marginTop:8,paddingLeft:42}}>
+                {/* Action buttons row — show delete always, other actions only when not done */}
+                <div style={{display:"flex",gap:6,marginTop:8,paddingLeft:42}}>
+                  {!f.done&&<>
                     <button onClick={()=>{
                       if(setPriData&&(priData||[]).length){
                         setPriData(ls=>ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:f.text,done:false,color:"lilac"}]}:l));
                         showToast("📋 Added to Prioritizer!");
                       } else showToast("Add a Prioritizer list first");
-                    }} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Prioritize</button>
+                    }} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Prioritizer</button>
                     <button onClick={()=>{
                       if(setMatrixData){
                         setMatrixData(ds=>[...ds,{id:Date.now(),text:f.text,quad:"do",created:Date.now(),touched:Date.now()}]);
                         showToast("⚖️ Added to Matrix!");
                       }
                     }} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>⚖️ Matrix</button>
-                    <button onClick={()=>delFrog(f.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.15)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>
-                  </div>
-                )}
+                  </>}
+                  <button onClick={()=>delFrog(f.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.15)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>
+                </div>
               </div>
             ))}
           </div>
