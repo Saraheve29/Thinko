@@ -4387,10 +4387,127 @@ function SeedToTree({pct=0,size=160}){
 function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [activeHorizon,setActiveHorizon]=useState("week");
   const [detailId,setDetailId]=useState(null);
-  const h=horizonByKey(activeHorizon);
+  const [search,setSearch]=useState("");
+  const [podcastOpen,setPodcastOpen]=useState(false);
+  const [podcastLength,setPodcastLength]=useState("short");
+  const [podcastText,setPodcastText]=useState("");
+  const [podcastLoading,setPodcastLoading]=useState(false);
+  const [podcastSaved,setPodcastSaved]=useState(false);
+  const [reviewOpen,setReviewOpen]=useState(null); // goal id
+  const [reviewPrompts,setReviewPrompts]=useState([]);
+  const [reviewLoading,setReviewLoading]=useState(false);
+  const [reviewAnswers,setReviewAnswers]=useState({});
+  const [futureLetterGoalId,setFutureLetterGoalId]=useState(null);
+  const [toast,setToast]=useState("");
+  const showToast=m=>{setToast(m);setTimeout(()=>setToast(""),2400);};
 
+  const h=horizonByKey(activeHorizon);
   const horizonGoals=data.filter(g=>g.horizon===activeHorizon);
   const detail=data.find(g=>g.id===detailId);
+
+  // Smart search across all goals
+  const searchResults=search.trim().length>1
+    ?data.filter(g=>(g.title||"").toLowerCase().includes(search.toLowerCase())||(g.description||"").toLowerCase().includes(search.toLowerCase()))
+    :[];
+
+  // Auto-tag goals
+  const autoTagGoal=g=>{
+    const txt=(g.title+" "+g.description).toLowerCase();
+    const tags=[];
+    if(/health|fitness|weight|run|gym|sleep|diet/.test(txt))tags.push("🌿 Health");
+    if(/career|job|work|business|money|finance|income/.test(txt))tags.push("💼 Career");
+    if(/learn|study|course|skill|read|book/.test(txt))tags.push("📚 Learning");
+    if(/relationship|family|friend|love|connect/.test(txt))tags.push("❤️ Relationships");
+    if(/travel|adventure|visit|explore/.test(txt))tags.push("✈️ Travel");
+    if(/create|build|make|art|music|write/.test(txt))tags.push("🎨 Creative");
+    return tags.slice(0,2);
+  };
+
+  // Garden growth plant SVG based on progress pct
+  const GardenPlant=({pct,size=56})=>{
+    const stage=pct===0?0:pct<25?1:pct<50?2:pct<75?3:pct<100?4:5;
+    const colors=["#8B6914","#5A9830","#4A8820","#3A7010","#2A6008","#1A5000"];
+    const leafColor=colors[Math.max(1,stage)];
+    return(
+      <svg width={size} height={size*1.3} viewBox="0 0 56 72" fill="none" style={{flexShrink:0}}>
+        <defs>
+          <linearGradient id={`pg${pct}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#C8F098"/><stop offset="100%" stopColor={leafColor}/>
+          </linearGradient>
+          <filter id="pgf"><feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#1A3A08" floodOpacity="0.22"/></filter>
+        </defs>
+        {/* Soil */}
+        <ellipse cx="28" cy="70" rx="12" ry="3" fill="#C8A870" opacity="0.4"/>
+        {/* Stem — height based on stage */}
+        {stage>=1&&<path d={`M28 70 Q28 ${70-stage*9} 28 ${70-stage*11}`} stroke={leafColor} strokeWidth="2.2" fill="none" strokeLinecap="round"/>}
+        {/* Stage 0 — seed bump */}
+        {stage===0&&<ellipse cx="28" cy="67" rx="5" ry="3.5" fill="#C8A870" opacity="0.6"/>}
+        {/* Stage 1 — tiny sprout */}
+        {stage>=1&&<g filter="url(#pgf)">
+          <path d={`M28 ${66-stage*8} Q22 ${58-stage*8} 20 ${50-stage*8} Q26 ${49-stage*8} 28 ${58-stage*8}Z`} fill={`url(#pg${pct})`}/>
+        </g>}
+        {/* Stage 2+ left leaf */}
+        {stage>=2&&<g filter="url(#pgf)">
+          <path d={`M28 ${52-stage*4} Q16 ${42-stage*3} 12 ${32-stage*3} Q22 ${30-stage*3} 28 ${42-stage*4}Z`} fill={`url(#pg${pct})`}/>
+        </g>}
+        {/* Stage 2+ right leaf */}
+        {stage>=2&&<g filter="url(#pgf)">
+          <path d={`M28 ${56-stage*4} Q40 ${44-stage*3} 44 ${34-stage*3} Q36 ${32-stage*3} 28 ${44-stage*4}Z`} fill={leafColor} opacity="0.85"/>
+        </g>}
+        {/* Stage 3+ second set */}
+        {stage>=3&&<g filter="url(#pgf)">
+          <path d={`M28 ${40-stage*2} Q14 ${28-stage*2} 10 ${16-stage} Q20 ${14-stage} 28 ${28-stage*2}Z`} fill={`url(#pg${pct})`}/>
+          <path d={`M28 ${44-stage*2} Q42 ${30-stage*2} 46 ${18-stage} Q38 ${16-stage} 28 ${32-stage*2}Z`} fill={leafColor} opacity="0.9"/>
+        </g>}
+        {/* Stage 5 — blooming flower */}
+        {stage===5&&<g>
+          <circle cx="28" cy="14" r="6" fill="#FFD700" opacity="0.9"/>
+          {[0,60,120,180,240,300].map((deg,i)=>{
+            const r=deg*Math.PI/180;
+            return <circle key={i} cx={28+Math.cos(r)*9} cy={14+Math.sin(r)*9} r="3.5" fill="#FFE080" opacity="0.85"/>;
+          })}
+        </g>}
+        {/* Progress label */}
+        <text x="28" y="75" textAnchor="middle" fontSize="7" fill="#7A7060" fontWeight="600">
+          {pct===0?"seed":pct<25?"sprout":pct<50?"growing":pct<75?"thriving":pct<100?"blooming":"🌸 done"}
+        </text>
+      </svg>
+    );
+  };
+
+  // AI Quarterly review prompts
+  const generateReview=async(goal)=>{
+    setReviewLoading(true);
+    const pct=goal.subtasks.length>0?Math.round((goal.subtasks.filter(s=>s.done).length/goal.subtasks.length)*100):0;
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,messages:[{role:"user",content:`Create 4 soft, kind, reflective review prompts for someone reviewing their goal: "${goal.title}" (${pct}% complete, horizon: ${goal.horizon}). Tone: warm, compassionate, gently curious — like a caring friend asking. No judgment. Return ONLY a JSON array of 4 strings. No markdown.`}]})
+      });
+      const j=await res.json();
+      setReviewPrompts(JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim()));
+    }catch{setReviewPrompts(["How do you feel about your progress so far?","What's been harder than you expected?","What have you learned about yourself?","What would you tell your past self?"]);}
+    setReviewLoading(false);
+  };
+
+  // AI Podcast recap of goals
+  const generatePodcast=async()=>{
+    setPodcastLoading(true);setPodcastText("");setPodcastSaved(false);
+    const allGoals=data.map(g=>{
+      const pct=g.subtasks.length>0?Math.round((g.subtasks.filter(s=>s.done).length/g.subtasks.length)*100):0;
+      return `${g.title} (${horizonByKey(g.horizon).label}, ${pct}% done)`;
+    }).join("; ");
+    const words=podcastLength==="short"?200:500;
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:`Create a warm ${podcastLength==="short"?"60-second":"3-minute"} podcast-style spoken reflection on these life goals. Tone: encouraging, personal, like a supportive friend summarising your journey. Flowing narration only, ~${words} words.\n\nGoals: ${allGoals||"No goals set yet — speak to the power of setting intentions."}`}]})
+      });
+      const j=await res.json();
+      setPodcastText(j.content?.[0]?.text||"Could not generate.");
+    }catch{setPodcastText("AI unavailable — please try again.");}
+    setPodcastLoading(false);
+  };
 
   if(detail) return(
     <GoalEditor
@@ -4403,173 +4520,283 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,setScre
     />
   );
 
-  const addGoal=()=>{
-    const g=mkGoal(activeHorizon);
-    setData(ds=>[...ds,g]);
-    setDetailId(g.id);
-  };
+  const addGoal=()=>{const g=mkGoal(activeHorizon);setData(ds=>[...ds,g]);setDetailId(g.id);};
 
   return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:100}}>
 
-      {/* ── HEADER — elegant serif matching reference ── */}
-      <div style={{
-        background:"rgba(248,245,236,0.88)",
-        backdropFilter:"blur(16px)",
-        WebkitBackdropFilter:"blur(16px)",
-        padding:"22px 20px 18px",
-        textAlign:"center",
-        borderBottom:"1px solid rgba(90,80,60,0.08)",
-        position:"sticky",top:0,zIndex:50,
-      }}>
-        <button onClick={()=>setScreen("home")} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:10}}>
+      {/* ── HEADER ── */}
+      <div style={{background:"rgba(248,245,236,0.90)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"18px 20px 14px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setScreen("home")} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,display:"inline-flex",alignItems:"center",gap:10}}>
-          Smart Goals <span style={{fontSize:22}}>♥</span>
+        <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#1A1A10",letterSpacing:-0.4,display:"inline-flex",alignItems:"center",gap:10}}>
+          Smart Goals 🌱
         </div>
       </div>
 
-      {/* ── TABS — 2 rows like reference, no scroll ── */}
-      <div style={{padding:"18px 20px 8px"}}>
-        {/* Row 1: Next Week | 6 Months */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+      <div style={{padding:"14px 16px 0"}}>
+
+        {/* Smart Search */}
+        <div style={{background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"11px 18px",marginBottom:12,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",display:"flex",alignItems:"center",gap:10}}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8A8070" strokeWidth="2"/><path d="M20 20l-3.5-3.5" stroke="#8A8070" strokeWidth="2" strokeLinecap="round"/></svg>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search all goals…"
+            style={{flex:1,border:"none",outline:"none",fontSize:14,color:"#1A1A10",background:"transparent"}}/>
+          {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",cursor:"pointer",color:"#8A8070",fontSize:16}}>✕</button>}
+        </div>
+
+        {/* Search results */}
+        {search.trim().length>1&&(
+          <div style={{marginBottom:12}}>
+            {searchResults.length===0&&<div style={{textAlign:"center",color:"#8A8070",fontSize:13,fontFamily:"Georgia,serif",padding:"8px 0"}}>No goals match "{search}"</div>}
+            {searchResults.map(g=>{
+              const pct=g.subtasks.length>0?Math.round((g.subtasks.filter(s=>s.done).length/g.subtasks.length)*100):0;
+              const tags=autoTagGoal(g);
+              return(
+                <div key={g.id} onClick={()=>setDetailId(g.id)} style={{background:"rgba(248,245,236,0.90)",borderRadius:20,padding:"12px 16px",marginBottom:8,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
+                  <GardenPlant pct={pct} size={36}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:2}}>{g.title}</div>
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                      <span style={{fontSize:10,color:"#7A7060",fontWeight:600}}>{horizonByKey(g.horizon).label}</span>
+                      {tags.map(t=><span key={t} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",borderRadius:100,padding:"1px 7px",fontSize:9,fontWeight:600}}>{t}</span>)}
+                    </div>
+                  </div>
+                  <span style={{fontSize:13,fontWeight:700,color:"#5A7848"}}>{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* AI Podcast + Quarterly Review quick buttons */}
+        <div style={{display:"flex",gap:9,marginBottom:14}}>
+          <button onClick={()=>setPodcastOpen(true)} style={{flex:1,background:"rgba(90,120,72,0.10)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:18,padding:"12px 10px",fontSize:12,fontWeight:700,cursor:"pointer",textAlign:"center",lineHeight:1.4}}>
+            🎙️ Goals<br/>Podcast
+          </button>
+          <button onClick={()=>{
+            const activeGoal=data.filter(g=>g.status!=="done")[0];
+            if(!activeGoal){showToast("Add a goal first!");return;}
+            setReviewOpen(activeGoal.id);generateReview(activeGoal);setReviewAnswers({});
+          }} style={{flex:1,background:"rgba(210,195,180,0.25)",color:"#5A4020",border:"1.5px solid rgba(180,160,130,0.3)",borderRadius:18,padding:"12px 10px",fontSize:12,fontWeight:700,cursor:"pointer",textAlign:"center",lineHeight:1.4}}>
+            🍂 Quarterly<br/>Review
+          </button>
+          <button onClick={()=>{
+            const activeGoal=data.filter(g=>g.status!=="done")[0];
+            if(!activeGoal){showToast("Add a goal first!");return;}
+            setFutureLetterGoalId(activeGoal.id);
+          }} style={{flex:1,background:"rgba(230,210,240,0.25)",color:"#5A3870",border:"1.5px solid rgba(180,150,200,0.3)",borderRadius:18,padding:"12px 10px",fontSize:12,fontWeight:700,cursor:"pointer",textAlign:"center",lineHeight:1.4}}>
+            💌 Future<br/>Me Letter
+          </button>
+        </div>
+
+        {/* ── HORIZON TABS ── */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:9}}>
           {[{key:"week",label:"Next Week"},{key:"month6",label:"6 Months"}].map(({key,label})=>(
-            <button key={key} onClick={()=>setActiveHorizon(key)} style={{
-              background:"rgba(248,245,236,0.88)",
-              border:"1.5px solid rgba(90,80,60,0.12)",
-              borderRadius:18,
-              padding:"18px 12px",
-              cursor:"pointer",
-              transition:"all 0.15s",
-              position:"relative",
-              boxShadow:activeHorizon===key?"0 2px 14px rgba(90,80,60,0.12)":"none",
-            }}>
-              <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:activeHorizon===key?700:500,color:activeHorizon===key?"#1A1A10":"#7A7060",textAlign:"center"}}>{label}</div>
-              {activeHorizon===key&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:40,height:3,background:"#2A1A08",borderRadius:2}}/>}
+            <button key={key} onClick={()=>setActiveHorizon(key)} style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:18,padding:"16px 12px",cursor:"pointer",position:"relative",boxShadow:activeHorizon===key?"0 2px 12px rgba(90,80,60,0.10)":"none"}}>
+              <div style={{fontFamily:"Georgia,serif",fontSize:16,fontWeight:activeHorizon===key?700:400,color:activeHorizon===key?"#1A1A10":"#7A7060",textAlign:"center"}}>{label}</div>
+              {activeHorizon===key&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:36,height:3,background:"#2A3820",borderRadius:2}}/>}
             </button>
           ))}
         </div>
-        {/* Row 2: 1 Year | 3 Years | 5 Years */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:18}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:16}}>
           {[{key:"year1",label:"1 Year"},{key:"year3",label:"3 Years"},{key:"year5",label:"5 Years"}].map(({key,label})=>(
-            <button key={key} onClick={()=>setActiveHorizon(key)} style={{
-              background:"rgba(248,245,236,0.88)",
-              border:"1.5px solid rgba(90,80,60,0.12)",
-              borderRadius:18,
-              padding:"16px 8px",
-              cursor:"pointer",
-              transition:"all 0.15s",
-              position:"relative",
-              boxShadow:activeHorizon===key?"0 2px 14px rgba(90,80,60,0.12)":"none",
-            }}>
-              <div style={{fontFamily:"Georgia,serif",fontSize:16,fontWeight:activeHorizon===key?700:500,color:activeHorizon===key?"#1A1A10":"#7A7060",textAlign:"center"}}>{label}</div>
-              {activeHorizon===key&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:32,height:3,background:"#2A1A08",borderRadius:2}}/>}
+            <button key={key} onClick={()=>setActiveHorizon(key)} style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:18,padding:"14px 6px",cursor:"pointer",position:"relative",boxShadow:activeHorizon===key?"0 2px 12px rgba(90,80,60,0.10)":"none"}}>
+              <div style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:activeHorizon===key?700:400,color:activeHorizon===key?"#1A1A10":"#7A7060",textAlign:"center"}}>{label}</div>
+              {activeHorizon===key&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:28,height:3,background:"#2A3820",borderRadius:2}}/>}
             </button>
           ))}
         </div>
 
-        {/* ── ADD GOAL BUTTON — gorgeous pastel gradient like reference ── */}
-        <button onClick={addGoal} style={{
-          width:"100%",
-          padding:"19px 24px",
-          background:"linear-gradient(135deg,rgba(230,200,180,0.85) 0%,rgba(210,195,220,0.85) 40%,rgba(190,215,200,0.85) 70%,rgba(220,210,185,0.85) 100%)",
-          color:"#2A1A08",
-          border:"1.5px solid rgba(180,160,140,0.35)",
-          borderRadius:100,
-          fontFamily:"Georgia,serif",
-          fontWeight:600,
-          fontSize:18,
-          cursor:"pointer",
-          marginBottom:32,
-          boxShadow:"0 4px 24px rgba(90,80,60,0.12)",
-          backdropFilter:"blur(8px)",
-          display:"flex",alignItems:"center",justifyContent:"center",gap:14,
-          letterSpacing:0.2,
-          transition:"all 0.15s",
-        }}>
-          <span style={{fontSize:22,fontWeight:300}}>+</span>
-          Add {h.label} Goal
+        {/* Add Goal button */}
+        <button onClick={addGoal} style={{width:"100%",padding:"18px 24px",background:"linear-gradient(135deg,rgba(230,200,180,0.85) 0%,rgba(210,195,220,0.85) 40%,rgba(190,215,200,0.85) 70%,rgba(220,210,185,0.85) 100%)",color:"#2A1A08",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:600,fontSize:17,cursor:"pointer",marginBottom:24,boxShadow:"0 4px 20px rgba(90,80,60,0.10)",display:"flex",alignItems:"center",justifyContent:"center",gap:12}}>
+          <span style={{fontSize:20,fontWeight:300}}>+</span> Add {h.label} Goal
         </button>
 
-        {/* ── EMPTY STATE — seedling + gentle prompt ── */}
+        {/* Empty state */}
         {horizonGoals.length===0&&(
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 0 24px"}}>
-            {/* Seedling SVG — like the reference */}
-            <svg width="60" height="72" viewBox="0 0 60 72" fill="none" style={{marginBottom:20}}>
-              <defs>
-                <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8E068"/><stop offset="100%" stopColor="#5A9830"/></linearGradient>
-                <linearGradient id="sg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8F098"/><stop offset="100%" stopColor="#78B848"/></linearGradient>
-                <filter id="sgf"><feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#1A3A08" floodOpacity="0.2"/></filter>
-              </defs>
-              {/* Stem */}
-              <path d="M30 70 Q30 50 30 35" stroke="#5A8830" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-              {/* Left leaf */}
-              <g filter="url(#sgf)">
-                <path d="M30 38 Q18 28 14 18 Q22 16 30 26 Q30 32 30 38Z" fill="url(#sg1)"/>
-                <path d="M30 38 Q22 30 14 18" stroke="#3A7820" strokeWidth="0.8" opacity="0.18"/>
-              </g>
-              {/* Right leaf */}
-              <g filter="url(#sgf)">
-                <path d="M30 42 Q42 30 46 18 Q38 17 30 28 Q30 35 30 42Z" fill="url(#sg2)"/>
-                <path d="M30 42 Q38 32 46 18" stroke="#3A7820" strokeWidth="0.8" opacity="0.18"/>
-              </g>
-              {/* Small left sprout */}
-              <g filter="url(#sgf)" opacity="0.85">
-                <path d="M30 52 Q22 44 19 36 Q25 35 30 44 Q30 48 30 52Z" fill="url(#sg2)"/>
-                <path d="M30 52 Q24 46 19 36" stroke="#3A7820" strokeWidth="0.65" opacity="0.18"/>
-              </g>
-              {/* Ground */}
-              <ellipse cx="30" cy="70" rx="8" ry="2.5" fill="#C8A870" opacity="0.35"/>
-            </svg>
-
-            <div style={{fontFamily:"Georgia,serif",fontSize:20,color:"#2A1A08",textAlign:"center",lineHeight:1.55,maxWidth:260,fontWeight:500}}>
+            <GardenPlant pct={0} size={60}/>
+            <div style={{fontFamily:"Georgia,serif",fontSize:19,color:"#2A1A08",textAlign:"center",lineHeight:1.6,maxWidth:260,fontWeight:500,marginTop:16}}>
               {h.question}
             </div>
           </div>
         )}
 
-        {/* ── GOALS LIST ── */}
+        {/* ── GOALS LIST — with Garden Growth plants ── */}
         {horizonGoals.map(goal=>{
           const doneCount=goal.subtasks.filter(s=>s.done).length;
           const pct=goal.subtasks.length>0?Math.round((doneCount/goal.subtasks.length)*100):0;
+          const tags=autoTagGoal(goal);
+          const hasLetter=!!(goal.futureLetter);
           return(
             <div key={goal.id} onClick={()=>setDetailId(goal.id)}
-              style={{
-                background:"rgba(248,245,236,0.92)",
-                borderRadius:22,marginBottom:12,overflow:"hidden",
-                boxShadow:"0 3px 18px rgba(90,80,60,0.09)",
-                border:"1.5px solid rgba(255,255,255,0.9)",
-                cursor:"pointer",transition:"transform 0.15s",
-              }}
+              style={{background:"rgba(248,245,236,0.92)",borderRadius:24,marginBottom:12,overflow:"hidden",boxShadow:"0 3px 16px rgba(90,80,60,0.08)",border:"1.5px solid rgba(255,255,255,0.9)",cursor:"pointer",transition:"transform 0.15s"}}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-              {goal.cover&&<img src={goal.cover} alt="" style={{width:"100%",height:80,objectFit:"cover"}}/>}
+              {/* Progress bar */}
               {goal.subtasks.length>0&&(
-                <div style={{height:4,background:"rgba(90,80,60,0.1)"}}>
-                  <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A7848":h.color,borderRadius:2,transition:"width 0.4s"}}/>
+                <div style={{height:4,background:"rgba(90,80,60,0.08)"}}>
+                  <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A7848":"#7A9A60",borderRadius:2,transition:"width 0.5s"}}/>
                 </div>
               )}
-              <div style={{padding:"14px 18px"}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:goal.status==="done"?"#9A9080":"#1A1A10",textDecoration:goal.status==="done"?"line-through":"none",marginBottom:4,lineHeight:1.4}}>
-                      {goal.title||"(Tap to edit)"}
-                    </div>
-                    {goal.description&&<div style={{fontSize:12,color:"#8A8070",lineHeight:1.5,marginBottom:4}}>{goal.description.slice(0,70)}{goal.description.length>70?"…":""}</div>}
-                    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                      {goal.dueDate&&<span style={{fontSize:11,color:"#7A7060",fontWeight:600}}>📅 {new Date(goal.dueDate).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>}
-                      {goal.subtasks.length>0&&<span style={{fontSize:11,color:"#7A7060",fontWeight:600}}>{doneCount}/{goal.subtasks.length} steps · {pct}%</span>}
-                      {goal.links.length>0&&<span style={{fontSize:11,color:"#7A7060"}}>🔗 {goal.links.length}</span>}
-                    </div>
+              {goal.cover&&<img src={goal.cover} alt="" style={{width:"100%",height:80,objectFit:"cover"}}/>}
+              <div style={{padding:"14px 16px",display:"flex",gap:14,alignItems:"flex-start"}}>
+                {/* Garden plant — grows with progress */}
+                <div onClick={e=>{e.stopPropagation();}} style={{paddingTop:4}}>
+                  <GardenPlant pct={pct} size={44}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:goal.status==="done"?"#9A9080":"#1A1A10",textDecoration:goal.status==="done"?"line-through":"none",marginBottom:4,lineHeight:1.35}}>
+                    {goal.title||"(Tap to edit)"}
                   </div>
-                  <span style={{fontSize:22,flexShrink:0}}>{h.icon}</span>
+                  {goal.description&&<div style={{fontSize:12,color:"#8A8070",lineHeight:1.5,marginBottom:6}}>{goal.description.slice(0,65)}{goal.description.length>65?"…":""}</div>}
+                  {/* Auto-tags */}
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}>
+                    {tags.map(t=><span key={t} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",borderRadius:100,padding:"2px 9px",fontSize:10,fontWeight:600}}>{t}</span>)}
+                    {hasLetter&&<span style={{background:"rgba(180,140,220,0.12)",color:"#6A3A90",borderRadius:100,padding:"2px 9px",fontSize:10,fontWeight:600}}>💌 Letter</span>}
+                  </div>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    {goal.dueDate&&<span style={{fontSize:11,color:"#7A7060",fontWeight:600}}>📅 {new Date(goal.dueDate).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span>}
+                    {goal.subtasks.length>0&&<span style={{fontSize:11,color:"#5A7848",fontWeight:700,background:"rgba(90,120,72,0.09)",padding:"2px 8px",borderRadius:100}}>{doneCount}/{goal.subtasks.length} · {pct}%</span>}
+                  </div>
+                </div>
+                {/* Quick action buttons */}
+                <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}} onClick={e=>e.stopPropagation()}>
+                  <button onClick={()=>{setReviewOpen(goal.id);generateReview(goal);setReviewAnswers({});}} title="Quarterly Review" style={{background:"rgba(210,195,180,0.3)",border:"none",borderRadius:10,width:30,height:30,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>🍂</button>
+                  <button onClick={()=>setFutureLetterGoalId(goal.id)} title="Future Me Letter" style={{background:"rgba(230,210,240,0.3)",border:"none",borderRadius:10,width:30,height:30,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>💌</button>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* ── PODCAST RECAP MODAL ── */}
+      {podcastOpen&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setPodcastOpen(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"85vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:4}}>🎙️ Goals Podcast Recap</div>
+              <div style={{color:"#8A8070",fontSize:13,marginBottom:14}}>A warm spoken summary of your entire goals journey</div>
+              <div style={{display:"flex",gap:8,marginBottom:14}}>
+                {[{k:"short",l:"Short",d:"~60 sec"},{k:"detailed",l:"Detailed",d:"~3 min"}].map(o=>(
+                  <button key={o.k} onClick={()=>setPodcastLength(o.k)} style={{flex:1,padding:"11px",borderRadius:16,border:`2px solid ${podcastLength===o.k?"#5A7848":"rgba(90,80,60,0.15)"}`,background:podcastLength===o.k?"rgba(90,120,72,0.10)":"rgba(255,255,255,0.8)",cursor:"pointer"}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:podcastLength===o.k?"#3A6020":"#1A1A10"}}>{o.l}</div>
+                    <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>{o.d}</div>
+                  </button>
+                ))}
+              </div>
+              {!podcastText&&<button onClick={generatePodcast} disabled={podcastLoading} style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:podcastLoading?0.7:1}}>
+                {podcastLoading?"🌿 Generating…":"🎙️ Generate Podcast"}
+              </button>}
+            </div>
+            {podcastText&&(
+              <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+                <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:12}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#1A2810",lineHeight:1.85}}>{podcastText}</div>
+                </div>
+                <div style={{display:"flex",gap:10,marginBottom:8}}>
+                  <button onClick={()=>{showToast("💾 Saved!");setPodcastSaved(true);}} disabled={podcastSaved} style={{flex:1,padding:"13px",background:podcastSaved?"rgba(90,120,72,0.12)":"#5A7848",color:podcastSaved?"#5A7848":"#fff",border:podcastSaved?"1.5px solid rgba(90,120,72,0.3)":"none",borderRadius:100,fontWeight:700,fontSize:14,cursor:podcastSaved?"default":"pointer"}}>
+                    {podcastSaved?"✅ Saved":"💾 Save to Vault"}
+                  </button>
+                  <button onClick={()=>{setPodcastText("");setPodcastSaved(false);}} style={{padding:"13px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Redo</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── QUARTERLY REVIEW MODAL ── */}
+      {reviewOpen&&(()=>{
+        const goal=data.find(g=>g.id===reviewOpen);
+        if(!goal)return null;
+        const pct=goal.subtasks.length>0?Math.round((goal.subtasks.filter(s=>s.done).length/goal.subtasks.length)*100):0;
+        return(
+          <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setReviewOpen(null)}>
+            <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"88vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(210,195,170,0.5)"}}/></div>
+              <div style={{padding:"0 20px 12px",flexShrink:0}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:2}}>🍂 Quarterly Review</div>
+                <div style={{color:"#8A8070",fontSize:13,marginBottom:4}}>{goal.title}</div>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                  <GardenPlant pct={pct} size={36}/>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:13,color:"#3A6020"}}>{pct}% complete</div>
+                    <div style={{fontSize:11,color:"#8A8070"}}>Take your time — there's no rush 🌿</div>
+                  </div>
+                </div>
+              </div>
+              <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+                {reviewLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:14}}>🌿 Preparing gentle prompts…</div>}
+                {reviewPrompts.map((prompt,i)=>(
+                  <div key={i} style={{marginBottom:16}}>
+                    <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#2A3820",marginBottom:8,lineHeight:1.55,fontStyle:"italic"}}>"{prompt}"</div>
+                    <textarea
+                      value={reviewAnswers[i]||""}
+                      onChange={e=>setReviewAnswers(a=>({...a,[i]:e.target.value}))}
+                      placeholder="Take a moment to reflect…"
+                      rows={3}
+                      style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(248,245,236,0.85)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",lineHeight:1.6}}
+                    />
+                  </div>
+                ))}
+                {reviewPrompts.length>0&&(
+                  <button onClick={()=>{
+                    const reflection=reviewPrompts.map((p,i)=>`Q: ${p}\nA: ${reviewAnswers[i]||""}`).join("\n\n");
+                    setData(ds=>ds.map(g=>g.id===reviewOpen?{...g,quarterlyReviews:[...(g.quarterlyReviews||[]),{date:new Date().toISOString().slice(0,10),reflection}]}:g));
+                    setReviewOpen(null);showToast("🍂 Review saved!");
+                  }} style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#8A6030,#B08040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:8,boxShadow:"0 4px 14px rgba(120,90,30,0.22)"}}>
+                    Save Reflection 🍂
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── FUTURE ME LETTER MODAL ── */}
+      {futureLetterGoalId&&(()=>{
+        const goal=data.find(g=>g.id===futureLetterGoalId);
+        if(!goal)return null;
+        const letter=goal.futureLetter||"";
+        return(
+          <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(40,20,60,0.50)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setFutureLetterGoalId(null)}>
+            <div style={{background:"rgba(252,248,245,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"88vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(180,140,220,0.35)"}}/></div>
+              <div style={{padding:"0 20px 12px",flexShrink:0}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:2}}>💌 Letter to Future Me</div>
+                <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>For goal: <em>{goal.title}</em></div>
+                <div style={{background:"rgba(230,210,245,0.20)",borderRadius:18,padding:"12px 16px",border:"1px solid rgba(180,140,220,0.18)",marginBottom:14}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:12,color:"#6A5080",lineHeight:1.7,fontStyle:"italic"}}>
+                    Write to the version of yourself who has already achieved this goal. What do you want them to know? What are you afraid of? What do you hope they remember about this moment?
+                  </div>
+                </div>
+              </div>
+              <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+                <textarea
+                  value={letter}
+                  onChange={e=>setData(ds=>ds.map(g=>g.id===futureLetterGoalId?{...g,futureLetter:e.target.value}:g))}
+                  placeholder={"Dear Future Me,\n\nBy the time you read this, I hope you've…"}
+                  rows={12}
+                  style={{width:"100%",boxSizing:"border-box",padding:"16px 18px",borderRadius:22,border:"1.5px solid rgba(180,140,220,0.22)",background:"rgba(250,246,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"Georgia,serif",lineHeight:1.75,marginBottom:12}}
+                />
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>setFutureLetterGoalId(null)} style={{flex:1,padding:"14px",background:"linear-gradient(135deg,#5A3870,#8A5AAA)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 14px rgba(90,40,140,0.22)"}}>
+                    💌 Save Letter
+                  </button>
+                  <button onClick={()=>setFutureLetterGoalId(null)} style={{padding:"14px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:"rgba(42,56,28,0.92)",color:"#fff",borderRadius:100,padding:"11px 22px",fontWeight:700,fontSize:14,zIndex:500,whiteSpace:"nowrap",backdropFilter:"blur(8px)"}}>{toast}</div>}
     </div>
   );
 }
