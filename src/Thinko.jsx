@@ -6313,32 +6313,106 @@ function Tools({setScreen, notesData, setNotesData}) {
     );
   };
 
+  const TOOL_GRID=[
+    {id:"calc",     emoji:"🔢", label:"Calculator",        color:"#5A6840"},
+    {id:"sw",       emoji:"🕐", label:"Stopwatch",         color:"#486070"},
+    {id:"timer",    emoji:"⏳", label:"Timer",              color:"#7A6038"},
+    {id:"alarm",    emoji:"⏰", label:"Alarm",              color:"#7A4040"},
+    {id:"translate",emoji:"🌍", label:"Translator",         color:"#3A6848", badge:"NEW"},
+    {id:"currency", emoji:"💱", label:"Currency\nConverter",color:"#486050", badge:"NEW"},
+  ];
+
+  if(active&&active!=="home"){
+    return(
+      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+        <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+          <button onClick={()=>setActive(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>
+            {TOOL_GRID.find(t=>t.id===active)?.label.replace("\n"," ")||active}
+          </div>
+          <div style={{width:36}}/>
+        </div>
+        <div style={{padding:"16px 14px"}}>
+          {active==="voice"    &&<VoiceToText/>}
+          {active==="translate"&&<Translator/>}
+          {active==="currency" &&<CurrencyConverter/>}
+          {active==="calc"     &&<Calculator/>}
+          {active==="sw"       &&<Stopwatch/>}
+          {active==="timer"    &&<CountdownTool/>}
+          {active==="alarm"    &&<AlarmTool/>}
+        </div>
+      </div>
+    );
+  }
+
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <div style={{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>🔧 Tools</div>
-        <div style={{width:36}}/>
+
+      {/* Header */}
+      <div style={{padding:"52px 24px 20px",textAlign:"center"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:34,color:"#1A1A10",letterSpacing:-0.5,marginBottom:4}}>
+          Tools <span style={{fontSize:22,verticalAlign:"middle"}}>✦</span>
+        </div>
+        <div style={{fontSize:13,color:"rgba(60,50,30,0.45)",fontStyle:"italic"}}>Ask AI for help with any tool 🤖</div>
       </div>
-      <div style={{display:"flex",overflowX:"auto",gap:0,padding:"8px 10px",background:"rgba(248,245,236,0.88)",borderBottom:"1px solid rgba(90,80,60,0.08)",scrollbarWidth:"none"}}>
-        {TOOL_TABS.map(t=>(
-          <button key={t.id} onClick={()=>setActive(t.id)} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"7px 12px",background:"none",border:"none",borderBottom:active===t.id?"3px solid #5A7848":"3px solid transparent",cursor:"pointer",transition:"all 0.15s"}}>
-            <span style={{fontSize:18}}>{t.icon}</span>
-            <span style={{fontSize:9,fontWeight:active===t.id?800:500,color:active===t.id?"#3A6020":"rgba(60,56,40,0.55)",letterSpacing:0.3}}>{t.name}</span>
+
+      {/* 3-column icon grid — large tiles */}
+      <div style={{padding:"0 14px",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
+        {TOOL_GRID.map(t=>(
+          <button key={t.id} onClick={()=>setActive(t.id)}
+            style={{
+              position:"relative",
+              background:"rgba(228,234,222,0.90)",
+              backdropFilter:"blur(14px)",
+              WebkitBackdropFilter:"blur(14px)",
+              borderRadius:28,
+              border:"1.5px solid rgba(255,255,255,0.88)",
+              padding:"0",
+              display:"flex",flexDirection:"column",
+              alignItems:"center",justifyContent:"flex-end",
+              cursor:"pointer",
+              boxShadow:"0 4px 20px rgba(60,70,40,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
+              transition:"transform 0.15s, box-shadow 0.15s",
+              aspectRatio:"1",
+              overflow:"hidden",
+            }}
+            onMouseDown={e=>e.currentTarget.style.transform="scale(0.96)"}
+            onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
+            onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"}
+            onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+            {/* NEW badge */}
+            {t.badge&&<div style={{position:"absolute",top:10,right:10,background:"#3A6028",color:"#fff",borderRadius:100,fontSize:9,fontWeight:800,padding:"3px 7px",letterSpacing:0.5,zIndex:2}}>{t.badge}</div>}
+            {/* Big emoji fills most of the tile */}
+            <div style={{fontSize:64,lineHeight:1,marginBottom:14,filter:"drop-shadow(0 4px 10px rgba(0,0,0,0.14))",marginTop:"auto",paddingTop:24}}>
+              {t.emoji}
+            </div>
+            {/* Label at bottom */}
+            <div style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,color:"#1A1A10",textAlign:"center",lineHeight:1.25,whiteSpace:"pre-line",padding:"0 8px 18px",width:"100%"}}>
+              {t.label}
+            </div>
           </button>
         ))}
       </div>
-      <div style={{padding:"16px 14px"}}>
-        {active==="voice"    &&<VoiceToText/>}
-        {active==="translate"&&<Translator/>}
-        {active==="currency" &&<CurrencyConverter/>}
-        {active==="calc"     &&<Calculator/>}
-        {active==="sw"       &&<Stopwatch/>}
-        {active==="timer"    &&<CountdownTool/>}
-        {active==="alarm"    &&<AlarmTool/>}
+
+      {/* Voice to Text — wide card below */}
+      <div style={{padding:"14px 14px 0"}}>
+        <button onClick={()=>setActive("voice")}
+          style={{width:"100%",background:"rgba(228,234,222,0.90)",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderRadius:28,border:"1.5px solid rgba(255,255,255,0.88)",padding:"20px 24px",display:"flex",alignItems:"center",gap:18,cursor:"pointer",boxShadow:"0 4px 20px rgba(60,70,40,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",transition:"transform 0.15s"}}
+          onMouseDown={e=>e.currentTarget.style.transform="scale(0.98)"}
+          onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
+          onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"}
+          onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+          <span style={{fontSize:52,lineHeight:1,filter:"drop-shadow(0 4px 10px rgba(0,0,0,0.12))",flexShrink:0}}>🎙️</span>
+          <div style={{flex:1,textAlign:"left"}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,color:"#1A1A10",marginBottom:3}}>Voice to Text</div>
+            <div style={{fontSize:12,color:"rgba(60,50,30,0.50)"}}>Speak — words appear as you talk</div>
+          </div>
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{flexShrink:0,opacity:0.3}}><path d="M1 1l6 6-6 6" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
+        </button>
       </div>
+
     </div>
   );
 }
@@ -7548,111 +7622,27 @@ export default function App() {
   return (
     <>
     <GardenBg/>
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",zIndex:10}}>
+    <div style={{minHeight:"100vh",background:"transparent",position:"relative",zIndex:10,display:"flex",flexDirection:"column",paddingBottom:84}}>
 
-      {/* ── NAME MODAL with vines ── */}
+      {/* ── NAME MODAL ── */}
       {showNameModal&&(
-        <div style={{position:"fixed",inset:0,zIndex:300,background:"rgba(232,225,212,0.9)",backdropFilter:"blur(16px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
-          <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}} viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
-            <defs><linearGradient id="mv1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8DDB8"/><stop offset="100%" stopColor="#9ABB90"/></linearGradient></defs>
-            <path d="M-5 0 Q18 60 6 130 Q-4 200 13 270" stroke="#A8C0A0" strokeWidth="1.8" fill="none" opacity="0.5" strokeLinecap="round"/>
-            <path d="M60 8 Q48 -2 34 2 Q24 12 31 25 Q42 32 55 25 Q65 15 60 8Z" fill="url(#mv1)" opacity="0.6"/>
-            <path d="M16 80 Q4 70 -10 74 Q-20 84 -13 97 Q-2 104 11 97 Q21 87 16 80Z" fill="url(#mv1)" opacity="0.55"/>
-            <path d="M54 81 Q42 71 28 75 Q18 85 25 98 Q36 105 49 98 Q59 88 54 81Z" fill="url(#mv1)" opacity="0.5"/>
-            <path d="M-5 844 Q20 780 8 710 Q-4 640 16 570" stroke="#A8C0A0" strokeWidth="1.5" fill="none" opacity="0.4" strokeLinecap="round"/>
-            <path d="M40 764 Q28 754 14 758 Q4 768 11 781 Q22 788 35 781 Q45 771 40 764Z" fill="url(#mv1)" opacity="0.45"/>
-            <path d="M395 0 Q372 58 384 128 Q394 198 377 268" stroke="#A8C0A0" strokeWidth="1.8" fill="none" opacity="0.48" strokeLinecap="round"/>
-            <path d="M328 6 Q340 -4 354 0 Q364 10 357 23 Q346 30 333 23 Q323 13 328 6Z" fill="url(#mv1)" opacity="0.58"/>
-            <path d="M372 77 Q384 67 398 71 Q408 81 401 94 Q390 101 377 94 Q367 84 372 77Z" fill="url(#mv1)" opacity="0.52"/>
-            <path d="M395 844 Q370 780 382 710 Q394 640 374 570" stroke="#A8C0A0" strokeWidth="1.5" fill="none" opacity="0.4" strokeLinecap="round"/>
-            <path d="M350 764 Q362 754 376 758 Q386 768 379 781 Q368 788 355 781 Q345 771 350 764Z" fill="url(#mv1)" opacity="0.45"/>
-          </svg>
-          <div style={{background:"rgba(252,249,242,0.96)",borderRadius:32,padding:"40px 28px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 8px 40px rgba(60,50,30,0.14)",border:"1px solid rgba(255,255,255,0.9)",position:"relative",zIndex:1}}>
-            <div style={{fontSize:52,marginBottom:14}}>🌿</div>
-            <div style={{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,color:"#1A1A10",marginBottom:8}}>Welcome to Thinko</div>
-            <div style={{fontSize:15,color:"#6A6050",lineHeight:1.7,marginBottom:28,fontWeight:300}}>Your calm space for thinking clearly, planning gently, and living fully.</div>
-            <div style={{fontSize:13,fontWeight:700,color:"#4A7038",marginBottom:12}}>What shall we call you? 🌱</div>
-            <input value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveName()} placeholder="Your first name..." style={{width:"100%",padding:"14px 20px",borderRadius:100,border:"1.5px solid rgba(160,172,140,0.4)",background:"rgba(242,238,228,0.8)",fontFamily:"inherit",fontSize:16,color:"#1A1A10",outline:"none",textAlign:"center",marginBottom:14}}/>
-            <button onClick={saveName} style={{width:"100%",padding:"16px",borderRadius:100,background:"#4A7038",color:"white",fontFamily:"inherit",fontSize:16,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 16px rgba(74,112,56,0.32)"}}>Begin my journey 🌿</button>
+        <div style={{position:"fixed",inset:0,zIndex:600,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"center",justifyContent:"center",padding:32,backdropFilter:"blur(8px)"}}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 8px 48px rgba(0,0,0,0.18)"}}>
+            <div style={{fontSize:40,marginBottom:12}}>🌿</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A1A10",marginBottom:8}}>Welcome to Thinko</div>
+            <div style={{fontSize:14,color:"#8A8070",marginBottom:20,lineHeight:1.6}}>What should we call you?</div>
+            <input value={nameInput} onChange={e=>setNameInput(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&nameInput.trim()&&(setUserName(nameInput.trim()),setShowNameModal(false),localStorage.setItem("thinko_username",nameInput.trim()))}
+              placeholder="Your name…" autoFocus
+              style={{width:"100%",boxSizing:"border-box",padding:"13px 18px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:16,color:"#1A1A10",outline:"none",marginBottom:14,textAlign:"center",background:"rgba(255,255,255,0.9)"}}/>
+            <button onClick={()=>{if(nameInput.trim()){setUserName(nameInput.trim());localStorage.setItem("thinko_username",nameInput.trim());}setShowNameModal(false);}}
+              style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 16px rgba(58,80,38,0.30)"}}>
+              Enter Thinko 🌿
+            </button>
           </div>
         </div>
       )}
 
-      {/* ── GREETING ── */}
-      <div style={{padding:"22px 22px 8px",textAlign:"center"}}>
-        {(()=>{const {word,emoji}=getGreeting();return(<div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,textAlign:"center"}}>{word}{userName?`, ${userName}`:""} {emoji}</div>);})()}
-        <div style={{fontSize:12,color:"#8A8070",marginTop:4,textAlign:"center"}}>Your calm space is ready</div>
-        <button onClick={getHomeBriefing} style={{marginTop:12,width:"100%",padding:"13px 18px",background:"linear-gradient(135deg,rgba(240,220,160,0.30),rgba(200,220,170,0.25))",border:"1.5px solid rgba(200,180,100,0.30)",borderRadius:22,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
-          <span style={{fontSize:24}}>☀️</span>
-          <div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>Today's Briefing</div>
-            <div style={{fontSize:11,color:"#8A8070",marginTop:1}}>AI morning message · tasks · goals</div>
-          </div>
-          <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{marginLeft:"auto",flexShrink:0}}><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
-        </button>
-        {TESTING_MODE&&<div style={{marginTop:8,display:"inline-flex",alignItems:"center",gap:6,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.25)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
-        <div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install Thinko as an app:\n\n📱 Android: tap ⋮ (3 dots) → Add to Home Screen\n\n🍎 iPhone: tap Share → Add to Home Screen");}} style={{background:"rgba(90,120,72,0.12)",border:"1px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"6px 10px",fontSize:12,fontWeight:700,color:"#3A6020",cursor:"pointer"}} title="Install as app">📲 App</button>
-          <AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/>
-        </div></div>
-        {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
-      </div>
-      <div style={{padding:"4px 12px 2px",textAlign:"center"}}>
-        <span style={{fontSize:11,color:"rgba(60,56,40,0.45)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
-      </div>
-      <div style={{padding:"8px 14px 100px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {orderedModules.map(m=>(
-          <div key={m.id}
-            draggable
-            onDragStart={e=>homeDragStart(e,m.id)}
-            onDragOver={e=>homeDragOver(e,m.id)}
-            onDragEnd={homeDragEnd}
-            onClick={()=>setScreen(m.id)}
-            style={{
-              background:dragHome===m.id?"rgba(255,255,255,0.96)":"rgba(248,245,236,0.88)",
-              backdropFilter:"blur(14px)",
-              WebkitBackdropFilter:"blur(14px)",
-              borderRadius:22,
-              border:"1px solid rgba(255,255,255,0.92)",
-              cursor:"pointer",
-              transition:"all 0.18s",
-              boxShadow:dragHome===m.id
-                ?"0 10px 32px rgba(60,70,40,0.16)"
-                :"0 2px 14px rgba(60,70,40,0.07)",
-              transform:dragHome===m.id?"scale(1.04)":"scale(1)",
-              display:"flex",flexDirection:"column",
-              overflow:"hidden",
-              position:"relative",
-            }}>
-            {/* Coloured accent bar */}
-            <div style={{height:4,background:m.color||"#5A7848",flexShrink:0}}/>
-            <div style={{padding:"14px 14px 14px",display:"flex",flexDirection:"column",flex:1}}>
-              {/* Icon + drag handle row */}
-              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
-                <span style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.10))"}}>
-                  {m.icon}
-                </span>
-                <div style={{opacity:0.22,marginTop:2}}>
-                  <svg width="12" height="12" viewBox="0 0 12 12">
-                    <circle cx="3.5" cy="3.5" r="1.3" fill="#3A3020"/>
-                    <circle cx="8.5" cy="3.5" r="1.3" fill="#3A3020"/>
-                    <circle cx="3.5" cy="8.5" r="1.3" fill="#3A3020"/>
-                    <circle cx="8.5" cy="8.5" r="1.3" fill="#3A3020"/>
-                  </svg>
-                </div>
-              </div>
-              {/* Name in Georgia serif */}
-              <div style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.2,marginBottom:5}}>
-                {m.name}
-              </div>
-              {/* Summary in smaller text */}
-              {m.summary&&<div style={{fontSize:10,color:"#8A8070",lineHeight:1.6,fontWeight:400,letterSpacing:0.1}}>
-                {m.summary}
-              </div>}
-            </div>
-          </div>
-        ))}
-      </div>
       {/* ── HOME MORNING BRIEFING MODAL ── */}
       {showHomeBriefing&&(
         <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setShowHomeBriefing(false)}>
@@ -7671,8 +7661,7 @@ export default function App() {
                 ?<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>🌿 Writing your briefing…</div>
                 :<div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"18px 20px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:16}}>
                   <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#1A2810",lineHeight:1.9}}>{homeBriefingText}</div>
-                </div>
-              }
+                </div>}
               {!homeBriefingLoading&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {[["📋","prioritizer"],["⚖️","matrix"],["🎯","goals"],["⚡","charge"]].map(([icon,screen])=>(
                   <button key={screen} onClick={()=>{setShowHomeBriefing(false);setScreen(screen);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{icon} {screen.charAt(0).toUpperCase()+screen.slice(1)}</button>
@@ -7682,8 +7671,98 @@ export default function App() {
           </div>
         </div>
       )}
-      <NavBar current="home" setScreen={setScreen}/>
+
+      {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
+
+      {/* ── GREETING SECTION ── */}
+      <div style={{padding:"56px 24px 20px",textAlign:"center",flexShrink:0}}>
+        {/* Greeting */}
+        <div style={{fontFamily:"Georgia,serif",fontSize:36,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,marginBottom:6,textShadow:"0 2px 12px rgba(255,255,255,0.6)"}}>
+          {(()=>{const {word,emoji}=getGreeting();return <>{word}{userName?`, ${userName}`:""} {emoji}</>;})()}
+        </div>
+        <div style={{fontSize:14,color:"rgba(42,42,20,0.65)",marginBottom:22,fontStyle:"italic",letterSpacing:0.2}}>Think it. 🤔 Plan it. Live it.</div>
+
+        {/* Briefing card */}
+        <button onClick={getHomeBriefing} style={{width:"100%",padding:"16px 20px",background:"rgba(255,252,240,0.82)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:"1.5px solid rgba(220,195,120,0.45)",borderRadius:24,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left",boxShadow:"0 4px 24px rgba(200,170,80,0.18), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
+          <span style={{fontSize:28,filter:"drop-shadow(0 0 8px rgba(255,200,50,0.6))"}}>☀️</span>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1208",marginBottom:1}}>Today's Briefing</div>
+            <div style={{fontSize:11,color:"rgba(80,60,20,0.6)"}}>AI morning message · tasks · goals</div>
+          </div>
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{flexShrink:0,opacity:0.4}}><path d="M1 1l5 5-5 5" stroke="#5A4020" strokeWidth="2" strokeLinecap="round"/></svg>
+        </button>
+      </div>
+
+      {/* ── ACTION ROW (subtle) ── */}
+      <div style={{display:"flex",gap:8,padding:"0 24px 16px",justifyContent:"center",flexShrink:0}}>
+        {TESTING_MODE&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.22)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
+        <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\n📱 Android: tap ⋮ → Add to Home Screen\n🍎 iPhone: Share → Add to Home Screen");}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>📲 App</button>
+        <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>Go Pro</button>
+      </div>
+
+      {/* ── DRAG HINT ── */}
+      <div style={{textAlign:"center",marginBottom:10,flexShrink:0}}>
+        <span style={{fontSize:11,color:"rgba(60,56,40,0.40)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
+      </div>
+
+      {/* ── MODULE CARDS GRID ── */}
+      <div style={{padding:"0 14px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,flex:1}}>
+        {orderedModules.map(m=>(
+          <div key={m.id}
+            draggable
+            onDragStart={e=>homeDragStart(e,m.id)}
+            onDragOver={e=>homeDragOver(e,m.id)}
+            onDragEnd={homeDragEnd}
+            onClick={()=>setScreen(m.id)}
+            style={{
+              background:dragHome===m.id?"rgba(255,255,255,0.96)":"rgba(250,248,240,0.82)",
+              backdropFilter:"blur(18px)",
+              WebkitBackdropFilter:"blur(18px)",
+              borderRadius:28,
+              border:"1.5px solid rgba(255,255,255,0.88)",
+              cursor:"pointer",
+              transition:"all 0.18s ease",
+              boxShadow:dragHome===m.id
+                ?"0 12px 36px rgba(60,70,40,0.18), inset 0 1px 0 rgba(255,255,255,1)"
+                :"0 3px 18px rgba(60,70,40,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+              transform:dragHome===m.id?"scale(1.05) rotate(-1deg)":"scale(1)",
+              display:"flex",flexDirection:"column",
+              alignItems:"center",justifyContent:"center",
+              padding: m.id==="charge"?"22px 24px":"28px 12px 22px",
+              minHeight: m.id==="charge"?80:140,
+              position:"relative",
+              overflow:"hidden",
+              gridColumn: m.id==="charge"?"1 / -1":"auto",
+              flexDirection: m.id==="charge"?"row":"column",
+            }}>
+            {/* Subtle colour wash */}
+            <div style={{position:"absolute",inset:0,background:`linear-gradient(160deg, ${m.color}0a 0%, transparent 60%)`,pointerEvents:"none",borderRadius:28}}/>
+            {/* Drag dots */}
+            <div style={{position:"absolute",top:10,right:12,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
+              {[0,1,2].map(i=>(
+                <div key={i} style={{display:"flex",gap:2.5}}>
+                  {[0,1].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"#3A3020"}}/>)}
+                </div>
+              ))}
+            </div>
+            {/* Icon — large, centred */}
+            <div style={{fontSize:m.id==="charge"?40:48,lineHeight:1,marginBottom:m.id==="charge"?0:14,marginRight:m.id==="charge"?16:0,filter:"drop-shadow(0 3px 6px rgba(0,0,0,0.12))",position:"relative",zIndex:1,flexShrink:0}}>
+              {m.icon}
+            </div>
+            {/* Name — Georgia serif, no description */}
+            <div style={{position:"relative",zIndex:1,flex:m.id==="charge"?1:"unset"}}>
+              <div style={{fontFamily:"Georgia,serif",fontSize:m.id==="charge"?18:16,fontWeight:700,color:"#1A1A10",textAlign:m.id==="charge"?"left":"center",letterSpacing:-0.3,lineHeight:1.2}}>
+                {m.name}
+              </div>
+              {m.id==="charge"&&<div style={{fontSize:11,color:"rgba(60,50,30,0.5)",marginTop:3}}>Daily challenge · Orb of light · Rewards</div>}
+            </div>
+            {m.id==="charge"&&<svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{flexShrink:0,opacity:0.3,position:"relative",zIndex:1}}><path d="M1 1l6 6-6 6" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>}
+          </div>
+        ))}
+      </div>
+
     </div>
+    <NavBar current="home" setScreen={setScreen}/>
     </>
   );
 }
