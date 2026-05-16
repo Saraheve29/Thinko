@@ -2916,17 +2916,29 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
 const DRAWER_COLORS=["#c0392b","#e67e22","#27ae60","#2980b9","#8e44ad","#c2185b","#546e7a","#16a085","#d68910","#1a5276"];
 const DRAWER_ICONS=["📁","📂","🗂️","💼","🏠","💰","📊","🔬","🎨","📸","⭐","🔒","🌿","📋","🎓","🪪","📜","🧾","📑","🏦","💳","📃","🗃️","📌","🔑"];
 
+// Premade drawer templates — shown when cabinet is empty
+const PREMADE_DRAWERS=[
+  {name:"💳 Receipts",      icon:"💳", color:"#2A7A3A", subs:["Physical Receipts","Digital Receipts","Warranty Docs","Returns"]},
+  {name:"🪪 Identity Docs", icon:"🪪", color:"#2A5A8A", subs:["Passport / ID","Driving Licence","Birth Certificate","NI / Tax"]},
+  {name:"🏥 Medical",       icon:"🏥", color:"#8A2A2A", subs:["Test Results","Prescriptions","Referrals","Insurance"]},
+  {name:"💰 Bills",         icon:"💰", color:"#7A5A20", subs:["Energy","Broadband","Council Tax","Subscriptions"]},
+  {name:"📋 Contracts",     icon:"📋", color:"#3A3A7A", subs:["Tenancy","Employment","Insurance","Finance"]},
+  {name:"🎓 Education",     icon:"🎓", color:"#2A6A5A", subs:["Certificates","Transcripts","Courses","References"]},
+];
+
 function mkDrawer(name,color,icon){return{id:Date.now()+Math.random(),name,color,icon,subCats:[]};}
 function mkSubCat(name){return{id:Date.now()+Math.random(),name,files:[]};}
 function mkFile(name,type,data){return{id:Date.now()+Math.random(),name,type,data,added:Date.now()};}
 
 function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
-  const [view,setView]=useState("cabinet"); // cabinet | drawer | sub | preview
+  const [view,setView]=useState("cabinet");
   const [activeDrawerId,setActiveDrawerId]=useState(null);
   const [activeSubId,setActiveSubId]=useState(null);
   const [previewFile,setPreviewFile]=useState(null);
   const [addingDrawer,setAddingDrawer]=useState(false);
   const [addingSub,setAddingSub]=useState(false);
+  const [renamingDrawerId,setRenamingDrawerId]=useState(null);
+  const [renameDraft,setRenameDraft]=useState("");
   const [draft,setDraft]=useState({name:"",color:DRAWER_COLORS[0],icon:"📁"});
   const [draftSub,setDraftSub]=useState("");
   const [toast,setToast]=useState("");
@@ -2938,6 +2950,17 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
   const sub=drawer?.subCats.find(s=>s.id===activeSubId);
   const fmtDate=ts=>new Date(ts).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
 
+  // Load premade drawers
+  const loadPremade=()=>{
+    const now=Date.now();
+    const newDrawers=PREMADE_DRAWERS.map((pd,i)=>({
+      id:now+i,name:pd.name,color:pd.color,icon:pd.icon,
+      subCats:pd.subs.map((s,j)=>({id:now+i*100+j,name:s,files:[]}))
+    }));
+    upd(()=>newDrawers);
+    showToast("📁 Premade drawers loaded!");
+  };
+
   const addDrawer=()=>{
     if(!draft.name.trim())return;
     upd(ds=>[...ds,mkDrawer(draft.name.trim(),draft.color,draft.icon)]);
@@ -2945,6 +2968,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
     showToast("🗄️ Drawer added!");
   };
   const delDrawer=id=>upd(ds=>ds.filter(d=>d.id!==id));
+  const renameDrawer=(id,newName)=>{upd(ds=>ds.map(d=>d.id===id?{...d,name:newName}:d));setRenamingDrawerId(null);};
   const addSub=()=>{
     if(!draftSub.trim())return;
     upd(ds=>ds.map(d=>d.id===activeDrawerId?{...d,subCats:[...d.subCats,mkSubCat(draftSub.trim())]}:d));
@@ -5979,7 +6003,7 @@ function MatrixTimer({setScreen}) {
   );
 }
 
-function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) {
+function Matrix({data,setData,priData,setPriData,mapData,setMapData,goalsData,setGoalsData,ideasData,setIdeasData,setScreen}) {
   const [inlineTexts,setInlineTexts]=useState({do:"",plan:"",help:"",drop:""});
   const [inlineUrls,setInlineUrls]=useState({do:"",plan:"",help:"",drop:""});
   const [expandedTask,setExpandedTask]=useState(null);
@@ -5991,12 +6015,22 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   const [toast,setToast]=useState("");
   const [moveTask,setMoveTask]=useState(null);
   const [sendMenu,setSendMenu]=useState(null);
-  const [dragTaskId,setDragTaskId]=useState(null); // for drag between quadrants
-  const [dragOverQuad,setDragOverQuad]=useState(null); // highlight drop target
-  const [selectedTasks,setSelectedTasks]=useState(new Set()); // for batch move
+  const [dragTaskId,setDragTaskId]=useState(null);
+  const [dragOverTarget,setDragOverTarget]=useState(null); // quad key OR "goals"|"vault"
+  const [selectedTasks,setSelectedTasks]=useState(new Set());
+  const [balanceModal,setBalanceModal]=useState(false);
+  const [suggestModal,setSuggestModal]=useState(false);
+  const [suggestLoading,setSuggestLoading]=useState(false);
+  const [suggestions,setSuggestions]=useState([]);
+  const [labelModal,setLabelModal]=useState(false);
+  const [customLabels,setCustomLabels]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_quad_labels')||'{}')}catch{return {};}});
+  const [labelDraft,setLabelDraft]=useState({});
   const now=Date.now();
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
+  const saveLabels=labels=>{setCustomLabels(labels);try{localStorage.setItem('thinko_quad_labels',JSON.stringify(labels));}catch{}};
+  const qLabel=q=>customLabels[q.key]?.label||q.label;
+  const qSub=q=>customLabels[q.key]?.sub||q.sub;
 
   const addInline=(quad)=>{
     const text=inlineTexts[quad].trim();
@@ -6019,31 +6053,78 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   const move=(id,quad)=>{setData(ds=>ds.map(d=>d.id===id?{...d,quad,touched:Date.now()}:d));setMoveTask(null);showToast(`Moved to ${QUADS.find(q=>q.key===quad)?.label||quad}`);};
   const touch=id=>setData(ds=>ds.map(d=>d.id===id?{...d,touched:Date.now()}:d));
 
-  // ── DRAG BETWEEN QUADRANTS ────────────────────────────
-  const handleDragStart=(e,taskId)=>{
-    e.dataTransfer.effectAllowed="move";
-    e.dataTransfer.setData("taskId",String(taskId));
-    setDragTaskId(taskId);
-  };
-  const handleDragOver=(e,quadKey)=>{
-    e.preventDefault();
-    e.dataTransfer.dropEffect="move";
-    setDragOverQuad(quadKey);
-  };
-  const handleDrop=(e,quadKey)=>{
+  // ── DRAG BETWEEN QUADRANTS + GOALS + VAULT ─────────────
+  const handleDragStart=(e,taskId)=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("taskId",String(taskId));setDragTaskId(taskId);};
+  const handleDragOver=(e,target)=>{e.preventDefault();e.dataTransfer.dropEffect="move";setDragOverTarget(target);};
+  const handleDrop=(e,target)=>{
     e.preventDefault();
     const id=parseInt(e.dataTransfer.getData("taskId"));
-    if(id&&dragTaskId){
-      const task=data.find(d=>d.id===id);
-      if(task&&task.quad!==quadKey){
-        move(id,quadKey);
+    const task=id&&data.find(d=>d.id===id);
+    if(!task){setDragTaskId(null);setDragOverTarget(null);return;}
+    if(target==="goals"){
+      // Drop to Goals — create a goal from task
+      if(setGoalsData){
+        const due=new Date();due.setDate(due.getDate()+7);
+        setGoalsData(gs=>[...gs,{id:Date.now(),horizon:"week",title:task.text,description:"From Matrix",dueDate:due.toISOString().slice(0,10),cover:null,links:[],subtasks:[],status:"active",created:Date.now()}]);
+        del(id);showToast("🌱 Planted as Goal!");
       }
+    } else if(target==="vault"){
+      // Drop to Vault — save as idea note
+      if(setIdeasData){
+        setIdeasData(ds=>[{id:Date.now(),title:task.text,content:`From Matrix (${QUADS.find(q=>q.key===task.quad)?.label||task.quad})`,type:"note",tag:"📌 Matrix",created:Date.now()},...ds]);
+        showToast("📚 Saved to The Vault!");
+      }
+    } else {
+      // Drop to another quadrant
+      if(task.quad!==target) move(id,target);
     }
-    setDragTaskId(null);setDragOverQuad(null);
+    setDragTaskId(null);setDragOverTarget(null);
   };
-  const handleDragEnd=()=>{setDragTaskId(null);setDragOverQuad(null);};
+  const handleDragEnd=()=>{setDragTaskId(null);setDragOverTarget(null);};
 
-  // ── ONE-TAP MOVE SELECTED TO PRIORITIZER ─────────────
+  // ── WEEKLY BALANCE CHECK ───────────────────────────────
+  const getBalance=()=>{
+    const counts={do:0,plan:0,help:0,drop:0};
+    data.forEach(d=>counts[d.quad]=(counts[d.quad]||0)+1);
+    const total=data.length||1;
+    const urgentPct=Math.round(((counts.do+counts.help)/total)*100);
+    const importantPct=Math.round(((counts.do+counts.plan)/total)*100);
+    const warnings=[];
+    if(urgentPct>60)warnings.push("🔴 Over 60% of tasks are urgent — you may be in reactive mode");
+    if(counts.plan<2)warnings.push("🌿 Very few important-but-not-urgent tasks — hard to make progress on big goals");
+    if(counts.drop>counts.do)warnings.push("⚠️ More 'eliminate' tasks than 'do first' — consider cleaning up");
+    if(counts.do>6)warnings.push("🔥 Lots of urgent+important tasks — prioritise ruthlessly today");
+    if(warnings.length===0)warnings.push("✅ Your matrix looks balanced — great focus!");
+    return{counts,urgentPct,importantPct,warnings,total};
+  };
+
+  // ── AI AUTO-SUGGEST QUADRANT MOVES ────────────────────
+  const autoSuggest=async()=>{
+    setSuggestLoading(true);setSuggestions([]);setSuggestModal(true);
+    const taskList=data.map(t=>`id:${t.id} text:"${t.text}" quad:${t.quad} days_old:${Math.floor((now-(t.touched||now))/(86400000))}`).join("\n");
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
+          messages:[{role:"user",content:`Review these Eisenhower Matrix tasks and suggest 3-5 gentle moves between quadrants. Only suggest if there's a clear mismatch (e.g. a task that sounds important but is in "drop", or something that could be delegated). Be warm and brief. Return ONLY JSON array: [{id:number,text:string,currentQuad:string,suggestedQuad:string,reason:string}]\n\nTasks:\n${taskList}`}]})
+      });
+      const j=await res.json();
+      setSuggestions(JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim()));
+    }catch{setSuggestions([{id:0,text:"AI unavailable",currentQuad:"",suggestedQuad:"",reason:"Try again in a moment 🌿"}]);}
+    setSuggestLoading(false);
+  };
+
+  // ── EXPORT TO VAULT ────────────────────────────────────
+  const exportToVault=()=>{
+    if(!setIdeasData)return;
+    const bal=getBalance();
+    const date=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+    const content=`# Weekly Matrix Export — ${date}\n\n## Balance\n- Urgent tasks: ${bal.urgentPct}%\n- Important tasks: ${bal.importantPct}%\n\n## Insights\n${bal.warnings.map(w=>`- ${w}`).join("\n")}\n\n## Quadrants\n${QUADS.map(q=>{const tasks=data.filter(d=>d.quad===q.key);return`### ${qLabel(q)}\n${tasks.length?tasks.map(t=>`- ${t.text}`).join("\n"):"(empty)"}`}).join("\n\n")}`;
+    setIdeasData(ds=>[{id:Date.now(),title:`📊 Matrix Export — ${date}`,content,type:"note",tag:"📊 Matrix",created:Date.now()},...ds]);
+    showToast("📊 Matrix exported to The Vault!");
+  };
+
+  // ── MOVE SELECTED TO PRIORITIZER ─────────────────────
   const moveSelectedToPri=()=>{
     if(!priData.length){showToast("Create a Prioritizer list first");return;}
     const tasks=data.filter(d=>selectedTasks.has(d.id));
@@ -6112,29 +6193,66 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
         </button>
         <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3}}>Matrix — Urgent vs Important</div>
         {selectedTasks.size>0&&(
-          <button onClick={moveSelectedToPri} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(58,80,38,0.28)"}}>
+          <button onClick={moveSelectedToPri} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
             📋 Move {selectedTasks.size} →
           </button>
         )}
       </div>
 
-      {/* Drag hint */}
-      <div style={{textAlign:"center",padding:"4px 0 2px",fontSize:10,color:"rgba(90,80,60,0.40)",letterSpacing:0.4}}>
-        ⠿ Drag tasks between quadrants · tap to select for batch move
+      {/* ── ACTION ROW — balance / suggest / labels / export ── */}
+      <div style={{display:"flex",gap:6,padding:"6px 8px 0",overflowX:"auto",scrollbarWidth:"none"}}>
+        {[
+          {label:"⚖️ Balance",action:()=>setBalanceModal(true)},
+          {label:"🤖 Suggest",action:autoSuggest},
+          {label:"🏷️ Labels",action:()=>{setLabelDraft({...customLabels});setLabelModal(true);}},
+          {label:"📊 Export",action:exportToVault},
+        ].map(b=>(
+          <button key={b.label} onClick={b.action} style={{background:"rgba(248,245,236,0.88)",border:"1px solid rgba(90,80,60,0.10)",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,boxShadow:"0 1px 6px rgba(0,0,0,0.04)"}}>
+            {b.label}
+          </button>
+        ))}
       </div>
 
-      {/* ── 2×2 GRID with drag-and-drop ── */}
-      <div style={{padding:"6px 8px 0",display:"flex",flexDirection:"column",boxSizing:"border-box",width:"100%"}}>
-        <div style={{display:"grid",gridTemplateColumns:"calc(50% - 4px) calc(50% - 4px)",gridTemplateRows:"calc(50dvh - 105px) calc(50dvh - 105px)",gap:8,width:"100%",boxSizing:"border-box",marginBottom:8}}>
+      {/* ── DROP ZONES — Goals + Vault (show when dragging) ── */}
+      {dragTaskId&&(
+        <div style={{display:"flex",gap:8,padding:"6px 8px",flexShrink:0}}>
+          {[
+            {key:"goals",icon:"🌱",label:"Drop → Goals",color:"rgba(90,160,80,0.15)",border:"rgba(90,160,80,0.4)"},
+            {key:"vault",icon:"📚",label:"Drop → The Vault",color:"rgba(90,120,72,0.10)",border:"rgba(90,120,72,0.3)"},
+          ].map(zone=>(
+            <div key={zone.key}
+              onDragOver={e=>handleDragOver(e,zone.key)}
+              onDrop={e=>handleDrop(e,zone.key)}
+              onDragLeave={()=>setDragOverTarget(null)}
+              style={{
+                flex:1,padding:"10px",borderRadius:14,textAlign:"center",
+                background:dragOverTarget===zone.key?"rgba(90,160,80,0.28)":zone.color,
+                border:`2px dashed ${dragOverTarget===zone.key?"#5A9040":zone.border}`,
+                fontSize:12,fontWeight:700,color:"#2A5020",transition:"all 0.12s",
+              }}>
+              {zone.icon} {zone.label}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Drag hint */}
+      <div style={{textAlign:"center",padding:"2px 0",fontSize:10,color:"rgba(90,80,60,0.38)",letterSpacing:0.3}}>
+        ⠿ Drag tasks between quadrants, to 🌱 Goals, or 📚 The Vault
+      </div>
+
+      {/* ── 2×2 GRID ── */}
+      <div style={{padding:"4px 8px 0",display:"flex",flexDirection:"column",boxSizing:"border-box",width:"100%"}}>
+        <div style={{display:"grid",gridTemplateColumns:"calc(50% - 4px) calc(50% - 4px)",gridTemplateRows:"calc(50dvh - 120px) calc(50dvh - 120px)",gap:8,width:"100%",boxSizing:"border-box",marginBottom:8}}>
           {QUADS.map((q,qi)=>{
             const tasks=data.filter(d=>d.quad===q.key);
             const isSage=qi===0||qi===2;
-            const isDragTarget=dragOverQuad===q.key&&dragTaskId!==null;
+            const isDragTarget=dragOverTarget===q.key&&dragTaskId!==null;
             return(
               <div key={q.key}
                 onDragOver={e=>handleDragOver(e,q.key)}
                 onDrop={e=>handleDrop(e,q.key)}
-                onDragLeave={()=>setDragOverQuad(null)}
+                onDragLeave={()=>setDragOverTarget(null)}
                 style={{
                   background:isDragTarget?"rgba(90,120,72,0.22)":isSage?"rgba(124,148,104,0.35)":"rgba(245,242,234,0.88)",
                   borderRadius:16,padding:"10px 10px 8px",position:"relative",
@@ -6142,56 +6260,36 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                   border:isDragTarget?"2px dashed rgba(90,120,72,0.6)":"2px solid transparent",
                   transition:"all 0.12s",
                 }}>
-                {/* Leaf icon */}
-                <div style={{position:"absolute",top:8,right:8,opacity:0.7}}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={isSage?"rgba(255,255,255,0.65)":"#5A7848"}/>
-                  </svg>
-                </div>
-
-                {/* Label */}
+                <div style={{position:"absolute",top:8,right:8,opacity:0.7}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={isSage?"rgba(255,255,255,0.65)":"#5A7848"}/></svg></div>
                 <div style={{paddingRight:20,marginBottom:5}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.25}}>{q.label}</div>
-                  <div style={{fontFamily:"Georgia,serif",fontSize:11,color:isSage?"#3A5028":"#6A6050"}}>{q.sub}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.25}}>{qLabel(q)}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:11,color:isSage?"#3A5028":"#6A6050"}}>{qSub(q)}</div>
                 </div>
                 <div style={{height:1,background:isSage?"rgba(255,255,255,0.28)":"rgba(90,80,60,0.10)",marginBottom:6}}/>
-
-                {/* Tasks — draggable */}
                 <div style={{flex:1,overflowY:"auto",minHeight:0}}>
                   {tasks.map(t=>{
                     const isSelected=selectedTasks.has(t.id);
                     const expanded=expandedTask===t.id;
                     const stale=now-t.touched>STALE_MS;
                     return(
-                      <div key={t.id}
-                        draggable
-                        onDragStart={e=>handleDragStart(e,t.id)}
-                        onDragEnd={handleDragEnd}
-                        style={{
-                          background:isSelected?"rgba(90,120,72,0.18)":"rgba(255,255,255,0.80)",
-                          borderRadius:10,padding:"7px 8px",marginBottom:5,
-                          border:isSelected?"1.5px solid rgba(90,120,72,0.5)":"1px solid rgba(255,255,255,0.9)",
-                          cursor:"grab",
-                          opacity:dragTaskId===t.id?0.5:1,
-                          position:"relative",
-                        }}>
+                      <div key={t.id} draggable onDragStart={e=>handleDragStart(e,t.id)} onDragEnd={handleDragEnd}
+                        style={{background:isSelected?"rgba(90,120,72,0.18)":"rgba(255,255,255,0.80)",borderRadius:10,padding:"7px 8px",marginBottom:5,border:isSelected?"1.5px solid rgba(90,120,72,0.5)":"1px solid rgba(255,255,255,0.9)",cursor:"grab",opacity:dragTaskId===t.id?0.5:1,position:"relative"}}>
                         {stale&&<div style={{position:"absolute",top:-4,right:4,background:"rgba(160,110,40,0.85)",color:"#fff",fontSize:7,fontWeight:700,borderRadius:6,padding:"1px 4px"}}>Old</div>}
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          {/* Select checkbox */}
-                          <button onClick={()=>setSelectedTasks(s=>{const n=new Set(s);n.has(t.id)?n.delete(t.id):n.add(t.id);return n;})}
-                            style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${isSelected?"#5A7848":"rgba(90,80,60,0.25)"}`,background:isSelected?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
+                          <button onClick={()=>setSelectedTasks(s=>{const n=new Set(s);n.has(t.id)?n.delete(t.id):n.add(t.id);return n;})} style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${isSelected?"#5A7848":"rgba(90,80,60,0.25)"}`,background:isSelected?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
                             {isSelected&&<svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>}
                           </button>
                           <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{flex:1,fontFamily:"Georgia,serif",fontSize:12,fontWeight:600,color:"#1A1A10",lineHeight:1.35,cursor:"pointer",wordBreak:"break-word"}}>{t.text}</div>
-                          {/* Drag handle */}
-                          <div style={{flexShrink:0,opacity:0.3,cursor:"grab",fontSize:10}}>⠿</div>
+                          <div style={{flexShrink:0,opacity:0.3,fontSize:10}}>⠿</div>
                         </div>
                         {expanded&&(
                           <div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:6}}>
                             <button onClick={()=>touch(t.id)} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>✓ Done</button>
                             <button onClick={()=>setMoveTask(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>↔ Move</button>
                             <button onClick={()=>setSendMenu(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>↗ Send</button>
-                            {priData.length>0&&<button onClick={()=>sendToPri(t,priData[0].id)} style={{background:"rgba(90,120,72,0.14)",color:"#2A5010",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:700,cursor:"pointer"}}>📋 → Pri</button>}
+                            {priData.length>0&&<button onClick={()=>sendToPri(t,priData[0].id)} style={{background:"rgba(90,120,72,0.14)",color:"#2A5010",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:700,cursor:"pointer"}}>📋→Pri</button>}
+                            {setGoalsData&&<button onClick={()=>{const due=new Date();due.setDate(due.getDate()+7);setGoalsData(gs=>[...gs,{id:Date.now(),horizon:"week",title:t.text,description:"",dueDate:due.toISOString().slice(0,10),cover:null,links:[],subtasks:[],status:"active",created:Date.now()}]);del(t.id);showToast("🌱 Planted as Goal!");}} style={{background:"rgba(90,160,80,0.12)",color:"#2A6020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:700,cursor:"pointer"}}>🌱→Goal</button>}
+                            {setIdeasData&&<button onClick={()=>{setIdeasData(ds=>[{id:Date.now(),title:t.text,content:"From Matrix",type:"note",tag:"📌 Matrix",created:Date.now()},...ds]);showToast("📚 Saved!");}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>📚→Vault</button>}
                             <button onClick={()=>del(t.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>🗑</button>
                           </div>
                         )}
@@ -6199,13 +6297,8 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                     );
                   })}
                 </div>
-
-                {/* Add input */}
                 <div style={{display:"flex",gap:5,marginTop:5,flexShrink:0}}>
-                  <input value={inlineTexts[q.key]} onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
-                    onKeyDown={e=>e.key==="Enter"&&addInline(q.key)}
-                    placeholder="Add task…"
-                    style={{flex:1,padding:"6px 9px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(255,255,255,0.85)",fontSize:11,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}/>
+                  <input value={inlineTexts[q.key]} onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addInline(q.key)} placeholder="Add task…" style={{flex:1,padding:"6px 9px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(255,255,255,0.85)",fontSize:11,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}/>
                   <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,fontSize:18,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
               </div>
@@ -6213,7 +6306,6 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
           })}
         </div>
       </div>
-
       {/* ── BOTTOM BUTTONS ── */}
       <div style={{position:"sticky",bottom:0,padding:"8px 12px 24px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%",zIndex:50}}>
         <button onClick={()=>{if(selectedTasks.size>0){moveSelectedToPri();}else{setScreen("prioritizer");}}} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 4px 14px rgba(90,120,72,0.28)"}}>
@@ -6223,6 +6315,112 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       </div>
 
       {sendMenu&&<SendMenu task={sendMenu}/>}
+
+      {/* ── WEEKLY BALANCE MODAL ── */}
+      {balanceModal&&(()=>{
+        const bal=getBalance();
+        return(
+          <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setBalanceModal(false)}>
+            <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+              <div style={{padding:"0 20px 14px"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:12}}>⚖️ Weekly Balance Check</div>
+                {/* Visual balance bars */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+                  {QUADS.map(q=>{
+                    const count=data.filter(d=>d.quad===q.key).length;
+                    const pct=bal.total>0?Math.round((count/bal.total)*100):0;
+                    const isSage=q.key==="do"||q.key==="help";
+                    return(
+                      <div key={q.key} style={{background:isSage?"rgba(124,148,104,0.15)":"rgba(245,242,234,0.90)",borderRadius:16,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.9)"}}>
+                        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:"#1A1A10",marginBottom:4}}>{qLabel(q)}</div>
+                        <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,marginBottom:4,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:`${pct}%`,background:isSage?"#8A9E78":"#5A7848",borderRadius:100}}/>
+                        </div>
+                        <div style={{fontSize:11,color:"#8A8070"}}>{count} tasks · {pct}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Insights */}
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:10}}>Insights</div>
+                {bal.warnings.map((w,i)=>(
+                  <div key={i} style={{background:"rgba(90,120,72,0.06)",borderRadius:16,padding:"12px 16px",marginBottom:8,border:"1px solid rgba(90,120,72,0.12)",fontFamily:"Georgia,serif",fontSize:13,color:"#1A2810",lineHeight:1.6}}>{w}</div>
+                ))}
+                <button onClick={()=>{exportToVault();setBalanceModal(false);}} style={{width:"100%",marginTop:8,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.25)"}}>
+                  📊 Export insights to The Vault
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── AUTO-SUGGEST MODAL ── */}
+      {suggestModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setSuggestModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 10px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:2}}>🤖 Smart Suggestions</div>
+              <div style={{color:"#8A8070",fontSize:13}}>Gentle AI nudges based on how you're using the matrix</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {suggestLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:14}}>🌿 Thinking about your tasks…</div>}
+              {suggestions.map((s,i)=>(
+                <div key={i} style={{background:"rgba(248,245,236,0.92)",borderRadius:20,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{s.text}</div>
+                  <div style={{fontSize:12,color:"#5A7040",marginBottom:8}}>{s.reason}</div>
+                  {s.id>0&&s.suggestedQuad&&(
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <span style={{fontSize:11,color:"#8A8070"}}>{QUADS.find(q=>q.key===s.currentQuad)?.label} →</span>
+                      <button onClick={()=>{move(s.id,s.suggestedQuad);setSuggestions(ss=>ss.filter(x=>x.id!==s.id));showToast("Moved!");}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"6px 14px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        Move to {QUADS.find(q=>q.key===s.suggestedQuad)?.label||s.suggestedQuad}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CUSTOM LABELS MODAL ── */}
+      {labelModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setLabelModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:2}}>🏷️ Custom Quadrant Labels</div>
+              <div style={{color:"#8A8070",fontSize:13}}>Rename any quadrant to match how you think</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {QUADS.map(q=>(
+                <div key={q.key} style={{marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>
+                    {q.label} <span style={{color:"#9A9080",fontWeight:400,textTransform:"none"}}>({q.sub})</span>
+                  </div>
+                  <input value={labelDraft[q.key]?.label||""} onChange={e=>setLabelDraft(d=>({...d,[q.key]:{...d[q.key],label:e.target.value}}))}
+                    placeholder={`e.g. "Do Now" or leave blank for default`}
+                    style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)",marginBottom:6}}/>
+                  <input value={labelDraft[q.key]?.sub||""} onChange={e=>setLabelDraft(d=>({...d,[q.key]:{...d[q.key],sub:e.target.value}}))}
+                    placeholder={`Subtitle e.g. "(Do Now)" — optional`}
+                    style={{width:"100%",boxSizing:"border-box",padding:"9px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.12)",fontSize:12,color:"#5A5040",outline:"none",background:"rgba(255,255,255,0.70)"}}/>
+                </div>
+              ))}
+            </div>
+            <div style={{padding:"12px 20px 0",flexShrink:0,display:"flex",gap:10}}>
+              <button onClick={()=>{saveLabels({});setLabelDraft({});setLabelModal(false);showToast("Labels reset to default");}} style={{flex:1,padding:"13px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Reset</button>
+              <button onClick={()=>{
+                const merged={};
+                QUADS.forEach(q=>{if(labelDraft[q.key]?.label||labelDraft[q.key]?.sub)merged[q.key]={label:labelDraft[q.key]?.label||q.label,sub:labelDraft[q.key]?.sub||q.sub};});
+                saveLabels(merged);setLabelModal(false);showToast("🏷️ Labels saved!");
+              }} style={{flex:2,padding:"13px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.25)"}}>Save Labels</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Move modal */}
       {moveTask&&(
@@ -8419,13 +8617,14 @@ export default function App() {
   };
   const homeDragEnd=()=>setDragHome(null);
 
-  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
+  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} ideasData={ideasData} setIdeasData={setIdeasData} setScreen={setScreen}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
+
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
   if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div></>);
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} notesData={notesData} setNotesData={setNotesData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
-  if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
-  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} matrixData={matrixData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
+  if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} goalsData={goalsData} setGoalsData={setGoalsData} ideasData={ideasData} setIdeasData={setIdeasData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
+  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} matrixData={matrixData} goalsData={goalsData} setGoalsData={setGoalsData} ideasData={ideasData} setIdeasData={setIdeasData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen}/><NavBar current="tools" setScreen={setScreen}/></div></>);
