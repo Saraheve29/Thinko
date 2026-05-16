@@ -1135,53 +1135,185 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
     onUpdate({...list,tasks:[...recoloured,...list.tasks.filter(t=>t.done)]});
     setComparing(false);setPrioritized(true);
   };
+
+  // ── VINE GROWTH TRACKING ──────────────────────────────
+  // Tracks how consistently user works — more consistent = lusher vine
+  const [vineGrowth,setVineGrowth]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem('thinko_vine')||'{"level":0,"lastTask":0,"streak":0,"thickness":2}');}
+    catch{return {level:0,lastTask:0,streak:0,thickness:2};}
+  });
+  const saveVine=v=>{setVineGrowth(v);try{localStorage.setItem('thinko_vine',JSON.stringify(v));}catch{}};
+
+  // Called when a task is completed — updates vine growth
+  const onTaskComplete=id=>{
+    completeTask(id);
+    const now=Date.now();
+    const timeSinceLast=now-(vineGrowth.lastTask||0);
+    const consistent=timeSinceLast<30*60*1000; // within 30 min = consistent focus
+    const newStreak=consistent?vineGrowth.streak+1:1;
+    const newLevel=Math.min(10,vineGrowth.level+(consistent?0.8:0.3));
+    const newThickness=Math.min(6,2+newStreak*0.4);
+    saveVine({level:newLevel,lastTask:now,streak:newStreak,thickness:newThickness});
+  };
+
+  // Vine visual parameters based on growth level
+  const vl=vineGrowth.level; // 0–10
+  const vineHeight=Math.max(15,vl*10); // % of screen covered
+  const vineOpacity=0.35+vl*0.055;
+  const stemW=Math.min(5.5,2+vl*0.3);
+  const leafScale=0.4+vl*0.07;
+  const numLeaves=Math.max(2,Math.floor(vl*1.4));
+  const vineColor=vl>7?"#5A8828":vl>4?"#6E9E40":"#88B850";
+  const isLush=vl>6;
+
   if(comparing) return <PriCompare tasks={list.tasks} onDone={onPriDone}/>;
   const active=list.tasks.filter(t=>!t.done);
   const done=list.tasks.filter(t=>t.done);
+
   return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
-      <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.25)",color:"#1A1A10",border:"1px solid rgba(90,120,72,0.25)",borderRadius:10,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
-      <div style={{padding:"18px 16px"}}>
-        <BreakTimer setScreen={setScreen}/>
-        {/* Add task input */}
-        <div style={{display:"flex",gap:10,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 14px 12px 20px",border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
-          <input value={newTask} onChange={e=>setNewTask(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTask()} placeholder="Add task..." style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:500,color:"#1A1A10",background:"transparent"}}/>
-          <button onClick={addTask} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:38,height:38,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.3)"}}>+</button>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",position:"relative",overflow:"hidden"}}>
+
+      {/* ── LIVE VINE GROWTH — grows as you work ── */}
+      <svg style={{position:"fixed",left:0,top:0,width:"50px",height:"100%",pointerEvents:"none",zIndex:1,overflow:"visible"}} viewBox={`0 0 50 844`} preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <radialGradient id="pvlf1" cx="30%" cy="25%" r="65%"><stop offset="0%" stopColor="#D0EE98"/><stop offset="45%" stopColor="#90C850"/><stop offset="100%" stopColor="#4E8820"/></radialGradient>
+          <radialGradient id="pvlf2" cx="35%" cy="28%" r="60%"><stop offset="0%" stopColor="#C0E480"/><stop offset="42%" stopColor="#82B840"/><stop offset="100%" stopColor="#427010"/></radialGradient>
+          <filter id="pvls" x="-60%" y="-30%" width="220%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dx="1" dy="2"/><feComposite in2="SourceGraphic"/><feColorMatrix type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.10  0 0 0 0 0.02  0 0 0 0.22 0"/></filter>
+          <style>{`
+            @keyframes pvGrow{from{stroke-dashoffset:900}to{stroke-dashoffset:0}}
+            @keyframes pvLeaf{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+            @keyframes pvSway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+            .pvStem{stroke-dasharray:900;animation:pvGrow ${Math.max(1.5,3-vl*0.2).toFixed(1)}s ease forwards}
+            .pvLeaf{transform-origin:center;animation:pvLeaf 0.6s ease forwards}
+            .pvSway{animation:pvSway ${isLush?2.5:4}s ease-in-out infinite}
+          `}</style>
+        </defs>
+
+        {/* Main stem — height grows with vine level */}
+        <path
+          className="pvStem"
+          d={`M20 844 Q${22+vl} ${844-vineHeight*4} ${18-vl*0.5} ${844-vineHeight*8.44}`}
+          stroke={vineColor}
+          strokeWidth={stemW}
+          fill="none"
+          filter="url(#pvls)"
+          strokeLinecap="round"
+          opacity={vineOpacity+0.2}
+        />
+        {/* Secondary tendril */}
+        {vl>2&&<path
+          className="pvStem"
+          d={`M28 844 Q${30+vl*0.5} ${844-vineHeight*3} ${24} ${844-vineHeight*6}`}
+          stroke={vineColor}
+          strokeWidth={stemW*0.55}
+          fill="none"
+          strokeLinecap="round"
+          opacity={vineOpacity}
+        />}
+
+        {/* Leaves — number and size increase with vine level */}
+        {Array.from({length:numLeaves}).map((_,i)=>{
+          const ypos=844-80-(i*(vineHeight*8.44/(numLeaves+1)));
+          const side=i%2===0?-1:1;
+          const angle=side*(-30-i*5);
+          const sz=leafScale*(0.85+i*0.06);
+          const lf=i%2===0?"url(#pvlf1)":"url(#pvlf2)";
+          return(
+            <g key={i} className="pvLeaf pvSway" filter="url(#pvls)"
+              style={{animationDelay:`${i*0.18}s`,transformOrigin:`${20+side*10}px ${ypos}px`}}>
+              <g transform={`translate(${20+side*12},${ypos}) rotate(${angle}) scale(${sz})`}>
+                <path d={`M0-${28*sz/sz} C${-8*sz/sz}-${24*sz/sz} ${-20*sz/sz}-${15*sz/sz} ${-20*sz/sz}-${5*sz/sz} C${-20*sz/sz} ${7*sz/sz} ${-10*sz/sz} ${15*sz/sz} 0 ${18*sz/sz} C${10*sz/sz} ${15*sz/sz} ${20*sz/sz} ${7*sz/sz} ${20*sz/sz}-${5*sz/sz} C${20*sz/sz}-${15*sz/sz} ${8*sz/sz}-${24*sz/sz} 0-${28*sz/sz}Z`}
+                  fill={lf} opacity={vineOpacity+0.15}/>
+              </g>
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Vine growth indicator badge */}
+      <div style={{position:"fixed",left:8,bottom:100,zIndex:20,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+        <div style={{
+          background:isLush?"rgba(78,136,32,0.15)":"rgba(90,80,60,0.08)",
+          border:`1.5px solid ${isLush?"rgba(78,136,32,0.4)":"rgba(90,80,60,0.15)"}`,
+          borderRadius:100,
+          padding:"4px 8px",
+          fontSize:9,
+          fontWeight:700,
+          color:isLush?"#3A6818":"#8A8070",
+          whiteSpace:"nowrap",
+          letterSpacing:0.3,
+        }}>
+          {vl===0?"Start working…":vl<3?"🌱 Sprouting":vl<6?"🌿 Growing":vl<9?"🍃 Thriving":"🌳 Lush!"}
         </div>
-        {/* URL input */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"rgba(255,255,255,0.75)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.12)",boxShadow:"0 1px 6px rgba(0,0,0,0.04)"}}>
-          <input value={newUrl} onChange={e=>setNewUrl(e.target.value)} placeholder="Paste website address (optional)" style={{flex:1,border:"none",outline:"none",fontSize:14,color:"#5A5040",background:"transparent"}}/>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.45}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
+        {/* Mini progress bar */}
+        <div style={{width:32,height:3,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${vl*10}%`,background:vineColor,borderRadius:100,transition:"width 0.8s ease"}}/>
         </div>
-        {active.map((task,i)=>(
-          <div key={task.id}>
-            {i===0&&active.length>0&&(
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <div style={{height:1,flex:1,background:"rgba(255,80,80,0.35)"}}/>
-                <span style={{fontSize:10,fontWeight:800,color:"#FF4444",letterSpacing:1.5,textTransform:"uppercase"}}>🔴 Top 3 — Most Important</span>
-                <div style={{height:1,flex:1,background:"rgba(255,80,80,0.35)"}}/>
-              </div>
-            )}
-            {i===3&&(
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,marginTop:4}}>
-                <div style={{height:1,flex:1,background:"rgba(255,255,255,0.15)"}}/>
-                <span style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.4)",letterSpacing:1.2,textTransform:"uppercase"}}>Other Tasks</span>
-                <div style={{height:1,flex:1,background:"rgba(255,255,255,0.15)"}}/>
-              </div>
-            )}
-            <PriTaskRow task={task} index={i} onDelete={deleteTask} onComplete={completeTask} onColorChange={colorTask} onAddSub={addSubItems} lists={[]} onPrioritizeThis={()=>setComparing(true)} onSendTo={sendTaskTo} onMoveUp={()=>moveTask(task.id,-1)} onMoveDown={()=>moveTask(task.id,1)} isFirst={i===0} isLast={i===active.length-1} setScreen={setScreen}/>)
+      </div>
+
+      <div style={{position:"relative",zIndex:2}}>
+        <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.25)",color:"#1A1A10",border:"1px solid rgba(90,120,72,0.25)",borderRadius:10,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
+        <div style={{padding:"18px 16px"}}>
+          <BreakTimer setScreen={setScreen}/>
+          {/* Add task input */}
+          <div style={{display:"flex",gap:10,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 14px 12px 20px",border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
+            <input value={newTask} onChange={e=>setNewTask(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTask()} placeholder="Add task..." style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:500,color:"#1A1A10",background:"transparent"}}/>
+            <button onClick={addTask} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:38,height:38,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.3)"}}>+</button>
           </div>
-        ))}
-        {done.length>0&&<><div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1.5,margin:"16px 0 8px"}}>✓ Completed</div>{done.map((task,i)=>(<PriTaskRow key={task.id} task={task} index={i} onDelete={deleteTask} onComplete={completeTask} onColorChange={colorTask}/>))}</>}
-        {active.length>1&&(
-          <div style={{position:"sticky",bottom:90,left:0,right:0,padding:"12px 0 4px",background:"transparent",pointerEvents:"none"}}>
-            <button onClick={()=>setComparing(true)}
-              style={{width:"100%",padding:"17px",background:btnGrad,color:"#1A1A10",border:"none",borderRadius:18,fontWeight:900,fontSize:17,cursor:"pointer",boxShadow:"0 6px 22px rgba(45,10,94,0.5)",pointerEvents:"auto",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-              <span style={{fontSize:22}}>⬆</span>
-              <span>{prioritized?"✓ Re-Prioritize — sort again":"Prioritize — what's more important?"}</span>
-            </button>
+          {/* URL input */}
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"rgba(255,255,255,0.75)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.12)",boxShadow:"0 1px 6px rgba(0,0,0,0.04)"}}>
+            <input value={newUrl} onChange={e=>setNewUrl(e.target.value)} placeholder="Paste website address (optional)" style={{flex:1,border:"none",outline:"none",fontSize:14,color:"#5A5040",background:"transparent"}}/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.45}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
           </div>
-        )}
+
+          {/* Vine growth hint when first starting */}
+          {vl===0&&active.length===0&&(
+            <div style={{background:"rgba(90,120,72,0.08)",borderRadius:18,padding:"12px 16px",marginBottom:14,border:"1px solid rgba(90,120,72,0.15)",display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>🌱</span>
+              <div style={{fontSize:13,color:"#5A7040",lineHeight:1.5,fontFamily:"Georgia,serif"}}>
+                Complete tasks consistently to grow your vine.<br/>
+                <span style={{fontSize:11,opacity:0.7}}>Steady focus = thicker, lusher growth</span>
+              </div>
+            </div>
+          )}
+
+          {active.map((task,i)=>(
+            <div key={task.id}>
+              {i===0&&active.length>0&&(
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <div style={{height:1,flex:1,background:"rgba(90,120,72,0.25)"}}/>
+                  <span style={{fontSize:10,fontWeight:700,color:"#5A7040",letterSpacing:1.2,textTransform:"uppercase"}}>🌿 Top 3 — Most Important</span>
+                  <div style={{height:1,flex:1,background:"rgba(90,120,72,0.25)"}}/>
+                </div>
+              )}
+              {i===3&&(
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,marginTop:4}}>
+                  <div style={{height:1,flex:1,background:"rgba(90,80,60,0.12)"}}/>
+                  <span style={{fontSize:10,fontWeight:600,color:"rgba(90,80,60,0.45)",letterSpacing:1.2,textTransform:"uppercase"}}>Other Tasks</span>
+                  <div style={{height:1,flex:1,background:"rgba(90,80,60,0.12)"}}/>
+                </div>
+              )}
+              <PriTaskRow task={task} index={i} onDelete={deleteTask} onComplete={()=>onTaskComplete(task.id)} onColorChange={colorTask} onAddSub={addSubItems} lists={[]} onPrioritizeThis={()=>setComparing(true)} onSendTo={sendTaskTo} onMoveUp={()=>moveTask(task.id,-1)} onMoveDown={()=>moveTask(task.id,1)} isFirst={i===0} isLast={i===active.length-1} setScreen={setScreen}/>
+            </div>
+          ))}
+          {done.length>0&&(
+            <>
+              <div style={{fontSize:11,fontWeight:700,color:"#8A8070",textTransform:"uppercase",letterSpacing:1.4,margin:"16px 0 8px",display:"flex",alignItems:"center",gap:8}}>
+                <span>✓ Completed</span>
+                <div style={{height:1,flex:1,background:"rgba(90,80,60,0.1)"}}/>
+              </div>
+              {done.map((task,i)=>(<PriTaskRow key={task.id} task={task} index={i} onDelete={deleteTask} onComplete={()=>onTaskComplete(task.id)} onColorChange={colorTask}/>))}
+            </>
+          )}
+          {active.length>1&&(
+            <div style={{position:"sticky",bottom:90,left:0,right:0,padding:"12px 0 4px",background:"transparent",pointerEvents:"none"}}>
+              <button onClick={()=>setComparing(true)} style={{width:"100%",padding:"17px",background:"linear-gradient(135deg,#3D5A2A,#5A7848)",color:"#fff",border:"none",borderRadius:18,fontWeight:700,fontFamily:"Georgia,serif",fontSize:16,cursor:"pointer",boxShadow:"0 6px 22px rgba(45,80,20,0.38)",pointerEvents:"auto",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+                <span style={{fontSize:18}}>🌿</span>
+                <span>{prioritized?"Re-Prioritize — sort again":"Prioritize — what matters most?"}</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -4734,11 +4866,11 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
     <div style={{minHeight:"100%",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",boxSizing:"border-box"}}>
 
       {/* ── HEADER — compact to save vertical space ── */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 16px 12px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"10px 16px 8px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
         <button onClick={()=>setScreen("home")} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.2}}>
+        <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.2}}>
           Matrix — Urgent vs Important
         </div>
       </div>
@@ -4761,7 +4893,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
               <div key={q.key} style={{
                 background:isSage?"rgba(124,148,104,0.35)":"rgba(245,242,234,0.88)",
                 borderRadius:16,
-                padding:"12px 10px 10px",
+                padding:"10px 10px 8px",
                 position:"relative",
                 display:"flex",
                 flexDirection:"column",
@@ -4823,7 +4955,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       </div>
 
       {/* ── BOTTOM BUTTONS ── */}
-      <div style={{position:"sticky",bottom:0,padding:"10px 12px 28px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%",zIndex:50}}>
+      <div style={{position:"sticky",bottom:0,padding:"8px 12px 20px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%",zIndex:50}}>
         <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(90,120,72,0.30)"}}>Move to Prioritizer</button>
         <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"14px 8px",background:"transparent",color:"#3A6020",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>Weekly Insights</button>
       </div>
@@ -7044,28 +7176,124 @@ export default function App() {
 
       {/* ── NAME MODAL with vines ── */}
       {showNameModal&&(
-        <div style={{position:"fixed",inset:0,zIndex:300,background:"rgba(232,225,212,0.9)",backdropFilter:"blur(16px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
+        <div style={{position:"fixed",inset:0,zIndex:300,overflow:"hidden"}}>
+          {/* Full bleed garden background */}
+          <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 80% 65% at 48% 35%,#FAF8EE 0%,#F0E8D5 55%,#E2D8C0 100%)"}}/>
+
+          {/* Animated SVG vines — full screen */}
           <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}} viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
-            <defs><linearGradient id="mv1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8DDB8"/><stop offset="100%" stopColor="#9ABB90"/></linearGradient></defs>
-            <path d="M-5 0 Q18 60 6 130 Q-4 200 13 270" stroke="#A8C0A0" strokeWidth="1.8" fill="none" opacity="0.5" strokeLinecap="round"/>
-            <path d="M60 8 Q48 -2 34 2 Q24 12 31 25 Q42 32 55 25 Q65 15 60 8Z" fill="url(#mv1)" opacity="0.6"/>
-            <path d="M16 80 Q4 70 -10 74 Q-20 84 -13 97 Q-2 104 11 97 Q21 87 16 80Z" fill="url(#mv1)" opacity="0.55"/>
-            <path d="M54 81 Q42 71 28 75 Q18 85 25 98 Q36 105 49 98 Q59 88 54 81Z" fill="url(#mv1)" opacity="0.5"/>
-            <path d="M-5 844 Q20 780 8 710 Q-4 640 16 570" stroke="#A8C0A0" strokeWidth="1.5" fill="none" opacity="0.4" strokeLinecap="round"/>
-            <path d="M40 764 Q28 754 14 758 Q4 768 11 781 Q22 788 35 781 Q45 771 40 764Z" fill="url(#mv1)" opacity="0.45"/>
-            <path d="M395 0 Q372 58 384 128 Q394 198 377 268" stroke="#A8C0A0" strokeWidth="1.8" fill="none" opacity="0.48" strokeLinecap="round"/>
-            <path d="M328 6 Q340 -4 354 0 Q364 10 357 23 Q346 30 333 23 Q323 13 328 6Z" fill="url(#mv1)" opacity="0.58"/>
-            <path d="M372 77 Q384 67 398 71 Q408 81 401 94 Q390 101 377 94 Q367 84 372 77Z" fill="url(#mv1)" opacity="0.52"/>
-            <path d="M395 844 Q370 780 382 710 Q394 640 374 570" stroke="#A8C0A0" strokeWidth="1.5" fill="none" opacity="0.4" strokeLinecap="round"/>
-            <path d="M350 764 Q362 754 376 758 Q386 768 379 781 Q368 788 355 781 Q345 771 350 764Z" fill="url(#mv1)" opacity="0.45"/>
+            <defs>
+              <radialGradient id="wlf1" cx="30%" cy="25%" r="65%"><stop offset="0%" stopColor="#D0EE98"/><stop offset="45%" stopColor="#90C850"/><stop offset="100%" stopColor="#4E8820"/></radialGradient>
+              <radialGradient id="wlf2" cx="35%" cy="28%" r="60%"><stop offset="0%" stopColor="#C0E480"/><stop offset="42%" stopColor="#82B840"/><stop offset="100%" stopColor="#427010"/></radialGradient>
+              <radialGradient id="wlf3" cx="28%" cy="22%" r="70%"><stop offset="0%" stopColor="#D8F0A8"/><stop offset="50%" stopColor="#98C860"/><stop offset="100%" stopColor="#587828"/></radialGradient>
+              <radialGradient id="wmr" x1="45%" y1="0%" x2="55%" y2="100%"><stop offset="0%" stopColor="rgba(28,55,8,0)"/><stop offset="50%" stopColor="rgba(28,55,8,0.10)"/><stop offset="100%" stopColor="rgba(28,55,8,0)"/></radialGradient>
+              <radialGradient id="wed" cx="50%" cy="50%" r="50%"><stop offset="55%" stopColor="rgba(0,0,0,0)"/><stop offset="100%" stopColor="rgba(18,38,6,0.18)"/></radialGradient>
+              <radialGradient id="whl" cx="28%" cy="20%" r="50%"><stop offset="0%" stopColor="rgba(255,255,255,0.32)"/><stop offset="100%" stopColor="rgba(255,255,255,0)"/></radialGradient>
+              <linearGradient id="wstL" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#5A4416"/><stop offset="40%" stopColor="#7A6030"/><stop offset="65%" stopColor="#8A7240"/><stop offset="100%" stopColor="#5A4818"/></linearGradient>
+              <linearGradient id="wstR" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stopColor="#5A4416"/><stop offset="40%" stopColor="#7A6030"/><stop offset="65%" stopColor="#8A7240"/><stop offset="100%" stopColor="#5A4818"/></linearGradient>
+              <filter id="wls" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dx="1.5" dy="4"/><feComposite in2="SourceGraphic"/><feColorMatrix type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.10  0 0 0 0 0.02  0 0 0 0.28 0"/></filter>
+              <filter id="wls2" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.5"/><feOffset dx="1" dy="3"/><feComposite in2="SourceGraphic"/><feColorMatrix type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.10  0 0 0 0 0.02  0 0 0 0.18 0"/></filter>
+              <filter id="wss"><feGaussianBlur in="SourceAlpha" stdDeviation="2.5"/><feOffset dx="2" dy="0"/><feComposite in2="SourceGraphic"/><feColorMatrix type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.10  0 0 0 0 0.02  0 0 0 0.22 0"/></filter>
+              <radialGradient id="wvig" cx="50%" cy="50%" r="70%"><stop offset="0%" stopColor="transparent"/><stop offset="100%" stopColor="rgba(28,38,12,0.20)"/></radialGradient>
+              <radialGradient id="wgold" cx="88%" cy="5%" r="38%"><stop offset="0%" stopColor="rgba(228,205,140,0.45)"/><stop offset="100%" stopColor="transparent"/></radialGradient>
+              <style>{`
+                @keyframes wvineL { from{stroke-dashoffset:900} to{stroke-dashoffset:0} }
+                @keyframes wvineR { from{stroke-dashoffset:900} to{stroke-dashoffset:0} }
+                @keyframes wleaf  { from{opacity:0;transform:scale(0.4)} to{opacity:1;transform:scale(1)} }
+                @keyframes wfloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+                @keyframes wglint { 0%,100%{opacity:0.6} 50%{opacity:1} }
+                @keyframes wgarden{ from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+                .wvL{stroke-dasharray:900;animation:wvineL 2.8s ease forwards}
+                .wvR{stroke-dasharray:900;animation:wvineR 2.8s ease 0.3s forwards}
+                .wvT{stroke-dasharray:600;stroke-dashoffset:600;animation:wvineL 2.2s ease 0.5s forwards}
+                .wl1{animation:wleaf 0.5s ease forwards}
+                .wl2{animation:wleaf 0.5s ease 0.15s forwards;opacity:0}
+                .wl3{animation:wleaf 0.5s ease 0.3s forwards;opacity:0}
+                .wl4{animation:wleaf 0.5s ease 0.45s forwards;opacity:0}
+                .wl5{animation:wleaf 0.5s ease 0.6s forwards;opacity:0}
+                .wl6{animation:wleaf 0.5s ease 0.75s forwards;opacity:0}
+                .wl7{animation:wleaf 0.5s ease 0.9s forwards;opacity:0}
+                .wl8{animation:wleaf 0.5s ease 1.05s forwards;opacity:0}
+                .wl9{animation:wleaf 0.5s ease 1.2s forwards;opacity:0}
+                .wl10{animation:wleaf 0.5s ease 1.35s forwards;opacity:0}
+                .wl11{animation:wleaf 0.5s ease 1.5s forwards;opacity:0}
+                .wl12{animation:wleaf 0.5s ease 1.65s forwards;opacity:0}
+                .worb{animation:wfloat 3s ease-in-out infinite}
+                .wglint{animation:wglint 2.5s ease-in-out infinite}
+                .wcard{animation:wgarden 0.9s ease 0.4s both}
+              `}</style>
+            </defs>
+
+            <rect width="390" height="844" fill="url(#wgold)"/>
+
+            {/* LEFT STEM — grows upward */}
+            <path className="wvL" d="M-8 844 Q10 755 0 660 Q-10 568 12 478 Q30 396 8 308 Q-10 228 16 142 Q34 78 12 18" stroke="url(#wstL)" strokeWidth="7" fill="none" filter="url(#wss)" strokeLinecap="round"/>
+            <path className="wvL" d="M16 844 Q32 760 22 670 Q12 582 32 494 Q50 416 30 330 Q12 252 36 168 Q52 106 32 44" stroke="url(#wstL)" strokeWidth="3.5" fill="none" opacity="0.55" strokeLinecap="round"/>
+
+            {/* LEFT LEAVES — painted style, 6 leaves */}
+            <g className="wl1" filter="url(#wls)"><g transform="translate(8,820) rotate(-32)"><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#wlf1)"/><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#wmr)"/><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#wed)"/><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#whl)"/></g></g>
+            <g className="wl2" filter="url(#wls)"><g transform="translate(-4,774) rotate(-26)"><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#wlf2)"/><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#wmr)"/><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#wed)"/><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#whl)"/></g></g>
+            <g className="wl3" filter="url(#wls)"><g transform="translate(14,718) rotate(-34)"><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#wlf3)"/><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#wmr)"/><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#wed)"/><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#whl)"/></g></g>
+            <g className="wl4" filter="url(#wls)"><g transform="translate(4,148) rotate(-44)"><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#wlf1)"/><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#wmr)"/><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#wed)"/><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#whl)"/></g></g>
+            <g className="wl5" filter="url(#wls)"><g transform="translate(18,96) rotate(-48)"><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#wlf2)"/><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#wmr)"/><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#wed)"/><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#whl)"/></g></g>
+            <g className="wl6" filter="url(#wls)"><g transform="translate(-2,48) rotate(-46)"><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#wlf3)"/><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#wmr)"/><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#wed)"/><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#whl)"/></g></g>
+
+            {/* RIGHT STEM */}
+            <path className="wvR" d="M398 844 Q380 755 390 660 Q400 568 378 478 Q360 396 382 308 Q400 228 374 142 Q356 78 378 18" stroke="url(#wstR)" strokeWidth="7" fill="none" filter="url(#wss)" strokeLinecap="round"/>
+            <path className="wvR" d="M374 844 Q358 760 368 670 Q378 582 358 494 Q340 416 360 330 Q378 252 354 168 Q338 106 358 44" stroke="url(#wstR)" strokeWidth="3.5" fill="none" opacity="0.55" strokeLinecap="round"/>
+
+            {/* RIGHT LEAVES */}
+            <g className="wl7" filter="url(#wls)"><g transform="translate(382,820) rotate(32)"><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#wlf2)"/><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#wmr)"/><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#wed)"/><path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#whl)"/></g></g>
+            <g className="wl8" filter="url(#wls)"><g transform="translate(394,774) rotate(26)"><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#wlf3)"/><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#wmr)"/><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#wed)"/><path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#whl)"/></g></g>
+            <g className="wl9" filter="url(#wls)"><g transform="translate(376,718) rotate(34)"><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#wlf1)"/><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#wmr)"/><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#wed)"/><path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#whl)"/></g></g>
+            <g className="wl10" filter="url(#wls)"><g transform="translate(386,148) rotate(44)"><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#wlf2)"/><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#wmr)"/><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#wed)"/><path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#whl)"/></g></g>
+            <g className="wl11" filter="url(#wls)"><g transform="translate(372,96) rotate(48)"><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#wlf3)"/><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#wmr)"/><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#wed)"/><path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#whl)"/></g></g>
+            <g className="wl12" filter="url(#wls)"><g transform="translate(392,48) rotate(46)"><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#wlf1)"/><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#wmr)"/><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#wed)"/><path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#whl)"/></g></g>
+
+            {/* TOP CANOPY */}
+            <path className="wvT" d="M-10 -4 Q58 20 132 9 Q198 0 265 16 Q325 30 398 12" stroke="url(#wstL)" strokeWidth="4.5" fill="none" filter="url(#wss)" strokeLinecap="round"/>
+
+            {/* Floating garden sparkles */}
+            <g className="wglint"><circle cx="195" cy="200" r="3" fill="rgba(180,220,140,0.5)"/></g>
+            <g style={{animation:"wglint 3.2s ease-in-out 0.8s infinite"}}><circle cx="80" cy="320" r="2" fill="rgba(180,220,140,0.4)"/></g>
+            <g style={{animation:"wglint 2.8s ease-in-out 1.4s infinite"}}><circle cx="310" cy="280" r="2.5" fill="rgba(180,220,140,0.45)"/></g>
+            <rect width="390" height="844" fill="url(#wvig)"/>
           </svg>
-          <div style={{background:"rgba(252,249,242,0.96)",borderRadius:32,padding:"40px 28px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 8px 40px rgba(60,50,30,0.14)",border:"1px solid rgba(255,255,255,0.9)",position:"relative",zIndex:1}}>
-            <div style={{fontSize:52,marginBottom:14}}>🌿</div>
-            <div style={{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,color:"#1A1A10",marginBottom:8}}>Welcome to Thinko</div>
-            <div style={{fontSize:15,color:"#6A6050",lineHeight:1.7,marginBottom:28,fontWeight:300}}>Your calm space for thinking clearly, planning gently, and living fully.</div>
-            <div style={{fontSize:13,fontWeight:700,color:"#4A7038",marginBottom:12}}>What shall we call you? 🌱</div>
-            <input value={nameInput} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveName()} placeholder="Your first name..." style={{width:"100%",padding:"14px 20px",borderRadius:100,border:"1.5px solid rgba(160,172,140,0.4)",background:"rgba(242,238,228,0.8)",fontFamily:"inherit",fontSize:16,color:"#1A1A10",outline:"none",textAlign:"center",marginBottom:14}}/>
-            <button onClick={saveName} style={{width:"100%",padding:"16px",borderRadius:100,background:"#4A7038",color:"white",fontFamily:"inherit",fontSize:16,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 4px 16px rgba(74,112,56,0.32)"}}>Begin my journey 🌿</button>
+
+          {/* Card floats up on load */}
+          <div className="wcard" style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",justifyContent:"center",height:"100%",padding:"24px"}}>
+            <div style={{background:"rgba(252,249,242,0.94)",borderRadius:36,padding:"44px 28px 36px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 12px 56px rgba(40,50,20,0.16)",border:"1.5px solid rgba(255,255,255,0.92)"}}>
+              {/* Animated leaf orb */}
+              <div className="worb" style={{display:"flex",justifyContent:"center",marginBottom:18}}>
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                  <defs>
+                    <radialGradient id="worb1" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#D0F090"/><stop offset="50%" stopColor="#88C040"/><stop offset="100%" stopColor="#4A8018"/></radialGradient>
+                    <filter id="worbf"><feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#3A7018" floodOpacity="0.35"/></filter>
+                  </defs>
+                  <g filter="url(#worbf)">
+                    <path d="M36 8C36 8 12 22 12 42a24 24 0 0048 0C60 22 36 8 36 8z" fill="url(#worb1)"/>
+                    <path d="M36 8C36 8 12 22 12 42" stroke="rgba(40,80,10,0.25)" strokeWidth="1.2" fill="none"/>
+                    <ellipse cx="26" cy="28" rx="8" ry="5" fill="rgba(255,255,255,0.22)" transform="rotate(-20 26 28)"/>
+                  </g>
+                </svg>
+              </div>
+
+              <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",marginBottom:6,letterSpacing:-0.5,lineHeight:1.15}}>Welcome to<br/>Thinko</div>
+              <div style={{fontSize:14,color:"#6A6050",lineHeight:1.75,marginBottom:28,fontWeight:400}}>Your calm garden for<br/>thinking clearly and living fully 🌿</div>
+
+              <div style={{fontSize:13,fontWeight:600,color:"#4A7038",marginBottom:10,letterSpacing:0.2}}>What shall we call you?</div>
+              <input
+                value={nameInput}
+                onChange={e=>setNameInput(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&saveName()}
+                placeholder="Your first name..."
+                style={{width:"100%",boxSizing:"border-box",padding:"14px 20px",borderRadius:100,border:"1.5px solid rgba(140,170,120,0.4)",background:"rgba(242,238,228,0.85)",fontFamily:"inherit",fontSize:16,color:"#1A1A10",outline:"none",textAlign:"center",marginBottom:14,transition:"border-color 0.2s"}}
+              />
+              <button onClick={saveName} style={{width:"100%",padding:"16px",borderRadius:100,background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"white",fontFamily:"Georgia,serif",fontSize:16,fontWeight:700,border:"none",cursor:"pointer",boxShadow:"0 6px 22px rgba(58,100,30,0.38)",letterSpacing:0.2}}>
+                Begin my journey 🌿
+              </button>
+              <div style={{marginTop:14,fontSize:11,color:"rgba(100,90,70,0.5)"}}>You can change your name anytime in settings</div>
+            </div>
           </div>
         </div>
       )}
