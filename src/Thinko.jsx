@@ -7242,7 +7242,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               {charged.map((n,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<charged.length-1?"1px solid rgba(90,120,72,0.12)":"none"}}>
                   <span style={{fontSize:14}}>⚡</span>
-                  <span style={{fontSize:13,fontWeight:600,color:"#3A5020"}}>{n}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:600,color:"#3A5020"}}>{n}</span>
+                  <button onClick={()=>{if(window.confirm(`Remove "${n}" from today's charged list?`))updToday({charged:charged.filter((_,j)=>j!==i)});}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"3px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑</button>
                 </div>
               ))}
             </div>
@@ -7313,7 +7314,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               {Array.from({length:target}).map((_,i)=>{
                 const tasks=data.targetTasks||[];
                 return(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#3A6020",flexShrink:0}}>{i+1}</div>
                     <input
                       value={tasks[i]||""}
@@ -7325,6 +7326,13 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                       placeholder={`Task ${i+1}…`}
                       style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
                     />
+                    {tasks[i]?.trim()&&(
+                      <button onClick={()=>{
+                        const next=[...(data.targetTasks||Array.from({length:target},()=>""))];
+                        next[i]="";
+                        upd({targetTasks:next});
+                      }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:"50%",width:28,height:28,fontSize:14,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>✕</button>
+                    )}
                   </div>
                 );
               })}
