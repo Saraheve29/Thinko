@@ -2086,9 +2086,45 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
   const [podcastSaved,setPodcastSaved]=useState(false);
   const [voiceRecording,setVoiceRecording]=useState(false);
   const [mediaRec,setMediaRec]=useState(null);
-  const [dragSendTarget,setDragSendTarget]=useState(null); // "prioritizer"|"goals"|"vault"|null
+  const [dragSendTarget,setDragSendTarget]=useState(null);
   const [sentMsg,setSentMsg]=useState("");
+  const [templateModal,setTemplateModal]=useState(false);
   const showMsg=msg=>{setSentMsg(msg);setTimeout(()=>setSentMsg(""),2200);};
+
+  // ── BRANCH TEMPLATES ──────────────────────────────────
+  const BRANCH_TEMPLATES=[
+    {id:"project",icon:"🏗️",name:"Project Plan",desc:"Goals, tasks, risks, timeline",
+     branches:["🎯 Goals","📋 Tasks","⚠️ Risks","📅 Timeline","👥 Team","✅ Done"]},
+    {id:"brainstorm",icon:"⚡",name:"Brainstorm",desc:"Free ideas, connections, picks",
+     branches:["💡 Ideas","🌀 Wild Cards","🔗 Connections","❓ Questions","🎯 Best Picks","🗑️ Parking Lot"]},
+    {id:"problem",icon:"🔍",name:"Problem Solve",desc:"Problem, causes, solutions",
+     branches:["❌ The Problem","🔎 Root Causes","💡 Solutions","✅ Best Solution","📋 Action Steps","📊 Measure"]},
+    {id:"weekly",icon:"📅",name:"Weekly Review",desc:"Wins, lessons, priorities",
+     branches:["🏆 Wins","📚 Lessons","😓 Challenges","🎯 Next Week","💚 Grateful For","🌱 Growing"]},
+    {id:"decision",icon:"⚖️",name:"Decision Map",desc:"Options, pros, cons, choice",
+     branches:["🤔 The Decision","Option A","Option B","Option C","⚖️ Criteria","✅ My Choice"]},
+    {id:"learning",icon:"📚",name:"Learning Plan",desc:"Topic, resources, practice",
+     branches:["📖 What","🎯 Why","📚 Resources","🛠️ Practice","📅 Schedule","✅ Milestones"]},
+    {id:"goal",icon:"🌱",name:"Goal Garden",desc:"Goal, steps, obstacles",
+     branches:["🎯 My Goal","🌿 Why It Matters","📋 Steps","🚧 Obstacles","💪 Support","🌸 Reward"]},
+    {id:"meeting",icon:"👥",name:"Meeting Notes",desc:"Agenda, notes, actions",
+     branches:["📋 Agenda","🗣️ Discussion","💡 Ideas","✅ Decisions","📌 Actions","📅 Follow Up"]},
+  ];
+
+  const applyTemplate=(template)=>{
+    if(!root)return;
+    const cx=root.x,cy=root.y;
+    const n=template.branches.length;
+    const newNodes=template.branches.map((b,i)=>{
+      const angle=(i/n)*2*Math.PI-Math.PI/2;
+      const r=190;
+      const colorIdx=i%BRANCH_PALETTE.length;
+      return{id:Date.now()+i+Math.random(),text:b,x:cx+Math.cos(angle)*r,y:cy+Math.sin(angle)*r,parent:root.id,color:BRANCH_PALETTE[colorIdx].color,lightColor:BRANCH_PALETTE[colorIdx].color+"33"};
+    });
+    setNodes(ns=>[...ns,...newNodes]);
+    setTemplateModal(false);
+    showMsg(`🏗️ "${template.name}" template applied!`);
+  };
 
   // Branch colour palette — colour-coded with leaf icons
   const BRANCH_PALETTE=[
@@ -2424,7 +2460,45 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
           style={{background:"rgba(90,120,72,0.12)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.3)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,boxShadow:"0 2px 8px rgba(58,80,38,0.12)"}}>
           🎙 Podcast Recap
         </button>
+        {/* Templates */}
+        <button onClick={()=>setTemplateModal(true)}
+          style={{background:"rgba(90,120,72,0.12)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          🏗️ Templates
+        </button>
       </div>
+
+      {/* ── TEMPLATE MODAL ── */}
+      {templateModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setTemplateModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.16)",maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:19,marginBottom:2}}>🏗️ Branch Templates</div>
+              <div style={{color:"#8A8070",fontSize:13}}>Start fast with a pre-built structure</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 14px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                {BRANCH_TEMPLATES.map(t=>(
+                  <button key={t.id} onClick={()=>applyTemplate(t)}
+                    style={{background:"rgba(248,245,236,0.90)",border:"1.5px solid rgba(90,120,72,0.15)",borderRadius:20,padding:"16px 14px",cursor:"pointer",textAlign:"left",transition:"all 0.15s",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}
+                    onMouseEnter={e=>{e.currentTarget.style.background="rgba(90,120,72,0.10)";e.currentTarget.style.borderColor="rgba(90,120,72,0.35)";}}
+                    onMouseLeave={e=>{e.currentTarget.style.background="rgba(248,245,236,0.90)";e.currentTarget.style.borderColor="rgba(90,120,72,0.15)";}}>
+                    <div style={{fontSize:24,marginBottom:6}}>{t.icon}</div>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{t.name}</div>
+                    <div style={{fontSize:11,color:"#8A8070",lineHeight:1.45,marginBottom:8}}>{t.desc}</div>
+                    <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                      {t.branches.slice(0,4).map((b,i)=>(
+                        <span key={i} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",borderRadius:100,padding:"2px 7px",fontSize:9,fontWeight:600}}>{b}</span>
+                      ))}
+                      {t.branches.length>4&&<span style={{fontSize:9,color:"#8A8070",padding:"2px 4px"}}>+{t.branches.length-4}</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── PODCAST RECAP MODAL ── */}
       {podcastModal&&(
@@ -5662,7 +5736,10 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   const [staleModal,setStaleModal]=useState(null);
   const [toast,setToast]=useState("");
   const [moveTask,setMoveTask]=useState(null);
-  const [sendMenu,setSendMenu]=useState(null); // {taskId, x, y}
+  const [sendMenu,setSendMenu]=useState(null);
+  const [dragTaskId,setDragTaskId]=useState(null); // for drag between quadrants
+  const [dragOverQuad,setDragOverQuad]=useState(null); // highlight drop target
+  const [selectedTasks,setSelectedTasks]=useState(new Set()); // for batch move
   const now=Date.now();
 
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
@@ -5685,15 +5762,49 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
     const a=[...quadTasks];[a[i],a[j]]=[a[j],a[i]];
     return[...others,...a];
   });
-  const move=(id,quad)=>{setData(ds=>ds.map(d=>d.id===id?{...d,quad,touched:Date.now()}:d));setMoveTask(null);};
+  const move=(id,quad)=>{setData(ds=>ds.map(d=>d.id===id?{...d,quad,touched:Date.now()}:d));setMoveTask(null);showToast(`Moved to ${QUADS.find(q=>q.key===quad)?.label||quad}`);};
   const touch=id=>setData(ds=>ds.map(d=>d.id===id?{...d,touched:Date.now()}:d));
+
+  // ── DRAG BETWEEN QUADRANTS ────────────────────────────
+  const handleDragStart=(e,taskId)=>{
+    e.dataTransfer.effectAllowed="move";
+    e.dataTransfer.setData("taskId",String(taskId));
+    setDragTaskId(taskId);
+  };
+  const handleDragOver=(e,quadKey)=>{
+    e.preventDefault();
+    e.dataTransfer.dropEffect="move";
+    setDragOverQuad(quadKey);
+  };
+  const handleDrop=(e,quadKey)=>{
+    e.preventDefault();
+    const id=parseInt(e.dataTransfer.getData("taskId"));
+    if(id&&dragTaskId){
+      const task=data.find(d=>d.id===id);
+      if(task&&task.quad!==quadKey){
+        move(id,quadKey);
+      }
+    }
+    setDragTaskId(null);setDragOverQuad(null);
+  };
+  const handleDragEnd=()=>{setDragTaskId(null);setDragOverQuad(null);};
+
+  // ── ONE-TAP MOVE SELECTED TO PRIORITIZER ─────────────
+  const moveSelectedToPri=()=>{
+    if(!priData.length){showToast("Create a Prioritizer list first");return;}
+    const tasks=data.filter(d=>selectedTasks.has(d.id));
+    if(!tasks.length){showToast("Tap tasks to select them first");return;}
+    setPriData(ls=>[{...ls[0],tasks:[...ls[0].tasks,...tasks.map(t=>({id:Date.now()+Math.random(),name:t.text,done:false,color:"lilac",url:t.url||""}))]},...ls.slice(1)]);
+    setData(ds=>ds.filter(d=>!selectedTasks.has(d.id)));
+    setSelectedTasks(new Set());
+    showToast(`✅ ${tasks.length} task${tasks.length>1?"s":""} moved to Prioritizer!`);
+  };
 
   /* send actions */
   const sendToPri=(task,listId)=>{setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:task.text,done:false,color:"lilac"}]}:l));showToast("✅ Sent to Prioritizer!");setSendMenu(null);};
   const sendToMap=task=>{const root={id:Date.now(),text:task.text,x:0,y:0,parent:null,color:"crystal"};setMapData(ms=>[...ms,{id:Date.now()+1,name:task.text,nodes:[root]}]);showToast("🧠 Mind map created!");setSendMenu(null);};
   const sendToCal=task=>{window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(task.text)}`,"_blank");setSendMenu(null);};
 
-  /* receive from Prioritizer — pull tasks into Do First */
   const importFromPri=(task)=>{
     setData(ds=>[...ds,{id:Date.now(),text:task.text,quad:"do",created:Date.now(),touched:Date.now()}]);
     showToast("📋 Imported from Prioritizer!");
@@ -5718,29 +5829,21 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 
   const staleTasks=data.filter(d=>now-d.touched>STALE_MS);
 
-  /* ── Send menu component ── */
   const SendMenu=({task})=>(
-    <div style={{position:"fixed",inset:0,zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setSendMenu(null)}>
-      <div style={{background:C.wh,borderRadius:"20px 20px 0 0",padding:"0 0 28px",width:"100%",maxWidth:480,boxShadow:"0 -8px 32px rgba(90,80,60,0.35)"}} onClick={e=>e.stopPropagation()}>
-        <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:36,height:4,borderRadius:2,background:C.ll}}/></div>
-        <div style={{padding:"4px 20px 14px",fontWeight:800,color:C.dp,fontSize:14}}>Send "{task.text.slice(0,30)}{task.text.length>30?"…":""}" to…</div>
-        <div style={{display:"flex",flexDirection:"column",gap:0}}>
-          {/* Calendar */}
-          <button onClick={()=>sendToCal(task)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",background:"none",border:"none",borderTop:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
-            <span style={{fontSize:22}}>📅</span><span style={{fontWeight:700,fontSize:15,color:C.txt}}>Google Calendar</span>
+    <div style={{position:"fixed",inset:0,zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)",background:"rgba(30,40,20,0.45)"}} onClick={()=>setSendMenu(null)}>
+      <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"22px 22px 0 0",padding:"0 0 32px",width:"100%",maxWidth:480,boxShadow:"0 -8px 32px rgba(0,0,0,0.14)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"center",padding:"12px 0 4px"}}><div style={{width:36,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+        <div style={{padding:"4px 20px 14px",fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15}}>Send "{task.text.slice(0,28)}{task.text.length>28?"…":""}" to…</div>
+        {[
+          {icon:"📅",label:"Google Calendar",action:()=>sendToCal(task)},
+          {icon:"🧠",label:"New Mind Map",action:()=>sendToMap(task)},
+          ...priData.map(l=>({icon:"📋",label:"Prioritizer — "+l.name,action:()=>sendToPri(task,l.id)})),
+        ].map((btn,i)=>(
+          <button key={i} onClick={btn.action} style={{display:"flex",alignItems:"center",gap:14,padding:"13px 20px",background:"none",border:"none",borderTop:"1px solid rgba(90,80,60,0.08)",cursor:"pointer",width:"100%",textAlign:"left"}}>
+            <span style={{fontSize:20}}>{btn.icon}</span><span style={{fontWeight:600,fontSize:14,color:"#1A1A10"}}>{btn.label}</span>
           </button>
-          {/* Mind Map */}
-          <button onClick={()=>sendToMap(task)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",background:"none",border:"none",borderTop:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
-            <span style={{fontSize:22}}>🧠</span><span style={{fontWeight:700,fontSize:15,color:C.txt}}>New Mind Map</span>
-          </button>
-          {/* Prioritizer lists */}
-          {priData.length>0&&priData.map(l=>(
-            <button key={l.id} onClick={()=>sendToPri(task,l.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",background:"none",border:"none",borderTop:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
-              <span style={{fontSize:22}}>📋</span><span style={{fontWeight:700,fontSize:15,color:C.txt}}>Prioritizer — {l.name}</span>
-            </button>
-          ))}
-          <button onClick={()=>setSendMenu(null)} style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"14px 20px",background:"none",border:"none",borderTop:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",fontWeight:700,fontSize:14,color:C.soft}}>Cancel</button>
-        </div>
+        ))}
+        <button onClick={()=>setSendMenu(null)} style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"13px 20px",background:"none",border:"none",borderTop:"1px solid rgba(90,80,60,0.08)",cursor:"pointer",width:"100%",fontWeight:600,fontSize:14,color:"#8A8070"}}>Cancel</button>
       </div>
     </div>
   );
@@ -5748,71 +5851,94 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   return (
     <div style={{minHeight:"100%",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",boxSizing:"border-box"}}>
 
-      {/* ── HEADER — compact to save vertical space ── */}
+      {/* ── HEADER ── */}
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"10px 16px 8px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
         <button onClick={()=>setScreen("home")} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.2}}>
-          Matrix — Urgent vs Important
-        </div>
+        <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3}}>Matrix — Urgent vs Important</div>
+        {selectedTasks.size>0&&(
+          <button onClick={moveSelectedToPri} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(58,80,38,0.28)"}}>
+            📋 Move {selectedTasks.size} →
+          </button>
+        )}
       </div>
 
-      {/* ── 2×2 GRID — exact width, no overflow ── */}
-      <div style={{padding:"8px 8px 0",display:"flex",flexDirection:"column",boxSizing:"border-box",width:"100%"}}>
-        <div style={{
-          display:"grid",
-          gridTemplateColumns:"calc(50% - 4px) calc(50% - 4px)",
-          gridTemplateRows:"calc(50vh - 135px) calc(50vh - 135px)",
-          gap:8,
-          width:"100%",
-          boxSizing:"border-box",
-          marginBottom:8,
-        }}>
+      {/* Drag hint */}
+      <div style={{textAlign:"center",padding:"4px 0 2px",fontSize:10,color:"rgba(90,80,60,0.40)",letterSpacing:0.4}}>
+        ⠿ Drag tasks between quadrants · tap to select for batch move
+      </div>
+
+      {/* ── 2×2 GRID with drag-and-drop ── */}
+      <div style={{padding:"6px 8px 0",display:"flex",flexDirection:"column",boxSizing:"border-box",width:"100%"}}>
+        <div style={{display:"grid",gridTemplateColumns:"calc(50% - 4px) calc(50% - 4px)",gridTemplateRows:"calc(50dvh - 105px) calc(50dvh - 105px)",gap:8,width:"100%",boxSizing:"border-box",marginBottom:8}}>
           {QUADS.map((q,qi)=>{
             const tasks=data.filter(d=>d.quad===q.key);
             const isSage=qi===0||qi===2;
+            const isDragTarget=dragOverQuad===q.key&&dragTaskId!==null;
             return(
-              <div key={q.key} style={{
-                background:isSage?"rgba(124,148,104,0.35)":"rgba(245,242,234,0.88)",
-                borderRadius:16,
-                padding:"10px 10px 8px",
-                position:"relative",
-                display:"flex",
-                flexDirection:"column",
-                boxSizing:"border-box",
-                minWidth:0,
-                overflow:"hidden",
-              }}>
+              <div key={q.key}
+                onDragOver={e=>handleDragOver(e,q.key)}
+                onDrop={e=>handleDrop(e,q.key)}
+                onDragLeave={()=>setDragOverQuad(null)}
+                style={{
+                  background:isDragTarget?"rgba(90,120,72,0.22)":isSage?"rgba(124,148,104,0.35)":"rgba(245,242,234,0.88)",
+                  borderRadius:16,padding:"10px 10px 8px",position:"relative",
+                  display:"flex",flexDirection:"column",boxSizing:"border-box",minWidth:0,overflow:"hidden",
+                  border:isDragTarget?"2px dashed rgba(90,120,72,0.6)":"2px solid transparent",
+                  transition:"all 0.12s",
+                }}>
                 {/* Leaf icon */}
-                <div style={{position:"absolute",top:10,right:10,opacity:0.8}}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={isSage?"rgba(255,255,255,0.7)":"#5A7848"}/>
+                <div style={{position:"absolute",top:8,right:8,opacity:0.7}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={isSage?"rgba(255,255,255,0.65)":"#5A7848"}/>
                   </svg>
                 </div>
 
                 {/* Label */}
-                <div style={{paddingRight:22,marginBottom:6}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.3,marginBottom:1}}>{q.label}</div>
-                  <div style={{fontFamily:"Georgia,serif",fontSize:12,color:isSage?"#3A5028":"#6A6050",fontWeight:400}}>{q.sub}</div>
+                <div style={{paddingRight:20,marginBottom:5}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.25}}>{q.label}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:11,color:isSage?"#3A5028":"#6A6050"}}>{q.sub}</div>
                 </div>
-                <div style={{height:1,background:isSage?"rgba(255,255,255,0.3)":"rgba(90,80,60,0.12)",marginBottom:8}}/>
+                <div style={{height:1,background:isSage?"rgba(255,255,255,0.28)":"rgba(90,80,60,0.10)",marginBottom:6}}/>
 
-                {/* Tasks scroll area */}
-                <div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0}}>
+                {/* Tasks — draggable */}
+                <div style={{flex:1,overflowY:"auto",minHeight:0}}>
                   {tasks.map(t=>{
+                    const isSelected=selectedTasks.has(t.id);
                     const expanded=expandedTask===t.id;
+                    const stale=now-t.touched>STALE_MS;
                     return(
-                      <div key={t.id} style={{background:"rgba(255,255,255,0.78)",borderRadius:10,padding:"7px 8px",marginBottom:5,border:"1px solid rgba(255,255,255,0.9)"}}>
-                        <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{fontFamily:"Georgia,serif",fontSize:12,fontWeight:600,color:"#1A1A10",lineHeight:1.35,cursor:"pointer",wordBreak:"break-word"}}>{t.text}</div>
+                      <div key={t.id}
+                        draggable
+                        onDragStart={e=>handleDragStart(e,t.id)}
+                        onDragEnd={handleDragEnd}
+                        style={{
+                          background:isSelected?"rgba(90,120,72,0.18)":"rgba(255,255,255,0.80)",
+                          borderRadius:10,padding:"7px 8px",marginBottom:5,
+                          border:isSelected?"1.5px solid rgba(90,120,72,0.5)":"1px solid rgba(255,255,255,0.9)",
+                          cursor:"grab",
+                          opacity:dragTaskId===t.id?0.5:1,
+                          position:"relative",
+                        }}>
+                        {stale&&<div style={{position:"absolute",top:-4,right:4,background:"rgba(160,110,40,0.85)",color:"#fff",fontSize:7,fontWeight:700,borderRadius:6,padding:"1px 4px"}}>Old</div>}
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          {/* Select checkbox */}
+                          <button onClick={()=>setSelectedTasks(s=>{const n=new Set(s);n.has(t.id)?n.delete(t.id):n.add(t.id);return n;})}
+                            style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${isSelected?"#5A7848":"rgba(90,80,60,0.25)"}`,background:isSelected?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
+                            {isSelected&&<svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+                          </button>
+                          <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{flex:1,fontFamily:"Georgia,serif",fontSize:12,fontWeight:600,color:"#1A1A10",lineHeight:1.35,cursor:"pointer",wordBreak:"break-word"}}>{t.text}</div>
+                          {/* Drag handle */}
+                          <div style={{flexShrink:0,opacity:0.3,cursor:"grab",fontSize:10}}>⠿</div>
+                        </div>
                         {expanded&&(
-                          <div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:5}}>
-                            <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,-1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:700,cursor:"pointer"}}>▲</button>
-                            <button onClick={e=>{e.stopPropagation();moveMatrixTask(t.id,q.key,1);}} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:700,cursor:"pointer"}}>▼</button>
-                            <button onClick={()=>touch(t.id)} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"none",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:600,cursor:"pointer"}}>✓</button>
-                            <button onClick={()=>setMoveTask(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:600,cursor:"pointer"}}>↔</button>
-                            <button onClick={()=>setSendMenu(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:600,cursor:"pointer"}}>↗</button>
-                            <button onClick={()=>del(t.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:5,padding:"2px 6px",fontSize:9,fontWeight:600,cursor:"pointer"}}>🗑</button>
+                          <div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:6}}>
+                            <button onClick={()=>touch(t.id)} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>✓ Done</button>
+                            <button onClick={()=>setMoveTask(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>↔ Move</button>
+                            <button onClick={()=>setSendMenu(t)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>↗ Send</button>
+                            {priData.length>0&&<button onClick={()=>sendToPri(t,priData[0].id)} style={{background:"rgba(90,120,72,0.14)",color:"#2A5010",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:700,cursor:"pointer"}}>📋 → Pri</button>}
+                            <button onClick={()=>del(t.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:5,padding:"2px 7px",fontSize:9,fontWeight:600,cursor:"pointer"}}>🗑</button>
                           </div>
                         )}
                       </div>
@@ -5820,16 +5946,13 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                   })}
                 </div>
 
-                {/* Add input — pinned to bottom */}
-                <div style={{display:"flex",gap:5,marginTop:6,flexShrink:0}}>
-                  <input
-                    value={inlineTexts[q.key]}
-                    onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
+                {/* Add input */}
+                <div style={{display:"flex",gap:5,marginTop:5,flexShrink:0}}>
+                  <input value={inlineTexts[q.key]} onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
                     onKeyDown={e=>e.key==="Enter"&&addInline(q.key)}
                     placeholder="Add task…"
-                    style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(255,255,255,0.85)",fontSize:12,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}
-                  />
-                  <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:30,height:30,fontSize:20,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                    style={{flex:1,padding:"6px 9px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(255,255,255,0.85)",fontSize:11,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}/>
+                  <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,fontSize:18,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
               </div>
             );
@@ -5838,24 +5961,26 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       </div>
 
       {/* ── BOTTOM BUTTONS ── */}
-      <div style={{position:"sticky",bottom:0,padding:"8px 12px 20px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%",zIndex:50}}>
-        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(90,120,72,0.30)"}}>Move to Prioritizer</button>
-        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"14px 8px",background:"transparent",color:"#3A6020",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>Weekly Insights</button>
+      <div style={{position:"sticky",bottom:0,padding:"8px 12px 24px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%",zIndex:50}}>
+        <button onClick={()=>{if(selectedTasks.size>0){moveSelectedToPri();}else{setScreen("prioritizer");}}} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 4px 14px rgba(90,120,72,0.28)"}}>
+          {selectedTasks.size>0?`📋 Move ${selectedTasks.size} to Prioritizer`:"Move to Prioritizer"}
+        </button>
+        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"14px 8px",background:"transparent",color:"#3A6020",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>Weekly Insights</button>
       </div>
-      {/* Send menu */}
+
       {sendMenu&&<SendMenu task={sendMenu}/>}
 
       {/* Move modal */}
       {moveTask&&(
         <div style={{position:"fixed",inset:0,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}}>
+          <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}}>
             <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.2)"}}/></div>
             <div style={{padding:"0 20px"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>Move task</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:3}}>Move task</div>
               <div style={{color:"#8A8070",fontSize:13,marginBottom:14,fontStyle:"italic"}}>{moveTask.text}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 {QUADS.map(q=>(
-                  <button key={q.key} onClick={()=>move(moveTask.id,q.key)} style={{padding:"14px 12px",borderRadius:18,border:`1.5px solid rgba(90,120,72,${moveTask.quad===q.key?0.5:0.2})`,background:moveTask.quad===q.key?"rgba(90,120,72,0.12)":"rgba(255,255,255,0.8)",cursor:"pointer",textAlign:"left",opacity:moveTask.quad===q.key?0.6:1}}>
+                  <button key={q.key} onClick={()=>move(moveTask.id,q.key)} style={{padding:"13px 10px",borderRadius:18,border:`1.5px solid rgba(90,120,72,${moveTask.quad===q.key?0.5:0.18})`,background:moveTask.quad===q.key?"rgba(90,120,72,0.12)":"rgba(255,255,255,0.85)",cursor:"pointer",textAlign:"left",opacity:moveTask.quad===q.key?0.6:1}}>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#2A4020",lineHeight:1.3}}>{q.label}</div>
                     <div style={{fontSize:11,color:"#7A8A6A",marginTop:2}}>{q.sub}</div>
                   </button>
@@ -5867,7 +5992,6 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
         </div>
       )}
 
-      {/* Stale modal */}
       {staleModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
           <div style={{background:"rgba(248,245,236,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 40px rgba(0,0,0,0.12)"}}>
@@ -5875,11 +5999,11 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
             <div style={{padding:"0 20px"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#7A5820",fontSize:17,marginBottom:4}}>⏰ Old Task</div>
               <div style={{color:"#8A8070",fontSize:13,marginBottom:10}}>Untouched for over a week:</div>
-              <div style={{background:"rgba(160,120,40,0.06)",borderRadius:16,padding:"13px 16px",fontWeight:600,fontSize:14,color:"#1A1A10",marginBottom:16,border:"1px solid rgba(160,110,40,0.2)"}}>{staleModal.text}</div>
+              <div style={{background:"rgba(160,120,40,0.06)",borderRadius:16,padding:"13px 16px",fontWeight:600,fontSize:14,color:"#1A1A10",marginBottom:16,border:"1px solid rgba(160,110,40,0.18)"}}>{staleModal.text}</div>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                <button onClick={()=>{touch(staleModal.id);setStaleModal(null);showToast("👍 Kept!");}} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"1.5px solid rgba(90,160,80,0.3)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ Still doing it — keep it</button>
-                <button onClick={()=>{setMoveTask(staleModal);setStaleModal(null);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>↔ Move to different quadrant</button>
-                <button onClick={()=>{del(staleModal.id);setStaleModal(null);showToast("Removed.");}} style={{background:"rgba(90,80,60,0.08)",color:"#7A7060",border:"1.5px solid rgba(90,80,60,0.2)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>🗑 Remove this task</button>
+                <button onClick={()=>{touch(staleModal.id);setStaleModal(null);showToast("👍 Kept!");}} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"1.5px solid rgba(90,160,80,0.3)",borderRadius:100,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ Still doing it — keep it</button>
+                <button onClick={()=>{setMoveTask(staleModal);setStaleModal(null);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer"}}>↔ Move to different quadrant</button>
+                <button onClick={()=>{del(staleModal.id);setStaleModal(null);showToast("Removed.");}} style={{background:"rgba(90,80,60,0.08)",color:"#7A7060",border:"1.5px solid rgba(90,80,60,0.18)",borderRadius:100,padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer"}}>🗑 Remove this task</button>
               </div>
             </div>
           </div>
@@ -5890,6 +6014,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
     </div>
   );
 }
+
 /* ═══════════════════════════════════════════════════════
    BUDGET PLANNER  — Details → Amount → Expenses → Calculate → AI Review
 ═══════════════════════════════════════════════════════ */
