@@ -6856,12 +6856,32 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const daysUntilReward=Math.max(0,rewardFreq-daysHit);
   const rewardUnlocked=daysHit>=rewardFreq;
 
+  const [celebration,setCelebration]=useState(null); // {name, isTarget, isReward}
+  const [confettiPieces,setConfettiPieces]=useState([]);
+
+  const launchConfetti=()=>{
+    const pieces=Array.from({length:32},(_,i)=>({
+      id:i,
+      x:20+Math.random()*60,
+      color:['#6A8858','#F5C842','#E87040','#5A7898','#A060C0','#E05070','#48A880'][Math.floor(Math.random()*7)],
+      size:6+Math.random()*8,
+      rotation:Math.random()*360,
+      delay:Math.random()*0.4,
+      drift:(Math.random()-0.5)*120,
+    }));
+    setConfettiPieces(pieces);
+    setTimeout(()=>setConfettiPieces([]),3000);
+  };
+
   const chargeIt=name=>{
     if(charged.includes(name))return;
     const nc=[...charged,name];
     updToday({charged:nc});
-    if(nc.length>=target)showToast("🔮 Orb fully lit — your light is blazing!");
-    else showToast(`⚡ Charged! ${nc.length}/${target} today`);
+    const hitNow=nc.length>=target;
+    const rewardNow=hitNow&&rewardUnlocked;
+    setCelebration({name,isTarget:hitNow,isReward:rewardNow});
+    launchConfetti();
+    setTimeout(()=>setCelebration(null),4500);
   };
   const addFrog=()=>{
     if(!whatOff.trim())return;
@@ -6972,28 +6992,43 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
 
           {/* ── Today's named task slots ── always visible */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15}}>
-                Today's {target} task{target!==1?"s":""}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15}}>Today's {target} task{target!==1?"s":""}</div>
+                {/* Reward unlock clarity */}
+                {rewardName&&!rewardUnlocked&&(
+                  <div style={{fontSize:11,color:"#5A7848",marginTop:2,fontWeight:600}}>
+                    ✅ Complete all {target} → {daysUntilReward===1?"unlock your reward tomorrow 🌟":"day "+daysHit+" of "+rewardFreq+" toward "+rewardName}
+                    {data.rewardDate&&<span style={{color:"#8A8070"}}> · by {new Date(data.rewardDate).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span>}
+                  </div>
+                )}
+                {rewardUnlocked&&rewardName&&<div style={{fontSize:11,color:"#3A8020",marginTop:2,fontWeight:700}}>🎉 Reward ready — you've earned it!</div>}
               </div>
-              <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️ Edit tasks</button>
+              <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️ Edit</button>
             </div>
             {(data.targetTasks||[]).some(t=>t?.trim())
               ?(data.targetTasks||[]).filter(t=>t?.trim()).map((task,i)=>{
                 const done=charged.includes(task);
                 return(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.95)",borderRadius:16,padding:"11px 14px",marginBottom:8,border:`1.5px solid ${done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.15)"}`}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:done?"rgba(90,160,80,0.20)":"rgba(90,120,72,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:done?"#3A7020":"#3A6020",flexShrink:0}}>{done?"✓":i+1}</div>
-                    <div style={{flex:1,fontSize:14,fontWeight:600,color:done?"#9A9080":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
-                    <div style={{display:"flex",gap:6,flexShrink:0}}>
-                      {!done&&<button onClick={()=>{
-                        if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:task,done:false,color:"sage"}]}:l));showToast("📋 Added to Prioritizer!");}
-                        else showToast("Add a Prioritizer list first");
-                      }} style={{background:"rgba(90,120,72,0.08)",color:"#5A7848",border:"none",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}} title="Send to Prioritizer">📋</button>}
-                      <button onClick={()=>!done&&chargeIt(task)} style={{background:done?"rgba(90,160,80,0.15)":"#6A8858",color:done?"#3A7020":"#fff",border:"none",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:done?"default":"pointer"}}>
-                        {done?"✓ Done":"⚡ Charge"}
-                      </button>
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:done?"rgba(90,160,80,0.10)":"rgba(255,255,255,0.80)",borderRadius:18,padding:"14px 14px",marginBottom:8,border:`1.5px solid ${done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,transition:"all 0.3s"}}>
+                    {/* Big satisfying tick button */}
+                    <button onClick={()=>!done&&chargeIt(task)}
+                      style={{width:40,height:40,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:22,fontWeight:900,transition:"all 0.25s",boxShadow:done?"0 0 0 4px rgba(90,160,80,0.18)":"none"}}>
+                      {done?"✓":""}
+                    </button>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:14,fontWeight:done?600:700,color:done?"#6A9060":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
+                      {done&&<div style={{fontSize:11,color:"#5A9040",marginTop:2,fontWeight:600}}>⚡ Charged!</div>}
                     </div>
+                    {!done&&(
+                      <div style={{display:"flex",gap:6,flexShrink:0}}>
+                        <button onClick={()=>{
+                          if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:task,done:false,color:"sage"}]}:l));showToast("📋 Added to Prioritizer!");}
+                          else showToast("Add a Prioritizer list first");
+                        }} style={{background:"rgba(90,120,72,0.08)",color:"#5A7848",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"6px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>📋</button>
+                        <button onClick={()=>chargeIt(task)} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(90,120,72,0.25)"}}>⚡ Charge</button>
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -7003,6 +7038,45 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               </div>
             }
           </div>
+
+          {/* ── Celebration overlay ── */}
+          {celebration&&(
+            <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
+              {/* Confetti */}
+              {confettiPieces.map(p=>(
+                <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:"40%",width:p.size,height:p.size,background:p.color,borderRadius:p.id%3===0?"50%":p.id%3===1?"0%":"30%",animation:`confettiFall 2.5s ${p.delay}s ease-out forwards`,transform:`rotate(${p.rotation}deg)`,opacity:1,
+                  // inline keyframe via style tag workaround
+                }}/>
+              ))}
+              {/* Message card */}
+              <div style={{background:"rgba(250,248,240,0.97)",borderRadius:28,padding:"32px 28px",textAlign:"center",boxShadow:"0 12px 48px rgba(0,0,0,0.18)",maxWidth:300,margin:"0 20px",pointerEvents:"all",border:"2px solid rgba(90,160,80,0.25)"}}>
+                <div style={{fontSize:52,marginBottom:10}}>
+                  {celebration.isReward?"🎁":celebration.isTarget?"🔮":"⚡"}
+                </div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:8}}>
+                  {celebration.isReward?"Reward unlocked! 🎉":celebration.isTarget?"Light fully lit! ✨":"Well done! ⚡"}
+                </div>
+                <div style={{fontSize:14,color:"#5A7060",lineHeight:1.7,marginBottom:16}}>
+                  {celebration.isReward
+                    ?`You've earned "${rewardName}" — go enjoy it, you deserve it! 🌿`
+                    :celebration.isTarget
+                    ?`You hit all ${target} tasks today — your orb is blazing! 🔮`
+                    :[
+                        `"${celebration.name}" — done! Keep going 🌿`,
+                        `Amazing, one more down! You're on fire ⚡`,
+                        `That's the spirit! "${celebration.name}" complete 🌱`,
+                        `You did it! One step closer to your reward 🎁`,
+                      ][charged.length%4]
+                  }
+                </div>
+                <div style={{fontSize:12,color:"#A0907A"}}>
+                  {charged.length+1}/{target} tasks today
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Confetti animation style */}
+          <style>{`@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(300px) translateX(var(--drift,40px)) rotate(720deg);opacity:0}}`}</style>
 
           {/* Reward card */}
           {(()=>{
@@ -7255,6 +7329,14 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                     placeholder="🔗 Link (optional)"
                     style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
                 </div>
+                {/* Optional target date */}
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"10px 14px",background:"rgba(90,120,72,0.05)",borderRadius:16,border:"1px solid rgba(90,120,72,0.12)"}}>
+                  <span style={{fontSize:16}}>📅</span>
+                  <span style={{fontSize:13,color:"#5A7848",fontWeight:600,flexShrink:0}}>Want it by:</span>
+                  <input type="date" value={rewardDraft.date||""} onChange={e=>setRewardDraft(d=>({...d,date:e.target.value}))}
+                    style={{flex:1,border:"none",outline:"none",fontSize:13,color:"#1A1A10",background:"transparent",cursor:"pointer"}}/>
+                  {rewardDraft.date&&<button onClick={()=>setRewardDraft(d=>({...d,date:""}))} style={{background:"none",border:"none",color:"#8A8070",cursor:"pointer",fontSize:14}}>✕</button>}
+                </div>
                 {/* Photo upload */}
                 <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1.5px dashed rgba(90,120,72,0.22)",cursor:"pointer",marginBottom:8}}>
                   {rewardDraft.photo?<img src={rewardDraft.photo} alt="" style={{width:44,height:44,borderRadius:10,objectFit:"cover",flexShrink:0}}/>:<span style={{fontSize:24}}>📷</span>}
@@ -7276,11 +7358,11 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 )}
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setEditAward(false)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                  <button onClick={()=>{upd({weeklyAward:rewardDraft.name,reward:rewardDraft});setEditAward(false);showToast("🎁 Reward saved!");}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save Reward</button>
+                  <button onClick={()=>{upd({weeklyAward:rewardDraft.name,reward:rewardDraft,rewardDate:rewardDraft.date||""});setEditAward(false);showToast("🎁 Reward saved!");}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save Reward</button>
                 </div>
               </>
             ):(
-              <button onClick={()=>{setRewardDraft({...(data.reward||{name:"",cost:"",url:"",photo:""})});setEditAward(true);}} style={{width:"100%",padding:"13px",background:rewardName?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:rewardName?"#3A6020":"#8A8070",border:`1.5px dashed ${rewardName?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+              <button onClick={()=>{setRewardDraft({...(data.reward||{name:"",cost:"",url:"",photo:""}),date:data.rewardDate||""});setEditAward(true);}} style={{width:"100%",padding:"13px",background:rewardName?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:rewardName?"#3A6020":"#8A8070",border:`1.5px dashed ${rewardName?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
                 {data.reward?.photo&&<img src={data.reward.photo} alt="" style={{width:36,height:36,borderRadius:8,objectFit:"cover",flexShrink:0}}/>}
                 <span>{rewardName?`🎁 ${rewardName}`:"+ Set your reward"}</span>
                 <span style={{marginLeft:"auto",color:"#8A8070",fontSize:12}}>✏️</span>
