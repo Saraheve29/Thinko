@@ -2770,6 +2770,22 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
   /* ── Cabinet home — the drawers ── */
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      {/* Rest Space Header */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
+        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>Rest Space 🌿</div>
+        <div style={{width:36}}/>
+      </div>
+      {/* Header */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",letterSpacing:-0.3}}>Rest Space 🌿</div>
+        <div style={{width:36}}/>
+      </div>
       <Header title="🗄️ Filing Cabinet" onBack={onBack} right={
         <div style={{display:"flex",gap:8}}>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
@@ -3235,7 +3251,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
         <button onClick={()=>setPageId(null)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
         <span style={{flex:1,color:"#1A1A10",fontWeight:800,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{page.title}</span>
         <button onClick={()=>{setSectionId(null);setNotesMode(null);}} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 12px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>🏠</button>
-        <button onClick={()=>setStudioOpen(true)} style={{background:"linear-gradient(135deg,#4a148c,#7c5cbf)",color:"#1A1A10",border:"none",borderRadius:10,padding:"7px 11px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>🎓</button>
+        <button onClick={()=>setStudioOpen(true)} style={{background:"linear-gradient(135deg,#3D5A2A,#5A7848)",color:"#1A1A10",border:"none",borderRadius:10,padding:"7px 11px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>🎓</button>
         <div style={{position:"relative"}}>
           <button onClick={()=>setSendOpen(o=>!o)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,padding:"7px 11px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
             ↗ Send to…
@@ -4822,7 +4838,7 @@ function OrbOfLight({pct=0,size=130}){
           <stop offset="100%" stopColor={full?"#c4aee8":"#2C3820"}/>
         </radialGradient>
         <radialGradient id="halo" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={pct>0?`rgba(160,190,140,0.35)*0.35})`:"rgba(0,0,0,0)"}/>
+          <stop offset="0%" stopColor={pct>0?"rgba(160,190,140,0.25)":"rgba(0,0,0,0)"}/>
           <stop offset="100%" stopColor="rgba(0,0,0,0)"/>
         </radialGradient>
         <filter id="glow"><feGaussianBlur stdDeviation={pct>60?5:2.5}/></filter>
@@ -5890,7 +5906,7 @@ function ShoppingList({data,setData,setScreen}){
               </div>
               {/* Progress bar */}
               <div style={{height:5,background:C.ll}}>
-                <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#27ae60":"#7c5cbf",transition:"width 0.4s"}}/>
+                <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":"#6A8858",transition:"width 0.4s"}}/>
               </div>
               {/* Item preview */}
               <div style={{padding:"10px 16px"}}>
@@ -6288,7 +6304,7 @@ function CountdownTool() {
         <>
           <div style={{fontFamily:"monospace",fontSize:52,fontWeight:200,color:left<10?"#FF0022":C.wh,letterSpacing:2,marginBottom:16}}>{fmt(left)}</div>
           <div style={{height:8,borderRadius:4,background:"rgba(255,255,255,0.15)",overflow:"hidden",marginBottom:20}}>
-            <div style={{height:"100%",width:`${pct}%`,background:left<10?"#FF0022":"#7c5cbf",borderRadius:4,transition:"width 1s linear"}}/>
+            <div style={{height:"100%",width:`${pct}%`,background:left<10?"rgba(192,57,43,0.8)":"#6A8858",borderRadius:4,transition:"width 1s linear"}}/>
           </div>
           {done&&<div style={{fontSize:18,fontWeight:800,color:"#FF9100",marginBottom:12}}>⏰ Time's up!</div>}
           <button onClick={stop} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"none",borderRadius:50,padding:"12px 32px",fontSize:16,fontWeight:700,cursor:"pointer"}}>Reset</button>
@@ -6311,7 +6327,7 @@ function CountdownTool() {
               <button key={lbl} onClick={()=>{setH(hv);setM(mv);setS(sv);}} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.25)",borderRadius:20,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{lbl}</button>
             ))}
           </div>
-          <button onClick={start} disabled={total<1} style={{background:"#7c5cbf",color:"#1A1A10",border:"none",borderRadius:50,width:72,height:72,fontSize:24,cursor:"pointer",opacity:total>0?1:0.4,boxShadow:"0 4px 16px rgba(90,120,72,0.20)"}}>▶</button>
+          <button onClick={start} disabled={total<1} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:50,width:72,height:72,fontSize:24,cursor:"pointer",opacity:total>0?1:0.4,boxShadow:"0 4px 16px rgba(90,120,72,0.20)"}}>▶</button>
         </>
       )}
     </div>
@@ -6368,7 +6384,7 @@ function AlarmTool() {
           style={{flex:"0 0 auto",padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.15)",color:"#1A1A10",fontSize:16,fontFamily:"monospace",outline:"none",colorScheme:"dark"}}/>
         <input value={newLabel} onChange={e=>setNewLabel(e.target.value)} placeholder="Label (optional)"
           style={{flex:1,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.15)",color:"#1A1A10",fontSize:13,outline:"none",minWidth:100}}/>
-        <button onClick={add} style={{background:"#7c5cbf",color:"#1A1A10",border:"none",borderRadius:10,padding:"9px 18px",fontWeight:800,fontSize:14,cursor:"pointer"}}>+ Set</button>
+        <button onClick={add} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:10,padding:"9px 18px",fontWeight:800,fontSize:14,cursor:"pointer"}}>+ Set</button>
       </div>
 
       {alarms.length===0&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.4)",fontSize:13,fontStyle:"italic"}}>No alarms set</div>}
@@ -6380,7 +6396,7 @@ function AlarmTool() {
           </div>
           {/* Toggle */}
           <div onClick={()=>setAlarms(as=>as.map(x=>x.id===a.id?{...x,active:!x.active,fired:false}:x))}
-            style={{width:44,height:24,borderRadius:12,background:a.active?"#7c5cbf":"rgba(255,255,255,0.2)",cursor:"pointer",position:"relative",transition:"background 0.2s",flexShrink:0}}>
+            style={{width:44,height:24,borderRadius:12,background:a.active?"#5A7848":"rgba(255,255,255,0.2)",cursor:"pointer",position:"relative",transition:"background 0.2s",flexShrink:0}}>
             <div style={{position:"absolute",top:2,left:a.active?22:2,width:20,height:20,borderRadius:"50%",background:C.wh,transition:"left 0.2s"}}/>
           </div>
           <button onClick={()=>setAlarms(as=>as.filter(x=>x.id!==a.id))} style={{background:"rgba(255,100,100,0.2)",color:"#f1948a",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13}}>🗑</button>
@@ -6515,14 +6531,14 @@ function WhiteNoise() {
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
         <span style={{fontSize:16}}>🔊</span>
         <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e=>setVol(Number(e.target.value))}
-          style={{flex:1,accentColor:"#7c5cbf"}}/>
+          style={{flex:1,accentColor:"#5A7848"}}/>
         <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,minWidth:32}}>{Math.round(vol*100)}%</span>
       </div>
 
       {/* Presets */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
         {WN_PRESETS.map(p=>(
-          <button key={p.id} onClick={()=>play(p.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",borderRadius:14,background:playing===p.id?"#7c5cbf":"rgba(255,255,255,0.12)",border:`1.5px solid ${playing===p.id?"#7c5cbf":"rgba(255,255,255,0.2)"}`,color:"#1A1A10",cursor:"pointer",fontWeight:playing===p.id?800:600,fontSize:13,transition:"all 0.15s"}}>
+          <button key={p.id} onClick={()=>play(p.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",borderRadius:14,background:playing===p.id?"#5A7848":"rgba(255,255,255,0.12)",border:`1.5px solid ${playing===p.id?"#5A7848":"rgba(255,255,255,0.2)"}`,color:"#1A1A10",cursor:"pointer",fontWeight:playing===p.id?800:600,fontSize:13,transition:"all 0.15s"}}>
             <span style={{fontSize:20}}>{p.icon}</span>
             <span>{p.name}</span>
             {playing===p.id&&<span style={{marginLeft:"auto",fontSize:16}}>⏹</span>}
@@ -6597,7 +6613,7 @@ function Tools({setScreen}) {
 ═══════════════════════════════════════════════════════ */
 
 const GOAL_HORIZONS=[
-  {key:"week",  label:"Next Week",  icon:"📅", color:"#5A7848", grad:"linear-gradient(135deg,#e65100,#FF6D00)", question:"What do you want to achieve by next week?",  days:7},
+  {key:"week",  label:"Next Week",  icon:"📅", color:"#5A7848", grad:"linear-gradient(135deg,#3A5A28,#5A7848)", question:"What do you want to achieve by next week?",  days:7},
   {key:"month6",label:"6 Months",   icon:"🌱", color:"#27ae60", grad:"linear-gradient(135deg,#1e8449,#27ae60)", question:"Where do you want to be in 6 months?",        days:180},
   {key:"year1", label:"1 Year",     icon:"⭐", color:"#2980b9", grad:"linear-gradient(135deg,#1a5276,#2980b9)", question:"What will you have achieved in 1 year?",       days:365},
   {key:"year3", label:"3 Years",    icon:"🚀", color:"#8e44ad", grad:"linear-gradient(135deg,#4a148c,#8e44ad)", question:"Imagine your life in 3 years — what's changed?",days:1095},
@@ -7151,7 +7167,7 @@ function TheCharge({priData,matrixData,setScreen}){
               <input value={whatOff} onChange={e=>setWhatOff(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addFrog()}
                 placeholder="Write what you've been avoiding..."
                 style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:15,fontWeight:400}}/>
-              <button onClick={addFrog} style={{background:"#7c5cbf",color:"#fff",border:"none",borderRadius:"50%",width:44,height:44,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0,boxShadow:"0 3px 12px rgba(124,92,191,0.38)"}}>+</button>
+              <button onClick={addFrog} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:44,height:44,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0,boxShadow:"0 3px 12px rgba(90,120,72,0.38)"}}>+</button>
             </div>
             {frogs.map(f=>(
               <div key={f.id} style={{display:"flex",alignItems:"center",gap:12,background:f.done?"rgba(90,160,80,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 16px",marginTop:9,border:`1px solid ${f.done?"rgba(90,160,80,0.25)":"rgba(255,255,255,0.9)"}`,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
@@ -7894,13 +7910,27 @@ export default function App() {
         </div>
       )}
 
+      {/* ── HOME HEADER ── */}
+      <div style={{
+        background:"rgba(248,245,236,0.92)",
+        backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",
+        padding:"14px 20px 12px",
+        display:"flex",alignItems:"center",justifyContent:"space-between",
+        borderBottom:"1px solid rgba(90,80,60,0.08)",
+        position:"sticky",top:0,zIndex:50,
+      }}>
+        <div style={{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3}}>
+          Thinko 🌿
+        </div>
+        <AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/>
+      </div>
+      {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
+
       {/* ── GREETING ── */}
       <div style={{padding:"22px 22px 8px"}}>
         {(()=>{const {word,emoji}=getGreeting();return(<div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2}}>{word}{userName?`, ${userName}`:""} {emoji}</div>);})()}
         <div style={{fontSize:12,color:"#8A8070",marginTop:4}}>Your calm space is ready</div>
         {TESTING_MODE&&<div style={{marginTop:8,display:"inline-flex",alignItems:"center",gap:6,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.25)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
-        <div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"flex-end"}}><AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/></div>
-        {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
       </div>
       <div style={{padding:"4px 12px 2px",textAlign:"center"}}>
         <span style={{fontSize:11,color:"rgba(60,56,40,0.45)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
