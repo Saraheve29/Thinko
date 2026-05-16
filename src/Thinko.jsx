@@ -1,4 +1,23 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+// ── PWA INSTALL PROMPT ──────────────────────────────────────────────────────
+let deferredInstallPrompt = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+}
+const showInstallPrompt = async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    return outcome === 'accepted';
+  }
+  return false;
+};
+
+
 // Thinko v2.5 — Top3 Prioritizer · MindMap Goals · SendToDropdown · Ideas fix
 
 /* ═══════════════════════════════════════════════════════
@@ -7677,7 +7696,8 @@ function Tools({setScreen}) {
       setLoading(true);setResult(null);
       try{
         // Use free Open Exchange Rates (no key needed for latest via frankfurter)
-        const url=`https://api.frankfurter.app/latest?amount=${amount}&from=${from}&to=${to}`;
+        // Try exchangerate-api (free, reliable CORS)
+        const url=`https://open.er-api.com/v6/latest/${from}`;
         const res=await fetch(url,{mode:"cors"});
         if(!res.ok)throw new Error("Rate fetch failed");
         const converted=j.rates?.[to];
@@ -9094,6 +9114,9 @@ export default function App() {
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button onClick={()=>setShowAIKeyModal(true)} title="AI Settings" style={{background:getAIKey()?"rgba(90,160,80,0.14)":"rgba(200,100,50,0.10)",border:`1px solid ${getAIKey()?"rgba(90,160,80,0.3)":"rgba(200,100,50,0.25)"}`,borderRadius:100,padding:"6px 10px",fontSize:12,fontWeight:700,color:getAIKey()?"#2A6020":"#7A4020",cursor:"pointer"}}>
             🤖 {getAIKey()?"AI ✓":"AI Key"}
+          </button>
+          <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\niPhone/iPad: tap Share → Add to Home Screen\n\nAndroid/Chrome: tap ⋮ menu → Add to Home Screen\n\nThis saves Thinko as an app on your device — works offline!");}} style={{background:"rgba(90,120,72,0.12)",border:"1px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"6px 10px",fontSize:12,fontWeight:700,color:"#3A6020",cursor:"pointer"}} title="Install as app">
+            📲 App
           </button>
           <AuthButton user={user} onSignIn={()=>setShowLoginModal(true)} onSignOut={signOut}/>
         </div>
