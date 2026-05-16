@@ -3559,7 +3559,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
   const [recipes,setRecipes]=useState([]);
   const [addingRecipe,setAddingRecipe]=useState(false);
   const [recipeDetail,setRecipeDetail]=useState(null);
-  const [recipeDraft,setRecipeDraft]=useState({name:'',description:'',ingredients:'',method:'',url:''});
+  const [recipeDraft,setRecipeDraft]=useState({name:'',description:'',ingredients:'',method:'',url:'',photo:''});
   const [editLabelIdx,setEditLabelIdx]=useState(null);
   const [labelDraft,setLabelDraft]=useState('');
 
@@ -3642,6 +3642,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
           <button onClick={()=>{setRecipes(rs=>rs.filter(x=>x.id!==r.id));setRecipeDetail(null);}} style={{background:"rgba(192,57,43,0.15)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.3)",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Delete</button>
         }/>
         <div style={{padding:"16px 14px"}}>
+          {r.photo&&<img src={r.photo} alt={r.name} style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:20,marginBottom:14,boxShadow:"0 4px 18px rgba(0,0,0,0.10)"}}/>}
           {r.url&&<div style={{marginBottom:12}}><UrlBadge url={r.url}/></div>}
           {r.ingredients&&<div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
             <div style={{fontWeight:700,color:"#2A4020",fontSize:14,marginBottom:8}}>🥕 Ingredients</div>
@@ -3711,13 +3712,21 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
             <div style={{background:"rgba(248,245,236,0.95)",borderRadius:22,padding:"20px 18px",marginBottom:14,boxShadow:"0 4px 24px rgba(0,0,0,0.08)",border:"1px solid rgba(90,120,72,0.18)"}}>
               <div style={{fontWeight:700,color:"#2A4020",fontSize:15,marginBottom:12}}>📖 New Recipe</div>
               <input value={recipeDraft.name} onChange={e=>setRecipeDraft(d=>({...d,name:e.target.value}))} placeholder="Recipe name" style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.9)"}}/>
+              {/* Photo upload */}
+              <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1.5px dashed rgba(90,120,72,0.22)",cursor:"pointer",marginBottom:10}}>
+                {recipeDraft.photo
+                  ?<img src={recipeDraft.photo} alt="" style={{width:52,height:52,borderRadius:12,objectFit:"cover",flexShrink:0}}/>
+                  :<span style={{fontSize:26}}>📷</span>}
+                <span style={{fontSize:13,color:"#5A7848",fontWeight:600}}>{recipeDraft.photo?"Change photo":"Add a photo (optional)"}</span>
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setRecipeDraft(d=>({...d,photo:ev.target.result}));r.readAsDataURL(f);}}/>
+              </label>
               <UrlField value={recipeDraft.url} onChange={v=>setRecipeDraft(d=>({...d,url:v}))} style={{marginBottom:10}}/>
               <textarea value={recipeDraft.ingredients} onChange={e=>setRecipeDraft(d=>({...d,ingredients:e.target.value}))} placeholder="Ingredients (one per line)..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
               <textarea value={recipeDraft.method} onChange={e=>setRecipeDraft(d=>({...d,method:e.target.value}))} placeholder="Method / steps..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
               <textarea value={recipeDraft.description} onChange={e=>setRecipeDraft(d=>({...d,description:e.target.value}))} placeholder="Notes (optional)..." rows={2} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:14,background:"rgba(255,255,255,0.85)"}}/>
-              <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                <button onClick={()=>{setAddingRecipe(false);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:""});}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,cursor:"pointer",padding:"8px 16px"}}>Cancel</button>
-                <button onClick={()=>{if(!recipeDraft.name.trim())return;setRecipes(rs=>[...rs,{id:Date.now(),...recipeDraft}]);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:""});setAddingRecipe(false);}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 24px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>Save Recipe</button>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>{setAddingRecipe(false);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:"",photo:""});}} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
+                <button onClick={()=>{if(!recipeDraft.name.trim())return;setRecipes(rs=>[...rs,{id:Date.now(),...recipeDraft}]);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:"",photo:""});setAddingRecipe(false);}} style={{flex:2,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"11px 24px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>Save Recipe</button>
               </div>
             </div>
           )}
@@ -5136,37 +5145,61 @@ function mkBudget(name="My Budget"){
 }
 
 function BudgetPlanner({data,setData,setScreen}){
-  const [activeId,setActiveId]=useState(null);
+  const [activeId,setActiveId]=useState(()=>{
+    // Auto-open: if no budgets create one, if one budget open it directly
+    return null;
+  });
+
+  // On mount: if no data, create default budget; if one, open it
+  useEffect(()=>{
+    if(!data||data.length===0){
+      const b=mkBudget();
+      setData(ds=>[...ds,b]);
+      setActiveId(b.id);
+    } else if(data.length===1){
+      setActiveId(data[0].id);
+    }
+  },[]);
+
   const active=data.find(b=>b.id===activeId);
-  if(active) return <BudgetDetail budget={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(b=>b.id===u.id?u:b))} onDelete={id=>{setData(ds=>ds.filter(b=>b.id!==id));setActiveId(null);}}/>;
+  if(active) return <BudgetDetail budget={active} onBack={()=>{setActiveId(null);if(data.length<=1)setScreen("home");}} onUpdate={u=>setData(ds=>ds.map(b=>b.id===u.id?u:b))} onDelete={id=>{setData(ds=>{const nd=ds.filter(b=>b.id!==id);if(nd.length===0)setScreen("home");return nd;});setActiveId(null);}}/>;
+
+  // Multi-budget list (only shown if 2+ budgets)
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      
-      <Header title="💰 Budget" onBack={()=>setScreen("home")} right={
-        <button onClick={()=>{const b=mkBudget();setData(ds=>[...ds,b]);setActiveId(b.id);}} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
-      }/>
-      <div style={{padding:"20px 16px"}}>
-        {data.length===0&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:80,fontSize:15,lineHeight:2}}>Tap + to create your first budget</div>}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",textAlign:"center"}}>💰 Budgets</div>
+        <button onClick={()=>{const b=mkBudget();setData(ds=>[...ds,b]);setActiveId(b.id);}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ New</button>
+      </div>
+      <div style={{padding:"16px 16px"}}>
         {data.map(b=>{
           const tot=b.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
           const rem=Number(b.budgetAmount||0)-tot;
           return(
-            <div key={b.id} onClick={()=>setActiveId(b.id)} style={{background:"rgba(255,255,255,0.92)",borderRadius:18,padding:"16px 18px",marginBottom:14,boxShadow:"0 4px 18px rgba(90,80,60,0.10)",border:`2px solid ${C.ll}`,cursor:"pointer",transition:"transform 0.15s"}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+            <div key={b.id} onClick={()=>setActiveId(b.id)} style={{background:"rgba(248,245,236,0.90)",borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:"0 2px 14px rgba(60,70,40,0.07)",border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer"}}>
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
                 <div>
-                  <div style={{fontWeight:900,fontSize:17,color:C.dp}}>{b.name}</div>
-                  <div style={{fontSize:12,color:C.soft,marginTop:2}}>{fmtDate(b.dateFrom)} → {fmtDate(b.dateTo)} · {b.period}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>{b.name}</div>
+                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>{fmtDate(b.dateFrom)} → {fmtDate(b.dateTo)}</div>
                 </div>
                 <div style={{textAlign:"right"}}>
-                  <div style={{fontWeight:900,fontSize:20,color:rem>=0?"#27ae60":"#e74c3c"}}>{fmtMoney(rem)}</div>
-                  <div style={{fontSize:11,color:C.soft}}>{rem>=0?"remaining":"over budget"}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:rem>=0?"#3A8020":"#c0392b"}}>{fmtMoney(rem)}</div>
+                  <div style={{fontSize:11,color:"#8A8070"}}>{rem>=0?"remaining":"over"}</div>
                 </div>
               </div>
-              <div style={{display:"flex",gap:10}}>
-                <div style={{flex:1,background:"#e3f2fd",borderRadius:10,padding:"8px 12px",textAlign:"center"}}><div style={{fontSize:10,color:"#1565c0",fontWeight:700}}>BUDGET</div><div style={{fontSize:15,fontWeight:800,color:"#1565c0"}}>{fmtMoney(b.budgetAmount)}</div></div>
-                <div style={{flex:1,background:"#fce4e4",borderRadius:10,padding:"8px 12px",textAlign:"center"}}><div style={{fontSize:10,color:"#c0392b",fontWeight:700}}>EXPENSES</div><div style={{fontSize:15,fontWeight:800,color:"#c0392b"}}>{fmtMoney(tot)}</div></div>
+              <div style={{display:"flex",gap:8}}>
+                <div style={{flex:1,background:"rgba(90,120,72,0.10)",borderRadius:12,padding:"8px 12px",textAlign:"center"}}>
+                  <div style={{fontSize:10,color:"#3A6020",fontWeight:700,marginBottom:2}}>BUDGET</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#3A6020"}}>{fmtMoney(b.budgetAmount)}</div>
+                </div>
+                <div style={{flex:1,background:"rgba(192,57,43,0.08)",borderRadius:12,padding:"8px 12px",textAlign:"center"}}>
+                  <div style={{fontSize:10,color:"#c0392b",fontWeight:700,marginBottom:2}}>SPENT</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#c0392b"}}>{fmtMoney(tot)}</div>
+                </div>
               </div>
-              {b.saved&&<span style={{display:"inline-block",marginTop:8,background:"#e8f5e9",color:"#27ae60",fontSize:10,fontWeight:800,borderRadius:20,padding:"2px 9px"}}>✅ Saved</span>}
             </div>
           );
         })}
@@ -7375,17 +7408,28 @@ function useAuth(){
 
 
 const MODULES=[
-  {id:"prioritizer", summary:"Drag & rank tasks · Top 3 · Break timer · Send to Matrix", name:"Prioritizer",  desc:"Tasks, timers & priorities",       icon:"📋"},
-  {id:"mindmap", summary:"Visual thinking · AI branch grow · Voice notes · 8 templates",     name:"Mind Map",     desc:"Visual thinking & brainstorm",      icon:"🧠"},
-  {id:"notes",       name:"The Vault",    desc:"Notes, Ideas, Filing & Studio",     icon:"📚"},
-  {id:"meals", summary:"7-day meal plan · Photo recipes · Shopping export",       name:"Meal Planner", desc:"Plan your week of meals",           icon:"🍽️"},
-  {id:"goals", summary:"Garden growth · 5 horizons · Future Me letters · Reviews",       name:"Goals",        desc:"Smart goals · 5 horizons",          icon:"🎯"},
-  {id:"matrix", summary:"Eisenhower grid · Drag tasks · AI suggestions · Export",      name:"Matrix",       desc:"Eisenhower urgent-important grid",  icon:"⚡"},
-  {id:"charge", summary:"Daily challenge · Orb of light · AI task picks · Rewards",      name:"The Charge",   desc:"Daily challenge · orb of light",   icon:"⚡"},
-  {id:"budget", summary:"Income & bills · Expenses · AI spending review",      name:"Budget",       desc:"Income, outgoing & AI review",     icon:"💰"},
-  {id:"shopping", summary:"Multiple lists · Tick off items · Categories",    name:"Shopping",     desc:"Multiple lists, tick off as you go",icon:"🛒"},
-  {id:"tools", summary:"Calculator · Timer · Alarm · Voice to text · Translator · Currency",       name:"Tools",        desc:"Calculator, timer, alarm & sounds", icon:"🔧"},
-  {id:"rest", summary:"Guided meditation · Nature sounds · Breathing exercises",        name:"Rest Space",   desc:"Guided rest · Nature sounds",       icon:"🌿"},
+  {id:"prioritizer", icon:"📋", name:"Prioritizer",  color:"#5A7848",
+   summary:"Drag & rank tasks · Top 3 focus · Break timer · Send to Matrix"},
+  {id:"mindmap",     icon:"🧠", name:"Mind Map",     color:"#486878",
+   summary:"Visual thinking · AI branch grow · Voice notes · 8 templates"},
+  {id:"notes",       icon:"📚", name:"The Vault",    color:"#7A5838",
+   summary:"Notes · Ideas · Filing cabinet · PDF to Podcast"},
+  {id:"meals",       icon:"🍽️", name:"Meal Planner", color:"#6A8858",
+   summary:"7-day plan · Photo recipes · Shopping export"},
+  {id:"goals",       icon:"🎯", name:"Goals",        color:"#3A6848",
+   summary:"Garden growth · 5 time horizons · Future Me letters"},
+  {id:"matrix",      icon:"⚖️", name:"Matrix",       color:"#7A6038",
+   summary:"Eisenhower grid · Urgent vs Important · AI suggest"},
+  {id:"charge",      icon:"⚡", name:"The Charge",   color:"#6A5870",
+   summary:"Daily challenge · Orb of light · Reward tracking"},
+  {id:"budget",      icon:"💰", name:"Budget",       color:"#5A6878",
+   summary:"Income & outgoings · Expenses tracker · AI review"},
+  {id:"shopping",    icon:"🛒", name:"Shopping",     color:"#486050",
+   summary:"Multiple lists · Tick off · Categories · Share"},
+  {id:"tools",       icon:"🔧", name:"Tools",        color:"#705848",
+   summary:"Calculator · Timer · Voice to text · Translator · Currency"},
+  {id:"rest",        icon:"🌿", name:"Rest Space",   color:"#3A6828",
+   summary:"Guided meditation · Nature sounds · Breathing"},
 ];
 
 function ProLoginModal({onClose,onSignIn}){
@@ -7434,6 +7478,9 @@ export default function App() {
   const [screen,setScreen]=useState("home");
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
+  const [showHomeBriefing,setShowHomeBriefing]=useState(false);
+  const [homeBriefingText,setHomeBriefingText]=useState("");
+  const [homeBriefingLoading,setHomeBriefingLoading]=useState(false);
   const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
   const [mapData,setMapData]=useState(()=>{try{const v=localStorage.getItem('thinko_map');return v?JSON.parse(v):[];}catch{return [];}});
   const [notesData,setNotesData]=useState(()=>{try{const v=localStorage.getItem('thinko_notes');return v?JSON.parse(v):[];}catch{return [];}});
@@ -7454,6 +7501,27 @@ export default function App() {
   const [userName,setUserName]=useState(()=>{try{return localStorage.getItem('thinko_username')||'';}catch{return '';}});
   const [showNameModal,setShowNameModal]=useState(()=>{try{return !localStorage.getItem('thinko_username');}catch{return true;}});
   const [nameInput,setNameInput]=useState('');
+  const getHomeBriefing=async()=>{
+    setShowHomeBriefing(true);
+    setHomeBriefingLoading(true);
+    setHomeBriefingText("");
+    const d=new Date();
+    const dayStr=d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+    // Gather context from data
+    const priCount=(priData||[]).flatMap(l=>l.tasks||[]).filter(t=>!t.done).length;
+    const goalCount=(goalsData||[]).filter(g=>g.status==="active").length;
+    try{
+      const result=await callAI(
+        `Write a warm, personal morning briefing for ${userName||"Sarah"}. Today is ${dayStr}. They have ${priCount} active tasks and ${goalCount} active goals. Keep it under 150 words. 3 short paragraphs: 1) a warm greeting for the time of day, 2) a gentle nudge about their day ahead, 3) an encouraging close. Friendly, like a supportive friend — not corporate.`,
+        300
+      );
+      setHomeBriefingText(result||"Good morning! Your calm space is ready. Whatever today holds, you've got this 🌿");
+    }catch{
+      setHomeBriefingText("Good morning! Your calm space is ready. Whatever today holds, you've got this 🌿");
+    }
+    setHomeBriefingLoading(false);
+  };
+
   const getGreeting=()=>{const h=new Date().getHours();if(h>=5&&h<12)return{word:'Good morning',emoji:'✨'};if(h>=12&&h<17)return{word:'Good afternoon',emoji:'☀️'};if(h>=17&&h<21)return{word:'Good evening',emoji:'🌅'};return{word:'Good night',emoji:'🌙'};};
   const saveName=()=>{const n=nameInput.trim();if(!n)return;try{localStorage.setItem('thinko_username',n);}catch{}setUserName(n);setShowNameModal(false);};
 
@@ -7514,11 +7582,11 @@ export default function App() {
       <div style={{padding:"22px 22px 8px",textAlign:"center"}}>
         {(()=>{const {word,emoji}=getGreeting();return(<div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,textAlign:"center"}}>{word}{userName?`, ${userName}`:""} {emoji}</div>);})()}
         <div style={{fontSize:12,color:"#8A8070",marginTop:4,textAlign:"center"}}>Your calm space is ready</div>
-        <button onClick={()=>setScreen("charge")} style={{marginTop:12,width:"100%",padding:"13px 18px",background:"linear-gradient(135deg,rgba(240,220,160,0.30),rgba(200,220,170,0.25))",border:"1.5px solid rgba(200,180,100,0.30)",borderRadius:22,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
+        <button onClick={getHomeBriefing} style={{marginTop:12,width:"100%",padding:"13px 18px",background:"linear-gradient(135deg,rgba(240,220,160,0.30),rgba(200,220,170,0.25))",border:"1.5px solid rgba(200,180,100,0.30)",borderRadius:22,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
           <span style={{fontSize:24}}>☀️</span>
           <div>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>Today's Briefing</div>
-            <div style={{fontSize:11,color:"#8A8070",marginTop:1}}>Your tasks, reward & daily charge</div>
+            <div style={{fontSize:11,color:"#8A8070",marginTop:1}}>AI morning message · tasks · goals</div>
           </div>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{marginLeft:"auto",flexShrink:0}}><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
         </button>
@@ -7541,44 +7609,79 @@ export default function App() {
             onDragEnd={homeDragEnd}
             onClick={()=>setScreen(m.id)}
             style={{
-              background:dragHome===m.id?"rgba(255,255,255,0.92)":"rgba(248,245,236,0.88)",
+              background:dragHome===m.id?"rgba(255,255,255,0.96)":"rgba(248,245,236,0.88)",
               backdropFilter:"blur(14px)",
               WebkitBackdropFilter:"blur(14px)",
               borderRadius:22,
-              padding:"18px 16px 16px 18px",
               border:"1px solid rgba(255,255,255,0.92)",
               cursor:"pointer",
-              transition:"all 0.15s",
+              transition:"all 0.18s",
               boxShadow:dragHome===m.id
-                ?"0 8px 28px rgba(60,70,40,0.14),inset 0 1px 0 rgba(255,255,255,1)"
-                :"0 2px 12px rgba(60,70,40,0.07),inset 0 1px 0 rgba(255,255,255,0.95)",
-              transform:dragHome===m.id?"scale(1.03)":"scale(1)",
+                ?"0 10px 32px rgba(60,70,40,0.16)"
+                :"0 2px 14px rgba(60,70,40,0.07)",
+              transform:dragHome===m.id?"scale(1.04)":"scale(1)",
               display:"flex",flexDirection:"column",
-              justifyContent:"space-between",
+              overflow:"hidden",
               position:"relative",
-              minHeight:128,
             }}>
-            {/* Top: emoji icon + drag dots */}
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
-              <span style={{fontSize:38,lineHeight:1,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.12))"}}>
-                {m.icon}
-              </span>
-              <div style={{opacity:0.35,marginTop:2}}>
-                <svg width="14" height="14" viewBox="0 0 14 14">
-                  <circle cx="4" cy="4" r="1.5" fill="#3A3020"/>
-                  <circle cx="10" cy="4" r="1.5" fill="#3A3020"/>
-                  <circle cx="4" cy="10" r="1.5" fill="#3A3020"/>
-                  <circle cx="10" cy="10" r="1.5" fill="#3A3020"/>
-                </svg>
+            {/* Coloured accent bar */}
+            <div style={{height:4,background:m.color||"#5A7848",flexShrink:0}}/>
+            <div style={{padding:"14px 14px 14px",display:"flex",flexDirection:"column",flex:1}}>
+              {/* Icon + drag handle row */}
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+                <span style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.10))"}}>
+                  {m.icon}
+                </span>
+                <div style={{opacity:0.22,marginTop:2}}>
+                  <svg width="12" height="12" viewBox="0 0 12 12">
+                    <circle cx="3.5" cy="3.5" r="1.3" fill="#3A3020"/>
+                    <circle cx="8.5" cy="3.5" r="1.3" fill="#3A3020"/>
+                    <circle cx="3.5" cy="8.5" r="1.3" fill="#3A3020"/>
+                    <circle cx="8.5" cy="8.5" r="1.3" fill="#3A3020"/>
+                  </svg>
+                </div>
               </div>
-            </div>
-            {/* Bottom: name */}
-            <div style={{fontSize:15,fontWeight:700,color:"#1A1A10",letterSpacing:-0.2,lineHeight:1.2,marginTop:10}}>
-              {m.name}
+              {/* Name in Georgia serif */}
+              <div style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.2,marginBottom:5}}>
+                {m.name}
+              </div>
+              {/* Summary in smaller text */}
+              {m.summary&&<div style={{fontSize:10,color:"#8A8070",lineHeight:1.6,fontWeight:400,letterSpacing:0.1}}>
+                {m.summary}
+              </div>}
             </div>
           </div>
         ))}
       </div>
+      {/* ── HOME MORNING BRIEFING MODAL ── */}
+      {showHomeBriefing&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setShowHomeBriefing(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(200,170,100,0.4)"}}/></div>
+            <div style={{padding:"0 20px 14px",flexShrink:0,display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:28}}>☀️</span>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20}}>Morning Briefing</div>
+                <div style={{fontSize:12,color:"#8A8070"}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}</div>
+              </div>
+              <button onClick={getHomeBriefing} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Refresh</button>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {homeBriefingLoading
+                ?<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>🌿 Writing your briefing…</div>
+                :<div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"18px 20px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:16}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#1A2810",lineHeight:1.9}}>{homeBriefingText}</div>
+                </div>
+              }
+              {!homeBriefingLoading&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {[["📋","prioritizer"],["⚖️","matrix"],["🎯","goals"],["⚡","charge"]].map(([icon,screen])=>(
+                  <button key={screen} onClick={()=>{setShowHomeBriefing(false);setScreen(screen);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{icon} {screen.charAt(0).toUpperCase()+screen.slice(1)}</button>
+                ))}
+              </div>}
+            </div>
+          </div>
+        </div>
+      )}
       <NavBar current="home" setScreen={setScreen}/>
     </div>
     </>
