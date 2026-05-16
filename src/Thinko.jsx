@@ -3406,112 +3406,405 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     </div>
   );
   if(notesMode==="filing") return <FilingCabinet cabinetData={cabinetData} setCabinetData={setCabinetData} onBack={()=>setNotesMode(null)} onHome={()=>setNotesMode(null)}/>;
-  // Notes sections list (when in notes mode)
-  const moveSection=(id,dir)=>{
-    setData(ds=>{
-      const a=[...ds];
-      const i=a.findIndex(s=>s.id===id);
-      const j=i+dir;
-      if(j<0||j>=a.length)return ds;
-      [a[i],a[j]]=[a[j],a[i]];
-      return a;
-    });
-  };
-
   if(notesMode==="notes") return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
-      <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 3px 16px rgba(90,80,60,0.35)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setNotesMode(null)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
-        <span style={{flex:1,color:"#1A1A10",fontWeight:900,fontSize:17}}>📓 Notes</span>
-        <button onClick={()=>setNotesMode(null)} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>🏠 Home</button>
-        <button onClick={addSection} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:40,height:40,fontSize:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setNotesMode(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+        <span style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>📓 Notes</span>
+        <button onClick={addSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:50,width:38,height:38,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,boxShadow:"0 2px 10px rgba(58,80,38,0.3)"}}>+</button>
       </div>
-      <div style={{padding:"20px 16px"}}>
+      <div style={{padding:"16px"}}>
         {addingSectionForm&&(
-          <div style={{background:"rgba(255,255,255,0.92)",borderRadius:16,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${C.lp}`}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>New section</div>
-            <input autoFocus value={newSectionName} onChange={e=>setNewSectionName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitSection();if(e.key==="Escape")setAddingSectionForm(false);}}
-              placeholder="Section name..." style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:10}}/>
+          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:22,padding:"18px",marginBottom:14,border:"1px solid rgba(90,120,72,0.2)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>New section</div>
+            <input autoFocus value={newSectionName} onChange={e=>setNewSectionName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitSection();if(e.key==="Escape")setAddingSectionForm(false);}} placeholder="Section name..." style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.9)"}}/>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-              <button onClick={()=>{setAddingSectionForm(false);setNewSectionName('');}} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,cursor:"pointer",fontSize:14}}>Cancel</button>
-              <PurpleBtn onClick={submitSection}>Create</PurpleBtn>
+              <button onClick={()=>{setAddingSectionForm(false);setNewSectionName("");}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,cursor:"pointer",padding:"8px 16px"}}>Cancel</button>
+              <button onClick={submitSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 22px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Create</button>
             </div>
           </div>
         )}
-        {data.length===0&&!addingSectionForm&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:80,fontSize:15}}>Tap + to create a notebook section</div>}
-        {data.map((s,idx)=>(
-          <div key={s.id}
-            style={{display:"flex",alignItems:"center",gap:10,background:cardGlass,backdropFilter:"blur(8px)",borderRadius:18,padding:"12px 14px",marginBottom:12,border:`1px solid rgba(255,255,255,0.3)`,borderLeft:`5px solid ${s.color}`,transition:"all 0.15s"}}>
-            {/* Up/down buttons */}
-            <div style={{display:"flex",flexDirection:"column",gap:3,flexShrink:0}}>
-              <button onClick={()=>moveSection(s.id,-1)} disabled={idx===0}
-                style={{background:idx===0?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.18)",color:idx===0?"rgba(255,255,255,0.2)":C.wh,border:"none",borderRadius:7,width:26,height:22,cursor:idx===0?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,lineHeight:1}}>▲</button>
-              <button onClick={()=>moveSection(s.id,1)} disabled={idx===data.length-1}
-                style={{background:idx===data.length-1?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.18)",color:idx===data.length-1?"rgba(255,255,255,0.2)":C.wh,border:"none",borderRadius:7,width:26,height:22,cursor:idx===data.length-1?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,lineHeight:1}}>▼</button>
-            </div>
-            {/* Section card — tappable */}
-            <div onClick={()=>setSectionId(s.id)} style={{display:"flex",alignItems:"center",gap:12,flex:1,cursor:"pointer"}}>
-              <div style={{width:40,height:40,borderRadius:11,background:`linear-gradient(135deg,${s.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>📒</div>
-              <div style={{flex:1}}>
-                <div style={{color:"#1A1A10",fontWeight:700,fontSize:17}}>{s.name}</div>
-                <div style={{color:"rgba(255,255,255,0.45)",fontSize:13}}>{s.pages.length} page{s.pages.length!==1?"s":""}</div>
-              </div>
-            </div>
-            <button onClick={e=>{e.stopPropagation();deleteSection(s.id);}} style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:9,width:32,height:32,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+        {data.map((s,i)=>(
+          <div key={s.id} draggable
+            onDragStart={e=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("si",String(i));}}
+            onDragOver={e=>e.preventDefault()}
+            onDrop={e=>{e.preventDefault();const from=parseInt(e.dataTransfer.getData("si"));if(from===i)return;const a=[...data];const[item]=a.splice(from,1);a.splice(i,0,item);setData(a);}}
+            onClick={()=>setSectionId(s.id)}
+            style={{display:"flex",alignItems:"center",gap:12,background:"rgba(248,245,236,0.88)",borderRadius:22,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+            <div style={{color:"rgba(90,80,60,0.3)",fontSize:14}}>⠿</div>
+            <div style={{width:42,height:42,borderRadius:12,background:"#5A7848",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>📓</div>
+            <div style={{flex:1}}><div style={{fontWeight:700,fontSize:16,color:"#1A1A10"}}>{s.name}</div><div style={{fontSize:12,color:"#8A8070"}}>{s.pages.length} pages</div></div>
+            <button onClick={e=>{e.stopPropagation();deleteSection(s.id);}} style={{background:"rgba(90,80,60,0.07)",color:"#8A8070",border:"none",borderRadius:10,width:32,height:32,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
           </div>
         ))}
+        {data.length===0&&!addingSectionForm&&<div style={{textAlign:"center",padding:"48px 0",color:"#8A8070",fontFamily:"Georgia,serif",fontSize:15}}>Tap + to create your first section</div>}
       </div>
     </div>
   );
 
-  // Hub home screen — 4 big buttons
-  const HUB_MODES=[
-    {id:"notes",   icon:"📓", name:"Notes",          desc:"Sections, pages, freewriting",  grad:`linear-gradient(135deg,#1a5276,#2980b9)`, count:`${data.reduce((s,sec)=>s+sec.pages.length,0)} pages`},
-    {id:"filing",  icon:"🗄️", name:"Filing Cabinet", desc:"Drawers, folders, PDFs & photos",grad:`linear-gradient(135deg,#3d1a00,#8b4a00)`, count:`${cabinetData.length} drawers`},
-    {id:"ideas",   icon:"💡", name:"Ideas",          desc:"Capture sparks, plant as goals",   grad:`linear-gradient(135deg,#d68910,#e91e8c)`, count:`${(ideasData||[]).length} ideas`},
-    {id:"studio",  icon:"🎓", name:"Study Studio",   desc:"Flashcards, quiz, slides — AI powered",grad:`linear-gradient(135deg,#0d3b0d,#1e8449)`, count:"Open a note first"},
+  return <VaultHub data={data} setData={setData} priData={priData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} goalsData={goalsData} cabinetData={cabinetData} setNotesMode={setNotesMode} setScreen={setScreen}/>;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   VAULT HUB — Beautiful garden landing with all features
+═══════════════════════════════════════════════════════ */
+function VaultHub({data,setData,priData,ideasData,setIdeasData,matrixData,goalsData,cabinetData,setNotesMode,setScreen}) {
+  const [search,setSearch]=useState("");
+  const [briefingOpen,setBriefingOpen]=useState(false);
+  const [briefingText,setBriefingText]=useState("");
+  const [briefingLoading,setBriefingLoading]=useState(false);
+  const [podcastOpen,setPodcastOpen]=useState(false);
+  const [podcastLength,setPodcastLength]=useState("short");
+  const [podcastText,setPodcastText]=useState("");
+  const [podcastLoading,setPodcastLoading]=useState(false);
+  const [podcastSaved,setPodcastSaved]=useState(false);
+  const [pdfFile,setPdfFile]=useState(null);
+  const [pdfPodcast,setPdfPodcast]=useState("");
+  const [pdfLoading,setPdfLoading]=useState(false);
+  const [dragOrder,setDragOrder]=useState([0,1,2,3,4,5]);
+  const [dragIdx,setDragIdx]=useState(null);
+  const [toast,setToast]=useState("");
+  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
+
+  const totalPages=data.reduce((s,sec)=>s+sec.pages.length,0);
+  const totalIdeas=(ideasData||[]).length;
+  const totalDrawers=(cabinetData||[]).length;
+
+  // Smart search — scans all notes content
+  const searchResults=search.trim().length>1?[
+    ...data.flatMap(sec=>sec.pages.filter(p=>
+      p.title.toLowerCase().includes(search.toLowerCase())||
+      p.content.toLowerCase().includes(search.toLowerCase())
+    ).map(p=>({type:"note",label:p.title,sub:sec.name,preview:p.content.slice(0,60),icon:"📄"}))),
+    ...(ideasData||[]).filter(i=>
+      (i.text||i.title||"").toLowerCase().includes(search.toLowerCase())
+    ).map(i=>({type:"idea",label:i.text||i.title,sub:"Ideas",preview:"",icon:"💡"})),
+  ]:[];
+
+  // Auto-tag — scans note content for keywords
+  const autoTag=(content)=>{
+    const tags=[];
+    if(/goal|achieve|target|aim/i.test(content))tags.push("🎯 Goal");
+    if(/idea|concept|thought|imagine/i.test(content))tags.push("💡 Idea");
+    if(/meeting|call|schedule|agenda/i.test(content))tags.push("📅 Meeting");
+    if(/project|plan|build|create/i.test(content))tags.push("🔨 Project");
+    if(/learn|study|course|read/i.test(content))tags.push("📚 Learning");
+    if(/health|exercise|workout|diet/i.test(content))tags.push("🌿 Health");
+    if(/money|budget|finance|cost/i.test(content))tags.push("💰 Finance");
+    return tags.slice(0,3);
+  };
+
+  // AI Morning Briefing
+  const generateBriefing=async()=>{
+    setBriefingLoading(true);setBriefingText("");
+    const today=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+    const priTasks=(priData||[]).flatMap(l=>l.tasks.filter(t=>!t.done).slice(0,3).map(t=>t.name));
+    const matrixDo=(matrixData||[]).filter(t=>t.quad==="do").slice(0,3).map(t=>t.text);
+    const recentNotes=data.flatMap(s=>s.pages).sort((a,b)=>(b.updated||0)-(a.updated||0)).slice(0,3).map(p=>p.title);
+    const nextGoal=(goalsData||[]).filter(g=>g.status!=="done").slice(0,1).map(g=>g.title)[0];
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,messages:[{role:"user",content:`Create a warm, personal morning briefing for today (${today}). Tone: gentle, motivating, like a trusted personal assistant speaking naturally.
+
+Agenda items:
+- Top priority tasks: ${priTasks.join(", ")||"none yet"}
+- Urgent & Important: ${matrixDo.join(", ")||"none yet"}
+- Recent notes: ${recentNotes.join(", ")||"none yet"}
+- Active goal: ${nextGoal||"none set"}
+
+Write 3-4 short paragraphs: (1) warm greeting with day/date, (2) what's on the agenda today, (3) a gentle idea or reflection linked to their current work, (4) a one-sentence encouragement. Keep it under 250 words. No bullet points, just flowing warm prose.`}]})
+      });
+      const j=await res.json();
+      setBriefingText(j.content?.[0]?.text||"Could not generate — please try again.");
+    }catch{setBriefingText("AI unavailable — please try again.");}
+    setBriefingLoading(false);
+  };
+
+  // AI Podcast from notes
+  const generatePodcast=async()=>{
+    setPodcastLoading(true);setPodcastText("");setPodcastSaved(false);
+    const allContent=data.flatMap(s=>s.pages.map(p=>`${p.title}: ${p.content.slice(0,300)}`)).join("\n\n");
+    const words=podcastLength==="short"?200:500;
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:`Create a ${podcastLength==="short"?"60-second":"3-minute"} podcast-style spoken summary of these vault notes. Warm, conversational, like a friend sharing their notebook over coffee. No headers. Flowing narration only. Target ~${words} words.\n\n${allContent||"No notes yet — create a brief intro about starting a personal knowledge vault."}`}]})
+      });
+      const j=await res.json();
+      setPodcastText(j.content?.[0]?.text||"Could not generate.");
+    }catch{setPodcastText("AI unavailable.");}
+    setPodcastLoading(false);
+  };
+
+  // PDF to Podcast
+  const handlePdf=async(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    setPdfFile(file);setPdfPodcast("");setPdfLoading(true);
+    // Read PDF as text via FileReader (text extraction)
+    const reader=new FileReader();
+    reader.onload=async(ev)=>{
+      const text=ev.target.result.slice(0,3000); // first 3000 chars
+      try{
+        const res=await fetch("https://api.anthropic.com/v1/messages",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:`Convert this PDF text into a warm, engaging 2-minute podcast script. Spoken naturally, no headers, flowing narration:\n\n${text}`}]})
+        });
+        const j=await res.json();
+        setPdfPodcast(j.content?.[0]?.text||"Could not convert.");
+      }catch{setPdfPodcast("AI unavailable.");}
+      setPdfLoading(false);
+    };
+    reader.readAsText(file);
+  };
+
+  const savePodcastToVault=(text,title)=>{
+    if(!text||!setIdeasData)return;
+    setIdeasData(ds=>[{id:Date.now(),title:`🎙️ ${title}`,content:text,type:"podcast",tag:"🎙️ Podcast",created:Date.now()},...ds]);
+    showToast("💾 Saved to Vault!");setPodcastSaved(true);
+  };
+
+  // Draggable section cards
+  const SECTIONS=[
+    {id:"notes",   icon:"📓", name:"Notes",          desc:`${totalPages} pages`,         color:"#5A7848",  action:()=>setNotesMode("notes")},
+    {id:"ideas",   icon:"💡", name:"Ideas",          desc:`${totalIdeas} ideas`,          color:"#7A6038",  action:()=>setNotesMode("ideas")},
+    {id:"filing",  icon:"🗄️", name:"Filing Cabinet", desc:`${totalDrawers} drawers`,      color:"#486878",  action:()=>setNotesMode("filing")},
+    {id:"podcast", icon:"🎙️", name:"Podcast Recap",  desc:"AI voice summaries",          color:"#6A5870",  action:()=>setPodcastOpen(true)},
+    {id:"briefing",icon:"☀️", name:"Morning Briefing",desc:"Personal AI assistant",     color:"#7A5838",  action:()=>{setBriefingOpen(true);generateBriefing();}},
+    {id:"pdf",     icon:"📄", name:"PDF → Podcast",  desc:"Upload & convert",            color:"#486050",  action:()=>document.getElementById("vaultPdfIn").click()},
   ];
+  const orderedSections=dragOrder.map(i=>SECTIONS[i]);
+
   return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      {/* Top nav bar with home button */}
-      <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 24px rgba(90,80,60,0.35)"}}>
-        <div style={{flex:1,textAlign:"center"}}>
-          <div style={{fontSize:22,fontWeight:900,color:C.wh}}>📚 The Vault</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.55)"}}>Your space for everything</div>
-        </div>
-        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 13px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-          🏠 <span style={{fontSize:12}}>Home</span>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:100}}>
+      {/* Header */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setScreen&&setScreen("home")} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
+        <div style={{fontFamily:"Georgia,serif",fontSize:24,fontWeight:700,color:"#1A1A10",letterSpacing:-0.4}}>📚 The Vault</div>
+        <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>Your personal knowledge garden</div>
       </div>
-      <div style={{padding:"16px 14px"}}>
-        {HUB_MODES.map(m=>(
-          <div key={m.id}
-            onClick={()=>m.id==="studio"?setNotesMode("notes"):setNotesMode(m.id)}
-            style={{display:"flex",alignItems:"center",gap:16,borderRadius:20,padding:"0",marginBottom:14,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.25)",cursor:"pointer",transition:"transform 0.15s"}}
-            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-            onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-            {/* Colour sidebar */}
-            <div style={{background:m.grad,width:72,alignSelf:"stretch",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>
-              {m.icon}
+
+      <div style={{padding:"14px 14px 0"}}>
+        {/* Smart Search */}
+        <div style={{background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"12px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",display:"flex",alignItems:"center",gap:10}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8A8070" strokeWidth="2"/><path d="M20 20l-3.5-3.5" stroke="#8A8070" strokeWidth="2" strokeLinecap="round"/></svg>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search all notes, ideas, files…"
+            style={{flex:1,border:"none",outline:"none",fontSize:14,color:"#1A1A10",background:"transparent"}}/>
+          {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",cursor:"pointer",color:"#8A8070",fontSize:16}}>✕</button>}
+        </div>
+
+        {/* Search results */}
+        {searchResults.length>0&&(
+          <div style={{marginBottom:14}}>
+            {searchResults.map((r,i)=>(
+              <div key={i} style={{background:"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 16px",marginBottom:8,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:18}}>{r.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:14,color:"#1A1A10"}}>{r.label}</div>
+                    <div style={{fontSize:11,color:"#8A8070"}}>{r.sub}{r.preview?` · ${r.preview}…`:""}</div>
+                    {/* Auto-tags */}
+                    <div style={{display:"flex",gap:4,marginTop:4,flexWrap:"wrap"}}>
+                      {autoTag(r.preview).map(tag=>(
+                        <span key={tag} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",borderRadius:100,padding:"2px 8px",fontSize:10,fontWeight:600}}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {search.trim().length>1&&searchResults.length===0&&(
+          <div style={{textAlign:"center",color:"#8A8070",fontSize:13,marginBottom:14,fontFamily:"Georgia,serif"}}>No results for "{search}"</div>
+        )}
+
+        {/* Morning Briefing quick button */}
+        <button onClick={()=>{setBriefingOpen(true);generateBriefing();}} style={{width:"100%",padding:"14px 18px",background:"linear-gradient(135deg,rgba(230,200,140,0.35),rgba(200,220,170,0.30))",border:"1.5px solid rgba(200,180,100,0.35)",borderRadius:22,marginBottom:14,display:"flex",alignItems:"center",gap:14,cursor:"pointer",boxShadow:"0 2px 12px rgba(160,140,60,0.12)",textAlign:"left"}}>
+          <div style={{fontSize:30}}>☀️</div>
+          <div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>Today's Briefing</div>
+            <div style={{fontSize:12,color:"#7A7050",marginTop:2}}>Your personal AI assistant — agenda, ideas & links</div>
+          </div>
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{marginLeft:"auto",flexShrink:0}}><path d="M1 1l6 6-6 6" stroke="#8A8070" strokeWidth="2" strokeLinecap="round"/></svg>
+        </button>
+
+        {/* Section cards — draggable grid */}
+        <div style={{fontSize:11,color:"rgba(90,80,60,0.45)",textAlign:"center",marginBottom:10,letterSpacing:0.5}}>⠿ Hold to drag sections</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          {orderedSections.map((sec,idx)=>(
+            <div key={sec.id}
+              draggable
+              onDragStart={()=>setDragIdx(idx)}
+              onDragOver={e=>e.preventDefault()}
+              onDrop={()=>{
+                if(dragIdx===null||dragIdx===idx)return;
+                const newOrder=[...dragOrder];
+                [newOrder[dragIdx],newOrder[idx]]=[newOrder[idx],newOrder[dragIdx]];
+                setDragOrder(newOrder);setDragIdx(null);
+              }}
+              onDragEnd={()=>setDragIdx(null)}
+              onClick={sec.action}
+              style={{
+                background:"rgba(248,245,236,0.88)",
+                borderRadius:22,padding:"16px 14px",
+                border:"1px solid rgba(255,255,255,0.9)",
+                boxShadow:dragIdx===idx?"0 8px 24px rgba(0,0,0,0.12)":"0 2px 12px rgba(0,0,0,0.05)",
+                cursor:"pointer",
+                transform:dragIdx===idx?"scale(1.04)":"scale(1)",
+                transition:"all 0.15s",
+                display:"flex",flexDirection:"column",gap:8,
+                minHeight:100,
+                position:"relative",
+              }}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+                <div style={{width:46,height:46,borderRadius:14,background:sec.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,boxShadow:`0 3px 10px ${sec.color}55`}}>
+                  {sec.icon}
+                </div>
+                <div style={{opacity:0.3}}>
+                  <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="3.5" cy="3.5" r="1.2" fill="#3A3020"/><circle cx="8.5" cy="3.5" r="1.2" fill="#3A3020"/><circle cx="3.5" cy="8.5" r="1.2" fill="#3A3020"/><circle cx="8.5" cy="8.5" r="1.2" fill="#3A3020"/></svg>
+                </div>
+              </div>
+              <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",lineHeight:1.2}}>{sec.name}</div>
+              <div style={{fontSize:11,color:"#8A8070"}}>{sec.desc}</div>
             </div>
-            {/* Content */}
-            <div style={{flex:1,background:"rgba(255,255,255,0.92)",padding:"16px 14px 16px 4px"}}>
-              <div style={{fontWeight:900,fontSize:17,color:C.dp,marginBottom:3}}>{m.name}</div>
-              <div style={{fontSize:13,color:C.soft,marginBottom:4,lineHeight:1.4}}>{m.desc}</div>
-              <div style={{display:"inline-block",background:C.ll,color:C.mp,fontSize:11,fontWeight:700,borderRadius:20,padding:"2px 9px"}}>{m.count}</div>
+          ))}
+        </div>
+
+        {/* Hidden PDF input */}
+        <input id="vaultPdfIn" type="file" accept=".pdf,.txt" style={{display:"none"}} onChange={handlePdf}/>
+      </div>
+
+      {/* ── MORNING BRIEFING MODAL ── */}
+      {briefingOpen&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setBriefingOpen(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"88vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
+                <span style={{fontSize:28}}>☀️</span>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20}}>Today's Briefing</div>
+                <button onClick={generateBriefing} disabled={briefingLoading} style={{marginLeft:"auto",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",opacity:briefingLoading?0.6:1}}>
+                  {briefingLoading?"…":"Refresh"}
+                </button>
+              </div>
+              <div style={{fontSize:12,color:"#8A8070"}}>
+                {new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+              </div>
             </div>
-            <div style={{background:"rgba(255,255,255,0.92)",padding:"16px 14px 16px 0",alignSelf:"stretch",display:"flex",alignItems:"center"}}>
-              <span style={{color:C.soft,fontSize:20}}>›</span>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {briefingLoading&&(
+                <div style={{textAlign:"center",padding:"40px 0",color:"#5A7848"}}>
+                  <div style={{fontSize:32,marginBottom:12}}>🌿</div>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:15}}>Preparing your briefing…</div>
+                </div>
+              )}
+              {briefingText&&!briefingLoading&&(
+                <>
+                  <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"18px 20px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:14}}>
+                    <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#1A2810",lineHeight:1.85}}>{briefingText}</div>
+                  </div>
+                  {/* Quick links */}
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:10}}>Jump to:</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                    {[
+                      {label:"📋 Prioritizer",screen:"prioritizer"},
+                      {label:"🎯 Goals",screen:"goals"},
+                      {label:"⚡ Matrix",screen:"matrix"},
+                      {label:"🍽️ Meals",screen:"meals"},
+                    ].map(link=>(
+                      <button key={link.screen} onClick={()=>{setBriefingOpen(false);setScreen&&setScreen(link.screen);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"9px 14px",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                        {link.label}
+                      </button>
+                    ))}
+                    <a href="https://calendar.google.com" target="_blank" rel="noreferrer" style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"9px 14px",fontSize:13,fontWeight:600,cursor:"pointer",textDecoration:"none"}}>
+                      📅 Calendar
+                    </a>
+                  </div>
+                  <button onClick={()=>savePodcastToVault(briefingText,"Morning Briefing")} style={{width:"100%",padding:"13px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer",marginBottom:8}}>
+                    💾 Save to Vault
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* ── PODCAST RECAP MODAL ── */}
+      {podcastOpen&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setPodcastOpen(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"85vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:4}}>🎙️ Podcast Recap</div>
+              <div style={{color:"#8A8070",fontSize:13,marginBottom:14}}>AI voice summary of your entire Vault</div>
+              <div style={{display:"flex",gap:8,marginBottom:14}}>
+                {[{k:"short",l:"Short",d:"~60 sec"},{k:"detailed",l:"Detailed",d:"~3 min"}].map(o=>(
+                  <button key={o.k} onClick={()=>setPodcastLength(o.k)} style={{flex:1,padding:"11px",borderRadius:16,border:`2px solid ${podcastLength===o.k?"#5A7848":"rgba(90,80,60,0.15)"}`,background:podcastLength===o.k?"rgba(90,120,72,0.10)":"rgba(255,255,255,0.8)",cursor:"pointer"}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:podcastLength===o.k?"#3A6020":"#1A1A10"}}>{o.l}</div>
+                    <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>{o.d}</div>
+                  </button>
+                ))}
+              </div>
+              {!podcastText&&<button onClick={generatePodcast} disabled={podcastLoading} style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:podcastLoading?0.7:1}}>
+                {podcastLoading?"🌿 Generating…":"🎙️ Generate from Vault"}
+              </button>}
+            </div>
+            {podcastText&&(
+              <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+                <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:12}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#1A2810",lineHeight:1.85}}>{podcastText}</div>
+                </div>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>savePodcastToVault(podcastText,"Vault Podcast Recap")} disabled={podcastSaved} style={{flex:1,padding:"13px",background:podcastSaved?"rgba(90,120,72,0.12)":"#5A7848",color:podcastSaved?"#5A7848":"#fff",border:podcastSaved?"1.5px solid rgba(90,120,72,0.3)":"none",borderRadius:100,fontWeight:700,fontSize:14,cursor:podcastSaved?"default":"pointer"}}>
+                    {podcastSaved?"✅ Saved":"💾 Save to Vault"}
+                  </button>
+                  <button onClick={()=>{setPodcastText("");setPodcastSaved(false);}} style={{padding:"13px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Redo</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── PDF PODCAST RESULT ── */}
+      {(pdfLoading||pdfPodcast)&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>{setPdfPodcast("");setPdfFile(null);}}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"85vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 14px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:4}}>📄 PDF → Podcast</div>
+              <div style={{color:"#8A8070",fontSize:13}}>{pdfFile?.name}</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+              {pdfLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>🌿 Converting to podcast…</div>}
+              {pdfPodcast&&!pdfLoading&&(
+                <>
+                  <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:12}}>
+                    <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#1A2810",lineHeight:1.85}}>{pdfPodcast}</div>
+                  </div>
+                  <div style={{display:"flex",gap:10}}>
+                    <button onClick={()=>savePodcastToVault(pdfPodcast,pdfFile?.name||"PDF Podcast")} style={{flex:1,padding:"13px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>💾 Save to Vault</button>
+                    <button onClick={()=>{setPdfPodcast("");setPdfFile(null);}} style={{padding:"13px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Close</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:"rgba(42,56,28,0.92)",color:"#fff",borderRadius:100,padding:"11px 22px",fontWeight:700,fontSize:14,zIndex:500,whiteSpace:"nowrap",backdropFilter:"blur(8px)"}}>{toast}</div>}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════
-   MEAL PLANNER  — Day 1–7, each day has a label + meals list
+   MEAL PLANNER
 ═══════════════════════════════════════════════════════ */
 const DEFAULT_DAY_LABELS=["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"];
 
