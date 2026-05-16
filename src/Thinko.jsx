@@ -3180,60 +3180,81 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
       {/* The cabinet visual */}
       <div style={{padding:"14px 14px"}}>
         {drawers.length===0&&!addingDrawer&&(
-          <div style={{textAlign:"center",marginTop:60}}>
-            <div style={{fontSize:64,marginBottom:12}}>🗄️</div>
-            <div style={{color:"rgba(255,255,255,0.6)",fontSize:16,fontWeight:700,marginBottom:6}}>Your filing cabinet is empty</div>
-            <div style={{color:"rgba(255,255,255,0.35)",fontSize:13,marginBottom:20}}>Tap + Drawer to add categories like Finance, Health, Work...</div>
-            <button onClick={()=>setAddingDrawer(true)} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:14,padding:"13px 28px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(45,10,94,0.3)"}}>
-              + Add First Drawer
-            </button>
+          <div style={{textAlign:"center",padding:"32px 0"}}>
+            <div style={{fontSize:56,marginBottom:12}}>🗄️</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:18,color:"#1A1A10",fontWeight:700,marginBottom:6}}>Your Filing Cabinet</div>
+            <div style={{color:"#8A8070",fontSize:13,marginBottom:24,lineHeight:1.6}}>Store receipts, ID docs, medical records,<br/>bills and any important documents</div>
+            {/* Premade drawers grid */}
+            <div style={{textAlign:"left",marginBottom:20}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:0.8,marginBottom:10}}>📋 Premade templates — tap to load</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {PREMADE_DRAWERS.map(pd=>(
+                  <div key={pd.name} style={{background:"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 14px",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:2}}>{pd.name}</div>
+                    <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5}}>{pd.subs.slice(0,2).join(", ")}…</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={loadPremade} style={{flex:1,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"14px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>
+                📁 Load All Templates
+              </button>
+              <button onClick={()=>setAddingDrawer(true)} style={{flex:1,background:"rgba(248,245,236,0.90)",color:"#3A3020",border:"1.5px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"14px",fontFamily:"Georgia,serif",fontWeight:600,fontSize:14,cursor:"pointer"}}>
+                + Custom Drawer
+              </button>
+            </div>
           </div>
         )}
 
         {/* Cabinet unit visual */}
         {drawers.length>0&&(
           <div style={{background:"linear-gradient(180deg,#3d2a1a 0%,#2a1a0a 100%)",borderRadius:16,padding:"12px 10px",boxShadow:"0 8px 32px rgba(0,0,0,0.4)",border:"3px solid #5a3a1a",marginBottom:14}}>
-            {/* Cabinet top */}
             <div style={{background:"linear-gradient(90deg,#6b4a2a,#8b6a3a,#6b4a2a)",borderRadius:"8px 8px 0 0",height:14,marginBottom:4,boxShadow:"inset 0 -2px 4px rgba(0,0,0,0.3)"}}/>
 
             {drawers.map((d,i)=>{
               const totalFiles=d.subCats.reduce((s,sc)=>s+sc.files.length,0);
               const isLast=i===drawers.length-1;
+              const isRenaming=renamingDrawerId===d.id;
               return(
                 <div key={d.id}>
-                  {/* Drawer unit */}
                   <div style={{position:"relative",marginBottom:4}}>
-                    {/* Drawer body */}
-                    <div onClick={()=>setActiveDrawerId(d.id)}
-                      style={{background:`linear-gradient(135deg,${d.color},${d.color})`,borderRadius:8,padding:"0",cursor:"pointer",border:`2px solid ${d.color}`,boxShadow:`inset 0 2px 4px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.3)`,overflow:"hidden",transition:"transform 0.15s"}}
-                      onMouseEnter={e=>e.currentTarget.style.transform="translateX(3px)"}
-                      onMouseLeave={e=>e.currentTarget.style.transform="translateX(0)"}>
-                      {/* Drawer face */}
-                      <div style={{padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
-                        {/* Handle */}
-                        <div style={{width:36,height:14,background:"rgba(255,255,255,0.3)",borderRadius:7,border:"1px solid rgba(255,255,255,0.4)",flexShrink:0,boxShadow:"inset 0 1px 2px rgba(0,0,0,0.2)"}}/>
-                        <span style={{fontSize:20,flexShrink:0}}>{d.icon}</span>
-                        <div style={{flex:1}}>
-                          <div style={{color:"#fff",fontWeight:900,fontSize:15,textShadow:"0 1px 2px rgba(0,0,0,0.4)"}}>{d.name}</div>
-                          <div style={{color:"rgba(255,255,255,0.7)",fontSize:11,marginTop:1}}>
-                            {d.subCats.length} folder{d.subCats.length!==1?"s":""} · {totalFiles} file{totalFiles!==1?"s":""}
-                          </div>
-                        </div>
-                        <div style={{color:"rgba(255,255,255,0.6)",fontSize:18}}>›</div>
+                    {isRenaming?(
+                      <div style={{background:"rgba(248,245,236,0.95)",borderRadius:8,padding:"10px 12px",display:"flex",gap:8,alignItems:"center"}}>
+                        <input value={renameDraft} onChange={e=>setRenameDraft(e.target.value)}
+                          onKeyDown={e=>{if(e.key==="Enter")renameDrawer(d.id,renameDraft.trim()||d.name);if(e.key==="Escape")setRenamingDrawerId(null);}}
+                          autoFocus style={{flex:1,border:"1.5px solid rgba(90,120,72,0.3)",borderRadius:100,padding:"8px 14px",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.9)"}}/>
+                        <button onClick={()=>renameDrawer(d.id,renameDraft.trim()||d.name)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 14px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Save</button>
+                        <button onClick={()=>setRenamingDrawerId(null)} style={{background:"transparent",color:"#8A8070",border:"none",cursor:"pointer",fontSize:13}}>✕</button>
                       </div>
-                      {/* Bottom shadow line */}
-                      <div style={{height:3,background:"rgba(0,0,0,0.25)"}}/>
-                    </div>
-                    {/* Delete button */}
-                    <button onClick={e=>{e.stopPropagation();delDrawer(d.id);}} style={{position:"absolute",top:8,right:8,background:"rgba(90,80,60,0.06)",color:"rgba(255,255,255,0.7)",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>🗑</button>
+                    ):(
+                      <div onClick={()=>setActiveDrawerId(d.id)}
+                        style={{background:`linear-gradient(135deg,${d.color},${d.color})`,borderRadius:8,padding:"0",cursor:"pointer",border:`2px solid ${d.color}`,boxShadow:`inset 0 2px 4px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.3)`,overflow:"hidden",transition:"transform 0.15s"}}
+                        onMouseEnter={e=>e.currentTarget.style.transform="translateX(3px)"}
+                        onMouseLeave={e=>e.currentTarget.style.transform="translateX(0)"}>
+                        <div style={{padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
+                          <div style={{width:36,height:14,background:"rgba(255,255,255,0.3)",borderRadius:7,border:"1px solid rgba(255,255,255,0.4)",flexShrink:0,boxShadow:"inset 0 1px 2px rgba(0,0,0,0.2)"}}/>
+                          <span style={{fontSize:20,flexShrink:0}}>{d.icon}</span>
+                          <div style={{flex:1}}>
+                            <div style={{color:"#fff",fontWeight:900,fontSize:15,textShadow:"0 1px 2px rgba(0,0,0,0.4)"}}>{d.name}</div>
+                            <div style={{color:"rgba(255,255,255,0.7)",fontSize:11,marginTop:1}}>{d.subCats.length} folder{d.subCats.length!==1?"s":""} · {totalFiles} file{totalFiles!==1?"s":""}</div>
+                          </div>
+                          <div style={{color:"rgba(255,255,255,0.6)",fontSize:18}}>›</div>
+                        </div>
+                        <div style={{height:3,background:"rgba(0,0,0,0.25)"}}/>
+                      </div>
+                    )}
+                    {/* Rename + delete */}
+                    {!isRenaming&&<div style={{position:"absolute",top:8,right:8,display:"flex",gap:4,zIndex:10}}>
+                      <button onClick={e=>{e.stopPropagation();setRenameDraft(d.name);setRenamingDrawerId(d.id);}} style={{background:"rgba(255,255,255,0.18)",color:"rgba(255,255,255,0.8)",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>✏️</button>
+                      <button onClick={e=>{e.stopPropagation();delDrawer(d.id);}} style={{background:"rgba(90,80,60,0.06)",color:"rgba(255,255,255,0.7)",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+                    </div>}
                   </div>
-                  {/* Gap between drawers */}
                   {!isLast&&<div style={{height:3,background:"rgba(0,0,0,0.4)",borderRadius:1,marginBottom:1}}/>}
                 </div>
               );
             })}
 
-            {/* Cabinet base */}
             <div style={{background:"linear-gradient(90deg,#6b4a2a,#8b6a3a,#6b4a2a)",borderRadius:"0 0 8px 8px",height:16,marginTop:4,boxShadow:"inset 0 2px 4px rgba(0,0,0,0.3)"}}/>
           </div>
         )}
@@ -7426,28 +7447,276 @@ const TOOLS=[
 ];
 
 function Tools({setScreen}) {
-  const [active,setActive]=useState("calc");
+  const [active,setActive]=useState("voice");
+
+  // ── GLOBAL VOICE TO TEXT ──────────────────────────────
+  const VoiceToText=()=>{
+    const [listening,setListening]=useState(false);
+    const [transcript,setTranscript]=useState("");
+    const [copied,setCopied]=useState(false);
+    const [lang,setLang]=useState("en-GB");
+    const recRef=useRef(null);
+    const LANGS=[
+      {code:"en-GB",label:"🇬🇧 English (UK)"},
+      {code:"en-US",label:"🇺🇸 English (US)"},
+      {code:"es-ES",label:"🇪🇸 Spanish"},
+      {code:"fr-FR",label:"🇫🇷 French"},
+      {code:"de-DE",label:"🇩🇪 German"},
+      {code:"it-IT",label:"🇮🇹 Italian"},
+      {code:"pt-PT",label:"🇵🇹 Portuguese"},
+      {code:"pl-PL",label:"🇵🇱 Polish"},
+      {code:"ro-RO",label:"🇷🇴 Romanian"},
+      {code:"ar-SA",label:"🇸🇦 Arabic"},
+      {code:"zh-CN",label:"🇨🇳 Chinese"},
+    ];
+    const startListen=()=>{
+      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!SR){alert("Voice recognition not supported in this browser. Try Chrome.");return;}
+      const r=new SR();
+      r.lang=lang;r.continuous=true;r.interimResults=true;
+      r.onresult=e=>{
+        let final="",interim="";
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          if(e.results[i].isFinal)final+=e.results[i][0].transcript+" ";
+          else interim+=e.results[i][0].transcript;
+        }
+        setTranscript(t=>t+final);
+      };
+      r.onerror=()=>setListening(false);
+      r.onend=()=>setListening(false);
+      r.start();recRef.current=r;setListening(true);
+    };
+    const stopListen=()=>{recRef.current?.stop();setListening(false);};
+    const copyText=()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);};
+    return(
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>🎙️ Voice to Text</div>
+          <div style={{fontSize:13,color:"#8A8070",marginBottom:14}}>Speak — your words appear instantly</div>
+          {/* Language selector */}
+          <select value={lang} onChange={e=>setLang(e.target.value)}
+            style={{width:"100%",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:13,color:"#1A1A10",outline:"none",marginBottom:14}}>
+            {LANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
+          {/* Big mic button */}
+          <div style={{textAlign:"center",marginBottom:14}}>
+            <button onClick={listening?stopListen:startListen} style={{
+              width:80,height:80,borderRadius:"50%",
+              background:listening?"rgba(192,57,43,0.85)":"#5A7848",
+              color:"#fff",border:"none",cursor:"pointer",
+              fontSize:32,
+              boxShadow:listening?"0 0 0 8px rgba(192,57,43,0.18), 0 4px 20px rgba(192,57,43,0.35)":"0 4px 20px rgba(58,80,38,0.30)",
+              transition:"all 0.2s",
+            }}>
+              {listening?"⏹":"🎙️"}
+            </button>
+            <div style={{marginTop:10,fontSize:13,fontWeight:700,color:listening?"#c0392b":"#5A7848"}}>
+              {listening?"● Recording — tap to stop":"Tap to start recording"}
+            </div>
+          </div>
+          {/* Transcript */}
+          <textarea value={transcript} onChange={e=>setTranscript(e.target.value)}
+            placeholder="Your words will appear here as you speak…" rows={6}
+            style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",lineHeight:1.7,marginBottom:10}}/>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={copyText} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:copied?"#2A7020":"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              {copied?"✅ Copied":"📋 Copy"}
+            </button>
+            <button onClick={()=>setTranscript("")} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Clear</button>
+          </div>
+        </div>
+        <div style={{background:"rgba(248,245,236,0.80)",borderRadius:20,padding:"14px 16px",border:"1px solid rgba(90,120,72,0.12)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:6}}>💡 Works everywhere</div>
+          <div style={{fontSize:12,color:"#8A8070",lineHeight:1.7}}>Use this to dictate notes, tasks, goals, or anything. Copy and paste into any screen in Thinko.</div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── TRANSLATOR ────────────────────────────────────────
+  const Translator=()=>{
+    const [srcText,setSrcText]=useState("");
+    const [result,setResult]=useState("");
+    const [srcLang,setSrcLang]=useState("en");
+    const [tgtLang,setTgtLang]=useState("es");
+    const [loading,setLoading]=useState(false);
+    const [copied,setCopied]=useState(false);
+    const TLANGS=[
+      {code:"en",label:"🇬🇧 English"},{code:"es",label:"🇪🇸 Spanish"},{code:"fr",label:"🇫🇷 French"},
+      {code:"de",label:"🇩🇪 German"},{code:"it",label:"🇮🇹 Italian"},{code:"pt",label:"🇵🇹 Portuguese"},
+      {code:"pl",label:"🇵🇱 Polish"},{code:"ro",label:"🇷🇴 Romanian"},{code:"nl",label:"🇳🇱 Dutch"},
+      {code:"ar",label:"🇸🇦 Arabic"},{code:"zh",label:"🇨🇳 Chinese"},{code:"ja",label:"🇯🇵 Japanese"},
+      {code:"ko",label:"🇰🇷 Korean"},{code:"hi",label:"🇮🇳 Hindi"},{code:"tr",label:"🇹🇷 Turkish"},
+      {code:"ru",label:"🇷🇺 Russian"},{code:"uk",label:"🇺🇦 Ukrainian"},{code:"sv",label:"🇸🇪 Swedish"},
+    ];
+    const langLabel=c=>TLANGS.find(l=>l.code===c)?.label||c;
+    const translate=async()=>{
+      if(!srcText.trim())return;
+      setLoading(true);setResult("");
+      try{
+        const res=await fetch("https://api.anthropic.com/v1/messages",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,
+            messages:[{role:"user",content:`Translate the following text from ${langLabel(srcLang)} to ${langLabel(tgtLang)}. Return ONLY the translation, nothing else.\n\n${srcText}`}]})
+        });
+        const j=await res.json();
+        setResult(j.content?.[0]?.text||"Translation unavailable");
+      }catch{setResult("Translation failed — check connection");}
+      setLoading(false);
+    };
+    const swap=()=>{setSrcLang(tgtLang);setTgtLang(srcLang);setSrcText(result);setResult("");};
+    return(
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>🌍 Translator</div>
+          {/* Lang row */}
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+            <select value={srcLang} onChange={e=>setSrcLang(e.target.value)}
+              style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+              {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
+            </select>
+            <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
+            <select value={tgtLang} onChange={e=>setTgtLang(e.target.value)}
+              style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+              {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
+            </select>
+          </div>
+          <textarea value={srcText} onChange={e=>setSrcText(e.target.value)}
+            placeholder="Type or paste text to translate…" rows={4}
+            style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",lineHeight:1.65,marginBottom:10}}/>
+          <button onClick={translate} disabled={loading||!srcText.trim()} style={{width:"100%",padding:"13px",background:loading||!srcText.trim()?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading||!srcText.trim()?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:loading||!srcText.trim()?"default":"pointer",marginBottom:12,boxShadow:loading||!srcText.trim()?"none":"0 3px 12px rgba(58,80,38,0.25)"}}>
+            {loading?"🌿 Translating…":"🌍 Translate"}
+          </button>
+          {result&&(
+            <div style={{background:"rgba(90,120,72,0.06)",borderRadius:18,padding:"14px 16px",border:"1px solid rgba(90,120,72,0.12)"}}>
+              <div style={{fontSize:14,color:"#1A2810",lineHeight:1.7,fontFamily:"'Segoe UI',sans-serif",marginBottom:10}}>{result}</div>
+              <button onClick={()=>{navigator.clipboard?.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                {copied?"✅ Copied":"📋 Copy"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ── CURRENCY CONVERTER ────────────────────────────────
+  const CurrencyConverter=()=>{
+    const [amount,setAmount]=useState("100");
+    const [from,setFrom]=useState("GBP");
+    const [to,setTo]=useState("USD");
+    const [result,setResult]=useState(null);
+    const [loading,setLoading]=useState(false);
+    const [rates,setRates]=useState(null);
+    const CURRENCIES=[
+      {code:"GBP",flag:"🇬🇧",name:"British Pound"},
+      {code:"USD",flag:"🇺🇸",name:"US Dollar"},
+      {code:"EUR",flag:"🇪🇺",name:"Euro"},
+      {code:"JPY",flag:"🇯🇵",name:"Japanese Yen"},
+      {code:"CAD",flag:"🇨🇦",name:"Canadian Dollar"},
+      {code:"AUD",flag:"🇦🇺",name:"Australian Dollar"},
+      {code:"CHF",flag:"🇨🇭",name:"Swiss Franc"},
+      {code:"CNY",flag:"🇨🇳",name:"Chinese Yuan"},
+      {code:"INR",flag:"🇮🇳",name:"Indian Rupee"},
+      {code:"PLN",flag:"🇵🇱",name:"Polish Złoty"},
+      {code:"RON",flag:"🇷🇴",name:"Romanian Leu"},
+      {code:"SEK",flag:"🇸🇪",name:"Swedish Krona"},
+      {code:"NOK",flag:"🇳🇴",name:"Norwegian Krone"},
+      {code:"DKK",flag:"🇩🇰",name:"Danish Krone"},
+      {code:"TRY",flag:"🇹🇷",name:"Turkish Lira"},
+      {code:"BRL",flag:"🇧🇷",name:"Brazilian Real"},
+      {code:"MXN",flag:"🇲🇽",name:"Mexican Peso"},
+      {code:"ZAR",flag:"🇿🇦",name:"South African Rand"},
+      {code:"AED",flag:"🇦🇪",name:"UAE Dirham"},
+      {code:"SGD",flag:"🇸🇬",name:"Singapore Dollar"},
+    ];
+    const flagOf=code=>CURRENCIES.find(c=>c.code===code)?.flag||"💱";
+    const convert=async()=>{
+      if(!amount||isNaN(amount))return;
+      setLoading(true);setResult(null);
+      try{
+        // Use free Open Exchange Rates (no key needed for latest via frankfurter)
+        const res=await fetch(`https://api.frankfurter.app/latest?amount=${amount}&from=${from}&to=${to}`);
+        const j=await res.json();
+        const converted=j.rates?.[to];
+        if(converted!=null)setResult({value:converted,rate:converted/parseFloat(amount)});
+        else setResult({error:"Rate unavailable"});
+        setRates(j.rates);
+      }catch{setResult({error:"Couldn't fetch rates — check connection"});}
+      setLoading(false);
+    };
+    const swap=()=>{setFrom(to);setTo(from);setResult(null);};
+    const fmt=(n,code)=>new Intl.NumberFormat("en-GB",{style:"currency",currency:code,maximumFractionDigits:2}).format(n);
+    return(
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>💱 Currency Converter</div>
+          {/* Amount */}
+          <div style={{background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.20)",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20}}>{flagOf(from)}</span>
+            <input value={amount} onChange={e=>setAmount(e.target.value)} onKeyDown={e=>e.key==="Enter"&&convert()}
+              type="number" placeholder="Amount"
+              style={{flex:1,border:"none",outline:"none",fontSize:22,fontWeight:700,color:"#1A1A10",background:"transparent"}}/>
+          </div>
+          {/* Currency pickers */}
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+            <select value={from} onChange={e=>{setFrom(e.target.value);setResult(null);}}
+              style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+              {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
+            </select>
+            <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
+            <select value={to} onChange={e=>{setTo(e.target.value);setResult(null);}}
+              style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+              {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
+            </select>
+          </div>
+          <button onClick={convert} disabled={loading} style={{width:"100%",padding:"13px",background:loading?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:loading?"default":"pointer",boxShadow:loading?"none":"0 3px 12px rgba(58,80,38,0.25)",marginBottom:14}}>
+            {loading?"🌿 Fetching rates…":"💱 Convert"}
+          </button>
+          {/* Result */}
+          {result&&!result.error&&(
+            <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"18px 20px",border:"1px solid rgba(90,120,72,0.14)",textAlign:"center"}}>
+              <div style={{fontSize:13,color:"#8A8070",marginBottom:6}}>{flagOf(from)} {fmt(parseFloat(amount),from)} =</div>
+              <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A2810",marginBottom:6}}>{flagOf(to)} {fmt(result.value,to)}</div>
+              <div style={{fontSize:11,color:"#8A8070"}}>1 {from} = {result.rate.toFixed(4)} {to} · Live rate via Frankfurter</div>
+            </div>
+          )}
+          {result?.error&&<div style={{background:"rgba(192,57,43,0.08)",borderRadius:16,padding:"12px 16px",color:"#c0392b",fontSize:13,textAlign:"center"}}>{result.error}</div>}
+        </div>
+      </div>
+    );
+  };
+
+  const TOOL_TABS=[
+    {id:"voice",icon:"🎙️",name:"Voice"},
+    {id:"translate",icon:"🌍",name:"Translate"},
+    {id:"currency",icon:"💱",name:"Currency"},
+    {id:"calc",icon:"🧮",name:"Calc"},
+    {id:"sw",icon:"⏱️",name:"Timer"},
+    {id:"timer",icon:"⏰",name:"Countdown"},
+    {id:"alarm",icon:"🔔",name:"Alarm"},
+  ];
 
   return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,#1a0336 0%,#4a148c 50%,#7b1fa2 100%)`,fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title="🔧 Tools" onBack={()=>setScreen("home")} />
-
-      {/* Tool tab bar */}
-      <div style={{display:"flex",overflowX:"auto",gap:0,padding:"10px 12px",background:"rgba(90,80,60,0.06)",borderBottom:"1px solid rgba(90,80,60,0.1)"}}>
-        {TOOLS.map(t=>(
-          <button key={t.id} onClick={()=>setActive(t.id)} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"8px 14px",background:"none",border:"none",borderBottom:active===t.id?"3px solid #c4aee8":"3px solid transparent",cursor:"pointer",transition:"all 0.15s"}}>
-            <span style={{fontSize:20}}>{t.icon}</span>
-            <span style={{fontSize:10,fontWeight:active===t.id?800:600,color:active===t.id?C.wh:"rgba(255,255,255,0.5)",letterSpacing:0.3}}>{t.name}</span>
+      {/* Tab bar — garden theme */}
+      <div style={{display:"flex",overflowX:"auto",gap:0,padding:"8px 10px",background:"rgba(248,245,236,0.88)",borderBottom:"1px solid rgba(90,80,60,0.08)",scrollbarWidth:"none"}}>
+        {TOOL_TABS.map(t=>(
+          <button key={t.id} onClick={()=>setActive(t.id)} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"7px 12px",background:"none",border:"none",borderBottom:active===t.id?"3px solid #5A7848":"3px solid transparent",cursor:"pointer",transition:"all 0.15s"}}>
+            <span style={{fontSize:18}}>{t.icon}</span>
+            <span style={{fontSize:9,fontWeight:active===t.id?800:500,color:active===t.id?"#3A6020":"rgba(60,56,40,0.55)",letterSpacing:0.3}}>{t.name}</span>
           </button>
         ))}
       </div>
-
       <div style={{padding:"16px 14px"}}>
-        {active==="calc" &&<Calculator/>}
-        {active==="sw"   &&<Stopwatch/>}
-        {active==="timer"&&<CountdownTool/>}
-        {active==="alarm"&&<AlarmTool/>}
+        {active==="voice"    &&<VoiceToText/>}
+        {active==="translate"&&<Translator/>}
+        {active==="currency" &&<CurrencyConverter/>}
+        {active==="calc"     &&<Calculator/>}
+        {active==="sw"       &&<Stopwatch/>}
+        {active==="timer"    &&<CountdownTool/>}
+        {active==="alarm"    &&<AlarmTool/>}
       </div>
     </div>
   );
