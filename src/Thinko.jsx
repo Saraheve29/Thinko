@@ -1922,7 +1922,6 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
   const [editText,setEditText]=useState("");
   const [pan,setPan]=useState({x:0,y:0});
   const [panStart,setPanStart]=useState(null);
-  const [sentMsg,setSentMsg]=useState("");
   const [darkBg,setDarkBg]=useState(true);
   const [deleteConfirmId,setDeleteConfirmId]=useState(null);
   const longPressRef=useRef(null);
@@ -2079,26 +2078,173 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
     return`M${x1} ${p.y} C${mx} ${p.y} ${mx} ${ch.y} ${x2} ${ch.y}`;
   };
 
-  /* Root image upload (stored on root node) */
-  const handleRootImg=(e)=>{
-    const file=e.target.files[0];if(!file)return;
-    const reader=new FileReader();
-    reader.onload=ev=>setNodes(ns=>ns.map(n=>n.parent===null?{...n,rootImg:ev.target.result}:n));
-    reader.readAsDataURL(file);
+  const [aiGrowing,setAiGrowing]=useState(false);
+  const [podcastModal,setPodcastModal]=useState(false);
+  const [podcastLength,setPodcastLength]=useState("short");
+  const [podcastGenerating,setPodcastGenerating]=useState(false);
+  const [podcastText,setPodcastText]=useState("");
+  const [podcastSaved,setPodcastSaved]=useState(false);
+  const [voiceRecording,setVoiceRecording]=useState(false);
+  const [mediaRec,setMediaRec]=useState(null);
+  const [dragSendTarget,setDragSendTarget]=useState(null); // "prioritizer"|"goals"|"vault"|null
+  const [sentMsg,setSentMsg]=useState("");
+  const showMsg=msg=>{setSentMsg(msg);setTimeout(()=>setSentMsg(""),2200);};
+
+  // Branch colour palette — colour-coded with leaf icons
+  const BRANCH_PALETTE=[
+    {color:"#5A7848",label:"🌿 Sage"},
+    {color:"#7A6038",label:"🍂 Amber"},
+    {color:"#486878",label:"🌊 Slate"},
+    {color:"#6A5870",label:"🌸 Mauve"},
+    {color:"#7A4A38",label:"🍁 Rust"},
+    {color:"#486050",label:"🌱 Forest"},
+    {color:"#705848",label:"🌰 Bark"},
+    {color:"#3A5868",label:"💧 Ocean"},
+  ];
+
+  // ── AI "Grow this branch" ──────────────────────────────
+  const growBranch=async(parentId)=>{
+    const parent=nodes.find(n=>n.id===parentId);
+    if(!parent||!root)return;
+    setAiGrowing(true);
+    try{
+      const allTexts=nodes.map(n=>n.text).join(", ");
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",max_tokens:300,
+          messages:[{role:"user",content:`Mind map topic: "${root.text}". Node: "${parent.text}". Existing nodes: ${allTexts}. Suggest 3 short, specific sub-ideas to branch off "${parent.text}". Return ONLY a JSON array of 3 strings, no markdown.`}]
+        })
+      });
+      const j=await res.json();
+      const ideas=JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
+      ideas.slice(0,3).forEach((idea,i)=>{
+        const siblings=nodes.filter(n=>n.parent===parentId);
+        const yOff=(siblings.length+i-1)*54;
+        const colorIdx=(nodes.length+i)%BRANCH_PALETTE.length;
+        setNodes(ns=>[...ns,{id:Date.now()+i,text:idea,x:parent.x+180,y:parent.y+yOff,parent:parentId,color:BRANCH_PALETTE[colorIdx].color,lightColor:BRANCH_PALETTE[colorIdx].color+"33",aiGenerated:true}]);
+      });
+      showMsg("🌿 Branch grown by AI!");
+    }catch{showMsg("AI unavailable — try again");}
+    setAiGrowing(false);
+  };
+
+  // ── Voice note recording ──────────────────────────────
+  const startVoice=async(nodeId)=>{
+    if(!navigator.mediaDevices){showMsg("Voice notes need microphone access");return;}
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      const mr=new MediaRecorder(stream);
+      const chunks=[];
+      mr.ondataavailable=e=>chunks.push(e.data);
+      mr.onstop=()=>{
+        const blob=new Blob(chunks,{type:"audio/webm"});
+        const url=URL.createObjectURL(blob);
+        setNodes(ns=>ns.map(n=>n.id===nodeId?{...n,voiceNote:url}:n));
+        showMsg("🎙️ Voice note saved!");
+        stream.getTracks().forEach(t=>t.stop());
+      };
+      mr.start();
+      setMediaRec(mr);
+      setVoiceRecording(nodeId);
+    }catch{showMsg("Microphone access denied");}
+  };
+  const stopVoice=()=>{
+    if(mediaRec){mediaRec.stop();setMediaRec(null);}
+    setVoiceRecording(null);
+  };
+
+  // ── Podcast Recap generation ──────────────────────────
+  const generatePodcast=async()=>{
+    if(!root)return;
+    setPodcastGenerating(true);
+    const outline=nodes.filter(n=>n.parent!==null).map(n=>`- ${n.text}`).join("\n");
+    const wordCount=podcastLength==="short"?200:500;
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",max_tokens:700,
+          messages:[{role:"user",content:`Create a ${podcastLength==="short"?"60-second (~${wordCount} word)":"3-minute (~${wordCount} word)"} podcast script based on this mind map.\nTopic: "${root.text}"\nKey points:\n${outline}\n\nWrite it in a warm, conversational tone as if speaking directly to a listener. Start with a hook, cover the key ideas, end with a takeaway. No headers, just flowing narration.`}]
+        })
+      });
+      const j=await res.json();
+      setPodcastText(j.content?.[0]?.text||"Could not generate — please try again.");
+    }catch{setPodcastText("AI unavailable — please try again.");}
+    setPodcastGenerating(false);
+  };
+
+  const savePodcastToVault=()=>{
+    if(!podcastText||!ideasData)return;
+    const entry={id:Date.now(),title:`🎙️ ${root?.text||"Mind Map"} — Podcast Recap`,content:podcastText,type:"podcast",created:Date.now(),tags:["podcast","mind-map"]};
+    setIdeasData(ds=>[entry,...ds]);
+    setPodcastSaved(true);
+    showMsg("💾 Saved to The Vault!");
+  };
+
+  // ── Drag node to send zone ────────────────────────────
+  const handleDragNodeEnd=(e,nodeId)=>{
+    const target=dragSendTarget;
+    setDragSendTarget(null);
+    if(!target)return;
+    const node=nodes.find(n=>n.id===nodeId);
+    if(!node||node.parent===null)return;
+    if(target==="prioritizer"&&priData?.length>0){
+      setPriData(ls=>[{...ls[0],tasks:[...ls[0].tasks,{id:Date.now(),name:node.text,done:false,color:"lilac",url:""}]},...ls.slice(1)]);
+      showMsg("📋 Sent to Prioritizer!");
+    } else if(target==="goals"&&setGoalsData){
+      const due=new Date();due.setDate(due.getDate()+365);
+      setGoalsData(gs=>[...gs,{id:Date.now(),horizon:"year1",title:node.text,description:"",dueDate:due.toISOString().slice(0,10),cover:null,links:[],subtasks:[],status:"active",created:Date.now()}]);
+      showMsg("🎯 Planted as Goal!");
+    } else if(target==="vault"&&ideasData){
+      setIdeasData(ds=>[{id:Date.now(),title:node.text,content:"From Mind Map: "+map.name,type:"note",created:Date.now()},...ds]);
+      showMsg("📚 Saved to The Vault!");
+    }
   };
 
   const root=nodes.find(n=>n.parent===null);
 
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
-      {/* Back button — floating top left like reference */}
+      {/* Back button */}
       <div style={{position:"absolute",top:0,left:0,zIndex:50,padding:"16px"}}>
         <button onClick={onBack} style={{width:44,height:44,borderRadius:"50%",background:"rgba(248,245,236,0.88)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
       </div>
 
-      {/* Canvas — full bleed */}
+      {/* ── DRAG-TO-SEND ZONES — appear when dragging a node ── */}
+      {dragging&&nodes.find(n=>n.id===dragging)?.parent!==null&&(
+        <div style={{position:"absolute",top:0,left:0,right:0,zIndex:40,display:"flex",justifyContent:"center",gap:8,padding:"10px 12px",pointerEvents:"none"}}>
+          {[
+            {id:"prioritizer",label:"📋 Prioritizer",icon:"📋"},
+            {id:"goals",label:"🎯 Goals",icon:"🎯"},
+            {id:"vault",label:"📚 Vault",icon:"📚"},
+          ].map(zone=>(
+            <div key={zone.id}
+              onMouseEnter={()=>setDragSendTarget(zone.id)}
+              onMouseLeave={()=>setDragSendTarget(null)}
+              style={{
+                pointerEvents:"auto",
+                background:dragSendTarget===zone.id?"#5A7848":"rgba(248,245,236,0.88)",
+                color:dragSendTarget===zone.id?"#fff":"#3A3020",
+                borderRadius:100,
+                padding:"8px 14px",
+                fontSize:12,fontWeight:700,
+                border:"1.5px solid rgba(90,120,72,0.3)",
+                backdropFilter:"blur(8px)",
+                boxShadow:"0 2px 12px rgba(0,0,0,0.12)",
+                transition:"all 0.15s",
+                cursor:"copy",
+                whiteSpace:"nowrap",
+              }}>{zone.label}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Canvas */}
       <div style={{flex:1,overflow:"hidden",position:"relative"}}>
         <svg ref={svgRef} width="100%" height="100%"
           style={{position:"absolute",inset:0,touchAction:"none"}}
@@ -2107,398 +2253,328 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
           onDoubleClick={onDblClick}>
 
           <defs>
-            {/* Sage node fill */}
             <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#7A9068"/>
-              <stop offset="100%" stopColor="#5A7848"/>
+              <stop offset="0%" stopColor="#7A9068"/><stop offset="100%" stopColor="#5A7848"/>
             </linearGradient>
-            {/* Root node fill */}
             <linearGradient id="rootGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#8A9E78"/>
-              <stop offset="100%" stopColor="#607850"/>
+              <stop offset="0%" stopColor="#8A9E78"/><stop offset="100%" stopColor="#607850"/>
             </linearGradient>
-            {/* Leaf gradient */}
             <linearGradient id="leafG" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#A8D070"/>
-              <stop offset="100%" stopColor="#5A8830"/>
+              <stop offset="0%" stopColor="#A8D070"/><stop offset="100%" stopColor="#5A8830"/>
             </linearGradient>
             <filter id="nodeSh" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#1A2E08" floodOpacity="0.18"/>
+              <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#1A2E08" floodOpacity="0.16"/>
             </filter>
+            <style>{`
+              @keyframes mmAIpop{from{opacity:0;transform:scale(0.6)}to{opacity:1;transform:scale(1)}}
+              @keyframes mmPulse{0%,100%{opacity:0.6}50%{opacity:1}}
+              .mmAI{animation:mmAIpop 0.4s ease forwards}
+              .mmPulse{animation:mmPulse 1.5s ease-in-out infinite}
+            `}</style>
           </defs>
 
           <rect width="100%" height="100%" fill="transparent"/>
 
           <g transform={`translate(${pan.x},${pan.y})`}>
-
-            {/* ── Vine Edges — organic S-curves with small leaves ── */}
+            {/* Edges with vine-style S-curves and leaf accents */}
             {nodes.filter(n=>n.parent).map(n=>{
               const p=nodes.find(x=>x.id===n.parent);
               if(!p)return null;
               const isSel=n.id===selected||p.id===selected;
               const d=edgePath(p,n);
-              // midpoint for leaf placement
-              const x1=p.parent===null?p.x+55:p.x+45;
-              const x2=n.x-48;
-              const mx=(x1+x2)/2;
+              const mx=(p.x+(p.parent===null?55:45)+n.x-48)/2;
               const my=(p.y+n.y)/2;
               return(
                 <g key={`e${n.id}`}>
-                  <path d={d} fill="none"
-                    stroke={isSel?"#5A7848":"#7A9068"}
-                    strokeWidth={isSel?2.5:2} strokeLinecap="round"
-                    opacity={isSel?1:0.75}
-                  />
-                  {/* Small leaf on branch mid-point */}
+                  <path d={d} fill="none" stroke={n.color||"#7A9068"} strokeWidth={isSel?2.5:1.8} strokeLinecap="round" opacity={isSel?0.9:0.6}/>
+                  {/* Small leaf on branch midpoint */}
                   <g transform={`translate(${mx},${my})`}>
-                    <ellipse cx="0" cy="-7" rx="5" ry="9" fill="url(#leafG)" opacity="0.85" transform="rotate(-20)"/>
-                    <line x1="0" y1="-2" x2="0" y2="-13" stroke="#3A7820" strokeWidth="0.7" opacity="0.18"/>
-                    <ellipse cx="8" cy="-3" rx="4" ry="7" fill="url(#leafG)" opacity="0.75" transform="rotate(15)"/>
+                    <ellipse cx="0" cy="-6" rx="4" ry="7" fill={n.color||"url(#leafG)"} opacity="0.7" transform="rotate(-20)"/>
+                    <line x1="0" y1="-1" x2="0" y2="-11" stroke="#2A5010" strokeWidth="0.5" opacity="0.4"/>
                   </g>
                 </g>
               );
             })}
 
-            {/* ── Root node — larger rounded pill ── */}
+            {/* Root node */}
             {root&&(()=>{
               const isSel=root.id===selected;
-              const rx=root.x, ry=root.y;
-              const W=root.text.length>14?160:140, H=46;
+              const W=root.text.length>14?160:140,H=46;
               return(
                 <g key={root.id} style={{cursor:"pointer"}}
                   onClick={()=>{if(selected===root.id){spawnChild(root.id);}else setSelected(root.id);}}
                   onDoubleClick={()=>{setEditingId(root.id);setEditText(root.text);}}>
-                  {/* Shadow */}
-                  <rect x={rx-W/2+2} y={ry-H/2+3} width={W} height={H} rx={H/2} fill="rgba(0,0,0,0.14)" filter="url(#nodeSh)"/>
-                  {/* Root pill */}
-                  <rect x={rx-W/2} y={ry-H/2} width={W} height={H} rx={H/2}
-                    fill="url(#rootGrad)"
-                    stroke={isSel?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.3)"}
-                    strokeWidth={isSel?2.5:1.5}/>
-                  {/* Label */}
-                  <text x={rx} y={ry} textAnchor="middle" dominantBaseline="middle"
+                  <rect x={root.x-W/2+2} y={root.y-H/2+3} width={W} height={H} rx={H/2} fill="rgba(0,0,0,0.12)" filter="url(#nodeSh)"/>
+                  <rect x={root.x-W/2} y={root.y-H/2} width={W} height={H} rx={H/2}
+                    fill="url(#rootGrad)" stroke={isSel?"rgba(255,255,255,0.8)":"rgba(255,255,255,0.25)"} strokeWidth={isSel?2.5:1.5}/>
+                  <text x={root.x} y={root.y} textAnchor="middle" dominantBaseline="middle"
                     fill="white" fontSize={root.text.length>16?12:14} fontWeight={700}
                     style={{pointerEvents:"none",userSelect:"none"}}>
                     {root.text.length>18?root.text.slice(0,17)+"…":root.text}
                   </text>
-                  {/* Small leaf accent top */}
-                  <g transform={`translate(${rx},${ry-H/2-8})`}>
-                    <ellipse cx="0" cy="-6" rx="4" ry="7" fill="url(#leafG)" opacity="0.9" transform="rotate(-10)"/>
-                    <ellipse cx="6" cy="-4" rx="3" ry="5" fill="url(#leafG)" opacity="0.75" transform="rotate(20)"/>
-                    <line x1="0" y1="0" x2="0" y2="-12" stroke="#3A7820" strokeWidth="0.8" opacity="0.18"/>
+                  {/* Leaf accent on root */}
+                  <g transform={`translate(${root.x},${root.y-H/2-10})`}>
+                    <ellipse cx="0" cy="-5" rx="3" ry="6" fill="url(#leafG)" opacity="0.85" transform="rotate(-10)"/>
+                    <ellipse cx="5" cy="-3" rx="2.5" ry="4.5" fill="url(#leafG)" opacity="0.7" transform="rotate(20)"/>
                   </g>
                 </g>
               );
             })()}
 
-            {/* ── Branch nodes — sage rounded pills ── */}
+            {/* Branch nodes — colour-coded with leaf icons */}
             {nodes.filter(n=>n.parent!==null).map(n=>{
               const isSel=n.id===selected;
-              const W=n.text.length>12?140:116, H=38;
-              const hasIcon=n.icon;
+              const W=n.text.length>12?148:118,H=38;
+              const nodeColor=n.color||"#5A7848";
+              const isAI=n.aiGenerated;
               return(
                 <g key={n.id} style={{cursor:"pointer"}}
                   onClick={()=>{if(selected===n.id){spawnChild(n.id);}else setSelected(n.id);}}
                   onDoubleClick={()=>{setEditingId(n.id);setEditText(n.text);}}
-                  onContextMenu={e=>{e.preventDefault();setDeleteConfirmId(n.id);}}>
-                  {/* Shadow */}
-                  <rect x={n.x-W/2+1} y={n.y-H/2+2} width={W} height={H} rx={H/2} fill="rgba(0,0,0,0.12)" filter="url(#nodeSh)"/>
-                  {/* Pill */}
+                  onContextMenu={e=>{e.preventDefault();setDeleteConfirmId(n.id);}}
+                  onMouseDown={e=>{if(e.button===0){setDragging(n.id);setDragMoved(false);const pos=getPos(e);setDragOffset({x:pos.x-n.x,y:pos.y-n.y});}}}
+                  onMouseUp={()=>handleDragNodeEnd(null,n.id)}>
+                  <rect x={n.x-W/2+1} y={n.y-H/2+2} width={W} height={H} rx={H/2} fill="rgba(0,0,0,0.10)" filter="url(#nodeSh)"/>
                   <rect x={n.x-W/2} y={n.y-H/2} width={W} height={H} rx={H/2}
-                    fill={isSel?"url(#nodeGrad)":"rgba(248,245,236,0.88)"}
-                    stroke={isSel?"rgba(255,255,255,0.7)":"rgba(90,120,72,0.35)"}
-                    strokeWidth={1.5}/>
-                  {/* Icon circle if node has icon */}
-                  {hasIcon&&(
-                    <>
-                      <circle cx={n.x-W/2+20} cy={n.y} r={14}
-                        fill={isSel?"rgba(255,255,255,0.2)":"rgba(248,245,236,0.95)"}
-                        stroke={isSel?"rgba(255,255,255,0.4)":"rgba(90,120,72,0.2)"} strokeWidth={1}/>
-                      <text x={n.x-W/2+20} y={n.y} textAnchor="middle" dominantBaseline="middle"
-                        fontSize={12} style={{pointerEvents:"none",userSelect:"none"}}>{n.icon}</text>
-                    </>
-                  )}
-                  {/* Label */}
-                  <text
-                    x={hasIcon?n.x+10:n.x} y={n.y}
-                    textAnchor="middle" dominantBaseline="middle"
+                    fill={isSel?nodeColor:"rgba(248,245,236,0.90)"}
+                    stroke={isSel?"rgba(255,255,255,0.7)":nodeColor}
+                    strokeWidth={1.6}/>
+                  {/* Leaf icon left */}
+                  <text x={n.x-W/2+12} y={n.y} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={10} style={{pointerEvents:"none",userSelect:"none"}}>🌿</text>
+                  {/* Node text */}
+                  <text x={n.x+6} y={n.y} textAnchor="middle" dominantBaseline="middle"
                     fill={isSel?"white":"#1A2E10"} fontSize={12} fontWeight={600}
                     style={{pointerEvents:"none",userSelect:"none"}}>
-                    {n.text.length>14?n.text.slice(0,13)+"…":n.text}
+                    {n.text.length>15?n.text.slice(0,14)+"…":n.text}
                   </text>
-                  {/* Link icon if has url */}
-                  {n.url&&(
-                    <text x={n.x+W/2-14} y={n.y} textAnchor="middle" dominantBaseline="middle"
-                      fontSize={10} style={{pointerEvents:"none"}}>🔗</text>
-                  )}
+                  {/* Voice note indicator */}
+                  {n.voiceNote&&<circle cx={n.x+W/2-10} cy={n.y-H/2+6} r={5} fill="#7A4A38" opacity="0.85"/>}
+                  {/* AI-generated sparkle */}
+                  {isAI&&<text x={n.x+W/2-10} y={n.y+H/2-5} textAnchor="middle" fontSize={8} className="mmPulse">✨</text>}
                 </g>
               );
             })}
+
+            {/* AI Grow button — appears when branch node selected */}
+            {selected&&nodes.find(n=>n.id===selected)?.parent!==null&&!aiGrowing&&(()=>{
+              const sn=nodes.find(n=>n.id===selected);
+              return(
+                <g className="mmAI" onClick={()=>growBranch(selected)} style={{cursor:"pointer"}}
+                  transform={`translate(${sn.x+70},${sn.y-28})`}>
+                  <rect x="-32" y="-13" width="64" height="26" rx="13"
+                    fill="#5A7848" filter="url(#nodeSh)"/>
+                  <text x="0" y="0" textAnchor="middle" dominantBaseline="middle"
+                    fill="white" fontSize={10} fontWeight={700} style={{pointerEvents:"none"}}>🌿 Grow</text>
+                </g>
+              );
+            })()}
+            {aiGrowing&&<text x={root?.x||195} y={(root?.y||422)-80} textAnchor="middle" fill="#5A7848" fontSize={13} fontWeight={600} className="mmPulse">🌿 Growing branch…</text>}
+
+            {/* Voice note button — when branch selected */}
+            {selected&&nodes.find(n=>n.id===selected)?.parent!==null&&(()=>{
+              const sn=nodes.find(n=>n.id===selected);
+              const isRec=voiceRecording===selected;
+              return(
+                <g onClick={()=>isRec?stopVoice():startVoice(selected)} style={{cursor:"pointer"}}
+                  transform={`translate(${sn.x+70},${sn.y+14})`}>
+                  <rect x="-30" y="-12" width="60" height="24" rx="12"
+                    fill={isRec?"#7A4A38":"rgba(248,245,236,0.92)"}
+                    stroke={isRec?"#7A4A38":"rgba(90,120,72,0.3)"} strokeWidth="1.5" filter="url(#nodeSh)"/>
+                  <text x="0" y="0" textAnchor="middle" dominantBaseline="middle"
+                    fill={isRec?"white":"#3A3020"} fontSize={9} fontWeight={700} style={{pointerEvents:"none"}}>
+                    {isRec?"⏹ Stop":"🎙 Voice"}
+                  </text>
+                </g>
+              );
+            })()}
           </g>
         </svg>
 
         {nodes.length===1&&!selected&&(
           <div style={{position:"absolute",top:"58%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",color:"rgba(90,80,60,0.55)",fontSize:14,pointerEvents:"none",fontFamily:"Georgia,serif",lineHeight:1.6}}>
-            Tap the central node<br/>to add your first branch
+            Tap the central node<br/>to add your first branch 🌿
           </div>
         )}
       </div>
 
-      {/* ── Bottom toolbar — matching reference ── */}
-      <div style={{
-        padding:"12px 12px 28px",
-        display:"flex",gap:8,alignItems:"center",
-        background:"rgba(240,236,224,0.88)",
-        backdropFilter:"blur(20px)",
-        WebkitBackdropFilter:"blur(20px)",
-        borderTop:"1px solid rgba(255,255,255,0.6)",
-        boxShadow:"0 -2px 16px rgba(0,0,0,0.06)",
-        overflowX:"auto",
-        scrollbarWidth:"none",
-        flexShrink:0,
-      }}>
-        <style>{`.mmbar::-webkit-scrollbar{display:none}`}</style>
-        {/* + Add Node */}
-        <button onClick={()=>{if(selected)spawnChild(selected);else if(root)spawnChild(root.id);}}
-          style={{
-            background:"#5A7848",color:"white",
-            border:"none",borderRadius:100,
-            padding:"11px 18px",
-            fontSize:14,fontWeight:700,cursor:"pointer",
-            display:"flex",alignItems:"center",gap:7,
-            whiteSpace:"nowrap",flexShrink:0,
-            boxShadow:"0 2px 10px rgba(58,80,38,0.28)",
-          }}>
-          <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1v12M1 7h12" stroke="white" strokeWidth="2.2" strokeLinecap="round"/></svg>
+      {/* ── BOTTOM TOOLBAR ── */}
+      <div style={{padding:"10px 10px 24px",display:"flex",gap:7,alignItems:"center",background:"rgba(240,236,224,0.92)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",boxShadow:"0 -2px 16px rgba(0,0,0,0.06)",overflowX:"auto",scrollbarWidth:"none",flexShrink:0}}>
+        {/* Add Node */}
+        <button onClick={()=>{if(selected)spawnChild(selected);else if(root)spawnChild(root.id);}} style={{background:"#5A7848",color:"white",border:"none",borderRadius:100,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
+          <svg width="12" height="12" viewBox="0 0 14 14"><path d="M7 1v12M1 7h12" stroke="white" strokeWidth="2.2" strokeLinecap="round"/></svg>
           Add Node
         </button>
-        {/* Attach */}
-        <button onClick={()=>{if(editingId||selected){setEditingId(selected||editingId);setEditText(nodes.find(n=>n.id===(selected||editingId))?.text||"");}}}
-          style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 18px",fontSize:14,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
-          Attach
+        {/* AI Grow */}
+        <button onClick={()=>selected&&growBranch(selected)} disabled={aiGrowing||!selected}
+          style={{background:selected?"rgba(90,120,72,0.12)":"rgba(90,80,60,0.06)",color:selected?"#3A6020":"#9A9080",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:selected?"pointer":"default",whiteSpace:"nowrap",flexShrink:0,opacity:aiGrowing?0.6:1}}>
+          🌿 Grow Branch
         </button>
         {/* Colors */}
-        <button onClick={()=>setDarkBg(d=>!d)}
-          style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 18px",fontSize:14,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
-          Colors
+        <button onClick={()=>{if(selected){const n=nodes.find(x=>x.id===selected);if(!n)return;const idx=BRANCH_PALETTE.findIndex(p=>p.color===n.color);const next=BRANCH_PALETTE[(idx+1)%BRANCH_PALETTE.length];setNodes(ns=>ns.map(x=>x.id===selected?{...x,color:next.color,lightColor:next.color+"33"}:x));showMsg(`${next.label}`);} }}
+          style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+          🎨 Color
         </button>
         {/* Export */}
-        <button style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 18px",fontSize:14,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+        <button style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
           Export
         </button>
-        {/* Turn into Podcast Recap */}
-        <button style={{background:"rgba(248,245,236,0.9)",color:"#3A3020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"11px 16px",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,lineHeight:1.3,textAlign:"center"}}>
-          Turn into<br/>Podcast Recap
+        {/* Podcast Recap */}
+        <button onClick={()=>{setPodcastModal(true);setPodcastText("");setPodcastSaved(false);}}
+          style={{background:"rgba(90,120,72,0.12)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.3)",borderRadius:100,padding:"11px 14px",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,boxShadow:"0 2px 8px rgba(58,80,38,0.12)"}}>
+          🎙 Podcast Recap
         </button>
       </div>
 
-      {/* Long press delete confirm */}
+      {/* ── PODCAST RECAP MODAL ── */}
+      {podcastModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.6)",display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}} onClick={()=>setPodcastModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",maxWidth:480,boxShadow:"0 -8px 48px rgba(0,0,0,0.16)",maxHeight:"85vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.2)"}}/></div>
+            <div style={{padding:"0 20px 12px",flexShrink:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:4}}>🎙 Podcast Recap</div>
+              <div style={{color:"#8A8070",fontSize:13,marginBottom:14}}>Turn <strong>"{root?.text}"</strong> into a spoken recap</div>
+              {/* Length selector */}
+              <div style={{display:"flex",gap:8,marginBottom:14}}>
+                {[{k:"short",label:"Short",desc:"~60 sec"},{k:"detailed",label:"Detailed",desc:"~3 min"}].map(opt=>(
+                  <button key={opt.k} onClick={()=>setPodcastLength(opt.k)} style={{flex:1,padding:"12px",borderRadius:18,border:`2px solid ${podcastLength===opt.k?"#5A7848":"rgba(90,80,60,0.15)"}`,background:podcastLength===opt.k?"rgba(90,120,72,0.10)":"rgba(255,255,255,0.8)",cursor:"pointer",textAlign:"center"}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:podcastLength===opt.k?"#3A6020":"#1A1A10"}}>{opt.label}</div>
+                    <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>{opt.desc}</div>
+                  </button>
+                ))}
+              </div>
+              {!podcastText&&(
+                <button onClick={generatePodcast} disabled={podcastGenerating} style={{width:"100%",padding:"15px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(58,100,30,0.30)",opacity:podcastGenerating?0.7:1}}>
+                  {podcastGenerating?"🌿 Generating…":"🎙 Generate Script"}
+                </button>
+              )}
+            </div>
+            {/* Script output */}
+            {podcastText&&(
+              <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+                <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.15)",marginBottom:12}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#2A3820",lineHeight:1.75}}>{podcastText}</div>
+                </div>
+                <div style={{display:"flex",gap:10,marginBottom:8}}>
+                  <button onClick={savePodcastToVault} disabled={podcastSaved} style={{flex:1,padding:"14px",background:podcastSaved?"rgba(90,120,72,0.15)":"#5A7848",color:podcastSaved?"#5A7848":"#fff",border:podcastSaved?"1.5px solid rgba(90,120,72,0.3)":"none",borderRadius:100,fontWeight:700,fontSize:14,cursor:podcastSaved?"default":"pointer",boxShadow:podcastSaved?"none":"0 3px 12px rgba(58,80,38,0.28)"}}>
+                    {podcastSaved?"✅ Saved to Vault":"💾 Save to The Vault"}
+                  </button>
+                  <button onClick={()=>{setPodcastText("");setPodcastSaved(false);}} style={{padding:"14px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
+                    Redo
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm */}
       {deleteConfirmId&&(()=>{
         const delNode=nodes.find(n=>n.id===deleteConfirmId);
         if(!delNode)return null;
         return(
-          <div style={{position:"fixed",inset:0,zIndex:300,background:"rgba(10,2,30,0.75)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-            <div style={{background:C.wh,borderRadius:20,padding:"24px 20px",width:"100%",maxWidth:360,textAlign:"center",boxShadow:"0 8px 40px rgba(45,10,94,0.5)"}}>
-              <div style={{fontSize:36,marginBottom:12}}>🗑</div>
-              <div style={{fontWeight:900,color:C.dp,fontSize:17,marginBottom:8}}>Delete this node?</div>
-              <div style={{color:C.soft,fontSize:14,marginBottom:20,lineHeight:1.5}}>"{delNode.text}" and all its children will be removed.</div>
+          <div style={{position:"fixed",inset:0,zIndex:300,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"center",justifyContent:"center",padding:24,backdropFilter:"blur(6px)"}}>
+            <div style={{background:"rgba(250,248,240,0.98)",borderRadius:24,padding:"24px 20px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,0.14)"}}>
+              <div style={{fontSize:32,marginBottom:10}}>🗑</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:8}}>Delete this node?</div>
+              <div style={{color:"#8A8070",fontSize:13,marginBottom:20,lineHeight:1.5}}>"{delNode.text}" and all its children will be removed.</div>
               <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>setDeleteConfirmId(null)} style={{flex:1,background:C.ll,color:C.mp,border:`1.5px solid ${C.lp}`,borderRadius:12,padding:"12px",fontWeight:800,fontSize:14,cursor:"pointer"}}>← Keep</button>
-                <button onClick={()=>{
-                  // Delete node and all descendants
-                  const toDelete=new Set();
-                  const collect=(id)=>{toDelete.add(id);nodes.filter(n=>n.parent===id).forEach(n=>collect(n.id));};
-                  collect(deleteConfirmId);
-                  setNodes(ns=>ns.filter(n=>!toDelete.has(n.id)));
-                  setDeleteConfirmId(null);
-                }} style={{flex:1,background:"#e74c3c",color:"#1A1A10",border:"none",borderRadius:12,padding:"12px",fontWeight:800,fontSize:14,cursor:"pointer"}}>Delete</button>
+                <button onClick={()=>setDeleteConfirmId(null)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"13px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Keep</button>
+                <button onClick={()=>{const toDelete=new Set();const collect=(id)=>{toDelete.add(id);nodes.filter(n=>n.parent===id).forEach(n=>collect(n.id));};collect(deleteConfirmId);setNodes(ns=>ns.filter(n=>!toDelete.has(n.id)));setDeleteConfirmId(null);}} style={{flex:1,background:"rgba(192,57,43,0.85)",color:"#fff",border:"none",borderRadius:100,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Delete</button>
               </div>
             </div>
           </div>
         );
       })()}
 
-      {/* Node panel — full detail sheet like the screenshot */}
+      {/* Node edit panel */}
       {editingId&&(()=>{
         const node=nodes.find(n=>n.id===editingId);
         if(!node)return null;
-        const isRoot=node.parent===null;
-        const updateColor=(col,i)=>setNodes(ns=>ns.map(n=>n.id===editingId?{...n,color:col,lightColor:BRANCH_COLORS[i]}:n));
         const patchNode=ch=>setNodes(ns=>ns.map(n=>n.id===editingId?{...n,...ch}:n));
-
-        /* Cover image */
-        const handleCover=(e)=>{
-          const file=e.target.files[0];if(!file)return;
-          const r=new FileReader();r.onload=ev=>patchNode({cover:ev.target.result});r.readAsDataURL(file);
-        };
-
-        /* Named links */
         const links=node.links||[];
         const addLink=()=>patchNode({links:[...links,{id:Date.now(),label:"",url:""}]});
         const patchLink=(id,ch)=>patchNode({links:links.map(l=>l.id===id?{...l,...ch}:l)});
         const delLink=id=>patchNode({links:links.filter(l=>l.id!==id)});
-
-        /* Image attachments */
         const images=node.images||[];
-        const handleImg=(e)=>{
-          const file=e.target.files[0];if(!file)return;
-          const r=new FileReader();r.onload=ev=>patchNode({images:[...images,{id:Date.now(),src:ev.target.result}]});r.readAsDataURL(file);
-        };
+        const handleImg=(e)=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>patchNode({images:[...images,{id:Date.now(),src:ev.target.result}]});r.readAsDataURL(file);};
         const delImg=id=>patchNode({images:images.filter(img=>img.id!==id)});
-
-        /* Send actions */
-        const sendToPrioritizer=(listId)=>{
-          setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:node.text,done:false,color:"lilac",url:""}]}:l));
-          setSentMsg("✅ Added to Prioritizer!");setTimeout(()=>setSentMsg(""),2000);
-        };
-        const plantAsGoal=(horizon)=>{
-    if(!setGoalsData)return;
-    const days={"week":7,"month1":30,"month6":180,"year1":365,"year3":1095,"year5":1825};
-    const due=new Date();due.setDate(due.getDate()+(days[horizon]||365));
-    const newGoal={id:Date.now(),horizon:horizon==="month1"?"month6":horizon,title:idea.text,description:idea.ramble||"",dueDate:due.toISOString().slice(0,10),cover:idea.cover||null,links:[],subtasks:(idea.steps||[]).map(s=>({id:Date.now()+Math.random(),text:s.text,done:s.done,microSteps:[],microExpanded:false})),status:"active",created:Date.now()};
-    setGoalsData(gs=>[...gs,newGoal]);
-    showToast("🌱 Planted as Goal!");
-  };
-  const sendToIdeas=()=>{
-          setIdeasData(ds=>[{id:Date.now(),text:node.text,ramble:node.note||"",tag:"💡 Idea",status:"spark",collection:"",url:"",pinned:false,votes:0,links:[],steps:[],created:Date.now()},...ds]);
-          setSentMsg("✅ Sent to Ideas!");setTimeout(()=>setSentMsg(""),2000);
-        };
-        const addToCalendar=()=>window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(node.text)}`,"_blank");
-
-        const accentCol=isRoot?C.pp:(node.color||NODE_COLORS[0]);
-
-        return (
-          <div style={{position:"fixed",inset:0,zIndex:200,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}
-            onClick={e=>{if(e.target===e.currentTarget)setEditingId(null);}}>
-            <div style={{position:"absolute",inset:0,background:"rgba(10,2,30,0.65)"}} onClick={()=>setEditingId(null)}/>
-
-            <div style={{position:"relative",background:C.wh,borderRadius:"22px 22px 0 0",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -8px 40px rgba(58,80,38,0.20)"}}>
-              {/* Drag handle */}
-              <div style={{display:"flex",justifyContent:"center",padding:"10px 0 6px"}}><div style={{width:40,height:4,borderRadius:2,background:C.ll}}/></div>
-
-              {/* ── Cover photo area ── */}
-              <div style={{position:"relative",height:node.cover?180:90,background:node.cover?"transparent":`linear-gradient(135deg,${accentCol},${C.dp})`,borderRadius:"22px 22px 0 0",overflow:"hidden",flexShrink:0}}>
-                {node.cover&&<img src={node.cover} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>}
-                {!node.cover&&(
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",gap:8}}>
-                    <span style={{fontSize:32,opacity:0.4}}>📸</span>
-                    <span style={{color:"rgba(255,255,255,0.5)",fontSize:13,fontWeight:700}}>Add cover photo</span>
-                  </div>
-                )}
-                {/* Back button top-left */}
-                <button onClick={()=>setEditingId(null)} style={{position:"absolute",top:10,left:10,background:"rgba(0,0,0,0.45)",color:"#1A1A10",border:"none",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,zIndex:10}}>←</button>
-                {/* Overlay buttons */}
-                <div style={{position:"absolute",top:10,right:10,display:"flex",gap:8}}>
-                  <label style={{background:"rgba(0,0,0,0.45)",color:"#1A1A10",borderRadius:20,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer",backdropFilter:"blur(4px)"}}>
-                    📸 {node.cover?"Change":"Add photo"}
-                    <input type="file" accept="image/*" style={{display:"none"}} onChange={handleCover}/>
-                  </label>
-                  {node.cover&&<button onClick={()=>patchNode({cover:null})} style={{background:"rgba(192,57,43,0.7)",color:"#1A1A10",border:"none",borderRadius:20,padding:"5px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>✕</button>}
+        return(
+          <div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(30,40,20,0.5)",display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}} onClick={commitEdit}>
+            <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(0,0,0,0.14)",maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",justifyContent:"center",padding:"14px 0 6px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+              <div style={{padding:"0 18px",overflowY:"auto",flex:1}}>
+                <input value={editText} onChange={e=>setEditText(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")commitEdit();}}
+                  style={{width:"100%",boxSizing:"border-box",fontFamily:"Georgia,serif",fontSize:18,fontWeight:700,color:"#1A1A10",border:"none",outline:"none",background:"transparent",marginBottom:14,padding:"4px 0"}}
+                  autoFocus/>
+                {/* Colour picker row */}
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+                  {BRANCH_PALETTE.map(bp=>(
+                    <button key={bp.color} onClick={()=>patchNode({color:bp.color,lightColor:bp.color+"33"})}
+                      style={{width:28,height:28,borderRadius:"50%",background:bp.color,border:node.color===bp.color?"3px solid #1A1A10":"2px solid rgba(0,0,0,0.1)",cursor:"pointer",padding:0,transition:"transform 0.1s"}}
+                      title={bp.label}/>
+                  ))}
                 </div>
-                {/* Drag handle */}
-                <div style={{position:"absolute",top:8,left:"50%",transform:"translateX(-50%)",width:36,height:4,borderRadius:2,background:"rgba(255,255,255,0.4)"}}/>
-              </div>
-
-              <div style={{padding:"16px 18px 30px"}}>
-
-                {/* ── Title + colour dot ── */}
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-                  <input value={editText} onChange={e=>setEditText(e.target.value)}
-                    onKeyDown={e=>{if(e.key==="Enter")commitEdit();}}
-                    autoFocus
-                    placeholder="Topic title…"
-                    style={{flex:1,padding:"10px 14px",borderRadius:11,border:`2px solid ${C.lp}`,fontSize:16,fontWeight:700,color:C.txt,outline:"none"}}/>
-                  {!isRoot&&(
-                    <NodeColourDot color={node.color||NODE_COLORS[0]} onSelect={(col,i)=>updateColor(col,i)}/>
+                {/* Attach image */}
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#5A7848",marginBottom:6,textTransform:"uppercase",letterSpacing:0.5}}>📎 Attachments</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {images.map(img=>(
+                      <div key={img.id} style={{position:"relative"}}>
+                        <img src={img.src} alt="" style={{width:56,height:56,borderRadius:10,objectFit:"cover",border:"1.5px solid rgba(90,120,72,0.2)"}}/>
+                        <button onClick={()=>delImg(img.id)} style={{position:"absolute",top:-5,right:-5,background:"rgba(192,57,43,0.85)",color:"#fff",border:"none",borderRadius:"50%",width:18,height:18,cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                      </div>
+                    ))}
+                    <label style={{width:56,height:56,borderRadius:10,border:"2px dashed rgba(90,120,72,0.3)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#5A7848",fontSize:22}}>
+                      +<input type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
+                    </label>
+                  </div>
+                </div>
+                {/* Voice note */}
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#5A7848",marginBottom:6,textTransform:"uppercase",letterSpacing:0.5}}>🎙 Voice Note</div>
+                  {node.voiceNote?(
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <audio controls src={node.voiceNote} style={{flex:1,height:32}}/>
+                      <button onClick={()=>patchNode({voiceNote:null})} style={{background:"rgba(192,57,43,0.1)",color:"#c0392b",border:"none",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:12}}>🗑</button>
+                    </div>
+                  ):(
+                    <button onClick={()=>{commitEdit();startVoice(editingId);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"9px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                      🎙 Record voice note
+                    </button>
                   )}
                 </div>
-
-                {/* ── Description / Notes ── */}
-                <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
-                  <span style={{fontSize:18,marginTop:2}}>≡</span>
-                  <textarea
-                    value={node.note||""}
-                    onChange={e=>patchNode({note:e.target.value})}
-                    placeholder="Add more detailed information…"
-                    rows={3}
-                    style={{flex:1,padding:"10px 13px",borderRadius:11,border:`1.5px solid ${C.ll}`,fontSize:14,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",lineHeight:1.6,background:C.pale}}
-                  />
-                </div>
-
-                {/* ── Links section ── */}
-                <div style={{marginBottom:16}}>
-                  <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:8}}>🔗 Links</div>
-                  {links.map(lnk=>(
-                    <div key={lnk.id} style={{display:"flex",gap:8,marginBottom:8,alignItems:"center",background:C.pale,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${C.ll}`}}>
-                      <input value={lnk.label} onChange={e=>patchLink(lnk.id,{label:e.target.value})}
-                        placeholder="Label (e.g. Instagram)"
-                        style={{flex:"0 0 100px",border:"none",background:"transparent",fontSize:13,fontWeight:600,color:C.txt,outline:"none"}}/>
-                      <div style={{width:1,height:20,background:C.ll,flexShrink:0}}/>
-                      <input value={lnk.url} onChange={e=>patchLink(lnk.id,{url:e.target.value})}
-                        placeholder="https://…"
-                        style={{flex:1,border:"none",background:"transparent",fontSize:12,color:C.mid,outline:"none"}}/>
-                      {lnk.url&&(
-                        <button onClick={()=>window.open(lnk.url.startsWith("http")?lnk.url:"https://"+lnk.url,"_blank")}
-                          style={{background:C.pp,color:"#1A1A10",border:"none",borderRadius:7,width:26,height:26,cursor:"pointer",fontSize:11,flexShrink:0}}>↗</button>
-                      )}
-                      <button onClick={()=>delLink(lnk.id)} style={{background:"#fce4e4",color:"#c0392b",border:"none",borderRadius:7,width:26,height:26,cursor:"pointer",fontSize:12,flexShrink:0}}>🗑</button>
+                {/* Links */}
+                <div style={{marginBottom:14}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#5A7848",marginBottom:6,textTransform:"uppercase",letterSpacing:0.5}}>🔗 Links</div>
+                  {links.map(l=>(
+                    <div key={l.id} style={{display:"flex",gap:6,marginBottom:6}}>
+                      <input value={l.label} onChange={e=>patchLink(l.id,{label:e.target.value})} placeholder="Label" style={{width:80,flexShrink:0,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:12,outline:"none",background:"rgba(255,255,255,0.8)"}}/>
+                      <input value={l.url} onChange={e=>patchLink(l.id,{url:e.target.value})} placeholder="https://…" style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:12,outline:"none",background:"rgba(255,255,255,0.8)",minWidth:0}}/>
+                      <button onClick={()=>delLink(l.id)} style={{background:"transparent",color:"#c0392b",border:"none",cursor:"pointer",fontSize:14,flexShrink:0}}>✕</button>
                     </div>
                   ))}
-                  <button onClick={addLink} style={{width:"100%",padding:"8px",background:"transparent",border:`1.5px dashed ${C.lp}`,borderRadius:10,color:C.pp,fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Add link</button>
+                  <button onClick={addLink} style={{background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add link</button>
                 </div>
-
-                {/* ── Image attachments ── */}
-                <div style={{marginBottom:16}}>
-                  <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:8}}>📎 Attachments</div>
-                  {images.length>0&&(
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
-                      {images.map(img=>(
-                        <div key={img.id} style={{position:"relative"}}>
-                          <img src={img.src} alt="" style={{width:80,height:80,objectFit:"cover",borderRadius:10,border:`2px solid ${C.ll}`}}/>
-                          <button onClick={()=>delImg(img.id)} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",background:"#e74c3c",color:"#1A1A10",border:"none",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <label style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:C.pale,border:`1.5px dashed ${C.lp}`,borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,color:C.pp}}>
-                    📸 Upload image
-                    <input type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
-                  </label>
+                {/* Send to */}
+                <div style={{marginBottom:8}}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#5A7848",marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Send to</div>
+                  <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                    {priData?.length>0&&<button onClick={()=>{setPriData(ls=>[{...ls[0],tasks:[...ls[0].tasks,{id:Date.now(),name:node.text,done:false,color:"lilac",url:""}]},...ls.slice(1)]);showMsg("📋 Sent to Prioritizer!");commitEdit();}} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>📋 Prioritizer</button>}
+                    {setGoalsData&&<button onClick={()=>{const due=new Date();due.setDate(due.getDate()+365);setGoalsData(gs=>[...gs,{id:Date.now(),horizon:"year1",title:node.text,description:"",dueDate:due.toISOString().slice(0,10),cover:null,links:[],subtasks:[],status:"active",created:Date.now()}]);showMsg("🎯 Planted as Goal!");commitEdit();}} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🎯 Goals</button>}
+                    {ideasData&&<button onClick={()=>{setIdeasData(ds=>[{id:Date.now(),title:node.text,content:"From Mind Map: "+map.name,type:"note",created:Date.now()},...ds]);showMsg("📚 Saved to Vault!");commitEdit();}} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",border:"1.5px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>📚 The Vault</button>}
+                  </div>
                 </div>
-
-                {/* ── Send to — multi-select dropdown ── */}
-                <SendToDropdown
-                  node={node}
-                  isRoot={isRoot}
-                  priData={priData} setPriData={setPriData}
-                  ideasData={ideasData} setIdeasData={setIdeasData}
-                  matrixData={matrixData} setMatrixData={setMatrixData}
-                  goalsData={goalsData} setGoalsData={setGoalsData}
-                  addToCalendar={addToCalendar}
-                  sentMsg={sentMsg} setSentMsg={setSentMsg}
-                />
-
-                {/* ── Save / Cancel / Delete ── */}
-                <div style={{display:"flex",gap:10,marginBottom:8}}>
-                  <button onClick={()=>setEditingId(null)} style={{flex:1,background:C.ll,color:C.mp,border:`1.5px solid ${C.lp}`,borderRadius:12,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>← Back</button>
-                  <button onClick={commitEdit} style={{flex:2,background:btnGrad,color:"#1A1A10",border:"none",borderRadius:12,padding:"13px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 3px 12px rgba(45,10,94,0.3)"}}>Save</button>
-                </div>
-                {!isRoot&&(
-                  <button onClick={()=>{
-                    const toDelete=new Set();
-                    const collect=(id)=>{toDelete.add(id);nodes.filter(n=>n.parent===id).forEach(n=>collect(n.id));};
-                    collect(editingId);
-                    setNodes(ns=>ns.filter(n=>!toDelete.has(n.id)));
-                    setEditingId(null);
-                  }} style={{width:"100%",padding:"12px",background:"#fce4e4",color:"#c0392b",border:"1.5px solid #f1948a",borderRadius:12,fontWeight:800,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                    🗑 Delete this node
-                  </button>
-                )}
+                <button onClick={commitEdit} style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 14px rgba(58,100,30,0.25)",marginTop:8}}>Done ✓</button>
               </div>
             </div>
           </div>
         );
       })()}
+
+      {sentMsg&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:"rgba(42,56,28,0.92)",color:"#fff",borderRadius:100,padding:"11px 22px",fontWeight:700,fontSize:14,zIndex:500,whiteSpace:"nowrap",backdropFilter:"blur(8px)"}}>{sentMsg}</div>}
     </div>
   );
 }
