@@ -40,15 +40,32 @@ async function callAI(prompt, maxTokens=600) {
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens,messages:[{role:"user",content:prompt}]})
     });
+    if(!r.ok){
+      const err = await r.json().catch(()=>({}));
+      console.warn("AI error:", err);
+      return null;
+    }
     const j = await r.json();
     return j.content?.[0]?.text || null;
-  } catch { return null; }
+  } catch(e) { 
+    console.warn("AI fetch failed:", e.message);
+    return null; 
+  }
 }
 async function callAIJson(prompt, maxTokens=500) {
   const raw = await callAI(prompt, maxTokens);
   if(!raw) return null;
   try { return JSON.parse(raw.replace(/```json|```/g,"").trim()); } catch { return null; }
 }
+// Environment detection — AI works natively in Claude artifact context
+const IS_ARTIFACT = typeof window !== "undefined" && 
+  (window.location.hostname.includes("claude.ai") || 
+   window.location.hostname === "localhost" ||
+   window.location.hostname.includes("127.0.0.1"));
+const IS_VERCEL = typeof window !== "undefined" && 
+  window.location.hostname.includes("vercel.app");
+
+
 
 
 const headerGrad  = `linear-gradient(135deg,#3A5030 0%,#4A6840 50%,#5A7850 100%)`;
@@ -4264,21 +4281,28 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
   };
 
   /* meal editing */
-  const [editMeal,setEditMeal]=useState(null); // {dayIdx, mealId|null}
+  const [editMeal,setEditMeal]=useState(null);
   const [mealDraft,setMealDraft]=useState("");
   const [mealUrl,setMealUrl]=useState("");
+  const [mealPhoto,setMealPhoto]=useState("");
 
-  const openAddMeal=(dayIdx)=>{setEditMeal({dayIdx,mealId:null});setMealDraft("");setMealUrl("");};
-  const openEditMeal=(dayIdx,meal)=>{setEditMeal({dayIdx,mealId:meal.id});setMealDraft(meal.text);setMealUrl(meal.url||"");};
+  const openAddMeal=(dayIdx)=>{setEditMeal({dayIdx,mealId:null});setMealDraft("");setMealUrl("");setMealPhoto("");};
+  const openEditMeal=(dayIdx,meal)=>{setEditMeal({dayIdx,mealId:meal.id});setMealDraft(meal.text);setMealUrl(meal.url||"");setMealPhoto(meal.photo||"");};
   const saveMeal=()=>{
-    if(!editMeal||!mealDraft.trim()){setEditMeal(null);setMealUrl("");return;}
+    if(!editMeal||!mealDraft.trim()){setEditMeal(null);setMealPhoto("");return;}
     const days=plan.days.map((d,i)=>{
       if(i!==editMeal.dayIdx)return d;
-      if(editMeal.mealId===null) return [...d,{id:Date.now(),text:mealDraft.trim(),url:mealUrl.trim()}];
-      return d.map(m=>m.id===editMeal.mealId?{...m,text:mealDraft.trim(),url:mealUrl.trim()}:m);
+      if(editMeal.mealId===null) return [...d,{id:Date.now(),text:mealDraft.trim(),url:mealUrl.trim(),photo:mealPhoto}];
+      return d.map(m=>m.id===editMeal.mealId?{...m,text:mealDraft.trim(),url:mealUrl.trim(),photo:mealPhoto}:m);
     });
     save({...plan,days});
-    setEditMeal(null);
+    setEditMeal(null);setMealPhoto("");
+  };
+  const handleMealPhoto=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const r=new FileReader();
+    r.onload=ev=>setMealPhoto(ev.target.result);
+    r.readAsDataURL(file);
   };
   const deleteMeal=(dayIdx,mealId)=>{
     const days=plan.days.map((d,i)=>i===dayIdx?d.filter(m=>m.id!==mealId):d);
@@ -4497,7 +4521,9 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
                   <div style={{padding:"0 18px 14px"}}>
                     {meals.map((meal,mi)=>(
                       <div key={meal.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderTop:`1px solid ${border}`}}>
-                        <div style={{width:6,height:6,borderRadius:"50%",background:textCol,flexShrink:0,opacity:0.6}}/>
+                        {meal.photo
+                          ?<img src={meal.photo} alt="" style={{width:40,height:40,borderRadius:10,objectFit:"cover",flexShrink:0}}/>
+                          :<div style={{width:6,height:6,borderRadius:"50%",background:textCol,flexShrink:0,opacity:0.6}}/>}
                         <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:textCol,lineHeight:1.4}}>{meal.text}</div>{meal.url&&<UrlBadge url={meal.url}/>}</div>
                         <button onClick={()=>sendMealToShop(meal,label)} title="Shopping list" style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🛒</button>
                         <button onClick={()=>scheduleMeal(meal,label)} title="Calendar" style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>📅</button>
@@ -4532,7 +4558,15 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
                 placeholder="e.g. Pasta, scrambled eggs, salad..."
                 style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:11,border:`2px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:10}}
               />
-              <UrlField value={mealUrl} onChange={setMealUrl} style={{marginBottom:16}}/>
+              <UrlField value={mealUrl} onChange={setMealUrl} style={{marginBottom:10}}/>
+              {/* Photo upload */}
+              <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1.5px dashed rgba(90,120,72,0.22)",cursor:"pointer",marginBottom:14}}>
+                {mealPhoto
+                  ?<img src={mealPhoto} alt="" style={{width:48,height:48,borderRadius:10,objectFit:"cover",flexShrink:0}}/>
+                  :<span style={{fontSize:24}}>📷</span>}
+                <span style={{fontSize:13,color:"#5A7848",fontWeight:600}}>{mealPhoto?"Change photo":"Add a photo (optional)"}</span>
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={handleMealPhoto}/>
+              </label>
               <div style={{display:"flex",gap:10}}>
                 <button onClick={()=>setEditMeal(null)} style={{flex:1,background:C.ll,color:C.mid,border:"none",borderRadius:12,padding:"12px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Cancel</button>
                 <button onClick={saveMeal} style={{flex:2,background:btnGrad,color:"#1A1A10",border:"none",borderRadius:12,padding:"12px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 3px 12px rgba(45,10,94,0.3)"}}>Save</button>
@@ -5594,7 +5628,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
   const generateSteps=async()=>{
     setAiLoading(true);
     try{const ss=await aiGenerateSteps(idea.text);updSteps([...steps,...ss.map(t=>mkStep(t))]);}
-    catch{showToast("AI error — try again");}
+    catch{showToast("AI unavailable — try again in a moment");}
     setAiLoading(false);
   };
 
@@ -5603,7 +5637,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
     try{
       const ms=await aiGenerateMicroSteps(step.text);
       patchStep(step.id,{microSteps:ms.map(t=>({id:Date.now()+Math.random(),text:t,done:false})),microExpanded:true});
-    }catch{showToast("AI error — try again");}
+    }catch{showToast("AI unavailable — try again in a moment");}
     setMicroLoading(null);
   };
 
@@ -7881,7 +7915,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
     if(!goal.title.trim()){showToast("Add a goal title first!");return;}
     setAiLoading(true);
     try{const ss=await aiGoalSubtasks(goal.title,goal.horizon);updSubs([...goal.subtasks,...ss.map(t=>mkGoalSubtask(t))]);}
-    catch{showToast("AI error — try again");}
+    catch{showToast("AI unavailable — try again in a moment");}
     setAiLoading(false);
   };
 
@@ -7889,7 +7923,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
   const genMicro=async sub=>{
     setMicroLoading(sub.id);
     try{const ms=await aiMicroSteps(sub.text);patchSub(sub.id,{microSteps:ms.map(t=>({id:Date.now()+Math.random(),text:t,done:false})),microExpanded:true});}
-    catch{showToast("AI error — try again");}
+    catch{showToast("AI unavailable — try again in a moment");}
     setMicroLoading(null);
   };
 
@@ -8726,7 +8760,7 @@ function RestSpace({setScreen}){
         {tab==="meditate"&&<>
           {/* Active meditation */}
           {activeMed&&(
-            <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"24px 20px",marginBottom:16,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",border:"1px solid rgba(90,120,72,0.20)"}}>
+            <div style={{background:"rgba(232,242,232,0.55)",borderRadius:22,padding:"24px 20px",marginBottom:16,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",border:"1px solid rgba(90,120,72,0.20)"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
                 <button onClick={stopMed} style={{background:"rgba(248,245,236,0.92)",color:"#fff",border:"none",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
                 <span style={{fontSize:30}}>{activeMed.icon}</span>
@@ -9275,9 +9309,9 @@ export default function App() {
       {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
 
       {/* ── GREETING ── */}
-      <div style={{padding:"22px 22px 8px"}}>
-        {(()=>{const {word,emoji}=getGreeting();return(<div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2}}>{word}{userName?`, ${userName}`:""} {emoji}</div>);})()}
-        <div style={{fontSize:12,color:"#8A8070",marginTop:4}}>Your calm space is ready</div>
+      <div style={{padding:"22px 22px 8px",textAlign:"center"}}>
+        {(()=>{const {word,emoji}=getGreeting();return(<div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,textAlign:"center"}}>{word}{userName?`, ${userName}`:""} {emoji}</div>);})()}
+        <div style={{fontSize:12,color:"#8A8070",marginTop:4,textAlign:"center"}}>Your calm space is ready</div>
         {TESTING_MODE&&<div style={{marginTop:8,display:"inline-flex",alignItems:"center",gap:6,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.25)",borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
         {/* Morning briefing shortcut */}
         <button onClick={()=>setScreen("charge")} style={{marginTop:12,width:"100%",padding:"13px 18px",background:"linear-gradient(135deg,rgba(240,220,160,0.30),rgba(200,220,170,0.25))",border:"1.5px solid rgba(200,180,100,0.30)",borderRadius:22,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
