@@ -6785,12 +6785,19 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
 /* ── Goals home — 5 horizon tabs ───────────────────── */
 
 async function aiChargePicks(tasks){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,
-      messages:[{role:"user",content:`Pick the 3 tasks most likely being avoided and worth tackling today. Return ONLY a JSON array of 3 task name strings. No markdown.\n\nTasks: ${tasks.map(t=>t.name||t.text).slice(0,15).join(", ")}`}]})});
-  const j=await res.json();
-  return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
+  try{
+    const now=Date.now();
+    const STALE=2*24*60*60*1000;
+    const staleTasks=tasks.filter(t=>(now-(t.touched||t.created||t.id||now))>STALE);
+    const list=staleTasks.concat(tasks.filter(t=>!staleTasks.find(s=>s.id===t.id)))
+      .slice(0,12)
+      .map(t=>`id:${t.id} "${t.name||t.text}" src:${t.src||"Charge"} days_old:${Math.floor((now-(t.touched||t.created||t.id||now))/86400000)}`).join("\n");
+    const result=await callAI(`You are a gentle productivity coach. Review these tasks and find which ones the person is most likely avoiding or that have been sitting too long. Return JSON array max 4: [{task:string,reason:string,src:string,srcId:number,srcType:"pri"|"matrix"|"charge"}]. Be warm not judgmental.\n\nTasks:\n${list}`,500);
+    if(!result)return[];
+    return JSON.parse(result.replace(/\`\`\`json|\`\`\`/g,"").trim());
+  }catch{return[];}
 }
+
 
 async function aiAwardSuggestions(style){
   const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
@@ -6801,20 +6808,22 @@ async function aiAwardSuggestions(style){
 }
 
 function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
-  const [data,setData]=useState({dailyTarget:3,weeklyAward:"",days:{},streak:0});
+  const [data,setData]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem('thinko_charge')||'null')||{dailyTarget:3,weeklyAward:"",rewardType:"weekly",rewardFreq:5,reward:{name:"",cost:"",url:"",photo:""},days:{},streak:0};}
+    catch{return {dailyTarget:3,weeklyAward:"",rewardType:"weekly",rewardFreq:5,reward:{name:"",cost:"",url:"",photo:""},days:{},streak:0};}
+  });
   const [view,setView]=useState("today");
   const [aiSugg,setAiSugg]=useState([]);
   const [aiLoad,setAiLoad]=useState(false);
   const [awardIdeas,setAwardIdeas]=useState([]);
   const [awardLoad,setAwardLoad]=useState(false);
   const [whatOff,setWhatOff]=useState("");
-  const [editTarget,setEditTarget]=useState(false);
   const [editAward,setEditAward]=useState(false);
-  const [draftAward,setDraftAward]=useState("");
+  const [rewardDraft,setRewardDraft]=useState({name:"",cost:"",url:"",photo:""});
   const [toast,setToast]=useState("");
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
 
-  const upd=ch=>setData(d=>({...d,...ch}));
+  const upd=ch=>{const nd={...data,...ch};setData(nd);try{localStorage.setItem('thinko_charge',JSON.stringify(nd));}catch{}};
   const today=todayStr();
   const todayD=data.days[today]||{charged:[],frogs:[]};
   const updToday=ch=>upd({days:{...data.days,[today]:{...todayD,...ch}}});
@@ -6834,6 +6843,9 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const target=data.dailyTarget||3;
   const pct=Math.min(100,Math.round((charged.length/target)*100));
   const hitTarget=charged.length>=target;
+  const reward=data.reward||{name:"",cost:"",url:"",photo:""};
+  const rewardName=reward.name||data.weeklyAward||"";
+  const rewardFreq=data.rewardFreq||5;
 
   /* Weekly stats */
   const weekDays=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
@@ -6841,6 +6853,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const weekPcts=weekDays.map(d=>Math.min(100,Math.round(((data.days[d]?.charged||[]).length/target)*100)));
   const daysHit=weekPcts.filter(p=>p>=100).length;
   const weekTotal=weekDays.reduce((s,d)=>s+(data.days[d]?.charged||[]).length,0);
+  const daysUntilReward=Math.max(0,rewardFreq-daysHit);
+  const rewardUnlocked=daysHit>=rewardFreq;
 
   const chargeIt=name=>{
     if(charged.includes(name))return;
@@ -6958,26 +6972,29 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
 
           {/* Reward card */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:16,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-              <span style={{fontSize:28}}>🎁</span>
-              <div>
+            <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}>
+              {reward.photo
+                ?<img src={reward.photo} alt="" style={{width:52,height:52,borderRadius:14,objectFit:"cover",flexShrink:0}}/>
+                :<span style={{fontSize:30,flexShrink:0}}>🎁</span>}
+              <div style={{flex:1}}>
                 <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>
-                  {data.weeklyAward?data.weeklyAward:<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:16,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
+                  {rewardName||<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:16,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
                 </div>
-                <div style={{fontSize:13,color:"#7A7060",marginTop:2}}>
-                  {Math.max(0,5-daysHit)} more lights to unlock
+                {reward.cost&&<div style={{fontSize:12,color:"#8A8070",marginTop:2}}>💰 Cost: {reward.cost} · <button onClick={()=>setScreen&&setScreen("budget")} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,textDecoration:"underline"}}>Save to Budget</button></div>}
+                {reward.url&&<a href={reward.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#5A7848",display:"block",marginTop:2}}>🔗 View</a>}
+                <div style={{fontSize:13,color:rewardUnlocked?"#3A8020":daysUntilReward===1?"#7A5020":"#7A7060",marginTop:4,fontWeight:rewardUnlocked||daysUntilReward===1?700:400}}>
+                  {rewardUnlocked?"🎉 Reward unlocked — you've earned it!":daysUntilReward===1?"🌟 One more day — you're so close!":rewardName?`${daysUntilReward} more day${daysUntilReward!==1?"s":""} to unlock`:"Set a reward to stay motivated"}
                 </div>
               </div>
             </div>
-            {/* 5 circle progress lights */}
-            <div style={{display:"flex",gap:12}}>
-              {[0,1,2,3,4].map(i=>(
+            {/* Progress lights */}
+            <div style={{display:"flex",gap:8}}>
+              {Array.from({length:rewardFreq}).map((_,i)=>(
                 <div key={i} style={{
-                  width:36,height:36,borderRadius:"50%",
-                  border:`2.5px solid ${i<daysHit?"#6A8858":"rgba(90,80,60,0.2)"}`,
-                  background:i<daysHit?"rgba(106,136,88,0.18)":"transparent",
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                }}>{i<daysHit&&<div style={{width:14,height:14,borderRadius:"50%",background:"#6A8858"}}/>}</div>
+                  flex:1,height:6,borderRadius:100,
+                  background:i<daysHit?"#6A8858":"rgba(90,80,60,0.15)",
+                  transition:"background 0.3s",
+                }}/>
               ))}
             </div>
           </div>
@@ -7148,10 +7165,24 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             {/* Reward editor */}
             {editAward?(
               <>
-                <input value={draftAward} onChange={e=>setDraftAward(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&(upd({weeklyAward:draftAward}),setEditAward(false))}
+                <input value={rewardDraft.name||""} onChange={e=>setRewardDraft(d=>({...d,name:e.target.value}))}
                   placeholder="e.g. New book, massage, takeaway…"
-                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.85)"}}/>
+                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.88)"}}/>
+                {/* Cost — optional, links to budget */}
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  <input value={rewardDraft.cost||""} onChange={e=>setRewardDraft(d=>({...d,cost:e.target.value}))}
+                    placeholder="💰 Cost (optional)"
+                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+                  <input value={rewardDraft.url||""} onChange={e=>setRewardDraft(d=>({...d,url:e.target.value}))}
+                    placeholder="🔗 Link (optional)"
+                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+                </div>
+                {/* Photo upload */}
+                <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1.5px dashed rgba(90,120,72,0.22)",cursor:"pointer",marginBottom:8}}>
+                  {rewardDraft.photo?<img src={rewardDraft.photo} alt="" style={{width:44,height:44,borderRadius:10,objectFit:"cover",flexShrink:0}}/>:<span style={{fontSize:24}}>📷</span>}
+                  <span style={{fontSize:13,color:"#5A7848",fontWeight:600}}>{rewardDraft.photo?"Change photo":"Add a photo of your reward"}</span>
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setRewardDraft(d=>({...d,photo:ev.target.result}));r.readAsDataURL(f);}}/>
+                </label>
                 {/* AI suggestions */}
                 <button onClick={getAwardIdeas} disabled={awardLoad} style={{width:"100%",padding:"10px",background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:awardIdeas.length?8:12}}>
                   {awardLoad?"🌿 Thinking…":"✨ Suggest something I've been putting off buying"}
@@ -7167,12 +7198,14 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 )}
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setEditAward(false)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                  <button onClick={()=>{upd({weeklyAward:draftAward});setEditAward(false);}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save Reward</button>
+                  <button onClick={()=>{upd({weeklyAward:rewardDraft.name,reward:rewardDraft});setEditAward(false);showToast("🎁 Reward saved!");}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save Reward</button>
                 </div>
               </>
             ):(
-              <button onClick={()=>{setDraftAward(data.weeklyAward||"");setEditAward(true);}} style={{width:"100%",padding:"13px",background:data.weeklyAward?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:data.weeklyAward?"#3A6020":"#8A8070",border:`1.5px dashed ${data.weeklyAward?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
-                {data.weeklyAward?`🎁 ${data.weeklyAward}`:"+ Set your reward"}
+              <button onClick={()=>{setRewardDraft({...(data.reward||{name:"",cost:"",url:"",photo:""})});setEditAward(true);}} style={{width:"100%",padding:"13px",background:rewardName?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:rewardName?"#3A6020":"#8A8070",border:`1.5px dashed ${rewardName?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+                {data.reward?.photo&&<img src={data.reward.photo} alt="" style={{width:36,height:36,borderRadius:8,objectFit:"cover",flexShrink:0}}/>}
+                <span>{rewardName?`🎁 ${rewardName}`:"+ Set your reward"}</span>
+                <span style={{marginLeft:"auto",color:"#8A8070",fontSize:12}}>✏️</span>
               </button>
             )}
           </div>
