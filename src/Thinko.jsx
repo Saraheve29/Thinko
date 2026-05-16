@@ -1258,6 +1258,17 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen}) {
   const [dragId,setDragId]=useState(null);
   const inputRef=useRef(null);
   useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
+  // Auto-open: if 1 list open it, if empty create default
+  useEffect(()=>{
+    if(!activeId){
+      if(data&&data.length===1){setActiveId(data[0].id);}
+      else if(!data||data.length===0){
+        const newList={id:Date.now(),name:"My Tasks",tasks:[]};
+        setData(ls=>[...ls,newList]);
+        setActiveId(newList.id);
+      }
+    }
+  },[]);
   const active=data.find(l=>l.id===activeId);
   const submit=()=>{if(name.trim()){setData(ls=>[...ls,{id:Date.now(),name:name.trim(),tasks:[]}]);setName("");setAdding(false);}};
 
@@ -2691,13 +2702,30 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
       {/* The cabinet visual */}
       <div style={{padding:"14px 14px"}}>
         {drawers.length===0&&!addingDrawer&&(
-          <div style={{textAlign:"center",marginTop:60}}>
-            <div style={{fontSize:64,marginBottom:12}}>🗄️</div>
-            <div style={{color:"rgba(255,255,255,0.6)",fontSize:16,fontWeight:700,marginBottom:6}}>Your filing cabinet is empty</div>
-            <div style={{color:"rgba(255,255,255,0.35)",fontSize:13,marginBottom:20}}>Tap + Drawer to add categories like Finance, Health, Work...</div>
-            <button onClick={()=>setAddingDrawer(true)} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:14,padding:"13px 28px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(45,10,94,0.3)"}}>
-              + Add First Drawer
-            </button>
+          <div style={{textAlign:"center",padding:"24px 0"}}>
+            <div style={{fontSize:52,marginBottom:10}}>🗄️</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:18,color:"#1A1A10",fontWeight:700,marginBottom:4}}>Your Filing Cabinet</div>
+            <div style={{color:"#8A8070",fontSize:13,marginBottom:20,lineHeight:1.7}}>Store receipts, ID docs, medical records,<br/>bills and any important documents</div>
+            {/* Premade template previews */}
+            <div style={{textAlign:"left",marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:0.8,marginBottom:10}}>📋 Tap to load all templates</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+                {PREMADE_DRAWERS.map(pd=>(
+                  <div key={pd.name} style={{background:"rgba(248,245,236,0.88)",borderRadius:16,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.9)"}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A1A10",marginBottom:2}}>{pd.name}</div>
+                    <div style={{fontSize:10,color:"#8A8070",lineHeight:1.5}}>{pd.subs.slice(0,2).join(" · ")}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={loadPremade} style={{flex:2,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>
+                📁 Load All Templates
+              </button>
+              <button onClick={()=>setAddingDrawer(true)} style={{flex:1,background:"rgba(248,245,236,0.92)",color:"#3A3020",border:"1.5px solid rgba(90,80,60,0.18)",borderRadius:100,padding:"13px",fontFamily:"Georgia,serif",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+                + Custom
+              </button>
+            </div>
           </div>
         )}
 
@@ -4988,7 +5016,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   );
 
   return (
-    <div style={{height:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden",boxSizing:"border-box"}}>
+    <div style={{height:"100svh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden",boxSizing:"border-box",paddingBottom:60}}>
 
       {/* ── HEADER — compact to save vertical space ── */}
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 16px 12px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
@@ -6772,7 +6800,7 @@ async function aiAwardSuggestions(style){
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
-function TheCharge({priData,matrixData,setScreen}){
+function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [data,setData]=useState({dailyTarget:3,weeklyAward:"",days:{},streak:0});
   const [view,setView]=useState("today");
   const [aiSugg,setAiSugg]=useState([]);
@@ -6914,6 +6942,7 @@ function TheCharge({priData,matrixData,setScreen}){
                   {hitTarget
                     ?`${charged.length} tasks charged — light blazing ✨`
                     :`${target-charged.length} more task${target-charged.length!==1?"s":""} to earn today's light`}
+                
                 </div>
               </div>
             </div>
@@ -6924,6 +6953,7 @@ function TheCharge({priData,matrixData,setScreen}){
               </div>
               <span style={{fontSize:13,fontWeight:600,color:"#7A7060",flexShrink:0}}>{charged.length}/{target}</span>
             </div>
+            {data.targetTask&&<div style={{fontSize:12,color:"#5A7848",marginTop:8,fontStyle:"italic"}}>🎯 Today's focus: {data.targetTask}</div>}
           </div>
 
           {/* Reward card */}
@@ -6932,7 +6962,7 @@ function TheCharge({priData,matrixData,setScreen}){
               <span style={{fontSize:28}}>🎁</span>
               <div>
                 <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>
-                  {data.weeklyAward?data.weeklyAward:"No reward set yet — tap Setup"}
+                  {data.weeklyAward?data.weeklyAward:<span>No reward set — <button onClick={()=>setView("settings")} style={{background:"none",border:"none",color:"#5A7848",fontWeight:700,fontSize:16,cursor:"pointer",fontFamily:"Georgia,serif",textDecoration:"underline",padding:0}}>tap Setup</button></span>}
                 </div>
                 <div style={{fontSize:13,color:"#7A7060",marginTop:2}}>
                   {Math.max(0,5-daysHit)} more lights to unlock
@@ -7057,32 +7087,114 @@ function TheCharge({priData,matrixData,setScreen}){
 
         {/* ══ SETUP ══ */}
         {view==="settings"&&<>
+          {/* ── Daily Target ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:14}}>⚡ Daily target</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:4}}>⚡ Daily target</div>
+            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>How many tasks to charge through each day?</div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
               {[1,2,3,4,5].map(n=>(
-                <button key={n} onClick={()=>upd({dailyTarget:n})} style={{flex:1,minWidth:48,padding:"12px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:15,cursor:"pointer"}}>{n}</button>
+                <button key={n} onClick={()=>upd({dailyTarget:n})} style={{flex:1,minWidth:48,padding:"13px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:16,cursor:"pointer"}}>{n}</button>
               ))}
             </div>
+            {/* Focus task name */}
+            <div style={{fontFamily:"Georgia,serif",fontWeight:600,color:"#3A3020",fontSize:14,marginBottom:8}}>What's your main focus task today?</div>
+            <input value={data.targetTask||""} onChange={e=>upd({targetTask:e.target.value})}
+              placeholder="e.g. Finish Reframe prototype…"
+              style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.88)"}}/>
+            {/* Link from Prioritizer */}
+            {(priData||[]).flatMap(l=>l.tasks||[]).filter(t=>!t.done).length>0&&(
+              <select value={data.linkedPriTask||""} onChange={e=>{
+                const task=(priData||[]).flatMap(l=>l.tasks||[]).find(t=>t.id===parseInt(e.target.value));
+                if(task)upd({targetTask:task.name,linkedPriTask:e.target.value});
+              }} style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(248,245,236,0.85)",marginBottom:8}}>
+                <option value="">📋 Link from Prioritizer…</option>
+                {(priData||[]).flatMap(l=>(l.tasks||[]).filter(t=>!t.done).map(t=>(
+                  <option key={t.id} value={t.id}>{t.name} ({l.name})</option>
+                )))}
+              </select>
+            )}
+            {/* Link from Matrix */}
+            {(matrixData||[]).length>0&&(
+              <select value={data.linkedMatrixTask||""} onChange={e=>{
+                const task=(matrixData||[]).find(t=>t.id===parseInt(e.target.value));
+                if(task)upd({targetTask:task.text,linkedMatrixTask:e.target.value});
+              }} style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.12)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(248,245,236,0.85)"}}>
+                <option value="">⚖️ Link from Matrix…</option>
+                {(matrixData||[]).map(t=>(
+                  <option key={t.id} value={t.id}>{t.text}</option>
+                ))}
+              </select>
+            )}
           </div>
+
+          {/* ── Reward Setup ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:6}}>🎁 Weekly reward</div>
-            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>Hit your target 5+ days to unlock it</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:4}}>🎁 Your reward</div>
+            {/* Daily or Weekly toggle */}
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              {["daily","weekly"].map(t=>(
+                <button key={t} onClick={()=>upd({rewardType:t})} style={{flex:1,padding:"10px",background:(data.rewardType||"weekly")===t?"#6A8858":"rgba(248,245,236,0.95)",color:(data.rewardType||"weekly")===t?"#fff":"#3A3020",border:`1.5px solid ${(data.rewardType||"weekly")===t?"#6A8858":"rgba(90,80,60,0.15)"}`,borderRadius:14,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                  {t==="daily"?"Daily":"Weekly"}
+                </button>
+              ))}
+            </div>
+            {/* Days to unlock */}
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:8}}>Unlock after hitting target for:</div>
+            <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+              {((data.rewardType||"weekly")==="daily"?[1]:[2,3,4,5,6,7]).map(n=>(
+                <button key={n} onClick={()=>upd({rewardFreq:n})} style={{flex:1,minWidth:36,padding:"9px 6px",background:(data.rewardFreq||5)===n?"#6A8858":"rgba(248,245,236,0.95)",color:(data.rewardFreq||5)===n?"#fff":"#3A3020",border:`1.5px solid ${(data.rewardFreq||5)===n?"#6A8858":"rgba(90,80,60,0.15)"}`,borderRadius:12,fontWeight:700,fontSize:14,cursor:"pointer"}}>{n}d</button>
+              ))}
+            </div>
+            {/* Reward editor */}
             {editAward?(
               <>
-                <input value={draftAward} onChange={e=>setDraftAward(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(upd({weeklyAward:draftAward}),setEditAward(false))}
-                  placeholder="e.g. Movie night, massage..."
-                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
+                <input value={draftAward} onChange={e=>setDraftAward(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&(upd({weeklyAward:draftAward}),setEditAward(false))}
+                  placeholder="e.g. New book, massage, takeaway…"
+                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.85)"}}/>
+                {/* AI suggestions */}
+                <button onClick={getAwardIdeas} disabled={awardLoad} style={{width:"100%",padding:"10px",background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:awardIdeas.length?8:12}}>
+                  {awardLoad?"🌿 Thinking…":"✨ Suggest something I've been putting off buying"}
+                </button>
+                {awardIdeas.length>0&&(
+                  <div style={{marginBottom:12,display:"flex",flexWrap:"wrap",gap:6}}>
+                    {awardIdeas.map((idea,i)=>(
+                      <button key={i} onClick={()=>{setDraftAward(idea);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                        {idea}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setEditAward(false)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                  <button onClick={()=>{upd({weeklyAward:draftAward});setEditAward(false);}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save reward</button>
+                  <button onClick={()=>{upd({weeklyAward:draftAward});setEditAward(false);}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save Reward</button>
                 </div>
               </>
             ):(
               <button onClick={()=>{setDraftAward(data.weeklyAward||"");setEditAward(true);}} style={{width:"100%",padding:"13px",background:data.weeklyAward?"rgba(90,120,72,0.10)":"rgba(248,245,236,0.95)",color:data.weeklyAward?"#3A6020":"#8A8070",border:`1.5px dashed ${data.weeklyAward?"rgba(90,120,72,0.3)":"rgba(90,80,60,0.2)"}`,borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
-                {data.weeklyAward?`🎁 ${data.weeklyAward}`:"+ Set your weekly reward"}
+                {data.weeklyAward?`🎁 ${data.weeklyAward}`:"+ Set your reward"}
               </button>
             )}
+          </div>
+
+          {/* ── Transfer tasks ── */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>↔️ Transfer tasks</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:10,lineHeight:1.6}}>Move tasks between The Charge, Prioritizer and Matrix</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <button onClick={()=>{
+                const frogs=(data.days[todayStr()]?.frogs||[]).filter(f=>!f.done);
+                if(!frogs.length){showToast("No tasks to send!");return;}
+                setPriData&&setPriData(ls=>{if(!ls.length)return ls;return ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,...frogs.map(f=>({id:Date.now()+Math.random(),name:f.text,done:false,color:"lilac"}))]}:l);});
+                showToast("📋 Sent to Prioritizer!");
+              }} style={{flex:1,padding:"10px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:12,fontWeight:700,cursor:"pointer"}}>⚡ → 📋 Prioritizer</button>
+              <button onClick={()=>{
+                const frogs=(data.days[todayStr()]?.frogs||[]).filter(f=>!f.done);
+                if(!frogs.length){showToast("No tasks to send!");return;}
+                setMatrixData&&setMatrixData(ds=>[...ds,...frogs.map(f=>({id:Date.now()+Math.random(),text:f.text,quad:"do",created:Date.now(),touched:Date.now()}))]);
+                showToast("⚖️ Sent to Matrix!");
+              }} style={{flex:1,padding:"10px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:12,fontWeight:700,cursor:"pointer"}}>⚡ → ⚖️ Matrix</button>
+            </div>
           </div>
         </>}
 
@@ -7613,7 +7725,7 @@ export default function App() {
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
   if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
-  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} matrixData={matrixData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
+  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData}/><NavBar current="tools" setScreen={setScreen}/></div></>);
