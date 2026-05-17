@@ -5202,7 +5202,13 @@ function MatrixTimer({setScreen}) {
 
   useEffect(()=>{
     if(on&&left>0){ref.current=setInterval(()=>setLeft(l=>l-1),1000);}
-    else{clearInterval(ref.current);if(left===0)setOn(false);}
+    else{
+      clearInterval(ref.current);
+      if(left===0&&on){
+        setOn(false);
+        playAlarm(mode==="focus"?"focus":"gentle");
+      }
+    }
     return()=>clearInterval(ref.current);
   },[on,left]);
 
@@ -7488,10 +7494,15 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const taskTimerRefs=useRef({});
   const startTaskTimer=(idx,secs)=>{
     if(taskTimerRefs.current[idx])clearInterval(taskTimerRefs.current[idx]);
-    setTaskTimers(t=>({...t,[idx]:{left:secs,on:true}}));
+    setTaskTimers(t=>({...t,[idx]:{left:secs,on:true,total:secs}}));
     taskTimerRefs.current[idx]=setInterval(()=>{
       setTaskTimers(t=>{
-        const cur=t[idx];if(!cur||cur.left<=1){clearInterval(taskTimerRefs.current[idx]);return {...t,[idx]:{left:0,on:false}};}
+        const cur=t[idx];
+        if(!cur||cur.left<=1){
+          clearInterval(taskTimerRefs.current[idx]);
+          playAlarm("gentle");
+          return {...t,[idx]:{left:0,on:false,total:cur?.total||secs}};
+        }
         return {...t,[idx]:{...cur,left:cur.left-1}};
       });
     },1000);
@@ -8201,7 +8212,7 @@ function RestSpace({setScreen}){
   // Break timer
   useEffect(()=>{
     if(breakOn&&breakLeft>0){breakRef.current=setInterval(()=>setBreakLeft(l=>l-1),1000);}
-    else{clearInterval(breakRef.current);if(breakLeft===0&&breakOn)setBreakOn(false);}
+    else{clearInterval(breakRef.current);if(breakLeft===0&&breakOn){setBreakOn(false);playAlarm("gentle");}}
     return()=>clearInterval(breakRef.current);
   },[breakOn,breakLeft]);
 
