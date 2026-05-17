@@ -3600,7 +3600,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   if(notesMode==="voice") return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setNotesMode(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <button onClick={()=>{setNotesMode(null);setSectionId(null);setPageId(null);}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>🎙️ Voice to Text</div>
@@ -3610,7 +3610,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   );
   if(notesMode==="ideas") return(
     <div style={{minHeight:"100vh",background:"transparent"}}>
-      <Ideas data={ideasData} setData={setIdeasData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} onBack={()=>setNotesMode(null)}/>
+      <Ideas data={ideasData} setData={setIdeasData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} onBack={()=>{setNotesMode(null);setSectionId(null);setPageId(null);}}/>
     </div>
   );
   if(notesMode==="filing") return <FilingCabinet cabinetData={cabinetData} setCabinetData={setCabinetData} onBack={()=>setNotesMode(null)} onHome={()=>setNotesMode(null)}/>;
@@ -3641,7 +3641,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       {/* Garden header */}
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setNotesMode(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <button onClick={()=>{setNotesMode(null);setSectionId(null);setPageId(null);}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>📓 Notes</div>
@@ -7394,6 +7394,24 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const rewardUnlocked=daysHit>=rewardFreq;
 
   const [dragChargeId,setDragChargeId]=useState(null);
+  // Task timers — {taskIdx: {left, on, intervalId}}
+  const [taskTimers,setTaskTimers]=useState({});
+  const taskTimerRefs=useRef({});
+  const startTaskTimer=(idx,secs)=>{
+    if(taskTimerRefs.current[idx])clearInterval(taskTimerRefs.current[idx]);
+    setTaskTimers(t=>({...t,[idx]:{left:secs,on:true}}));
+    taskTimerRefs.current[idx]=setInterval(()=>{
+      setTaskTimers(t=>{
+        const cur=t[idx];if(!cur||cur.left<=1){clearInterval(taskTimerRefs.current[idx]);return {...t,[idx]:{left:0,on:false}};}
+        return {...t,[idx]:{...cur,left:cur.left-1}};
+      });
+    },1000);
+  };
+  const stopTaskTimer=(idx)=>{
+    if(taskTimerRefs.current[idx])clearInterval(taskTimerRefs.current[idx]);
+    setTaskTimers(t=>({...t,[idx]:{left:null,on:false}}));
+  };
+  const fmtTimer=s=>s==null?"":String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const chargeTouchRef=useRef(null);
   const chargeDragOver=(toOrigIdx,allTasks)=>{
     if(dragChargeId===null||dragChargeId===toOrigIdx)return;
@@ -7597,33 +7615,60 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                       onTouchEnd={chargeTouchEnd}
                       style={{background:dragChargeId===origIdx?"rgba(220,240,210,0.80)":done?"rgba(90,160,80,0.10)":"rgba(255,255,255,0.80)",borderRadius:18,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${dragChargeId===origIdx?"#6A8858":done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,transition:"all 0.2s",transform:dragChargeId===origIdx?"scale(1.02)":"scale(1)",boxShadow:dragChargeId===origIdx?"0 6px 20px rgba(60,80,40,0.14)":"none",cursor:done?"default":"grab",touchAction:"none"}}>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        {/* Up/down reorder arrows */}
+                        {/* Drag handle */}
                         {!done&&(
-                          <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
-                            <div style={{cursor:"grab",color:"rgba(90,120,72,0.35)",fontSize:16,padding:"0 4px",letterSpacing:1}}>⠿</div>
-                          </div>
+                          <div style={{cursor:"grab",color:"rgba(90,120,72,0.35)",fontSize:16,padding:"0 4px",letterSpacing:1,flexShrink:0}}>⠿</div>
                         )}
-                        {/* Tick */}
-                        <button onClick={()=>!done&&chargeIt(task)}
-                          style={{width:38,height:38,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:20,fontWeight:900,transition:"all 0.25s",boxShadow:done?"0 0 0 4px rgba(90,160,80,0.18)":"none"}}>
-                          {done?"✓":""}
-                        </button>
+                        {/* Task name */}
                         <div style={{flex:1}}>
-                          <div style={{fontSize:14,fontWeight:done?600:700,color:done?"#6A9060":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
-                          {done&&<div style={{fontSize:11,color:"#5A9040",marginTop:2,fontWeight:600}}>⚡ Charged!</div>}
+                          <div style={{fontSize:15,fontWeight:done?500:700,color:done?"#6A9060":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
+                          {done&&<div style={{fontSize:11,color:"#5A9040",marginTop:2,fontWeight:600}}>⚡ Done!</div>}
                         </div>
-                        <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
-                          {!done&&<button onClick={()=>chargeIt(task)} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(90,120,72,0.25)"}}>⚡ Charge</button>}
-                          <button onClick={()=>{
-                            if(window.confirm(`Delete "${task}"?`)){
-                              const next=[...tasks];next[origIdx]="";
-                              // Also remove from charged if done
-                              if(done)updToday({charged:charged.filter(c=>c!==task)});
-                              upd({targetTasks:next});showToast("🗑 Task deleted");
-                            }
-                          }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"7px 11px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑</button>
-                        </div>
+                        {/* Single Done button — or done state */}
+                        {!done
+                          ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontSize:13,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
+                            ⚡ Done
+                          </button>
+                          :<div style={{background:"rgba(90,160,80,0.15)",color:"#3A7020",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,flexShrink:0}}>✓ Done</div>
+                        }
+                        {/* Delete */}
+                        <button onClick={()=>{
+                          if(window.confirm(`Delete "${task}"?`)){
+                            const next=[...tasks];next[origIdx]="";
+                            if(done)updToday({charged:charged.filter(c=>c!==task)});
+                            upd({targetTasks:next});showToast("🗑 Task deleted");
+                          }
+                        }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"7px 11px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>🗑</button>
                       </div>
+                      {/* Compact task timer */}
+                      {!done&&(()=>{
+                        const tt=taskTimers[origIdx];
+                        const running=tt?.on&&tt?.left>0;
+                        return(
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,padding:"7px 10px",background:"rgba(90,120,72,0.06)",borderRadius:12,border:"1px solid rgba(90,120,72,0.12)"}}>
+                            <span style={{fontSize:13}}>⏱</span>
+                            {running?(
+                              <>
+                                <span style={{fontFamily:"monospace",fontSize:14,fontWeight:700,color:tt.left<60?"#c0392b":"#3A6020",flex:1}}>{fmtTimer(tt.left)}</span>
+                                <div style={{flex:1,height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",margin:"0 4px"}}>
+                                  <div style={{height:"100%",width:`${Math.round((tt.left/(tt.total||600))*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+                                </div>
+                                <button onClick={()=>stopTaskTimer(origIdx)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:8,padding:"3px 8px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
+                              </>
+                            ):(
+                              <>
+                                <span style={{fontSize:11,color:"#8A8070",flex:1}}>Task timer</span>
+                                <div style={{display:"flex",gap:4}}>
+                                  {[10,20,30,50].map(m=>(
+                                    <button key={m} onClick={()=>{setTaskTimers(t=>({...t,[origIdx]:{left:m*60,on:true,total:m*60}}));startTaskTimer(origIdx,m*60);}}
+                                      style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:8,padding:"3px 7px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{m}m</button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 });
@@ -7633,6 +7678,13 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 <button onClick={()=>setView("settings")} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ Set today's tasks</button>
               </div>
             }
+            {/* Prioritise within section — drag to reorder */}
+            {(data.targetTasks||[]).filter(t=>t?.trim()).length>1&&(
+              <div style={{marginTop:6,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:14,border:"1px solid rgba(90,120,72,0.12)",display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:14}}>⠿</span>
+                <span style={{fontSize:12,color:"#5A7040",fontWeight:600,flex:1}}>Hold & drag tasks above to prioritise — most important at the top</span>
+              </div>
+            )}
           </div>
 
           {/* ── Celebration overlay ── */}
