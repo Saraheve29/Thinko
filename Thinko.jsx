@@ -2553,6 +2553,10 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
   const [draft,setDraft]=useState({name:"",color:DRAWER_COLORS[0],icon:"📁"});
   const [draftSub,setDraftSub]=useState("");
   const [toast,setToast]=useState("");
+  // Clear section/page when leaving notes mode
+  useEffect(()=>{
+    if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
+  },[notesMode]);
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
 
   const drawers=cabinetData||[];
@@ -3384,7 +3388,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 
   // Page editor
   const updatePageUrl=(id,url)=>setData(ds=>ds.map(s=>s.id===sectionId?{...s,pages:s.pages.map(p=>p.id===id?{...p,url}:p)}:s));
-  if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
   if(notesMode==="notes"&&page&&section) return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
       {studioOpen&&<StudyStudio page={page} onClose={()=>setStudioOpen(false)}/>}
