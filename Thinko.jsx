@@ -3182,6 +3182,61 @@ function StudyStudio({page,onClose}){
   );
 }
 
+function VoiceToText({setNotesData:setND}){
+    const [listening,setListening]=useState(false);
+    const [transcript,setTranscript]=useState("");
+    const [copied,setCopied]=useState(false);
+    const [saved,setSaved]=useState(false);
+    const [lang,setLang]=useState("en-GB");
+    const recRef=useRef(null);
+    const VLANGS=[
+      {code:"en-GB",label:"🇬🇧 English (UK)"},{code:"en-US",label:"🇺🇸 English (US)"},
+      {code:"es-ES",label:"🇪🇸 Spanish"},{code:"fr-FR",label:"🇫🇷 French"},
+      {code:"de-DE",label:"🇩🇪 German"},{code:"pl-PL",label:"🇵🇱 Polish"},
+      {code:"ro-RO",label:"🇷🇴 Romanian"},{code:"it-IT",label:"🇮🇹 Italian"},
+      {code:"ar-SA",label:"🇸🇦 Arabic"},{code:"zh-CN",label:"🇨🇳 Chinese"},
+    ];
+    const start=()=>{
+      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!SR){alert("Voice recognition needs Chrome on Android, or Safari on iPhone.");return;}
+      const r=new SR();r.lang=lang;r.continuous=true;r.interimResults=true;
+      r.onresult=e=>{let s="";for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)s+=e.results[i][0].transcript+" ";if(s)setTranscript(t=>t+s);};
+      r.onerror=()=>setListening(false);r.onend=()=>setListening(false);
+      r.start();recRef.current=r;setListening(true);
+  }
+    const stop=()=>{recRef.current?.stop();setListening(false);};
+    const moveToNotes=()=>{
+      if(!transcript.trim()||!setND)return;
+      const title=transcript.trim().split(/[.!?\n]/)[0].slice(0,50)||"Voice Note";
+      setND(secs=>{
+        const page={id:Date.now(),title,content:transcript.trim(),created:Date.now(),updated:Date.now()};
+        if(!secs||!secs.length)return [{id:Date.now(),name:"Voice Notes",color:"#5A7848",pages:[page]}];
+        const u=[...secs];u[0]={...u[0],pages:[...(u[0].pages||[]),page]};return u;
+      });
+      setSaved(true);setTimeout(()=>setSaved(false),3000);
+    };
+    return(
+      <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>🎙️ Voice to Text</div>
+        <div style={{fontSize:12,color:"#8A8070",marginBottom:14}}>Speak — words appear as you talk. Needs Chrome (Android) or Safari (iPhone).</div>
+        <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:13,color:"#1A1A10",outline:"none",marginBottom:14}}>
+          {VLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
+        </select>
+        <div style={{textAlign:"center",marginBottom:14}}>
+          <button onClick={listening?stop:start} style={{width:80,height:80,borderRadius:"50%",background:listening?"rgba(192,57,43,0.85)":"#5A7848",color:"#fff",border:"none",cursor:"pointer",fontSize:32,boxShadow:listening?"0 0 0 8px rgba(192,57,43,0.18)":"0 4px 20px rgba(58,80,38,0.30)",transition:"all 0.2s"}}>{listening?"⏹":"🎙️"}</button>
+          <div style={{marginTop:10,fontSize:13,fontWeight:700,color:listening?"#c0392b":"#5A7848"}}>{listening?"● Recording — tap to stop":"Tap to start"}</div>
+        </div>
+        <textarea value={transcript} onChange={e=>setTranscript(e.target.value)} placeholder="Your words appear here as you speak…" rows={5}
+          style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.7,marginBottom:10}}/>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>{copied?"✅ Copied":"📋 Copy"}</button>
+          <button onClick={()=>moveToNotes()} disabled={!transcript.trim()} style={{flex:1,padding:"12px",background:saved?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",opacity:!transcript.trim()?0.5:1}}>{saved?"✅ Saved!":"📓 → Notes"}</button>
+          <button onClick={()=>setTranscript("")} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Clear</button>
+        </div>
+      </div>
+    );
+  };
+
 function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen}) {
   // ── ALL hooks at top level — never inside conditionals or IIFEs ──
   const [pdfFile,setPdfFile]=useState(null);
@@ -3200,7 +3255,16 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [newSectionName,setNewSectionName]=useState('');
   const [newPageName,setNewPageName]=useState('');
   // Vault hub drag state
-  const [hubOrder,setHubOrder]=useState(()=>{try{const v=localStorage.getItem('thinko_vault_order');return v?JSON.parse(v):["notes","filing","ideas","studio"];}catch{return ["notes","filing","ideas","studio"];}});
+  const [hubOrder,setHubOrder]=useState(()=>{
+    try{
+      const v=localStorage.getItem('thinko_vault_order');
+      const saved=v?JSON.parse(v):null;
+      const validIds=["notes","filing","ideas","voice","studio"];
+      // Reset if stale (missing new items)
+      if(saved&&validIds.every(id=>saved.includes(id)))return saved;
+      return validIds;
+    }catch{return ["notes","filing","ideas","voice","studio"];}
+  });
   const [dragVault,setDragVault]=useState(null);
   const vaultTouchRef=useRef(null);
   // Notes section drag state
@@ -3727,7 +3791,10 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
               onTouchStart={e=>vaultTouchStart(e,m.id)}
               onTouchMove={vaultTouchMove}
               onTouchEnd={vaultTouchEnd}
-              onClick={()=>m.id==="studio"?setNotesMode("notes"):setNotesMode(m.id)}
+              onClick={()=>{
+                if(m.id==="studio")setNotesMode("notes");
+                else setNotesMode(m.id);
+              }}
               style={{
                 background:dragVault===m.id?"rgba(255,255,255,0.96)":"rgba(248,245,236,0.88)",
                 backdropFilter:"blur(14px)",borderRadius:24,
@@ -6706,60 +6773,7 @@ function Tools({setScreen, notesData, setNotesData}) {
   ];
 
   // ── VOICE TO TEXT ─────────────────────────────────────
-  const VoiceToText=({setNotesData:setND})=>{
-    const [listening,setListening]=useState(false);
-    const [transcript,setTranscript]=useState("");
-    const [copied,setCopied]=useState(false);
-    const [saved,setSaved]=useState(false);
-    const [lang,setLang]=useState("en-GB");
-    const recRef=useRef(null);
-    const VLANGS=[
-      {code:"en-GB",label:"🇬🇧 English (UK)"},{code:"en-US",label:"🇺🇸 English (US)"},
-      {code:"es-ES",label:"🇪🇸 Spanish"},{code:"fr-FR",label:"🇫🇷 French"},
-      {code:"de-DE",label:"🇩🇪 German"},{code:"pl-PL",label:"🇵🇱 Polish"},
-      {code:"ro-RO",label:"🇷🇴 Romanian"},{code:"it-IT",label:"🇮🇹 Italian"},
-      {code:"ar-SA",label:"🇸🇦 Arabic"},{code:"zh-CN",label:"🇨🇳 Chinese"},
-    ];
-    const start=()=>{
-      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!SR){alert("Voice recognition needs Chrome on Android, or Safari on iPhone.");return;}
-      const r=new SR();r.lang=lang;r.continuous=true;r.interimResults=true;
-      r.onresult=e=>{let s="";for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)s+=e.results[i][0].transcript+" ";if(s)setTranscript(t=>t+s);};
-      r.onerror=()=>setListening(false);r.onend=()=>setListening(false);
-      r.start();recRef.current=r;setListening(true);
-    };
-    const stop=()=>{recRef.current?.stop();setListening(false);};
-    const moveToNotes=()=>{
-      if(!transcript.trim()||!setND)return;
-      const title=transcript.trim().split(/[.!?\n]/)[0].slice(0,50)||"Voice Note";
-      setND(secs=>{
-        const page={id:Date.now(),title,content:transcript.trim(),created:Date.now(),updated:Date.now()};
-        if(!secs||!secs.length)return [{id:Date.now(),name:"Voice Notes",color:"#5A7848",pages:[page]}];
-        const u=[...secs];u[0]={...u[0],pages:[...(u[0].pages||[]),page]};return u;
-      });
-      setSaved(true);setTimeout(()=>setSaved(false),3000);
-    };
-    return(
-      <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>🎙️ Voice to Text</div>
-        <div style={{fontSize:12,color:"#8A8070",marginBottom:14}}>Speak — words appear as you talk. Needs Chrome (Android) or Safari (iPhone).</div>
-        <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:13,color:"#1A1A10",outline:"none",marginBottom:14}}>
-          {VLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
-        </select>
-        <div style={{textAlign:"center",marginBottom:14}}>
-          <button onClick={listening?stop:start} style={{width:80,height:80,borderRadius:"50%",background:listening?"rgba(192,57,43,0.85)":"#5A7848",color:"#fff",border:"none",cursor:"pointer",fontSize:32,boxShadow:listening?"0 0 0 8px rgba(192,57,43,0.18)":"0 4px 20px rgba(58,80,38,0.30)",transition:"all 0.2s"}}>{listening?"⏹":"🎙️"}</button>
-          <div style={{marginTop:10,fontSize:13,fontWeight:700,color:listening?"#c0392b":"#5A7848"}}>{listening?"● Recording — tap to stop":"Tap to start"}</div>
-        </div>
-        <textarea value={transcript} onChange={e=>setTranscript(e.target.value)} placeholder="Your words appear here as you speak…" rows={5}
-          style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.7,marginBottom:10}}/>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>{copied?"✅ Copied":"📋 Copy"}</button>
-          <button onClick={()=>moveToNotes()} disabled={!transcript.trim()} style={{flex:1,padding:"12px",background:saved?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",opacity:!transcript.trim()?0.5:1}}>{saved?"✅ Saved!":"📓 → Notes"}</button>
-          <button onClick={()=>setTranscript("")} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Clear</button>
-        </div>
-      </div>
-    );
-  };
+  // VoiceToText moved to top-level
 
   // ── TRANSLATOR ────────────────────────────────────────
   const Translator=()=>{
