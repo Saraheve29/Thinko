@@ -7606,6 +7606,32 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               </div>
               <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️ Edit</button>
             </div>
+            {/* Always-visible add task input */}
+            {(()=>{
+              const tasks=data.targetTasks||[];
+              const filled=tasks.filter(t=>t?.trim()).length;
+              if(filled<target||target===0) return(
+                <div style={{marginBottom:10,display:"flex",gap:8,alignItems:"center"}}>
+                  <input
+                    placeholder={`Add task ${filled+1}…`}
+                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                    onKeyDown={e=>{
+                      if(e.key==="Enter"&&e.target.value.trim()){
+                        const next=[...tasks];
+                        const emptyIdx=next.findIndex(t=>!t?.trim());
+                        if(emptyIdx>=0) next[emptyIdx]=e.target.value.trim();
+                        else next.push(e.target.value.trim());
+                        // Also increase target if needed
+                        const newTarget=Math.max(target,next.filter(t=>t?.trim()).length);
+                        upd({targetTasks:next,dailyTarget:newTarget});
+                        e.target.value="";
+                      }
+                    }}/>
+                  <span style={{fontSize:11,color:"#8A8070",flexShrink:0}}>↵ Enter</span>
+                </div>
+              );
+              return null;
+            })()}
             {(data.targetTasks||[]).some(t=>t?.trim())
               ?(()=>{
                 const tasks=(data.targetTasks||[]);
@@ -7694,9 +7720,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                   );
                 });
               })()
-              :<div style={{textAlign:"center",padding:"16px 0"}}>
-                <div style={{color:"#8A8070",fontSize:13,marginBottom:10}}>No tasks set yet for today</div>
-                <button onClick={()=>setView("settings")} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ Set today's tasks</button>
+              :<div style={{textAlign:"center",padding:"8px 0",color:"#8A8070",fontSize:13}}>
+                Type a task above and press Enter to add it
               </div>
             }
             {/* Prioritise within section — drag to reorder */}
