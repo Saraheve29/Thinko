@@ -965,8 +965,7 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
         {/* Index */}
         <div style={{minWidth:28,height:28,borderRadius:"50%",background:task.done?C.done:sw.num,color:"#1A1A10",fontWeight:800,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{index+1}</div>
         <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
-          <button onClick={e=>{e.stopPropagation();onMoveUp&&onMoveUp();}} disabled={isFirst} style={{background:isFirst?"transparent":"rgba(90,120,72,0.20)",color:isFirst?"rgba(90,120,72,0.20)":C.pp,border:"none",borderRadius:5,width:22,height:16,cursor:isFirst?"default":"pointer",fontSize:9,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",padding:0,lineHeight:1}}>▲</button>
-          <button onClick={e=>{e.stopPropagation();onMoveDown&&onMoveDown();}} disabled={isLast} style={{background:isLast?"transparent":"rgba(90,120,72,0.20)",color:isLast?"rgba(90,120,72,0.20)":C.pp,border:"none",borderRadius:5,width:22,height:16,cursor:isLast?"default":"pointer",fontSize:9,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",padding:0,lineHeight:1}}>▼</button>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"grab",color:"rgba(90,120,72,0.35)",fontSize:16,lineHeight:1,padding:"0 2px",letterSpacing:1}}>⠿</div>
         </div>
         {/* Colour picker dot */}
         <div style={{position:"relative",flexShrink:0,marginTop:7}}>
@@ -1174,6 +1173,24 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
   const deleteTask=id=>{onUpdate({...list,tasks:list.tasks.filter(t=>t.id!==id)});setPrioritized(false);};
   const completeTask=id=>onUpdate({...list,tasks:list.tasks.map(t=>t.id===id?{...t,done:!t.done}:t)});
   const colorTask=(id,color)=>onUpdate({...list,tasks:list.tasks.map(t=>t.id===id?{...t,color}:t)});
+  const [dragTaskId,setDragTaskId]=useState(null);
+  const priTaskTouchRef=useRef(null);
+  const priTaskDragOver=(toId)=>{
+    if(!dragTaskId||dragTaskId===toId)return;
+    const arr=[...list.tasks];
+    const fi=arr.findIndex(t=>t.id===dragTaskId),ti=arr.findIndex(t=>t.id===toId);
+    if(fi<0||ti<0||fi===ti)return;
+    const[m]=arr.splice(fi,1);arr.splice(ti,0,m);
+    onUpdate({...list,tasks:arr});
+  };
+  const priTaskTouchStart=(e,id)=>{priTaskTouchRef.current=setTimeout(()=>setDragTaskId(id),200);};
+  const priTaskTouchMove=(e)=>{
+    if(!dragTaskId)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.pritaskid;if(tid&&Number(tid)!==dragTaskId)priTaskDragOver(Number(tid));
+  };
+  const priTaskTouchEnd=()=>{clearTimeout(priTaskTouchRef.current);setDragTaskId(null);};
+
   const moveTask=(id,dir)=>{
     const a=[...list.tasks];const i=a.findIndex(t=>t.id===id);const j=i+dir;
     if(j<0||j>=a.length)return;
@@ -1233,7 +1250,18 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
                 <div style={{height:1,flex:1,background:"rgba(255,255,255,0.15)"}}/>
               </div>
             )}
-            <PriTaskRow task={task} index={i} onDelete={deleteTask} onComplete={completeTask} onColorChange={colorTask} onAddSub={addSubItems} lists={[]} onPrioritizeThis={()=>setComparing(true)} onSendTo={sendTaskTo} onMoveUp={()=>moveTask(task.id,-1)} onMoveDown={()=>moveTask(task.id,1)} isFirst={i===0} isLast={i===active.length-1} setScreen={setScreen}/>)
+            <div key={task.id}
+                data-pritaskid={task.id}
+                draggable
+                onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragTaskId(task.id);}}
+                onDragOver={e=>{e.preventDefault();priTaskDragOver(task.id);}}
+                onDragEnd={()=>setDragTaskId(null)}
+                onTouchStart={e=>priTaskTouchStart(e,task.id)}
+                onTouchMove={priTaskTouchMove}
+                onTouchEnd={priTaskTouchEnd}
+                style={{opacity:dragTaskId===task.id?0.5:1,transform:dragTaskId===task.id?"scale(1.02)":"scale(1)",transition:"all 0.15s",touchAction:"none"}}>
+              <PriTaskRow task={task} index={i} onDelete={deleteTask} onComplete={completeTask} onColorChange={colorTask} onAddSub={addSubItems} lists={[]} onPrioritizeThis={()=>setComparing(true)} onSendTo={sendTaskTo} onMoveUp={()=>moveTask(task.id,-1)} onMoveDown={()=>moveTask(task.id,1)} isFirst={i===0} isLast={i===active.length-1} setScreen={setScreen}/>
+            </div>)
           </div>
         ))}
         {done.length>0&&<><div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1.5,margin:"16px 0 8px"}}>✓ Completed</div>{done.map((task,i)=>(<PriTaskRow key={task.id} task={task} index={i} onDelete={deleteTask} onComplete={completeTask} onColorChange={colorTask}/>))}</>}
@@ -1277,6 +1305,15 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen}) {
     if(!dragId||dragId===id)return;
     setData(ls=>{const a=[...ls];const fi=a.findIndex(l=>l.id===dragId),ti=a.findIndex(l=>l.id===id);const [item]=a.splice(fi,1);a.splice(ti,0,item);return a;});
   };
+  // Touch drag for Prioritizer list hub
+  const priTouchRef=useRef(null);
+  const priTouchStart=(e,id)=>{priTouchRef.current=setTimeout(()=>setDragId(id),200);};
+  const priTouchMove=(e)=>{
+    if(!dragId)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.prilistid;if(tid&&Number(tid)!==dragId)setData(ls=>{const a=[...ls];const fi=a.findIndex(l=>l.id===dragId),ti=a.findIndex(l=>String(l.id)===tid);if(fi<0||ti<0||fi===ti)return ls;const[m]=a.splice(fi,1);a.splice(ti,0,m);return a;});
+  };
+  const priTouchEnd=()=>{clearTimeout(priTouchRef.current);setDragId(null);};
 
   if(active) return <PriList list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ls=>ls.map(l=>l.id===u.id?u:l))} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/>;
   const listColors=["#5A7848","#7A6038","#486878","#6A5870","#486050","#705848"];
@@ -1383,10 +1420,14 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen}) {
           const col=listColors[i%listColors.length];
           return(
             <div key={list.id}
+              data-prilistid={list.id}
               draggable
               onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragId(list.id);}}
               onDragOver={e=>dragOver(e,list.id)}
               onDragEnd={()=>setDragId(null)}
+              onTouchStart={e=>priTouchStart(e,list.id)}
+              onTouchMove={priTouchMove}
+              onTouchEnd={priTouchEnd}
               onClick={()=>setActiveId(list.id)}
               style={{
                 display:"flex",alignItems:"center",gap:14,
@@ -3461,6 +3502,19 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       return a;
     });
   };
+  const [dragSecId,setDragSecId]=useState(null);
+  const secTouchRef=useRef(null);
+  const secDragOver=(toId)=>{
+    if(!dragSecId||dragSecId===toId)return;
+    setData(ds=>{const a=[...ds];const fi=a.findIndex(s=>s.id===dragSecId),ti=a.findIndex(s=>s.id===toId);if(fi<0||ti<0||fi===ti)return ds;const[m]=a.splice(fi,1);a.splice(ti,0,m);return a;});
+  };
+  const secTouchStart=(e,id)=>{secTouchRef.current=setTimeout(()=>setDragSecId(id),200);};
+  const secTouchMove=(e)=>{
+    if(!dragSecId)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.secid;if(tid&&Number(tid)!==dragSecId)secDragOver(Number(tid));
+  };
+  const secTouchEnd=()=>{clearTimeout(secTouchRef.current);setDragSecId(null);};
 
   if(notesMode==="notes") return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
@@ -3494,16 +3548,19 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
         )}
         {data.map((s,idx)=>(
           <div key={s.id}
-            style={{background:"rgba(248,245,236,0.88)",backdropFilter:"blur(12px)",borderRadius:20,padding:"0",marginBottom:10,border:"1px solid rgba(255,255,255,0.92)",boxShadow:"0 2px 12px rgba(60,70,40,0.06)",overflow:"hidden",transition:"all 0.15s"}}>
+            data-secid={s.id}
+            draggable
+            onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragSecId(s.id);}}
+            onDragOver={e=>{e.preventDefault();secDragOver(s.id);}}
+            onDragEnd={()=>setDragSecId(null)}
+            onTouchStart={e=>secTouchStart(e,s.id)}
+            onTouchMove={secTouchMove}
+            onTouchEnd={secTouchEnd}
+            style={{background:dragSecId===s.id?"rgba(255,255,255,0.96)":"rgba(248,245,236,0.88)",backdropFilter:"blur(12px)",borderRadius:20,padding:"0",marginBottom:10,border:"1px solid rgba(255,255,255,0.92)",boxShadow:dragSecId===s.id?"0 8px 24px rgba(60,70,40,0.14)":"0 2px 12px rgba(60,70,40,0.06)",overflow:"hidden",transition:"all 0.15s",transform:dragSecId===s.id?"scale(1.02)":"scale(1)",cursor:"grab",touchAction:"none"}}>
             <div style={{height:4,background:s.color||"#5A7848"}}/>
             <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px"}}>
               {/* Up/down reorder */}
-              <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
-                <button onClick={()=>moveSection(s.id,-1)} disabled={idx===0}
-                  style={{background:"none",border:"none",cursor:idx===0?"default":"pointer",color:idx===0?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:13,lineHeight:1,padding:"1px 4px",fontWeight:700}}>▲</button>
-                <button onClick={()=>moveSection(s.id,1)} disabled={idx===data.length-1}
-                  style={{background:"none",border:"none",cursor:idx===data.length-1?"default":"pointer",color:idx===data.length-1?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:13,lineHeight:1,padding:"1px 4px",fontWeight:700}}>▼</button>
-              </div>
+              <div style={{cursor:"grab",color:"rgba(90,120,72,0.35)",fontSize:16,padding:"0 4px",letterSpacing:1,flexShrink:0}}>⠿</div>
               {/* Section card — tappable */}
               <div onClick={()=>setSectionId(s.id)} style={{display:"flex",alignItems:"center",gap:12,flex:1,cursor:"pointer"}}>
                 <div style={{width:42,height:42,borderRadius:13,background:`${s.color||"#5A7848"}22`,border:`1.5px solid ${s.color||"#5A7848"}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>📒</div>
@@ -3533,6 +3590,15 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const orderedHub=hubOrder.map(id=>HUB_MODES.find(m=>m.id===id)).filter(Boolean);
   const vaultDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragVault(id);};
   const vaultDragOver=(e,id)=>{e.preventDefault();if(!dragVault||dragVault===id)return;setHubOrder(o=>{const a=[...o];const fi=a.indexOf(dragVault),ti=a.indexOf(id);a.splice(fi,1);a.splice(ti,0,dragVault);try{localStorage.setItem('thinko_vault_order',JSON.stringify(a));}catch{}return a;});};
+  // Touch drag for vault cards
+  const vaultTouchRef=useRef(null);
+  const vaultTouchStart=(e,id)=>{vaultTouchRef.current=setTimeout(()=>setDragVault(id),200);};
+  const vaultTouchMove=(e)=>{
+    if(!dragVault)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.vaultid;if(tid&&tid!==dragVault)setHubOrder(o=>{const a=[...o];const fi=a.indexOf(dragVault),ti=a.indexOf(tid);if(fi<0||ti<0||fi===ti)return o;a.splice(fi,1);a.splice(ti,0,dragVault);try{localStorage.setItem('thinko_vault_order',JSON.stringify(a));}catch{}return a;});
+  };
+  const vaultTouchEnd=()=>{clearTimeout(vaultTouchRef.current);setDragVault(null);};
   const totalPages=data.reduce((s,sec)=>s+sec.pages.length,0);
   const recentPages=data.flatMap(s=>s.pages.map(p=>({...p,section:s.name,sectionId:s.id}))).sort((a,b)=>(b.updated||0)-(a.updated||0)).slice(0,3);
 
@@ -3599,9 +3665,14 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
           {orderedHub.map(m=>(
             <div key={m.id}
               draggable
+              data-vaultid={m.id}
+              draggable
               onDragStart={e=>vaultDragStart(e,m.id)}
               onDragOver={e=>vaultDragOver(e,m.id)}
               onDragEnd={()=>setDragVault(null)}
+              onTouchStart={e=>vaultTouchStart(e,m.id)}
+              onTouchMove={vaultTouchMove}
+              onTouchEnd={vaultTouchEnd}
               onClick={()=>m.id==="studio"?setNotesMode("notes"):setNotesMode(m.id)}
               style={{
                 background:dragVault===m.id?"rgba(255,255,255,0.96)":"rgba(248,245,236,0.88)",
@@ -5525,6 +5596,8 @@ function mkItem(name){
 const SHOP_TEMPLATES=[
   {id:"grocery",  icon:"🛒", name:"Weekly Food Shop",    color:"#5A7848",
    items:["Bread","Milk","Eggs","Butter","Cheese","Yoghurt","Chicken","Mince","Salmon","Pasta","Rice","Potatoes","Onions","Garlic","Tomatoes","Spinach","Apples","Bananas","Orange juice","Coffee","Tea","Sugar","Olive oil","Tinned tomatoes","Cereal"]},
+  {id:"mostbought",icon:"⭐",name:"Most Bought Items",   color:"#7A6020",
+   items:["Bread","Milk","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Onions","Garlic","Tomatoes","Apples","Bananas","Coffee","Tea","Toilet roll","Washing powder","Bin bags","Hand soap","Shampoo","Toothpaste","Deodorant","Paracetamol","Kitchen roll","Olive oil"]},
   {id:"christmas",icon:"🎄", name:"Christmas Presents",  color:"#7A2828",
    items:["Wrapping paper","Sellotape","Gift bags","Gift tags","Ribbon","Tissue paper","Card for Mum","Card for Dad","Card for kids","Stocking fillers","Batteries","Chocolates"]},
   {id:"toiletries",icon:"🧴",name:"Toiletries & Health",  color:"#486878",
@@ -5544,18 +5617,106 @@ const SHOP_TEMPLATES=[
 function ShoppingList({data,setData,setScreen}){
   const [activeId,setActiveId]=useState(null);
   const [showTemplates,setShowTemplates]=useState(!data||data.length===0);
-  const inputRef=useRef(null);
+  const [customising,setCustomising]=useState(null); // template being customised
+  const [customItems,setCustomItems]=useState([]);   // ticked items for that template
+  const [dragShop,setDragShop]=useState(null);
+  const [shopOrder,setShopOrder]=useState(()=>{
+    try{const v=localStorage.getItem('thinko_shop_order');return v?JSON.parse(v):null;}catch{return null;}
+  });
 
   const active=data.find(l=>l.id===activeId);
   if(active) return <ShopListDetail list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(l=>l.id===u.id?u:l))} onDelete={id=>{setData(ds=>ds.filter(l=>l.id!==id));setActiveId(null);}}/>;
 
-  const loadTemplate=(t)=>{
-    const items=t.items.map((name,i)=>({...mkItem(name),id:Date.now()+i}));
+  // Ordered list for display
+  const orderedLists=shopOrder
+    ?(shopOrder.map(id=>data.find(l=>l.id===id)).filter(Boolean).concat(data.filter(l=>!shopOrder.includes(l.id))))
+    :data;
+
+  const shopDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragShop(id);};
+  const shopDragOver=(e,id)=>{
+    e.preventDefault();
+    if(!dragShop||dragShop===id)return;
+    const ids=orderedLists.map(l=>l.id);
+    const fi=ids.indexOf(dragShop),ti=ids.indexOf(id);
+    ids.splice(fi,1);ids.splice(ti,0,dragShop);
+    setShopOrder(ids);
+    try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}
+  };
+  // Touch drag for shopping list hub
+  const shopTouchRef=useRef(null);
+  const shopTouchStart=(e,id)=>{shopTouchRef.current=setTimeout(()=>setDragShop(id),200);};
+  const shopTouchMove=(e)=>{
+    if(!dragShop)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.shoplistid;
+    if(tid&&Number(tid)!==dragShop){
+      const ids=orderedLists.map(l=>l.id);
+      const fi=ids.indexOf(dragShop),ti=ids.indexOf(Number(tid));
+      if(fi>=0&&ti>=0&&fi!==ti){ids.splice(fi,1);ids.splice(ti,0,dragShop);setShopOrder(ids);try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}}
+    }
+  };
+  const shopTouchEnd=()=>{clearTimeout(shopTouchRef.current);setDragShop(null);};
+
+  // Step 1: pick template → go to customise
+  const pickTemplate=(t)=>{
+    if(t.id==="blank"){loadTemplate(t,[]);return;}
+    setCustomising(t);
+    setCustomItems(t.items.map(n=>({name:n,on:true})));
+  };
+
+  // Step 2: load with chosen items
+  const loadTemplate=(t,chosenItems)=>{
+    const items=(chosenItems||customItems.filter(ci=>ci.on).map(ci=>ci.name))
+      .map((name,i)=>({...mkItem(typeof name==="string"?name:name.name),id:Date.now()+i}));
     const nl={...mkShopList(t.name,t.icon),items,color:t.color};
     setData(ds=>[...(ds||[]),nl]);
     setActiveId(nl.id);
-    setShowTemplates(false);
+    setShowTemplates(false);setCustomising(null);
   };
+
+  // — Customise screen —
+  if(customising) return(
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setCustomising(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{customising.icon} {customising.name}</div>
+          <div style={{fontSize:12,color:"#8A8070"}}>Untick items you never need — they won't be added</div>
+        </div>
+        <button onClick={()=>loadTemplate(customising)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
+          Load →
+        </button>
+      </div>
+      <div style={{padding:"16px 14px"}}>
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,overflow:"hidden",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 14px rgba(60,70,40,0.06)"}}>
+          <div style={{height:4,background:customising.color}}/>
+          <div style={{padding:"14px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <span style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{customItems.filter(i=>i.on).length} of {customItems.length} items selected</span>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:true})))} style={{fontSize:11,color:"#5A7848",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>All</button>
+                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:false})))} style={{fontSize:11,color:"#c0392b",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>None</button>
+              </div>
+            </div>
+            {customItems.map((item,i)=>(
+              <div key={i} onClick={()=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,on:!x.on}:x))}
+                style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",borderBottom:i<customItems.length-1?"1px solid rgba(90,80,60,0.07)":"none",cursor:"pointer"}}>
+                <div style={{width:26,height:26,borderRadius:"50%",border:`2px solid ${item.on?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.on?"#5A7848":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
+                  {item.on&&<svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>}
+                </div>
+                <span style={{fontSize:14,fontWeight:500,color:item.on?"#1A1A10":"#B0A898",textDecoration:item.on?"none":"line-through"}}>{item.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{fontSize:11,color:"#8A8070",textAlign:"center",marginTop:12,lineHeight:1.6}}>
+          Your choices only apply to this list — the template stays unchanged for next time
+        </div>
+      </div>
+    </div>
+  );
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
@@ -5565,65 +5726,106 @@ function ShoppingList({data,setData,setScreen}){
 
       <div style={{padding:"16px 14px"}}>
 
-        {/* Template picker — shown when adding or no lists yet */}
+        {/* Template picker */}
         {showTemplates&&(
           <div style={{background:"rgba(248,245,236,0.94)",borderRadius:26,padding:"20px 16px",marginBottom:16,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 4px 24px rgba(60,70,40,0.10)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:4}}>Choose a list template</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>Tap one to load it with suggested items — you can add, remove or rename anything. Or start blank and build your own.</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>Tap one to pick which items you want — untick anything you don't need, then load. Templates stay unchanged for next time.</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               {SHOP_TEMPLATES.map(t=>(
-                <button key={t.id} onClick={()=>loadTemplate(t)}
-                  style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:20,padding:"14px 12px",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 8px rgba(60,70,40,0.05)",transition:"all 0.12s",overflow:"hidden",position:"relative"}}>
+                <button key={t.id} onClick={()=>pickTemplate(t)}
+                  style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:20,padding:"14px 12px",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 8px rgba(60,70,40,0.05)",overflow:"hidden",position:"relative"}}>
                   <div style={{height:3,background:t.color,borderRadius:2,marginBottom:10,marginLeft:-12,marginRight:-12,marginTop:-14}}/>
                   <div style={{fontSize:26,marginBottom:6}}>{t.icon}</div>
                   <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{t.name}</div>
-                  <div style={{fontSize:10,color:"#8A8070",lineHeight:1.4}}>{t.items.length>0?`${t.items.length} suggested items`:"Start completely fresh"}</div>
+                  <div style={{fontSize:10,color:"#8A8070"}}>{t.items.length>0?`${t.items.length} items — tap to customise`:"Start from scratch"}</div>
                 </button>
               ))}
             </div>
             {data&&data.length>0&&(
-              <button onClick={()=>setShowTemplates(false)} style={{width:"100%",marginTop:12,padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>
-                Cancel
-              </button>
+              <button onClick={()=>setShowTemplates(false)} style={{width:"100%",marginTop:12,padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
             )}
           </div>
         )}
 
-        {/* Existing lists */}
+        {/* List hub — draggable cards */}
         {!showTemplates&&data.length===0&&(
           <div style={{textAlign:"center",padding:"60px 20px"}}>
             <div style={{fontSize:48,marginBottom:12}}>🛒</div>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No lists yet</div>
-            <div style={{color:"#8A8070",fontSize:14,marginBottom:20}}>Tap "+ New List" to create your first shopping list</div>
+            <div style={{color:"#8A8070",fontSize:14,marginBottom:20}}>Tap "+ New List" to get started</div>
             <button onClick={()=>setShowTemplates(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create list</button>
           </div>
         )}
 
-        {!showTemplates&&data.map((list,i)=>{
+        {/* List cards grid — most bought spans full width */}
+        {!showTemplates&&data.length>0&&(
+          <div style={{display:"grid",gridTemplateColumns:"1fr",gap:0}}>
+            {!showTemplates&&orderedLists.map((list)=>{
           const total=list.items.length;
           const done=list.items.filter(it=>it.checked).length;
           const pct=total>0?Math.round((done/total)*100):0;
-          const accent=list.color||["#5A7848","#486878","#7A6038","#7A2828","#486050"][i%5];
+          const accent=list.color||"#5A7848";
+          const isMostBought=list.name==="Most Bought Items";
           return(
-            <div key={list.id} onClick={()=>setActiveId(list.id)}
-              style={{background:"rgba(248,245,236,0.90)",borderRadius:22,marginBottom:12,overflow:"hidden",boxShadow:"0 2px 14px rgba(60,70,40,0.08)",border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",transition:"transform 0.12s"}}
-              onMouseDown={e=>e.currentTarget.style.transform="scale(0.985)"}
-              onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
-              onTouchStart={e=>e.currentTarget.style.transform="scale(0.985)"}
-              onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+            <div key={list.id}
+              data-shoplistid={list.id}
+              draggable
+              onDragStart={e=>shopDragStart(e,list.id)}
+              onDragOver={e=>shopDragOver(e,list.id)}
+              onDragEnd={()=>setDragShop(null)}
+              onTouchStart={e=>shopTouchStart(e,list.id)}
+              onTouchMove={shopTouchMove}
+              onTouchEnd={shopTouchEnd}
+              onClick={()=>setActiveId(list.id)}
+              style={{
+                background:dragShop===list.id?"rgba(255,255,255,0.98)":"rgba(248,245,236,0.90)",
+                borderRadius:22,marginBottom:12,overflow:"hidden",
+                boxShadow:dragShop===list.id?"0 10px 32px rgba(60,70,40,0.16)":"0 2px 14px rgba(60,70,40,0.08)",
+                border:"1px solid rgba(255,255,255,0.9)",cursor:"grab",
+                transform:dragShop===list.id?"scale(1.03) rotate(-0.5deg)":"scale(1)",
+                transition:"all 0.18s",position:"relative",
+                // Most Bought = wide row layout like Charge
+                ...(isMostBought?{gridColumn:"1 / -1"}:{}),
+              }}>
               <div style={{height:4,background:accent}}/>
-              <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+              {/* Drag dots */}
+              <div style={{position:"absolute",top:14,right:14,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
+                {[0,1,2].map(i=><div key={i} style={{display:"flex",gap:2.5}}>{[0,1].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"#3A3020"}}/>)}</div>)}
+              </div>
+              <div style={{padding:isMostBought?"14px 16px":"14px 16px",display:"flex",alignItems:"center",gap:12,flexDirection:"row"}}>
                 <div style={{width:44,height:44,borderRadius:14,background:`${accent}18`,border:`1.5px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{list.icon}</div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10"}}>{list.name}</div>
                   <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>
                     {total===0?"Empty — tap to add items":`${done}/${total} done`}
                     {pct===100&&total>0&&<span style={{color:"#5A9040",fontWeight:700}}> ✅</span>}
+                    {isMostBought&&total>0&&<span style={{marginLeft:6,fontSize:11}}>· Your everyday essentials</span>}
                   </div>
+                  {/* Item preview inline for wide card */}
+                  {isMostBought&&total>0&&(
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
+                      {list.items.filter(it=>!it.checked).slice(0,8).map(it=>(
+                        <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:10,fontWeight:600,borderRadius:100,padding:"1px 8px"}}>{it.name}</span>
+                      ))}
+                      {list.items.filter(it=>!it.checked).length>8&&<span style={{color:"#8A8070",fontSize:10,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-8} more</span>}
+                    </div>
+                  )}
                 </div>
+                {/* Progress bar inline for wide card */}
+                {isMostBought&&total>0&&(
+                  <div style={{width:80,flexShrink:0}}>
+                    <div style={{fontSize:11,color:"#8A8070",textAlign:"right",marginBottom:4}}>{pct}%</div>
+                    <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:100,transition:"width 0.4s"}}/>
+                    </div>
+                  </div>
+                )}
+                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.25,marginRight:4}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
                 <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${list.name}"?`))setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
               </div>
-              {total>0&&(
+              {/* Progress + preview for regular cards */}
+              {!isMostBought&&total>0&&(
                 <>
                   <div style={{height:3,background:"rgba(90,80,60,0.08)",margin:"0 16px"}}>
                     <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:2,transition:"width 0.4s"}}/>
@@ -5639,6 +5841,10 @@ function ShoppingList({data,setData,setScreen}){
             </div>
           );
         })}
+        )})}
+          </div>
+        )}
+        {!showTemplates&&data.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",marginTop:4}}>⠿ Hold and drag lists to reorder</div>}
       </div>
     </div>
   );
@@ -5678,16 +5884,37 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
   };
   const clearDone=()=>updItems(list.items.filter(it=>!it.checked));
 
-  const itemDragOver=(e,toId)=>{
+  const touchDragRef=useRef(null);
+  const touchStartY=useRef(0);
+  const touchItemId=useRef(null);
+
+  const onTouchStartItem=(e,id)=>{
+    touchItemId.current=id;
+    touchStartY.current=e.touches[0].clientY;
+    touchDragRef.current=setTimeout(()=>{
+      setDragItemId(id);
+    },200);
+  };
+  const onTouchMoveItem=(e)=>{
+    if(!dragItemId)return;
     e.preventDefault();
-    if(!dragItemId||dragItemId===toId)return;
-    const arr=[...list.items];
-    const fi=arr.findIndex(x=>x.id===dragItemId);
-    const ti=arr.findIndex(x=>x.id===toId);
-    if(fi<0||ti<0)return;
-    const [moved]=arr.splice(fi,1);
-    arr.splice(ti,0,moved);
-    updItems(arr);
+    const y=e.touches[0].clientY;
+    const els=document.elementsFromPoint(e.touches[0].clientX,y);
+    const target=els.find(el=>el.dataset&&el.dataset.itemid&&el.dataset.itemid!==dragItemId);
+    if(target){
+      const toId=parseInt(target.dataset.itemid);
+      if(toId&&toId!==dragItemId){
+        const arr=[...list.items];
+        const fi=arr.findIndex(x=>x.id===dragItemId);
+        const ti=arr.findIndex(x=>x.id===toId);
+        if(fi>=0&&ti>=0&&fi!==ti){const [m]=arr.splice(fi,1);arr.splice(ti,0,m);updItems(arr);}
+      }
+    }
+  };
+  const onTouchEndItem=()=>{
+    clearTimeout(touchDragRef.current);
+    setDragItemId(null);
+    touchItemId.current=null;
   };
 
   const totalDone=list.items.filter(it=>it.checked).length;
@@ -5781,12 +6008,16 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
             )}
             {items.map(item=>(
               <div key={item.id}
+                data-itemid={item.id}
                 draggable
                 onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragItemId(item.id);}}
-                onDragOver={e=>itemDragOver(e,item.id)}
+                onDragOver={e=>{e.preventDefault();if(!dragItemId||dragItemId===item.id)return;const arr=[...list.items];const fi=arr.findIndex(x=>x.id===dragItemId);const ti=arr.findIndex(x=>x.id===item.id);if(fi<0||ti<0||fi===ti)return;const[m]=arr.splice(fi,1);arr.splice(ti,0,m);updItems(arr);}}
                 onDragEnd={()=>setDragItemId(null)}
-                style={{background:dragItemId===item.id?"rgba(160,190,140,0.35)":item.checked?"rgba(248,245,236,0.60)":"rgba(248,245,236,0.92)",borderRadius:16,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${dragItemId===item.id?"#6A8858":item.checked?"rgba(90,160,80,0.20)":"rgba(90,120,72,0.15)"}`,opacity:item.checked?0.75:1,transition:"all 0.2s",display:"flex",alignItems:"center",gap:10,boxShadow:dragItemId===item.id?"0 6px 20px rgba(60,80,40,0.14)":"none",cursor:"grab"}}>
-                <div style={{color:"rgba(90,120,72,0.25)",fontSize:14,flexShrink:0,cursor:"grab"}}>⠿</div>
+                onTouchStart={e=>onTouchStartItem(e,item.id)}
+                onTouchMove={onTouchMoveItem}
+                onTouchEnd={onTouchEndItem}
+                style={{background:dragItemId===item.id?"rgba(160,190,140,0.45)":item.checked?"rgba(248,245,236,0.60)":"rgba(248,245,236,0.92)",borderRadius:16,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${dragItemId===item.id?"#6A8858":item.checked?"rgba(90,160,80,0.20)":"rgba(90,120,72,0.15)"}`,opacity:item.checked&&dragItemId!==item.id?0.75:1,transition:"background 0.15s,box-shadow 0.15s,transform 0.15s",display:"flex",alignItems:"center",gap:10,boxShadow:dragItemId===item.id?"0 8px 24px rgba(60,80,40,0.18)":"none",transform:dragItemId===item.id?"scale(1.02)":"scale(1)",cursor:"grab",touchAction:"none"}}>
+                <div style={{color:"rgba(90,120,72,0.40)",fontSize:16,flexShrink:0,cursor:"grab",padding:"0 2px",letterSpacing:1}}>⠿</div>
                 {/* Checkbox */}
                 <button onClick={()=>toggle(item.id)} style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${item.checked?"#5A9040":"rgba(90,120,72,0.35)"}`,background:item.checked?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>
                   {item.checked?"✓":""}
@@ -5807,6 +6038,7 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
             ))}
           </div>
         ))}
+        {visible.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",margin:"4px 0 8px"}}>⠿ Hold and drag items to reorder</div>}
       </div>
 
       {/* Edit item bottom sheet */}
@@ -7007,6 +7239,21 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const daysUntilReward=Math.max(0,rewardFreq-daysHit);
   const rewardUnlocked=daysHit>=rewardFreq;
 
+  const [dragChargeId,setDragChargeId]=useState(null);
+  const chargeTouchRef=useRef(null);
+  const chargeDragOver=(toOrigIdx,allTasks)=>{
+    if(dragChargeId===null||dragChargeId===toOrigIdx)return;
+    const next=[...allTasks];
+    const[m]=next.splice(dragChargeId,1);next.splice(toOrigIdx,0,m);
+    upd({targetTasks:next.map(t=>t||"")});
+  };
+  const chargeTouchStart=(e,origIdx)=>{chargeTouchRef.current=setTimeout(()=>setDragChargeId(origIdx),200);};
+  const chargeTouchMove=(e,allTasks)=>{
+    if(dragChargeId===null)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.chargeidx;if(tid!==undefined&&Number(tid)!==dragChargeId)chargeDragOver(Number(tid),allTasks);
+  };
+  const chargeTouchEnd=()=>{clearTimeout(chargeTouchRef.current);setDragChargeId(null);};
   const [celebration,setCelebration]=useState(null); // {name, isTarget, isReward}
   const [confettiPieces,setConfettiPieces]=useState([]);
 
@@ -7185,13 +7432,21 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                     upd({targetTasks:next});
                   };
                   return(
-                    <div key={origIdx} style={{background:done?"rgba(90,160,80,0.10)":"rgba(255,255,255,0.80)",borderRadius:18,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,transition:"all 0.3s"}}>
+                    <div key={origIdx}
+                      data-chargeidx={origIdx}
+                      draggable={!done}
+                      onDragStart={e=>{if(done)return;e.dataTransfer.effectAllowed="move";setDragChargeId(origIdx);}}
+                      onDragOver={e=>{e.preventDefault();if(!done)chargeDragOver(origIdx,tasks);}}
+                      onDragEnd={()=>setDragChargeId(null)}
+                      onTouchStart={e=>{if(!done)chargeTouchStart(e,origIdx);}}
+                      onTouchMove={e=>chargeTouchMove(e,tasks)}
+                      onTouchEnd={chargeTouchEnd}
+                      style={{background:dragChargeId===origIdx?"rgba(220,240,210,0.80)":done?"rgba(90,160,80,0.10)":"rgba(255,255,255,0.80)",borderRadius:18,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${dragChargeId===origIdx?"#6A8858":done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,transition:"all 0.2s",transform:dragChargeId===origIdx?"scale(1.02)":"scale(1)",boxShadow:dragChargeId===origIdx?"0 6px 20px rgba(60,80,40,0.14)":"none",cursor:done?"default":"grab",touchAction:"none"}}>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         {/* Up/down reorder arrows */}
                         {!done&&(
                           <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
-                            <button onClick={()=>moveTask(-1)} disabled={isFirst} style={{background:"none",border:"none",cursor:isFirst?"default":"pointer",color:isFirst?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:14,lineHeight:1,padding:"1px 4px"}}>▲</button>
-                            <button onClick={()=>moveTask(1)} disabled={isLast} style={{background:"none",border:"none",cursor:isLast?"default":"pointer",color:isLast?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:14,lineHeight:1,padding:"1px 4px"}}>▼</button>
+                            <div style={{cursor:"grab",color:"rgba(90,120,72,0.35)",fontSize:16,padding:"0 4px",letterSpacing:1}}>⠿</div>
                           </div>
                         )}
                         {/* Tick */}
@@ -8195,6 +8450,16 @@ export default function App() {
     setModuleOrder(o=>{const a=[...o];const from=a.indexOf(dragHome),to=a.indexOf(id);a.splice(from,1);a.splice(to,0,dragHome);return a;});
   };
   const homeDragEnd=()=>setDragHome(null);
+  // Touch drag for home modules
+  const homeTouchRef=useRef(null);
+  const homeTouchId=useRef(null);
+  const homeTouchStart=(e,id)=>{homeTouchId.current=id;homeTouchRef.current=setTimeout(()=>setDragHome(id),200);};
+  const homeTouchMove=(e)=>{
+    if(!dragHome)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.modid;if(tid&&tid!==dragHome)setModuleOrder(o=>{const a=[...o];const fi=a.indexOf(dragHome),ti=a.indexOf(tid);if(fi<0||ti<0||fi===ti)return o;a.splice(fi,1);a.splice(ti,0,dragHome);return a;});
+  };
+  const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;};
 
   if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
@@ -8298,10 +8563,14 @@ export default function App() {
       <div style={{padding:"0 14px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,flex:1}}>
         {orderedModules.map(m=>(
           <div key={m.id}
+            data-modid={m.id}
             draggable
             onDragStart={e=>homeDragStart(e,m.id)}
             onDragOver={e=>homeDragOver(e,m.id)}
             onDragEnd={homeDragEnd}
+            onTouchStart={e=>homeTouchStart(e,m.id)}
+            onTouchMove={homeTouchMove}
+            onTouchEnd={homeTouchEnd}
             onClick={()=>setScreen(m.id)}
             style={{
               background:dragHome===m.id?"rgba(255,255,255,0.96)":"rgba(250,248,240,0.82)",
