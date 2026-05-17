@@ -7981,7 +7981,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             {/* Add new task */}
             <div style={{display:"flex",gap:8,marginTop:4}}>
               <input ref={setupAddRef}
-                placeholder="Add a task…"
+                placeholder="Type a task and tap Add…"
                 style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
                 onKeyDown={e=>{
                   if(e.key==="Enter"&&e.target.value.trim()){
@@ -7996,7 +7996,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 const next=[...(data.targetTasks||[]).filter(t=>t?.trim()),inp.value.trim()];
                 upd({targetTasks:next,dailyTarget:next.length});
                 inp.value="";inp.focus();
-              }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:40,height:40,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+              }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontSize:14,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Add</button>
             </div>
             {(data.targetTasks||[]).filter(t=>t?.trim()).length>0&&(
               <div style={{marginTop:10,fontSize:11,color:"#5A7040",fontWeight:600,textAlign:"center"}}>✅ {(data.targetTasks||[]).filter(t=>t?.trim()).length} task{(data.targetTasks||[]).filter(t=>t?.trim()).length!==1?"s":""} ready on your Today page</div>
