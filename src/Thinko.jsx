@@ -7637,25 +7637,66 @@ const NATURE_SOUNDS=WN_PRESETS; // reuse the existing audio engine
 
 function RestSpace({setScreen}){
   const [tab,setTab]=useState("meditate");
+  // Meditation state — supports up to 8 slots (5 user videos + 3 guided)
+  const [audioFiles,setAudioFiles]=useState({});   // {slotId: {src, type, name}}
   const [activeMed,setActiveMed]=useState(null);
-  const [medStep,setMedStep]=useState(0);
   const [medRunning,setMedRunning]=useState(false);
   const [medDone,setMedDone]=useState(false);
+  const [medStep,setMedStep]=useState(0);
+  const audioRef=useRef(null);
   const [breakMins,setBreakMins]=useState(10);
   const [breakLeft,setBreakLeft]=useState(null);
   const [breakOn,setBreakOn]=useState(false);
-  const [audioFiles,setAudioFiles]=useState({}); // {medId: base64dataUrl}
-  const [audioPlaying,setAudioPlaying]=useState(null);
-  const audioRef=useRef(null);
   const breakRef=useRef(null);
 
-  // Meditation auto-advance (text fallback only when no audio uploaded)
+  // Load saved audioFiles from localStorage
+  useEffect(()=>{
+    try{
+      const saved=localStorage.getItem('thinko_rest_audio');
+      if(saved){
+        const parsed=JSON.parse(saved);
+        // Restore only metadata (not base64 — too large) so names show
+        const meta={};
+        Object.keys(parsed).forEach(k=>{meta[k]={...parsed[k],src:parsed[k].src};});
+        setAudioFiles(meta);
+      }
+    }catch{}
+  },[]);
+
+  const saveAudioFiles=(updated)=>{
+    setAudioFiles(updated);
+    // Save to localStorage (base64 may be large — best effort)
+    try{localStorage.setItem('thinko_rest_audio',JSON.stringify(updated));}catch{}
+  };
+
+  // Guided meditations (built-in text scripts — user can replace with their own video)
+  const GUIDED=[
+    {id:"breath",  icon:"🌬️", title:"Breathing Rest",      desc:"Gentle breathing to calm the nervous system",
+     script:["Close your eyes and let your body settle...","Breathe in slowly for 4… hold for 2… out for 6...","Feel your body becoming heavier and more relaxed...","You are safe. You are resting. Nothing needs doing right now...","Stay here as long as you need. Rest well."]},
+    {id:"body",    icon:"🌿", title:"Body Scan",            desc:"Slowly release tension from head to toe",
+     script:["Find a comfortable position and close your eyes...","Let your jaw soften… your shoulders drop…","Feel your arms become heavy and warm...","Your body is supported. You don't need to do anything right now...","Slowly, gently, come back when you feel ready."]},
+    {id:"garden",  icon:"🌸", title:"Garden Visualisation", desc:"A peaceful walk through a calm garden",
+     script:["Close your eyes and take three slow breaths...","Imagine stepping into a beautiful garden...","The air is warm and gentle. You can smell flowers and earth...","Sit on a bench in a sunny spot. Nothing to do, nowhere to be...","When you're ready, carry this peace back with you."]},
+  ];
+
+  // User video slots — 5 spaces
+  const USER_SLOTS=[
+    {id:"my1",icon:"🎬",title:"My Meditation 1",desc:"Upload your own guided meditation"},
+    {id:"my2",icon:"🎬",title:"My Meditation 2",desc:"Upload your own guided meditation"},
+    {id:"my3",icon:"🎬",title:"My Meditation 3",desc:"Upload your own guided meditation"},
+    {id:"my4",icon:"🎬",title:"My Meditation 4",desc:"Upload your own guided meditation"},
+    {id:"my5",icon:"🎬",title:"My Meditation 5",desc:"Upload your own guided meditation"},
+  ];
+
+  const allMeds=[...GUIDED,...USER_SLOTS];
+
+  // Text auto-advance for guided (no file uploaded)
   useEffect(()=>{
     if(!medRunning||!activeMed||audioFiles[activeMed.id])return;
-    const steps=activeMed.script;
-    if(medStep>=steps.length){setMedDone(true);setMedRunning(false);return;}
-    const delay=(activeMed.duration/steps.length)*1000;
-    const t=setTimeout(()=>setMedStep(s=>s+1),delay);
+    const med=allMeds.find(m=>m.id===activeMed.id);
+    if(!med?.script)return;
+    if(medStep>=med.script.length){setMedDone(true);setMedRunning(false);return;}
+    const t=setTimeout(()=>setMedStep(s=>s+1),(30000/med.script.length));
     return()=>clearTimeout(t);
   },[medRunning,medStep,activeMed,audioFiles]);
 
@@ -7669,105 +7710,109 @@ function RestSpace({setScreen}){
   const startMed=(med)=>{
     setActiveMed(med);setMedStep(0);setMedRunning(true);setMedDone(false);
     const file=audioFiles[med.id];
-    if(file&&file.type==="audio"){
+    if(file?.type==="audio"){
       if(audioRef.current){audioRef.current.pause();audioRef.current=null;}
-      const audio=new Audio(file.src);
-      audio.onended=()=>{setMedDone(true);setMedRunning(false);setAudioPlaying(null);};
-      audio.play();audioRef.current=audio;setAudioPlaying(med.id);
+      const a=new Audio(file.src);
+      a.onended=()=>{setMedDone(true);setMedRunning(false);};
+      a.play();audioRef.current=a;
     }
-    // Video is handled inline in JSX via <video> tag
   };
-
   const stopMed=()=>{
     if(audioRef.current){audioRef.current.pause();audioRef.current=null;}
-    setActiveMed(null);setMedRunning(false);setMedDone(false);setMedStep(0);setAudioPlaying(null);
+    setActiveMed(null);setMedRunning(false);setMedDone(false);setMedStep(0);
   };
-
-  const uploadAudio=(medId,e)=>{
+  const uploadFile=(medId,e)=>{
     const file=e.target.files[0];if(!file)return;
     const isVideo=file.type.startsWith("video/");
     const r=new FileReader();
-    r.onload=ev=>setAudioFiles(a=>({...a,[medId]:{src:ev.target.result,type:isVideo?"video":"audio",name:file.name}}));
+    r.onload=ev=>saveAudioFiles({...audioFiles,[medId]:{src:ev.target.result,type:isVideo?"video":"audio",name:file.name}});
     r.readAsDataURL(file);
   };
-
-  const removeAudio=(medId)=>setAudioFiles(a=>{const n={...a};delete n[medId];return n;});
-
-  const startBreak=()=>{setBreakLeft(breakMins*60);setBreakOn(true);};
+  const removeFile=(medId)=>{
+    const updated={...audioFiles};delete updated[medId];
+    saveAudioFiles(updated);
+  };
   const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
-  return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0a1a0a 0%,#0d2b1a 40%,#1a3d2a 100%)",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+  const TAB_BTN=(id,label)=>(
+    <button onClick={()=>setTab(id)} style={{flex:1,padding:"11px 4px",background:"none",border:"none",
+      borderBottom:tab===id?"3px solid #5A7848":"3px solid transparent",
+      color:tab===id?"#1A1A10":"rgba(60,50,30,0.45)",
+      fontWeight:tab===id?700:500,fontSize:13,cursor:"pointer",fontFamily:"Georgia,serif",transition:"all 0.15s"}}>{label}</button>
+  );
 
-      {/* Header */}
-      
-      <div style={{background:"linear-gradient(135deg,#0d2b1a,#1e5c3a)",padding:"18px 16px 14px",textAlign:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.6)",fontStyle:"italic",lineHeight:1.6}}>
-          "Rest is not a reward for finishing — it's part of the work" 🌿
+  return(
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+
+      {/* Garden header */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 0",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+          <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A1A10"}}>🌿 Rest Space</div>
+            <div style={{fontSize:12,color:"#8A8070",marginTop:1,fontStyle:"italic"}}>"Rest is not a reward — it's part of the work"</div>
+          </div>
+        </div>
+        <div style={{display:"flex"}}>
+          {TAB_BTN("meditate","🧘 Guided Rest")}
+          {TAB_BTN("sounds","🎵 Sounds")}
+          {TAB_BTN("timer","⏱ Break Timer")}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{display:"flex",background:"rgba(0,0,0,0.25)",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
-        {[["meditate","🧘 Guided Rest"],["sounds","🎵 Sounds"],["timer","⏱ Break Timer"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"11px 4px",background:"none",border:"none",borderBottom:tab===k?"3px solid #52c47a":"3px solid transparent",color:tab===k?"#fff":"rgba(255,255,255,0.45)",fontWeight:tab===k?800:600,fontSize:12,cursor:"pointer"}}>{l}</button>
-        ))}
-      </div>
+      <div style={{padding:"16px 14px"}}>
 
-      <div style={{padding:"14px 14px"}}>
-
-        {/* ── GUIDED REST ── */}
+        {/* ══ GUIDED REST ══ */}
         {tab==="meditate"&&<>
           {/* Active meditation */}
           {activeMed&&(
-            <div style={{background:"linear-gradient(135deg,#0d2b1a,#1e5c3a)",borderRadius:22,padding:"24px 20px",marginBottom:16,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",border:"1px solid rgba(82,196,122,0.3)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-                <button onClick={stopMed} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
-                <span style={{fontSize:30}}>{activeMed.icon}</span>
+            <div style={{background:"rgba(248,245,236,0.92)",borderRadius:24,padding:"20px 18px",marginBottom:16,boxShadow:"0 4px 24px rgba(60,70,40,0.10)",border:"1px solid rgba(255,255,255,0.9)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+                <button onClick={stopMed} style={{background:"rgba(90,80,60,0.08)",color:"#3A3020",border:"none",borderRadius:100,padding:"8px 14px",fontWeight:700,fontSize:13,cursor:"pointer"}}>← Back</button>
+                <span style={{fontSize:24}}>{allMeds.find(m=>m.id===activeMed.id)?.icon}</span>
                 <div style={{flex:1}}>
-                  <div style={{color:"#fff",fontWeight:900,fontSize:18}}>{activeMed.title}</div>
-                  <div style={{color:"#7A7060",fontSize:12}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?.type==="video"?"🎬 Video playing...":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>{allMeds.find(m=>m.id===activeMed.id)?.title}</div>
+                  <div style={{fontSize:12,color:"#8A8070"}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?.type==="video"?"🎬 Playing...":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
                 </div>
-                <button onClick={stopMed} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕ End</button>
+                <button onClick={stopMed} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>✕ End</button>
               </div>
-              {/* Script text — shows when no audio uploaded */}
-              {!medDone&&!audioFiles[activeMed.id]&&(
-                <div style={{background:"rgba(90,80,60,0.06)",borderRadius:16,padding:"18px 20px",marginBottom:16,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid rgba(82,196,122,0.2)"}}>
-                  <div style={{color:"#e0f7e9",fontSize:16,fontWeight:600,textAlign:"center",lineHeight:1.7,fontStyle:"italic"}}>
-                    {activeMed.script[Math.min(medStep,activeMed.script.length-1)]}
-                  </div>
-                </div>
+              {/* Video player */}
+              {audioFiles[activeMed.id]?.type==="video"&&!medDone&&(
+                <video src={audioFiles[activeMed.id]?.src} controls autoPlay
+                  style={{width:"100%",borderRadius:16,maxHeight:280,background:"#1A1A10",marginBottom:12}}
+                  onEnded={()=>{setMedDone(true);setMedRunning(false);}}/>
               )}
-              {/* Audio / Video player */}
-              {!medDone&&audioFiles[activeMed.id]&&(
-                <div style={{background:"rgba(90,80,60,0.06)",borderRadius:16,padding:"18px 20px",marginBottom:16,display:"flex",flexDirection:"column",alignItems:"center",gap:12,border:"1px solid rgba(82,196,122,0.3)"}}>
-                  {audioFiles[activeMed.id]?.type==="video"
-                    ?<video src={audioFiles[activeMed.id]?.src} controls autoPlay style={{width:"100%",borderRadius:12,maxHeight:260,background:"#000"}} onEnded={()=>{setMedDone(true);setMedRunning(false);}}/>
-                    :<>
-                      <div style={{display:"flex",gap:6,alignItems:"flex-end",height:32}}>
-                        {[0.4,0.7,1,0.8,0.5,0.9,0.6,0.75,0.45,0.85].map((h,i)=>(
-                          <div key={i} style={{width:4,borderRadius:2,background:"#52c47a",height:`${h*100}%`,opacity:0.7+i*0.03}}/>
-                        ))}
-                      </div>
-                      <div style={{color:"#e0f7e9",fontSize:14,fontWeight:600,textAlign:"center"}}>🎵 Your guided meditation is playing</div>
-                      <div style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>Close your eyes or keep them soft and unfocused</div>
-                    </>
-                  }
+              {/* Text script */}
+              {!medDone&&!audioFiles[activeMed.id]&&(()=>{
+                const med=allMeds.find(m=>m.id===activeMed.id);
+                const script=med?.script||[];
+                return(
+                  <div style={{background:"rgba(90,120,72,0.06)",borderRadius:18,padding:"20px 20px",marginBottom:14,minHeight:80,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid rgba(90,120,72,0.15)"}}>
+                    <div style={{color:"#2A3820",fontSize:16,fontWeight:500,textAlign:"center",lineHeight:1.8,fontStyle:"italic",fontFamily:"Georgia,serif"}}>
+                      {script[Math.min(medStep,script.length-1)]||"Breathe and rest…"}
+                    </div>
+                  </div>
+                );
+              })()}
+              {/* Audio waveform */}
+              {!medDone&&audioFiles[activeMed.id]?.type==="audio"&&(
+                <div style={{background:"rgba(90,120,72,0.06)",borderRadius:18,padding:"20px",marginBottom:14,display:"flex",flexDirection:"column",alignItems:"center",gap:10,border:"1px solid rgba(90,120,72,0.15)"}}>
+                  <div style={{display:"flex",gap:5,alignItems:"flex-end",height:28}}>
+                    {[0.5,0.8,1,0.7,0.9,0.6,0.85,0.4,0.75,0.95].map((h,i)=>(
+                      <div key={i} style={{width:4,borderRadius:2,background:"#5A7848",height:`${h*100}%`,opacity:0.6+i*0.03}}/>
+                    ))}
+                  </div>
+                  <div style={{color:"#3A6020",fontSize:14,fontWeight:600,fontFamily:"Georgia,serif"}}>🎵 Your meditation is playing</div>
+                  <div style={{color:"#8A8070",fontSize:12}}>Close your eyes and breathe</div>
                 </div>
               )}
               {medDone&&(
-                <div style={{background:"rgba(82,196,122,0.15)",borderRadius:16,padding:"20px",textAlign:"center",border:"1px solid rgba(82,196,122,0.4)"}}>
-                  <div style={{fontSize:36,marginBottom:8}}>🌿</div>
-                  <div style={{color:"#52c47a",fontWeight:900,fontSize:18,marginBottom:4}}>Rest complete</div>
-                  <div style={{color:"rgba(255,255,255,0.6)",fontSize:14}}>Take a moment before moving on</div>
-                </div>
-              )}
-              {/* Progress dots */}
-              {!medDone&&(
-                <div style={{display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap"}}>
-                  {activeMed.script.map((_,i)=>(
-                    <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<medStep?"#52c47a":i===medStep?"#fff":"rgba(255,255,255,0.2)",transition:"all 0.3s"}}/>
-                  ))}
+                <div style={{background:"rgba(90,160,80,0.10)",borderRadius:18,padding:"20px",textAlign:"center",border:"1px solid rgba(90,160,80,0.25)"}}>
+                  <div style={{fontSize:36,marginBottom:8}}>✨</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#2A6020",marginBottom:4}}>Session complete</div>
+                  <div style={{color:"#5A7040",fontSize:13}}>Take a moment before you return to your day</div>
                 </div>
               )}
             </div>
@@ -7775,117 +7820,107 @@ function RestSpace({setScreen}){
 
           {/* Meditation cards */}
           {!activeMed&&<>
-            <div style={{color:"rgba(255,255,255,0.6)",fontSize:13,textAlign:"center",marginBottom:14,lineHeight:1.6}}>
-              These are guided rest sessions — not sleep.<br/>Perfect for fatigue recovery during the day 💙
-            </div>
-            {MEDITATIONS.map(med=>(
-              <div key={med.id}
-                style={{background:"rgba(255,255,255,0.07)",borderRadius:18,padding:"14px 14px",marginBottom:12,border:"1px solid rgba(82,196,122,0.2)"}}>
-                {/* Card header — tap to play */}
-                <div onClick={()=>startMed(med)} style={{display:"flex",alignItems:"center",gap:14,cursor:"pointer",marginBottom:10}}
-                  onMouseEnter={e=>e.currentTarget.style.opacity="0.85"}
-                  onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                  <div style={{width:52,height:52,borderRadius:14,background:"linear-gradient(135deg,#1e5c3a,#52c47a)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{med.icon}</div>
+            {/* Built-in guided meditations */}
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:10}}>🧘 Guided Meditations</div>
+            {GUIDED.map(med=>(
+              <div key={med.id} style={{background:"rgba(248,245,236,0.88)",borderRadius:22,marginBottom:10,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 12px rgba(60,70,40,0.06)",overflow:"hidden"}}>
+                <div style={{height:3,background:"#5A7848"}}/>
+                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:26}}>{med.icon}</span>
                   <div style={{flex:1}}>
-                    <div style={{color:"#fff",fontWeight:800,fontSize:15,marginBottom:3}}>{med.title}</div>
-                    <div style={{color:"#7A7060",fontSize:12,marginBottom:3}}>{med.desc}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{color:"rgba(82,196,122,0.8)",fontSize:11,fontWeight:700}}>{Math.round(med.duration/60)} min</span>
-                      {audioFiles[med.id]&&<span style={{background:"rgba(82,196,122,0.25)",color:"#52c47a",fontSize:10,fontWeight:800,borderRadius:10,padding:"2px 8px"}}>🎵 Audio ready</span>}
-                      {!audioFiles[med.id]&&<span style={{color:"rgba(255,255,255,0.3)",fontSize:10}}>📝 Text script</span>}
-                    </div>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:2}}>{med.title}</div>
+                    <div style={{fontSize:12,color:"#8A8070"}}>{audioFiles[med.id]?`📁 ${audioFiles[med.id].name?.slice(0,30)}`:med.desc}</div>
                   </div>
-                  <div style={{color:"rgba(255,255,255,0.3)",fontSize:22}}>▶</div>
-                </div>
-                {/* Audio upload row */}
-                <div style={{display:"flex",gap:8,alignItems:"center",borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:10}}>
-                  {audioFiles[med.id]?(
-                    <>
-                      <div style={{flex:1,fontSize:11,color:"rgba(82,196,122,0.8)",fontWeight:700}}>
-                        {audioFiles[med.id]?.type==="video"?"🎬 Video uploaded":"🎵 Audio uploaded"} — {audioFiles[med.id]?.name?.slice(0,20)||""}
-                      </div>
-                      <button onClick={()=>removeAudio(med.id)} style={{background:"rgba(255,100,100,0.2)",color:"rgba(255,150,150,0.9)",border:"1px solid rgba(255,100,100,0.3)",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕ Remove</button>
-                    </>
-                  ):(
-                    <>
-                      <div style={{flex:1,fontSize:11,color:"rgba(255,255,255,0.35)"}}>Upload MP3, audio or your own video</div>
-                      <label style={{background:"rgba(82,196,122,0.2)",color:"#52c47a",border:"1px solid rgba(82,196,122,0.4)",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
-                        🎵 Upload audio
-                        <input type="file" accept="audio/*,video/*" style={{display:"none"}} onChange={e=>uploadAudio(med.id,e)}/>
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                    {/* Upload/remove */}
+                    {audioFiles[med.id]
+                      ?<button onClick={()=>removeFile(med.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
+                      :<label style={{background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        📁 Upload<input type="file" accept="audio/*,video/*" style={{display:"none"}} onChange={e=>uploadFile(med.id,e)}/>
                       </label>
-                    </>
-                  )}
+                    }
+                    <button onClick={()=>startMed(med)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
+                      ▶ Start
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* User video slots */}
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",margin:"18px 0 10px"}}>🎬 My Meditation Videos</div>
+            <div style={{color:"#8A8070",fontSize:12,marginBottom:12,lineHeight:1.6}}>Upload your own guided meditation videos. Tap a slot to add your file — MP4, MOV or any video format.</div>
+            {USER_SLOTS.map(med=>(
+              <div key={med.id} style={{background:audioFiles[med.id]?"rgba(248,245,236,0.92)":"rgba(248,245,236,0.60)",borderRadius:22,marginBottom:10,border:`1.5px ${audioFiles[med.id]?"solid":"dashed"} ${audioFiles[med.id]?"rgba(90,120,72,0.25)":"rgba(90,80,60,0.15)"}`,overflow:"hidden"}}>
+                {audioFiles[med.id]&&<div style={{height:3,background:"#486878"}}/>}
+                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:26}}>{audioFiles[med.id]?med.icon:"➕"}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:2}}>
+                      {audioFiles[med.id]?audioFiles[med.id].name?.replace(/\.[^.]+$/,"").slice(0,30)||med.title:med.title}
+                    </div>
+                    <div style={{fontSize:12,color:"#8A8070"}}>{audioFiles[med.id]?`${audioFiles[med.id].type} file ready`:med.desc}</div>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    {audioFiles[med.id]?(
+                      <>
+                        <button onClick={()=>removeFile(med.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
+                        <button onClick={()=>startMed(med)} style={{background:"#486878",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,60,80,0.22)"}}>▶ Play</button>
+                      </>
+                    ):(
+                      <label style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.22)"}}>
+                        + Upload<input type="file" accept="audio/*,video/*" style={{display:"none"}} onChange={e=>uploadFile(med.id,e)}/>
+                      </label>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </>}
         </>}
 
-        {/* ── NATURE SOUNDS (White Noise moved here) ── */}
+        {/* ══ SOUNDS ══ */}
         {tab==="sounds"&&(
           <div>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <button onClick={()=>setTab("meditate")} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,width:34,height:34,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
-              <span style={{color:"rgba(255,255,255,0.7)",fontWeight:700,fontSize:14}}>🎵 Nature Sounds</span>
-            </div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:4}}>🎵 Nature Sounds</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>All sounds are generated locally — no internet needed. Tap to play, tap again to stop.</div>
             <WhiteNoise/>
           </div>
         )}
 
-        {/* ── BREAK TIMER ── */}
+        {/* ══ BREAK TIMER ══ */}
         {tab==="timer"&&(
-          <div>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <button onClick={()=>setTab("meditate")} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,width:34,height:34,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
-              <span style={{color:"rgba(255,255,255,0.7)",fontWeight:700,fontSize:14}}>⏱ Break Timer</span>
-            </div>
-            <div style={{color:"rgba(255,255,255,0.6)",fontSize:13,textAlign:"center",marginBottom:16,lineHeight:1.6}}>
-              Set a break timer. During your break, switch to Guided Rest or Sounds 🌿
-            </div>
-            {/* Big timer display */}
-            <div style={{background:"rgba(255,255,255,0.06)",borderRadius:22,padding:"28px 20px",marginBottom:16,textAlign:"center",border:"1px solid rgba(82,196,122,0.2)"}}>
-              {breakLeft!==null?(
-                <>
-                  <div style={{fontFamily:"monospace",fontSize:64,fontWeight:900,color:breakLeft<60?"#FF6B6B":"#52c47a",lineHeight:1,marginBottom:8}}>{fmt(breakLeft)}</div>
-                  <div style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:16}}>
-                    {breakOn?"Rest time — you're doing great 🌿":"Break paused"}
-                  </div>
-                  <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-                    <button onClick={()=>{clearInterval(breakRef.current);setBreakOn(false);setBreakLeft(null);}}
-                      style={{background:"rgba(255,107,107,0.3)",color:"#fff",border:"1px solid rgba(255,107,107,0.5)",borderRadius:12,padding:"10px 20px",fontWeight:800,cursor:"pointer"}}>✕ Cancel</button>
-                    <button onClick={()=>setTab("meditate")}
-                      style={{background:"linear-gradient(135deg,#1e5c3a,#52c47a)",color:"#fff",border:"none",borderRadius:12,padding:"10px 20px",fontWeight:800,cursor:"pointer"}}>🧘 Start guided rest</button>
-                  </div>
-                </>
-              ):(
-                <>
-                  <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:14}}>Break duration</div>
-                  <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:20}}>
-                    {[5,10,15,20,30].map(m=>(
-                      <button key={m} onClick={()=>setBreakMins(m)} style={{background:breakMins===m?"rgba(82,196,122,0.3)":"rgba(255,255,255,0.08)",color:breakMins===m?"#52c47a":"rgba(255,255,255,0.6)",border:`1.5px solid ${breakMins===m?"#52c47a":"rgba(255,255,255,0.15)"}`,borderRadius:20,padding:"8px 16px",fontWeight:breakMins===m?800:600,fontSize:13,cursor:"pointer"}}>
-                        {m} min
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={startBreak}
-                    style={{background:"linear-gradient(135deg,#1e5c3a,#52c47a)",color:"#fff",border:"none",borderRadius:16,padding:"16px 40px",fontWeight:900,fontSize:17,cursor:"pointer",boxShadow:"0 4px 18px rgba(82,196,122,0.4)"}}>
-                    🌿 Start {breakMins} min rest
-                  </button>
-                </>
-              )}
-            </div>
-            {/* Tips */}
-            <div style={{background:"rgba(255,255,255,0.06)",borderRadius:16,padding:"14px 16px",border:"1px solid rgba(82,196,122,0.15)"}}>
-              <div style={{color:"#52c47a",fontWeight:800,fontSize:13,marginBottom:8}}>💙 Rest tips</div>
-              {["Avoid screens during your break if possible","Lie down or sit comfortably — you don't need to sleep","Use guided rest instead of napping to avoid sleep inertia","Even 10 minutes of proper rest restores energy","Your body heals and restores during conscious rest"].map((tip,i)=>(
-                <div key={i} style={{display:"flex",gap:8,marginBottom:6}}>
-                  <span style={{color:"#52c47a",flexShrink:0}}>🌿</span>
-                  <span style={{color:"rgba(255,255,255,0.6)",fontSize:13}}>{tip}</span>
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"24px 20px",boxShadow:"0 2px 14px rgba(60,70,40,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>⏱ Break Timer</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:20,lineHeight:1.6}}>Step away. Rest. Come back refreshed.</div>
+            {!breakOn?(
+              <>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
+                  {[5,10,15,20,30].map(m=>(
+                    <button key={m} onClick={()=>setBreakMins(m)} style={{flex:1,minWidth:50,padding:"11px",background:breakMins===m?"#5A7848":"rgba(248,245,236,0.95)",color:breakMins===m?"#fff":"#3A3020",border:`1.5px solid ${breakMins===m?"#5A7848":"rgba(90,80,60,0.15)"}`,borderRadius:14,fontWeight:700,fontSize:14,cursor:"pointer"}}>{m}m</button>
+                  ))}
                 </div>
+                <button onClick={()=>{setBreakLeft(breakMins*60);setBreakOn(true);}} style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>
+                  🌿 Start {breakMins}-minute break
+                </button>
+              </>
+            ):(
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"Georgia,serif",fontSize:56,fontWeight:700,color:"#5A7848",marginBottom:8,letterSpacing:-2}}>{fmt(breakLeft)}</div>
+                <div style={{color:"#8A8070",fontSize:14,marginBottom:20,fontStyle:"italic"}}>Your break is running… step away 🌿</div>
+                <button onClick={()=>{setBreakOn(false);setBreakLeft(null);}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,padding:"10px 24px",fontWeight:700,fontSize:14,cursor:"pointer"}}>End break</button>
+              </div>
+            )}
+            {/* Rest tips */}
+            <div style={{marginTop:20,padding:"16px 18px",background:"rgba(90,120,72,0.06)",borderRadius:18,border:"1px solid rgba(90,120,72,0.12)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A6020",fontSize:13,marginBottom:8}}>🌿 Rest well</div>
+              {["Step away from your screen","Breathe slowly and deeply","Your body heals during conscious rest","Rest is not a reward — it's part of the work"].map((tip,i)=>(
+                <div key={i} style={{fontSize:12,color:"#5A7040",marginBottom:4,lineHeight:1.6,paddingLeft:8}}>· {tip}</div>
               ))}
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
