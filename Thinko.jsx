@@ -3259,11 +3259,14 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     try{
       const v=localStorage.getItem('thinko_vault_order');
       const saved=v?JSON.parse(v):null;
-      const validIds=["notes","filing","ideas","voice","studio"];
-      // Reset if stale (missing new items)
-      if(saved&&validIds.every(id=>saved.includes(id)))return saved;
+      const validIds=["notes","filing","voice","studio"];
+      if(saved){
+        // Filter out ideas if present, reset if missing new items
+        const filtered=saved.filter(id=>validIds.includes(id));
+        if(validIds.every(id=>filtered.includes(id)))return filtered;
+      }
       return validIds;
-    }catch{return ["notes","filing","ideas","voice","studio"];}
+    }catch{return ["notes","filing","voice","studio"];}
   });
   const [dragVault,setDragVault]=useState(null);
   const vaultTouchRef=useRef(null);
@@ -3381,7 +3384,8 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 
   // Page editor
   const updatePageUrl=(id,url)=>setData(ds=>ds.map(s=>s.id===sectionId?{...s,pages:s.pages.map(p=>p.id===id?{...p,url}:p)}:s));
-  if(page&&section) return (
+  if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
+  if(notesMode==="notes"&&page&&section) return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
       {studioOpen&&<StudyStudio page={page} onClose={()=>setStudioOpen(false)}/>}
       {/* PDF → Podcast */}
@@ -3431,7 +3435,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"10px 12px",display:"flex",alignItems:"center",gap:8,boxShadow:"0 3px 16px rgba(90,80,60,0.35)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
         <button onClick={()=>setPageId(null)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
         <span style={{flex:1,color:"#1A1A10",fontWeight:800,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{page.title}</span>
-        <button onClick={()=>{setSectionId(null);setNotesMode(null);}} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 12px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>🏠</button>
+        <button onClick={()=>{setSectionId(null);setPageId(null);setNotesMode(null);}} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 12px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>🏠</button>
         <button onClick={()=>setStudioOpen(true)} style={{background:"linear-gradient(135deg,#4a148c,#7c5cbf)",color:"#1A1A10",border:"none",borderRadius:10,padding:"7px 11px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>🎓</button>
         <div style={{position:"relative"}}>
           <button onClick={()=>setSendOpen(o=>!o)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,padding:"7px 11px",fontWeight:800,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
@@ -3560,12 +3564,12 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   );
 
   // Page list
-  if(section) return (
+  if(notesMode==="notes"&&section) return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 3px 16px rgba(90,80,60,0.35)",position:"sticky",top:0,zIndex:50}}>
         <button onClick={()=>setSectionId(null)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
         <span style={{flex:1,color:"#1A1A10",fontWeight:900,fontSize:17,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{section.name}</span>
-        <button onClick={()=>{setSectionId(null);setNotesMode(null);}} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>
+        <button onClick={()=>{setSectionId(null);setPageId(null);setNotesMode(null);}} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>
         <button onClick={addPage} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:40,height:40,fontSize:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
       </div>
       <div style={{padding:"20px 16px"}}>
@@ -3695,6 +3699,15 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
             </div>
           </div>
         ))}
+        {/* Ideas inline subheader */}
+        <div style={{marginTop:16,marginBottom:4}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+            <div style={{height:1,flex:1,background:"rgba(90,80,60,0.10)"}}/>
+            <span style={{fontSize:11,fontWeight:700,color:"#7A6038",letterSpacing:0.8,textTransform:"uppercase"}}>💡 Ideas</span>
+            <div style={{height:1,flex:1,background:"rgba(90,80,60,0.10)"}}/>
+          </div>
+          <Ideas data={ideasData} setData={setIdeasData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} inline={true}/>
+        </div>
       </div>
     </div>
   );
@@ -3703,7 +3716,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const HUB_MODES=[
     {id:"notes",  icon:"📓", name:"Notes",           desc:"Sections, pages & freewriting", grad:"#5A7848", count:`${data.reduce((s,sec)=>s+sec.pages.length,0)} pages`},
     {id:"filing", icon:"🗄️", name:"Filing Cabinet",  desc:"Drawers, folders, PDFs & photos",grad:"#486878", count:`${cabinetData.length} drawers`},
-    {id:"ideas",  icon:"💡", name:"Ideas",            desc:"Capture sparks, plant as goals",  grad:"#7A6038", count:`${(ideasData||[]).length} ideas`},
     {id:"voice",  icon:"🎙️", name:"Voice to Text",   desc:"Speak and save straight to notes",grad:"#486050", count:"Tap to record"},
     {id:"studio", icon:"🎓", name:"Study Studio",     desc:"Flashcards, quiz & slides",       grad:"#3A6848", count:"AI powered"},
   ];
@@ -4999,7 +5011,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
 }
 
 /* ── Main Ideas board ──────────────────────────────── */
-function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,setMatrixData,goalsData,setGoalsData,onBack}){
+function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,setMatrixData,goalsData,setGoalsData,onBack,inline=false}){
   const [detailId,setDetailId]=useState(null);
   const [adding,setAdding]=useState(false);
   const [draft,setDraft]=useState({text:"",ramble:"",tag:"💡 Idea",status:"spark",collection:"",url:"",cover:null});
@@ -5041,10 +5053,15 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
     .filter(d=>!search||(d.text+d.ramble).toLowerCase().includes(search.toLowerCase()));
 
   return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <Header title="💡 Ideas" onBack={onBack||null} right={
+    <div style={{minHeight:inline?"auto":"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:inline?0:90}}>
+      {!inline&&<Header title="💡 Ideas" onBack={onBack||null} right={
         <button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
-      }/>
+      }/>}
+      {inline&&(
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+          <button onClick={()=>setAdding(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Add idea</button>
+        </div>
+      )}
 
       {/* Search */}
       <div style={{padding:"10px 14px 0"}}>
@@ -7487,9 +7504,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
         </div>
         {!done&&<span style={{fontSize:16}}>⚡</span>}
       </div>
-      {!done&&(onPri||onMatrix||onDelete)&&(
+      {!done&&(onMatrix||onDelete)&&(
         <div style={{display:"flex",gap:6,marginTop:8,paddingLeft:42}}>
-          {onPri&&<button onClick={onPri} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Prioritize</button>}
           {onMatrix&&<button onClick={onMatrix} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>⚖️ Matrix</button>}
           {onDelete&&<button onClick={onDelete} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.15)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>}
         </div>
@@ -7685,6 +7701,27 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 <span style={{fontSize:12,color:"#5A7040",fontWeight:600,flex:1}}>Hold & drag tasks above to prioritise — most important at the top</span>
               </div>
             )}
+            {/* Quick add task inline */}
+            {(()=>{
+              const tasks=data.targetTasks||[];
+              const filled=tasks.filter(t=>t?.trim()).length;
+              if(filled<target) return(
+                <div style={{marginTop:10,display:"flex",gap:8,alignItems:"center"}}>
+                  <input placeholder={`Add task ${filled+1} of ${target}…`}
+                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                    onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){
+                      const next=[...tasks];
+                      const emptyIdx=next.findIndex((t,i)=>!t?.trim());
+                      if(emptyIdx>=0)next[emptyIdx]=e.target.value.trim();
+                      else next.push(e.target.value.trim());
+                      upd({targetTasks:next.slice(0,target)});
+                      e.target.value="";
+                    }}}/>
+                  <span style={{fontSize:11,color:"#8A8070",flexShrink:0}}>Enter to add</span>
+                </div>
+              );
+              return null;
+            })()}
           </div>
 
           {/* ── Celebration overlay ── */}
@@ -7726,8 +7763,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
           {/* Confetti animation style */}
           <style>{`@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(300px) translateX(var(--drift,40px)) rotate(720deg);opacity:0}}`}</style>
 
-          {/* Reward card */}
-          {(()=>{
+          {/* Reward card — only show if reward is set */}
+          {rewardName&&(()=>{
             const unlockDate=new Date();
             unlockDate.setDate(unlockDate.getDate()+daysUntilReward);
             const dateStr=unlockDate.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
@@ -7786,44 +7823,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               />))}
             </div>
           )}
-
-          {/* What are you putting off? */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:12}}>What are you putting off?</div>
-            <div style={{display:"flex",gap:10,alignItems:"center",background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"4px 4px 4px 20px",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
-              <input value={whatOff} onChange={e=>setWhatOff(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addFrog()}
-                placeholder="Write what you've been avoiding..."
-                style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:15,fontWeight:400}}/>
-              <button onClick={addFrog} style={{background:"#7c5cbf",color:"#fff",border:"none",borderRadius:"50%",width:44,height:44,fontSize:22,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0,boxShadow:"0 3px 12px rgba(124,92,191,0.38)"}}>+</button>
-            </div>
-            {frogs.map(f=>(
-              <div key={f.id} style={{background:f.done?"rgba(90,160,80,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"12px 14px",marginTop:9,border:`1px solid ${f.done?"rgba(90,160,80,0.25)":"rgba(255,255,255,0.9)"}`,boxShadow:"0 1px 8px rgba(0,0,0,0.04)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <button onClick={()=>toggleFrog(f.id)} style={{width:32,height:32,borderRadius:"50%",border:`2.5px solid ${f.done?"#5A9040":"rgba(90,120,72,0.35)"}`,background:f.done?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:15,fontWeight:900,transition:"all 0.2s"}}>{f.done?"✓":""}</button>
-                  <span style={{flex:1,color:f.done?"#A0907A":"#1A1A10",fontWeight:600,fontSize:14,textDecoration:f.done?"line-through":"none",lineHeight:1.3}}>{f.text}</span>
-                  {!f.done&&<span style={{fontSize:16}}>⚡</span>}
-                </div>
-                {/* Action buttons row — show delete always, other actions only when not done */}
-                <div style={{display:"flex",gap:6,marginTop:8,paddingLeft:42}}>
-                  {!f.done&&<>
-                    <button onClick={()=>{
-                      if(setPriData&&(priData||[]).length){
-                        setPriData(ls=>ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:f.text,done:false,color:"lilac"}]}:l));
-                        showToast("📋 Added to Prioritizer!");
-                      } else showToast("Add a Prioritizer list first");
-                    }} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Prioritizer</button>
-                    <button onClick={()=>{
-                      if(setMatrixData){
-                        setMatrixData(ds=>[...ds,{id:Date.now(),text:f.text,quad:"do",created:Date.now(),touched:Date.now()}]);
-                        showToast("⚖️ Added to Matrix!");
-                      }
-                    }} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>⚖️ Matrix</button>
-                  </>}
-                  <button onClick={()=>delFrog(f.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.15)",borderRadius:100,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>
-                </div>
-              </div>
-            ))}
-          </div>
 
           {/* AI Task Picks */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
