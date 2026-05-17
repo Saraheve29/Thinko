@@ -6718,6 +6718,34 @@ const WN_PRESETS=[
     src.connect(filt);filt.connect(ctx.destination);src.start();
     stop.current=()=>src.stop();
   }},
+  {id:"forest",  name:"Forest",         icon:"🌲", gen:(ctx,stop)=>{
+    const buf=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++){const rustle=(Math.random()*2-1)*0.15*Math.pow(Math.random(),4);const bg=(Math.random()*2-1)*0.08;d[i]=rustle+bg;}
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=2200;filt.Q.value=0.3;
+    src.connect(filt);filt.connect(ctx.destination);src.start();
+    stop.current=()=>src.stop();
+  }},
+  {id:"wind",    name:"Gentle Wind",    icon:"💨", gen:(ctx,stop)=>{
+    const buf=ctx.createBuffer(1,ctx.sampleRate*4,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++){const swell=(Math.sin(i/ctx.sampleRate*0.15)+1)/2;d[i]=(Math.random()*2-1)*swell*0.4;}
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=400;filt.Q.value=0.5;
+    src.connect(filt);filt.connect(ctx.destination);src.start();
+    stop.current=()=>src.stop();
+  }},
+  {id:"stream",  name:"Stream",         icon:"💧", gen:(ctx,stop)=>{
+    const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++){const bubble=Math.pow(Math.random(),2);d[i]=(Math.random()*2-1)*bubble*0.5;}
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+    const filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=1800;filt.Q.value=1.2;
+    const filt2=ctx.createBiquadFilter();filt2.type="lowpass";filt2.frequency.value=3000;
+    src.connect(filt);filt.connect(filt2);filt2.connect(ctx.destination);src.start();
+    stop.current=()=>src.stop();
+  }},
 ];
 
 function WhiteNoise() {
@@ -8380,19 +8408,18 @@ function RestSpace({setScreen}){
               </div>
             ))}
           </>}
+
         </>}
 
         {/* ══ SOUNDS ══ */}
-        {tab==="sounds"&&(
-          <div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:4}}>🎵 Nature Sounds</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>All sounds are generated locally — no internet needed. Tap to play, tap again to stop.</div>
-            <WhiteNoise/>
-          </div>
-        )}
+        <div style={{display:tab==="sounds"?"block":"none"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:4}}>🎵 Nature Sounds</div>
+          <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>All sounds generated locally — no internet needed. Tap to play, tap again to stop.</div>
+          <WhiteNoise/>
+        </div>
 
         {/* ══ BREAK TIMER ══ */}
-        {tab==="timer"&&(
+        <div style={{display:tab==="timer"?"block":"none"}}>
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"24px 20px",boxShadow:"0 2px 14px rgba(60,70,40,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>⏱ Break Timer</div>
             <div style={{fontSize:12,color:"#8A8070",marginBottom:20,lineHeight:1.6}}>Step away. Rest. Come back refreshed.</div>
@@ -8422,7 +8449,7 @@ function RestSpace({setScreen}){
               ))}
             </div>
           </div>
-        )}
+        </div>
 
       </div>
     </div>
