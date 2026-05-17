@@ -6427,72 +6427,180 @@ function ShoppingList({data,setData,setScreen}){
 ═══════════════════════════════════════════════════════ */
 
 /* ── Calculator ─────────────────────────────────────── */
-function Calculator() {
+function Translator(){
+    const [srcText,setSrcText]=useState("");
+    const [result,setResult]=useState("");
+    const [srcLang,setSrcLang]=useState("en");
+    const [tgtLang,setTgtLang]=useState("es");
+    const [loading,setLoading]=useState(false);
+    const [copied,setCopied]=useState(false);
+    const TLANGS=[
+      {code:"en",label:"🇬🇧 English"},{code:"es",label:"🇪🇸 Spanish"},{code:"fr",label:"🇫🇷 French"},
+      {code:"de",label:"🇩🇪 German"},{code:"it",label:"🇮🇹 Italian"},{code:"pl",label:"🇵🇱 Polish"},
+      {code:"ro",label:"🇷🇴 Romanian"},{code:"nl",label:"🇳🇱 Dutch"},{code:"ar",label:"🇸🇦 Arabic"},
+      {code:"zh",label:"🇨🇳 Chinese"},{code:"ja",label:"🇯🇵 Japanese"},{code:"pt",label:"🇵🇹 Portuguese"},
+      {code:"tr",label:"🇹🇷 Turkish"},{code:"ru",label:"🇷🇺 Russian"},{code:"hi",label:"🇮🇳 Hindi"},
+    ];
+    const translate=async()=>{
+      if(!srcText.trim())return;
+      setLoading(true);setResult("");
+      const tName=l=>({en:"English",es:"Spanish",fr:"French",de:"German",it:"Italian",pl:"Polish",ro:"Romanian",nl:"Dutch",ar:"Arabic",zh:"Chinese",ja:"Japanese",pt:"Portuguese",tr:"Turkish",ru:"Russian",hi:"Hindi",uk:"Ukrainian",sv:"Swedish",no:"Norwegian"}[l]||l);
+      const res=await callAI(`Translate this text from ${tName(srcLang)} to ${tName(tgtLang)}. Return ONLY the translated text, no explanations:\n\n${srcText.trim()}`,400);
+      setResult(res||"Translation failed — check your connection and API key");
+      setLoading(false);
+    };
+    const swap=()=>{setSrcLang(tgtLang);setTgtLang(srcLang);setSrcText(result);setResult("");};
+    return(
+      <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>🌍 Translator</div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+          <select value={srcLang} onChange={e=>setSrcLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+            {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
+          <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
+          <select value={tgtLang} onChange={e=>setTgtLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+            {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
+          </select>
+        </div>
+        <textarea value={srcText} onChange={e=>setSrcText(e.target.value)} placeholder="Type or paste text to translate…" rows={4}
+          style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.65,marginBottom:10}}/>
+        <button onClick={translate} disabled={loading||!srcText.trim()} style={{width:"100%",padding:"13px",background:loading||!srcText.trim()?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading||!srcText.trim()?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:12}}>
+          {loading?"🌿 Translating…":"🌍 Translate"}
+        </button>
+        {result&&(
+          <div style={{background:"rgba(90,120,72,0.06)",borderRadius:18,padding:"14px 16px",border:"1px solid rgba(90,120,72,0.12)"}}>
+            <div style={{fontSize:14,color:"#1A2810",lineHeight:1.7,marginBottom:10}}>{result}</div>
+            <button onClick={()=>{navigator.clipboard?.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{copied?"✅ Copied":"📋 Copy"}</button>
+          </div>
+        )}
+      </div>
+    );
+}
+
+function CurrencyConverter(){
+    const [amount,setAmount]=useState("100");
+    const [from,setFrom]=useState("GBP");
+    const [to,setTo]=useState("USD");
+    const [result,setResult]=useState(null);
+    const [loading,setLoading]=useState(false);
+    const CURRENCIES=[
+      {code:"GBP",flag:"🇬🇧",name:"Pound"},{code:"USD",flag:"🇺🇸",name:"Dollar"},
+      {code:"EUR",flag:"🇪🇺",name:"Euro"},{code:"JPY",flag:"🇯🇵",name:"Yen"},
+      {code:"CAD",flag:"🇨🇦",name:"CAD"},{code:"AUD",flag:"🇦🇺",name:"AUD"},
+      {code:"CHF",flag:"🇨🇭",name:"CHF"},{code:"CNY",flag:"🇨🇳",name:"Yuan"},
+      {code:"INR",flag:"🇮🇳",name:"Rupee"},{code:"PLN",flag:"🇵🇱",name:"Złoty"},
+      {code:"RON",flag:"🇷🇴",name:"Leu"},{code:"SEK",flag:"🇸🇪",name:"Krona"},
+      {code:"NOK",flag:"🇳🇴",name:"Krone"},{code:"DKK",flag:"🇩🇰",name:"Krone"},
+      {code:"TRY",flag:"🇹🇷",name:"Lira"},{code:"BRL",flag:"🇧🇷",name:"Real"},
+      {code:"MXN",flag:"🇲🇽",name:"Peso"},{code:"ZAR",flag:"🇿🇦",name:"Rand"},
+      {code:"AED",flag:"🇦🇪",name:"Dirham"},{code:"SGD",flag:"🇸🇬",name:"SGD"},
+    ];
+    const flagOf=c=>CURRENCIES.find(x=>x.code===c)?.flag||"💱";
+    const fmt=(n,c)=>{try{return new Intl.NumberFormat("en-GB",{style:"currency",currency:c,maximumFractionDigits:2}).format(n);}catch{return n.toFixed(2)+" "+c;}};
+    const convert=async()=>{
+      if(!amount||isNaN(amount)||parseFloat(amount)<=0)return;
+      setLoading(true);setResult(null);
+      let val=null,rate=null;
+      // Method 1: Vercel proxy (api/currency.js)
+      try{const r=await fetch(`/api/currency?from=${from}&to=${to}&amount=${amount}`);if(r.ok){const j=await r.json();if(j.result!=null){val=j.result;rate=j.rate;}}}catch{}
+      // Method 2: Frankfurter direct (works in Claude artifact)
+      if(val==null){try{const r=await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}&amount=${amount}`);if(r.ok){const j=await r.json();const v=j.rates?.[to];if(v!=null){val=v;rate=v/parseFloat(amount);}}}catch{}}
+      // Method 3: Frankfurter rate only
+      if(val==null){try{const r=await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);if(r.ok){const j=await r.json();const rt=j.rates?.[to];if(rt!=null){rate=rt;val=rt*parseFloat(amount);}}}catch{}}
+      if(val!=null)setResult({value:val,rate});
+      else setResult({error:`Could not get ${from}→${to} rate.\nCheck connection or add api/currency.js to GitHub.`});
+      setLoading(false);
+    };
+    const swap=()=>{setFrom(to);setTo(from);setResult(null);};
+    return(
+      <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>💱 Currency Converter</div>
+        <div style={{background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.20)",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:20}}>{flagOf(from)}</span>
+          <input value={amount} onChange={e=>setAmount(e.target.value)} onKeyDown={e=>e.key==="Enter"&&convert()} type="number" placeholder="Amount"
+            style={{flex:1,border:"none",outline:"none",fontSize:22,fontWeight:700,color:"#1A1A10",background:"transparent"}}/>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+          <select value={from} onChange={e=>{setFrom(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+            {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
+          </select>
+          <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
+          <select value={to} onChange={e=>{setTo(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+            {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
+          </select>
+        </div>
+        <button onClick={convert} disabled={loading} style={{width:"100%",padding:"13px",background:loading?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:14}}>
+          {loading?"🌿 Fetching rates…":"💱 Convert"}
+        </button>
+        {result&&!result.error&&(
+          <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"18px 20px",border:"1px solid rgba(90,120,72,0.14)",textAlign:"center"}}>
+            <div style={{fontSize:13,color:"#8A8070",marginBottom:6}}>{flagOf(from)} {fmt(parseFloat(amount),from)} =</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A2810",marginBottom:6}}>{flagOf(to)} {fmt(result.value,to)}</div>
+            <div style={{fontSize:11,color:"#8A8070"}}>1 {from} = {result.rate?.toFixed(4)} {to} · Live rate</div>
+          </div>
+        )}
+        {result?.error&&<div style={{background:"rgba(192,57,43,0.08)",borderRadius:16,padding:"12px 16px",color:"#c0392b",fontSize:13,textAlign:"center",whiteSpace:"pre-line"}}>{result.error}</div>}
+      </div>
+    );
+}
+
+
+function Calculator(){
   const [disp,setDisp]=useState("0");
   const [expr,setExpr]=useState("");
   const [justEvaled,setJustEvaled]=useState(false);
-
   const press=btn=>{
     if(btn==="C"){setDisp("0");setExpr("");setJustEvaled(false);return;}
     if(btn==="⌫"){setDisp(d=>d.length>1?d.slice(0,-1):"0");setJustEvaled(false);return;}
     if(btn==="="){
-      try{
-        const raw=expr+disp;
-        // safe eval via Function
-        const result=Function('"use strict";return ('+raw+')')();
-        const str=Number.isFinite(result)?parseFloat(result.toFixed(10)).toString():"Error";
-        setDisp(str);setExpr("");setJustEvaled(true);
-      }catch{setDisp("Error");setExpr("");setJustEvaled(true);}
-      return;
+      try{const raw=expr+disp;const result=Function('"use strict";return ('+raw+')')();const str=Number.isFinite(result)?parseFloat(result.toFixed(10)).toString():"Error";setDisp(str);setExpr("");setJustEvaled(true);}
+      catch{setDisp("Error");setExpr("");setJustEvaled(true);}return;
     }
-    if(["+","-","×","÷"].includes(btn)){
-      const op=btn==="×"?"*":btn==="÷"?"/":btn;
-      setExpr(justEvaled?disp+op:expr+disp+op);
-      setDisp("0");setJustEvaled(false);return;
-    }
-    if(btn==="."){
-      if(disp.includes("."))return;
-      setDisp(d=>d+"."); setJustEvaled(false);return;
-    }
+    if(["+","-","×","÷"].includes(btn)){const op=btn==="×"?"*":btn==="÷"?"/":btn;setExpr(justEvaled?disp+op:expr+disp+op);setDisp("0");setJustEvaled(false);return;}
+    if(btn==="."){if(disp.includes("."))return;setDisp(d=>d+".");setJustEvaled(false);return;}
     if(btn==="+/-"){setDisp(d=>d.startsWith("-")?d.slice(1):"-"+d);return;}
     if(btn==="%"){setDisp(d=>(parseFloat(d)/100).toString());return;}
-    setDisp(d=>(justEvaled||d==="0")?btn:d+btn);
-    setJustEvaled(false);
+    setDisp(d=>(justEvaled||d==="0")?btn:d+btn);setJustEvaled(false);
   };
-
-  const rows=[
-    ["C","+/-","%","÷"],
-    ["7","8","9","×"],
-    ["4","5","6","-"],
-    ["1","2","3","+"],
-    ["0",".","⌫","="],
-  ];
-
-  const isOp=b=>["÷","×","-","+","="].includes(b);
+  const isOp=b=>["÷","×","-","+"].includes(b);
   const isGrey=b=>["C","+/-","%"].includes(b);
-
+  const BTNS=[["C","+/-","%","÷"],["7","8","9","×"],["4","5","6","-"],["1","2","3","+"],[null,"0",".","⌫","="]];
   return(
-    <div style={{background:"rgba(255,255,255,0.10)",borderRadius:22,overflow:"hidden",boxShadow:"0 4px 24px rgba(45,10,94,0.2)"}}>
+    <div style={{background:"rgba(248,245,236,0.96)",borderRadius:28,overflow:"hidden",boxShadow:"0 8px 36px rgba(60,70,40,0.16)",border:"1px solid rgba(255,255,255,0.95)"}}>
       {/* Display */}
-      <div style={{padding:"18px 20px 10px",textAlign:"right"}}>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.4)",minHeight:18,fontFamily:"monospace"}}>{expr}{expr?" ":""}</div>
-        <div style={{fontSize:44,fontWeight:300,color:"#1A1A10",fontFamily:"monospace",lineHeight:1.1,wordBreak:"break-all"}}>{disp}</div>
+      <div style={{padding:"24px 22px 16px",background:"linear-gradient(160deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",textAlign:"right"}}>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.45)",minHeight:18,fontFamily:"monospace",letterSpacing:1}}>{expr||"\u00a0"}</div>
+        <div style={{fontSize:48,fontWeight:200,color:"#fff",fontFamily:"'SF Mono',monospace",lineHeight:1.1,wordBreak:"break-all",textShadow:"0 2px 12px rgba(0,0,0,0.25)",marginTop:4}}>{disp}</div>
       </div>
+      {/* Thin accent line */}
+      <div style={{height:3,background:"linear-gradient(90deg,#5A7848,#7A9868,#5A7848)"}}/>
       {/* Buttons */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:2,padding:"0 2px 2px"}}>
-        {rows.flat().map((btn,i)=>(
-          <button key={i} onClick={()=>press(btn)} style={{
-            padding:"20px 0",fontSize:btn==="⌫"?18:20,fontWeight:isOp(btn)?400:600,
-            background:isOp(btn)?"#7c5cbf":isGrey(btn)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.12)",
-            color:isGrey(btn)?"rgba(0,0,0,0.7)":C.wh,
-            border:"none",cursor:"pointer",borderRadius:4,
-            gridColumn:btn==="0"?"span 1":undefined,
-            transition:"opacity 0.1s",
-          }}
-          onMouseDown={e=>e.currentTarget.style.opacity="0.7"}
-          onMouseUp={e=>e.currentTarget.style.opacity="1"}
-          >{btn}</button>
-        ))}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,padding:"14px"}}>
+        {BTNS.flat().filter(b=>b!==null).map((btn,i)=>{
+          const op=isOp(btn);const grey=isGrey(btn);const eq=btn==="=";const del=btn==="⌫";
+          return(
+            <button key={i} onClick={()=>press(btn)}
+              style={{
+                padding:"19px 0",
+                fontSize:del?17:20,
+                fontWeight:eq?700:grey?600:500,
+                background:eq?"#5A7848":op?"rgba(90,120,72,0.16)":grey?"rgba(90,80,60,0.12)":"rgba(255,255,255,0.85)",
+                color:eq?"#fff":op?"#2C5A18":grey?"#4A3818":"#1A1A10",
+                border:"none",
+                cursor:"pointer",
+                borderRadius:18,
+                boxShadow:eq?"0 4px 16px rgba(58,80,38,0.35)":op?"0 1px 4px rgba(90,120,72,0.15)":"0 1px 3px rgba(90,80,60,0.08)",
+                transition:"all 0.1s",
+                fontFamily:grey||eq?"'Segoe UI',sans-serif":"monospace",
+              }}
+              onTouchStart={e=>e.currentTarget.style.transform="scale(0.92)"}
+              onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}
+              onMouseDown={e=>e.currentTarget.style.transform="scale(0.92)"}
+              onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
+              {btn}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -6871,133 +6979,8 @@ function Tools({setScreen, notesData, setNotesData}) {
   // VoiceToText moved to top-level
 
   // ── TRANSLATOR ────────────────────────────────────────
-  const Translator=()=>{
-    const [srcText,setSrcText]=useState("");
-    const [result,setResult]=useState("");
-    const [srcLang,setSrcLang]=useState("en");
-    const [tgtLang,setTgtLang]=useState("es");
-    const [loading,setLoading]=useState(false);
-    const [copied,setCopied]=useState(false);
-    const TLANGS=[
-      {code:"en",label:"🇬🇧 English"},{code:"es",label:"🇪🇸 Spanish"},{code:"fr",label:"🇫🇷 French"},
-      {code:"de",label:"🇩🇪 German"},{code:"it",label:"🇮🇹 Italian"},{code:"pl",label:"🇵🇱 Polish"},
-      {code:"ro",label:"🇷🇴 Romanian"},{code:"nl",label:"🇳🇱 Dutch"},{code:"ar",label:"🇸🇦 Arabic"},
-      {code:"zh",label:"🇨🇳 Chinese"},{code:"ja",label:"🇯🇵 Japanese"},{code:"pt",label:"🇵🇹 Portuguese"},
-      {code:"tr",label:"🇹🇷 Turkish"},{code:"ru",label:"🇷🇺 Russian"},{code:"hi",label:"🇮🇳 Hindi"},
-    ];
-    const translate=async()=>{
-      if(!srcText.trim())return;
-      setLoading(true);setResult("");
-      try{
-        // Lingva (Google Translate proxy — free, no key)
-        try{
-          const r=await fetch(`https://lingva.ml/api/v1/${srcLang}/${tgtLang}/${encodeURIComponent(srcText.trim())}`);
-          if(r.ok){const j=await r.json();if(j.translation){setResult(j.translation);setLoading(false);return;}}
-        }catch{}
-        // MyMemory fallback
-        const r2=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(srcText.trim())}&langpair=${srcLang}|${tgtLang}`);
-        const j2=await r2.json();
-        const txt=j2.responseData?.translatedText;
-        if(txt&&!txt.toLowerCase().includes("invalid"))setResult(txt);
-        else setResult("Translation unavailable — try a shorter phrase");
-      }catch{setResult("Translation failed — check your connection");}
-      setLoading(false);
-    };
-    const swap=()=>{setSrcLang(tgtLang);setTgtLang(srcLang);setSrcText(result);setResult("");};
-    return(
-      <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>🌍 Translator</div>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-          <select value={srcLang} onChange={e=>setSrcLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
-            {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
-          </select>
-          <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
-          <select value={tgtLang} onChange={e=>setTgtLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
-            {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
-          </select>
-        </div>
-        <textarea value={srcText} onChange={e=>setSrcText(e.target.value)} placeholder="Type or paste text to translate…" rows={4}
-          style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.65,marginBottom:10}}/>
-        <button onClick={translate} disabled={loading||!srcText.trim()} style={{width:"100%",padding:"13px",background:loading||!srcText.trim()?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading||!srcText.trim()?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:12}}>
-          {loading?"🌿 Translating…":"🌍 Translate"}
-        </button>
-        {result&&(
-          <div style={{background:"rgba(90,120,72,0.06)",borderRadius:18,padding:"14px 16px",border:"1px solid rgba(90,120,72,0.12)"}}>
-            <div style={{fontSize:14,color:"#1A2810",lineHeight:1.7,marginBottom:10}}>{result}</div>
-            <button onClick={()=>{navigator.clipboard?.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{copied?"✅ Copied":"📋 Copy"}</button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ── CURRENCY CONVERTER ────────────────────────────────
-  const CurrencyConverter=()=>{
-    const [amount,setAmount]=useState("100");
-    const [from,setFrom]=useState("GBP");
-    const [to,setTo]=useState("USD");
-    const [result,setResult]=useState(null);
-    const [loading,setLoading]=useState(false);
-    const CURRENCIES=[
-      {code:"GBP",flag:"🇬🇧",name:"Pound"},{code:"USD",flag:"🇺🇸",name:"Dollar"},
-      {code:"EUR",flag:"🇪🇺",name:"Euro"},{code:"JPY",flag:"🇯🇵",name:"Yen"},
-      {code:"CAD",flag:"🇨🇦",name:"CAD"},{code:"AUD",flag:"🇦🇺",name:"AUD"},
-      {code:"CHF",flag:"🇨🇭",name:"CHF"},{code:"CNY",flag:"🇨🇳",name:"Yuan"},
-      {code:"INR",flag:"🇮🇳",name:"Rupee"},{code:"PLN",flag:"🇵🇱",name:"Złoty"},
-      {code:"RON",flag:"🇷🇴",name:"Leu"},{code:"SEK",flag:"🇸🇪",name:"Krona"},
-      {code:"NOK",flag:"🇳🇴",name:"Krone"},{code:"DKK",flag:"🇩🇰",name:"Krone"},
-      {code:"TRY",flag:"🇹🇷",name:"Lira"},{code:"BRL",flag:"🇧🇷",name:"Real"},
-      {code:"MXN",flag:"🇲🇽",name:"Peso"},{code:"ZAR",flag:"🇿🇦",name:"Rand"},
-      {code:"AED",flag:"🇦🇪",name:"Dirham"},{code:"SGD",flag:"🇸🇬",name:"SGD"},
-    ];
-    const flagOf=c=>CURRENCIES.find(x=>x.code===c)?.flag||"💱";
-    const fmt=(n,c)=>{try{return new Intl.NumberFormat("en-GB",{style:"currency",currency:c,maximumFractionDigits:2}).format(n);}catch{return n.toFixed(2)+" "+c;}};
-    const convert=async()=>{
-      if(!amount||isNaN(amount)||parseFloat(amount)<=0)return;
-      setLoading(true);setResult(null);
-      let val=null,rate=null;
-      // Method 1: Vercel proxy (api/currency.js)
-      try{const r=await fetch(`/api/currency?from=${from}&to=${to}&amount=${amount}`);if(r.ok){const j=await r.json();if(j.result!=null){val=j.result;rate=j.rate;}}}catch{}
-      // Method 2: Frankfurter direct (works in Claude artifact)
-      if(val==null){try{const r=await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}&amount=${amount}`);if(r.ok){const j=await r.json();const v=j.rates?.[to];if(v!=null){val=v;rate=v/parseFloat(amount);}}}catch{}}
-      // Method 3: Frankfurter rate only
-      if(val==null){try{const r=await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);if(r.ok){const j=await r.json();const rt=j.rates?.[to];if(rt!=null){rate=rt;val=rt*parseFloat(amount);}}}catch{}}
-      if(val!=null)setResult({value:val,rate});
-      else setResult({error:`Could not get ${from}→${to} rate.\nCheck connection or add api/currency.js to GitHub.`});
-      setLoading(false);
-    };
-    const swap=()=>{setFrom(to);setTo(from);setResult(null);};
-    return(
-      <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>💱 Currency Converter</div>
-        <div style={{background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.20)",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:20}}>{flagOf(from)}</span>
-          <input value={amount} onChange={e=>setAmount(e.target.value)} onKeyDown={e=>e.key==="Enter"&&convert()} type="number" placeholder="Amount"
-            style={{flex:1,border:"none",outline:"none",fontSize:22,fontWeight:700,color:"#1A1A10",background:"transparent"}}/>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-          <select value={from} onChange={e=>{setFrom(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
-            {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
-          </select>
-          <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
-          <select value={to} onChange={e=>{setTo(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
-            {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
-          </select>
-        </div>
-        <button onClick={convert} disabled={loading} style={{width:"100%",padding:"13px",background:loading?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:14}}>
-          {loading?"🌿 Fetching rates…":"💱 Convert"}
-        </button>
-        {result&&!result.error&&(
-          <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"18px 20px",border:"1px solid rgba(90,120,72,0.14)",textAlign:"center"}}>
-            <div style={{fontSize:13,color:"#8A8070",marginBottom:6}}>{flagOf(from)} {fmt(parseFloat(amount),from)} =</div>
-            <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A2810",marginBottom:6}}>{flagOf(to)} {fmt(result.value,to)}</div>
-            <div style={{fontSize:11,color:"#8A8070"}}>1 {from} = {result.rate?.toFixed(4)} {to} · Live rate</div>
-          </div>
-        )}
-        {result?.error&&<div style={{background:"rgba(192,57,43,0.08)",borderRadius:16,padding:"12px 16px",color:"#c0392b",fontSize:13,textAlign:"center",whiteSpace:"pre-line"}}>{result.error}</div>}
-      </div>
-    );
-  };
+  // Translator → top-level function
+  // CurrencyConverter → top-level function
 
   const TOOL_GRID=[
     {id:"calc",     emoji:"🔢", label:"Calculator",        color:"#5A6840"},
@@ -8641,6 +8624,15 @@ const MODULES=[
    summary:"Calculator · Timer · Voice to text · Translator · Currency"},
   {id:"rest",        icon:"🌿", name:"Rest Space",   color:"#3A6828",
    summary:"Guided meditation · Nature sounds · Breathing"},
+  // Individual tool shortcuts — can be added to home screen
+  {id:"calc",        icon:"🧮", name:"Calculator",   color:"#4A6038",
+   summary:"Garden-themed calculator",           optional:true},
+  {id:"translate",   icon:"🌍", name:"Translator",   color:"#3A5868",
+   summary:"AI-powered · 18 languages",          optional:true},
+  {id:"currency",    icon:"💱", name:"Currency",     color:"#486050",
+   summary:"Live exchange rates · 150 currencies",optional:true},
+  {id:"study",       icon:"🎓", name:"Study Studio", color:"#5A4878",
+   summary:"Flashcards · Quiz · AI study tools",  optional:true},
 ];
 
 function ProLoginModal({onClose,onSignIn}){
@@ -8705,7 +8697,20 @@ export default function App() {
   const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
   const [showProModal,setShowProModal]=useState(false);
   const [proLimitHit,setProLimitHit]=useState('');
-  const [moduleOrder,setModuleOrder]=useState(()=>{try{const v=localStorage.getItem('thinko_order');return v?JSON.parse(v):MODULES.map(m=>m.id);}catch{return MODULES.map(m=>m.id);}});
+  const [moduleOrder,setModuleOrder]=useState(()=>{
+    try{
+      const v=localStorage.getItem('thinko_order');
+      if(v){
+        const saved=JSON.parse(v);
+        // Add any new non-optional modules not yet in saved order
+        const allCore=MODULES.filter(m=>!m.optional).map(m=>m.id);
+        const merged=[...saved.filter(id=>MODULES.find(m=>m.id===id)),...allCore.filter(id=>!saved.includes(id))];
+        return merged;
+      }
+      return MODULES.filter(m=>!m.optional).map(m=>m.id);
+    }catch{return MODULES.filter(m=>!m.optional).map(m=>m.id);}
+  });
+  const [showHomeEdit,setShowHomeEdit]=useState(false);
   const [dragHome,setDragHome]=useState(null);
   const orderedModules=moduleOrder.map(id=>MODULES.find(m=>m.id===id)).filter(Boolean);
   // ── Name & greeting ──
@@ -8780,6 +8785,11 @@ export default function App() {
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData}/><NavBar current="tools" setScreen={setScreen}/></div></>);
   if(screen==="rest") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
+  // Individual tool shortcuts
+  if(screen==="calc") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🧮 Calculator</div></div><div style={{padding:"16px 14px"}}><Calculator/></div><NavBar current="calc" setScreen={setScreen}/></div></>);
+  if(screen==="translate") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🌍 Translator</div></div><div style={{padding:"16px 14px"}}><Translator/></div><NavBar current="translate" setScreen={setScreen}/></div></>);
+  if(screen==="currency") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>💱 Currency</div></div><div style={{padding:"16px 14px"}}><CurrencyConverter/></div><NavBar current="currency" setScreen={setScreen}/></div></>);
+  if(screen==="study") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🎓 Study Studio</div></div><div style={{padding:"16px 14px",textAlign:"center"}}><div style={{fontSize:48,marginBottom:12}}>🎓</div><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:8}}>Study Studio</div><div style={{fontSize:14,color:"#8A8070",marginBottom:20,lineHeight:1.7}}>Study Studio works with your notes — open a note in The Vault and tap the 🎓 button to generate flashcards, quizzes, infographics and slides from it.</div><button onClick={()=>setScreen("notes")} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>📚 Open The Vault</button></div><NavBar current="study" setScreen={setScreen}/></div></>);
 
   return (
     <>
@@ -8904,7 +8914,45 @@ export default function App() {
         {TESTING_MODE&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.22)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
         <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\n📱 Android: tap ⋮ → Add to Home Screen\n🍎 iPhone: Share → Add to Home Screen");}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>📲 App</button>
         <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>Go Pro</button>
+        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>⚙️ Customise</button>
       </div>
+
+      {/* ── HOME CUSTOMISE MODAL ── */}
+      {showHomeEdit&&(
+        <div style={{position:"fixed",inset:0,zIndex:600,background:"rgba(30,40,20,0.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end"}} onClick={()=>setShowHomeEdit(false)}>
+          <div style={{background:"rgba(250,248,240,0.99)",borderRadius:"28px 28px 0 0",width:"100%",maxHeight:"80vh",overflow:"auto",padding:"0 0 40px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>⚙️ Customise Home</div>
+              <button onClick={()=>setShowHomeEdit(false)} style={{background:"rgba(90,80,60,0.08)",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:16}}>✕</button>
+            </div>
+            <div style={{padding:"0 20px"}}>
+              <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Tap to add or remove sections from your home screen. Drag cards on the home screen to reorder them.</div>
+              {MODULES.map(m=>{
+                const active=moduleOrder.includes(m.id);
+                return(
+                  <div key={m.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
+                    <div style={{width:40,height:40,borderRadius:14,background:`${m.color}22`,border:`1.5px solid ${m.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{m.icon}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>{m.name}</div>
+                      <div style={{fontSize:11,color:"#8A8070"}}>{m.summary}</div>
+                    </div>
+                    <button onClick={()=>{
+                      setModuleOrder(o=>{
+                        const next=active?o.filter(id=>id!==m.id):[...o,m.id];
+                        try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
+                        return next;
+                      });
+                    }} style={{background:active?"rgba(192,57,43,0.08)":"rgba(90,120,72,0.10)",color:active?"#c0392b":"#3A6020",border:`1px solid ${active?"rgba(192,57,43,0.18)":"rgba(90,120,72,0.22)"}`,borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                      {active?"Remove":"Add"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── DRAG HINT ── */}
       <div style={{textAlign:"center",marginBottom:10,flexShrink:0}}>
