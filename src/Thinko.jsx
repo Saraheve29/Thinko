@@ -1430,18 +1430,6 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
   const [newLink,setNewLink]=useState("");
   const inputRef=useRef(null);
   useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
-  // Auto-open: go straight to map, skip hub
-  useEffect(()=>{
-    if(!mapId){
-      if(data&&data.length===1){setMapId(data[0].id);}
-      else if(!data||data.length===0){
-        const rootNode={id:Date.now(),text:"My Mind Map",x:0,y:0,parent:null,color:"crystal"};
-        const nm={id:Date.now()+1,name:"My Mind Map",nodes:[rootNode]};
-        setData(ms=>[...(ms||[]),nm]);
-        setMapId(nm.id);
-      }
-    }
-  },[]);
 
   const map=data.find(m=>m.id===mapId);
 
@@ -2490,6 +2478,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
   const [activeSubId,setActiveSubId]=useState(null);
   const [previewFile,setPreviewFile]=useState(null);
   const [addingDrawer,setAddingDrawer]=useState(false);
+  const [showTemplates,setShowTemplates]=useState(false);
   const [addingSub,setAddingSub]=useState(false);
   const [draft,setDraft]=useState({name:"",color:DRAWER_COLORS[0],icon:"📁"});
   const [draftSub,setDraftSub]=useState("");
@@ -2676,6 +2665,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
         <div style={{display:"flex",gap:8}}>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
           <button onClick={()=>setAddingDrawer(true)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>+ Drawer</button>
+          <button onClick={()=>setShowTemplates(t=>!t)} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:12,padding:"8px 14px",fontWeight:700,fontSize:13,cursor:"pointer"}}>📋</button>
         </div>
       }/>
 
@@ -2718,14 +2708,22 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
             <div style={{fontSize:52,marginBottom:10}}>🗄️</div>
             <div style={{fontFamily:"Georgia,serif",fontSize:18,color:"#1A1A10",fontWeight:700,marginBottom:4}}>Your Filing Cabinet</div>
             <div style={{color:"#8A8070",fontSize:13,marginBottom:20,lineHeight:1.7}}>Store receipts, ID docs, medical records,<br/>bills and any important documents</div>
-            {/* Premade template previews */}
+            {/* Premade template previews — tap individual or load all */}
             <div style={{textAlign:"left",marginBottom:16}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:0.8,marginBottom:10}}>📋 Tap to load all templates</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:0.8,marginBottom:10}}>📋 Tap a template to add it, or load all</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-                {PREMADE_DRAWERS.map(pd=>(
-                  <div key={pd.name} style={{background:"rgba(248,245,236,0.88)",borderRadius:16,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.9)"}}>
+                {PREMADE_DRAWERS.map((pd,i)=>(
+                  <div key={pd.name} onClick={()=>{
+                    const now=Date.now();
+                    const newDrawer={id:now+i,name:pd.name,color:pd.color,icon:pd.icon,
+                      subCats:pd.subs.map((s,j)=>({id:now+i*100+j,name:s,files:[]}))};
+                    upd(ds=>[...ds,newDrawer]);
+                    showToast(`📁 ${pd.name} added!`);
+                  }} style={{background:"rgba(248,245,236,0.88)",borderRadius:16,padding:"12px 12px",border:"1.5px solid rgba(90,120,72,0.15)",cursor:"pointer",transition:"all 0.15s",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                    <div style={{fontSize:20,marginBottom:4}}>{pd.icon}</div>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A1A10",marginBottom:2}}>{pd.name}</div>
                     <div style={{fontSize:10,color:"#8A8070",lineHeight:1.5}}>{pd.subs.slice(0,2).join(" · ")}</div>
+                    <div style={{fontSize:10,color:"#5A7848",fontWeight:700,marginTop:4}}>+ Add this one</div>
                   </div>
                 ))}
               </div>
@@ -2798,6 +2796,42 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
       </div>
 
       {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:C.dp,color:"#1A1A10",borderRadius:12,padding:"10px 20px",fontWeight:700,fontSize:14,zIndex:400,whiteSpace:"nowrap"}}>{toast}</div>}
+
+      {/* ── Template picker sheet ── */}
+      {showTemplates&&(
+        <div style={{position:"fixed",inset:0,zIndex:500,background:"rgba(30,40,20,0.45)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(6px)"}} onClick={()=>setShowTemplates(false)}>
+          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"24px 24px 0 0",padding:"0 0 32px",width:"100%",maxHeight:"80vh",overflow:"auto",boxShadow:"0 -8px 40px rgba(0,0,0,0.15)"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"12px 0 6px"}}><div style={{width:36,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 18px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>📋 Drawer Templates</div>
+              <button onClick={()=>{loadPremade();setShowTemplates(false);}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Load All</button>
+            </div>
+            <div style={{padding:"0 16px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {PREMADE_DRAWERS.map((pd,i)=>{
+                const already=drawers.some(d=>d.name===pd.name);
+                return(
+                  <div key={pd.name} onClick={()=>{
+                    if(already){showToast(`${pd.name} already added`);return;}
+                    const now=Date.now();
+                    const nd={id:now+i,name:pd.name,color:pd.color,icon:pd.icon,
+                      subCats:pd.subs.map((s,j)=>({id:now+i*100+j,name:s,files:[]}))};
+                    upd(ds=>[...ds,nd]);
+                    showToast(`📁 ${pd.name} added!`);
+                  }} style={{background:already?"rgba(90,120,72,0.08)":"rgba(248,245,236,0.90)",borderRadius:18,padding:"14px 14px",border:`1.5px solid ${already?"rgba(90,120,72,0.25)":"rgba(255,255,255,0.9)"}`,cursor:already?"default":"pointer",position:"relative"}}>
+                    <div style={{fontSize:24,marginBottom:6}}>{pd.icon}</div>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{pd.name}</div>
+                    <div style={{fontSize:11,color:"#8A8070",lineHeight:1.55}}>{pd.subs.join(" · ")}</div>
+                    {already
+                      ?<div style={{fontSize:10,color:"#5A7848",fontWeight:700,marginTop:6}}>✅ Already added</div>
+                      :<div style={{fontSize:10,color:"#5A7848",fontWeight:700,marginTop:6}}>Tap to add →</div>
+                    }
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
