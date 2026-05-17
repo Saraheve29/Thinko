@@ -2848,13 +2848,9 @@ async function aiStudy(content,title,type){
     infographic:`Create an infographic summary of this note. Return ONLY a JSON object with: "title" (string), "subtitle" (string), "keyPoints" (array of 4-6 objects with "icon" emoji and "text"), "stat" (one memorable number/fact as string), "quote" (one key sentence). No markdown.\n\nTitle: ${title}\n\n${content.slice(0,2000)}`,
     slides:`Create a 5-slide deck from this note. Return ONLY a JSON array of objects with "title", "bullets" (array of 3-4 strings), "emoji" (one relevant emoji). No markdown.\n\nTitle: ${title}\n\n${content.slice(0,2000)}`,
   };
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,
-      messages:[{role:"user",content:prompts[type]}]})
-  });
-  const j=await res.json();
-  return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
+   const _studyRaw=await callAI(prompts[type],1200);
+   const j={content:[{text:_studyRaw||"[]"}]};
+   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
 function StudyStudio({page,onClose}){
@@ -4151,27 +4147,15 @@ function MountainProgress({pct=0,size=160}){
 
 /* ── AI step generator ─────────────────────────────── */
 async function aiGenerateSteps(goalText){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",max_tokens:400,
-      messages:[{role:"user",content:`Break this goal into 4–6 clear, actionable steps. Return ONLY a JSON array of strings (step descriptions). No markdown, no extra text.\n\nGoal: "${goalText}"`}]
-    })
-  });
-  const j=await res.json();
+  const _r4154=await callAI(`Break this goal into 4–6 clear, actionable steps. Return ONLY a JSON array of strings (step descriptions). No markdown, no extra text.\n\nGoal: "${goalText}"`,400);
+  const j={content:[{text:_r4154||""}]};
   const txt=(j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim();
   return JSON.parse(txt);
 }
 
 async function aiGenerateMicroSteps(stepText){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      model:"claude-sonnet-4-20250514",max_tokens:300,
-      messages:[{role:"user",content:`Break this step into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown, no extra text.\n\nStep: "${stepText}"`}]
-    })
-  });
-  const j=await res.json();
+  const _r4167=await callAI(`Break this step into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown, no extra text.\n\nStep: "${stepText}"`,300);
+  const j={content:[{text:_r4167||""}]};
   const txt=(j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim();
   return JSON.parse(txt);
 }
@@ -5093,9 +5077,8 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
     if(!aiInput.trim())return;
     setAiLoading(true);setAiResult(null);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:`Place this task in an Eisenhower Matrix. Quadrants: "do"=Urgent+Important, "plan"=Important not urgent, "help"=Urgent not important (outsource/tool), "drop"=neither. Task: "${aiInput}". Reply ONLY JSON: {"quad":"do","reason":"one sentence"}`}]})});
-      const j=await res.json();
-      setAiResult(JSON.parse((j.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim()));
+      const r=await callAIJson(`Place this task in an Eisenhower Matrix. Quadrants: "do"=Urgent+Important, "plan"=Important not urgent, "help"=Urgent not important (outsource/tool), "drop"=neither. Task: "${aiInput}". Reply ONLY JSON: {"quad":"do","reason":"one sentence"}`,200);
+      setAiResult(r||{quad:"do",reason:"Couldn't reach AI — try again."});
     }catch{setAiResult({quad:"do",reason:"Couldn't reach AI — try again."});}
     setAiLoading(false);
   };
@@ -5377,14 +5360,11 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
     setAiLoading(true);
     try{
       const budgetPrompt="Budget: "+b.name+" | Period: "+b.period+" ("+b.dateFrom+" to "+b.dateTo+")\nTotal budget: £"+budgetAmt.toFixed(2)+"\nTotal expenses: £"+totalExp.toFixed(2)+"\nRemaining: £"+remaining.toFixed(2)+" ("+(inGreen?"in budget":"over budget")+")\nExpenses: "+(b.expenses.map(e=>e.label+": £"+e.amount).join(", ")||"none listed");
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:"You are a warm friendly financial coach. Give exactly 5 short practical encouraging observations about this budget. Return ONLY a JSON array of 5 strings. No markdown.\n\n"+budgetPrompt}]})});
-      const j=await res.json();
-      upd({aiReview:JSON.parse((j.content?.[0]?.text||"[]").replace(/\`\`\`json|\`\`\`/g,"").trim())});
+      const _budgetRaw=await callAI("You are a warm friendly financial coach. Give exactly 5 short practical encouraging observations about this budget. Return ONLY a JSON array of 5 strings. No markdown.\n\n"+budgetPrompt,600);
+      upd({aiReview:JSON.parse((_budgetRaw||"[]").replace(/```json|```/g,"").trim())});
     }catch{upd({aiReview:["Could not reach AI — please try again."]});}
     setAiLoading(false);
   };
-
-  const SectionLabel=({n,label})=><div style={{marginBottom:6,fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1.5}}>{n} · {label}</div>;
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
@@ -6596,21 +6576,13 @@ function mkGoal(horizon){
 /* ── AI helpers ─────────────────────────────────────── */
 async function aiGoalSubtasks(goalTitle,horizon){
   const h=horizonByKey(horizon);
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
-      messages:[{role:"user",content:`Break this ${h.label} goal into 4–6 clear actionable subtasks. Return ONLY a JSON array of strings. No markdown.\n\nGoal: "${goalTitle}"`}]})
-  });
-  const j=await res.json();
+  const _r6598=await callAI(`Break this ${h.label} goal into 4–6 clear actionable subtasks. Return ONLY a JSON array of strings. No markdown.\n\nGoal: "${goalTitle}"`,400);
+  const j={content:[{text:_r6598||""}]};
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 async function aiMicroSteps(subtaskText){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,
-      messages:[{role:"user",content:`Break this into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown.\n\nTask: "${subtaskText}"`}]})
-  });
-  const j=await res.json();
+  const _r6607=await callAI(`Break this into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown.\n\nTask: "${subtaskText}"`,250);
+  const j={content:[{text:_r6607||""}]};
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
@@ -6931,10 +6903,8 @@ async function aiChargePicks(tasks){
 
 
 async function aiAwardSuggestions(style){
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,
-      messages:[{role:"user",content:`Suggest 6 warm, specific, achievable self-care rewards for someone who hit their weekly goals. Style: "${style||"restorative and nurturing"}". Return ONLY a JSON array of 6 strings. No markdown.`}]})});
-  const j=await res.json();
+  const _r0=await callAI(`Suggest 6 warm, specific, achievable self-care rewards for someone who hit their weekly goals. Style: "${style||"restorative and nurturing"}". Return ONLY a JSON array of 6 strings. No markdown.`,250);
+      const j={content:[{text:_r0||""}]};
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
