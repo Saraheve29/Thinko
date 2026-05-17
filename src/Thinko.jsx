@@ -3864,6 +3864,11 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 
         {/* 2×2 draggable mode grid */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+          {/* Pin to home explanation */}
+          <div style={{gridColumn:"1 / -1",padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:14,border:"1px solid rgba(90,120,72,0.14)",display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:18,flexShrink:0}}>📌</span>
+            <span style={{fontSize:12,color:"#5A7040",lineHeight:1.5}}>Tap <strong>📌 Pin to home</strong> on Notes or Filing Cabinet to add them as shortcuts on your home screen.</span>
+          </div>
           {orderedHub.map(m=>(
             <div key={m.id}
               draggable
@@ -7055,9 +7060,10 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🔧 Tools</div>
       </div>
 
-      {/* Pin to home tip */}
-      <div style={{padding:"10px 18px 0",fontSize:12,color:"#8A8070",display:"flex",alignItems:"center",gap:6}}>
-        <span>📌</span><span>Tap the pin button on any tool to add it to your home screen</span>
+      {/* Pin to home explanation */}
+      <div style={{margin:"12px 14px 0",padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:14,border:"1px solid rgba(90,120,72,0.14)",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:18,flexShrink:0}}>📌</span>
+        <span style={{fontSize:12,color:"#5A7040",lineHeight:1.5}}>Tap <strong>+ Pin to home</strong> on any tool below to add it as a shortcut on your home screen. Tap again to unpin.</span>
       </div>
 
       {/* 3-column icon grid */}
@@ -7072,22 +7078,24 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
             if(setModuleOrder)setModuleOrder(next);
           };
           return(
-            <div key={t.id} style={{position:"relative"}}>
+            <div key={t.id} style={{position:"relative",display:"flex",flexDirection:"column",gap:6}}>
+              {/* Main tile */}
               <button onClick={()=>setActive(t.id)}
-                style={{width:"100%",position:"relative",background:"rgba(228,234,222,0.90)",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderRadius:28,border:`2px solid ${isPinned?"rgba(90,120,72,0.4)":"rgba(255,255,255,0.88)"}`,padding:"0",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",cursor:"pointer",boxShadow:"0 4px 20px rgba(60,70,40,0.10)",transition:"transform 0.15s",aspectRatio:"1",overflow:"hidden"}}
-                onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"}
+                style={{width:"100%",position:"relative",background:"rgba(228,234,222,0.90)",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderRadius:22,border:`2px solid ${isPinned?"rgba(90,120,72,0.4)":"rgba(255,255,255,0.88)"}`,padding:"0",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 4px 20px rgba(60,70,40,0.10)",transition:"transform 0.15s",aspectRatio:"1",overflow:"hidden"}}
+                onTouchStart={e=>e.currentTarget.style.transform="scale(0.94)"}
                 onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}
-                onMouseDown={e=>e.currentTarget.style.transform="scale(0.96)"}
+                onMouseDown={e=>e.currentTarget.style.transform="scale(0.94)"}
                 onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
-                {t.badge&&<div style={{position:"absolute",top:10,left:10,background:"#3A6028",color:"#fff",borderRadius:100,fontSize:9,fontWeight:800,padding:"3px 7px",letterSpacing:0.5,zIndex:2}}>{t.badge}</div>}
-                <div style={{fontSize:52,lineHeight:1,marginBottom:8,filter:"drop-shadow(0 4px 10px rgba(0,0,0,0.14))",marginTop:"auto",paddingTop:20}}>{t.emoji}</div>
-                <div style={{fontFamily:"Georgia,serif",fontSize:12,fontWeight:700,color:"#1A1A10",textAlign:"center",lineHeight:1.25,whiteSpace:"pre-line",padding:"0 6px 14px",width:"100%"}}>{t.label}</div>
+                {t.badge&&<div style={{position:"absolute",top:8,left:8,background:"#3A6028",color:"#fff",borderRadius:100,fontSize:9,fontWeight:800,padding:"3px 7px",letterSpacing:0.5,zIndex:2}}>{t.badge}</div>}
+                <div style={{fontSize:44,lineHeight:1,marginBottom:6,filter:"drop-shadow(0 4px 10px rgba(0,0,0,0.14))"}}>{t.emoji}</div>
+                <div style={{fontFamily:"Georgia,serif",fontSize:12,fontWeight:700,color:"#1A1A10",textAlign:"center",lineHeight:1.25,whiteSpace:"pre-line",padding:"0 6px 12px",width:"100%"}}>{t.label}</div>
               </button>
-              {/* Pin button — visible, outside the main button */}
+              {/* Pin button — BELOW tile, always visible */}
               {modId&&(
                 <button onClick={togglePin}
-                  style={{position:"absolute",top:8,right:8,background:isPinned?"rgba(90,120,72,0.18)":"rgba(248,245,236,0.90)",border:`1px solid ${isPinned?"rgba(90,120,72,0.35)":"rgba(90,80,60,0.18)"}`,borderRadius:"50%",width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:13,zIndex:10,boxShadow:"0 1px 4px rgba(0,0,0,0.10)"}}>
-                  {isPinned?"📌":"➕"}
+                  style={{width:"100%",padding:"7px 0",background:isPinned?"rgba(90,120,72,0.12)":"rgba(248,245,236,0.90)",border:`1px solid ${isPinned?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.16)"}`,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5,cursor:"pointer",fontSize:11,fontWeight:700,color:isPinned?"#3A6020":"#6A6050"}}>
+                  <span>{isPinned?"📌":"📌"}</span>
+                  <span>{isPinned?"Pinned ✓":"Pin to home"}</span>
                 </button>
               )}
             </div>
@@ -9060,8 +9068,10 @@ export default function App() {
                 setModuleOrder(next);
                 try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
               }}
-                style={{position:"absolute",bottom:8,right:8,background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:"50%",width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,zIndex:10}}
-                title="Unpin from home">✕</button>
+                style={{position:"absolute",bottom:8,right:8,background:"rgba(248,245,236,0.92)",color:"#6A6050",border:"1px solid rgba(90,80,60,0.18)",borderRadius:100,padding:"3px 9px",display:"flex",alignItems:"center",gap:4,cursor:"pointer",fontSize:10,fontWeight:700,zIndex:10,boxShadow:"0 1px 4px rgba(0,0,0,0.08)"}}
+                title="Unpin from home">
+                <span>📌</span><span>Unpin</span>
+              </button>
             )}
           </div>
         ))}
