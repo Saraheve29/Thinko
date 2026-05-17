@@ -2553,10 +2553,6 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
   const [draft,setDraft]=useState({name:"",color:DRAWER_COLORS[0],icon:"📁"});
   const [draftSub,setDraftSub]=useState("");
   const [toast,setToast]=useState("");
-  // Clear section/page when leaving notes mode
-  useEffect(()=>{
-    if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
-  },[notesMode]);
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
 
   const drawers=cabinetData||[];
@@ -3251,6 +3247,10 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [pageId,setPageId]=useState(null);
   const [sendOpen,setSendOpen]=useState(false);
   const [toast,setToast]=useState("");
+  // Clear section/page state when leaving notes mode
+  useEffect(()=>{
+    if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
+  },[notesMode]);
   const [studioOpen,setStudioOpen]=useState(false);
   const [notesMode,setNotesMode]=useState(null); // null = show vault hub
   const [cabinetData,setCabinetData]=useState([]);
@@ -7951,20 +7951,12 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 );
               })}
             </div>
-            {/* Prioritize button — send all tasks to Prioritizer */}
-            {(data.targetTasks||[]).some(t=>t.trim())&&(
-              <button onClick={()=>{
-                const tasks=(data.targetTasks||[]).filter(t=>t.trim());
-                if(!tasks.length)return;
-                if(setPriData&&(priData||[]).length){
-                  setPriData(ls=>ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,...tasks.map(name=>({id:Date.now()+Math.random(),name,done:false,color:"sage"}))]}:l));
-                  showToast(`📋 ${tasks.length} task${tasks.length!==1?"s":""} sent to Prioritizer!`);
-                } else {
-                  showToast("Add a Prioritizer list first");
-                }
-              }} style={{width:"100%",padding:"12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                <span>📋</span> Send all to Prioritizer (optional)
-              </button>
+            {/* Prioritise within Charge — drag to reorder */}
+            {(data.targetTasks||[]).filter(t=>t?.trim()).length>1&&(
+              <div style={{marginTop:6,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:14,border:"1px solid rgba(90,120,72,0.12)",display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:14}}>⠿</span>
+                <span style={{fontSize:12,color:"#5A7040",fontWeight:600,flex:1}}>Hold & drag tasks to prioritise order</span>
+              </div>
             )}
           </div>
 
