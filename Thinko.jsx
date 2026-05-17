@@ -38,7 +38,12 @@ async function callAI(prompt, maxTokens=600) {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({prompt, max_tokens: maxTokens})
       });
-      if (rp.ok) { const jp = await rp.json(); if (jp.text) return jp.text; }
+      if (rp.ok) {
+        const jp = await rp.json();
+        // Handle both {text:"..."} (old) and full Anthropic response (new)
+        if (jp.text) return jp.text;
+        if (jp.content?.[0]?.text) return jp.content[0].text;
+      }
     } catch {}
     // Direct call (works in Claude artifact — auth injected automatically)
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -671,14 +676,14 @@ function UrlBadge({url}) {
   );
 }
 const SWATCHES = [
-  {id:"purple",fill:"#9b59b6",border:"#7d3c98",num:"#7d3c98"},
-  {id:"rose",  fill:"#e91e8c",border:"#c2185b",num:"#c2185b"},
-  {id:"red",   fill:"#FF1744",border:"#D50000",num:"#D50000"},
-  {id:"orange",fill:"#e67e22",border:"#ca6f1e",num:"#ca6f1e"},
-  {id:"amber", fill:"#f39c12",border:"#d68910",num:"#b7770d"},
-  {id:"green", fill:"#27ae60",border:"#1e8449",num:"#1e8449"},
+  {id:"sage",  fill:"#5A7848",border:"#3A5830",num:"#3A5830"},
+  {id:"forest",fill:"#2E7D52",border:"#1B5E38",num:"#1B5E38"},
   {id:"teal",  fill:"#1abc9c",border:"#148f77",num:"#148f77"},
   {id:"blue",  fill:"#2980b9",border:"#1a5276",num:"#1a5276"},
+  {id:"purple",fill:"#9b59b6",border:"#7d3c98",num:"#7d3c98"},
+  {id:"amber", fill:"#f39c12",border:"#d68910",num:"#b7770d"},
+  {id:"orange",fill:"#e67e22",border:"#ca6f1e",num:"#ca6f1e"},
+  {id:"rose",  fill:"#e07090",border:"#c05070",num:"#c05070"},
   {id:"lilac", fill:"#c4aee8",border:"#9b7dd4",num:"#7c5cbf"},
 ];
 const swatchById = id => SWATCHES.find(s=>s.id===id)||SWATCHES[8];
@@ -958,7 +963,7 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
   );
 
   return (
-    <div style={{background:task.done?"rgba(255,255,255,0.50)":"rgba(255,255,255,0.90)",border:`2px solid ${task.done?C.done:sw.border}`,borderLeft:`5px solid ${task.done?C.done:sw.fill}`,borderRadius:16,padding:"12px 12px 12px 10px",marginBottom:10,opacity:task.done?0.65:1,transition:"all 0.2s",boxShadow:"0 2px 12px rgba(90,80,60,0.09)",position:"relative"}}>
+    <div style={{background:task.done?"rgba(248,245,236,0.55)":"rgba(248,245,236,0.92)",border:`1.5px solid ${task.done?"rgba(90,80,60,0.12)":sw.border+"55"}`,borderLeft:`4px solid ${task.done?"rgba(90,80,60,0.18)":sw.fill}`,borderRadius:18,padding:"12px 12px 10px 12px",marginBottom:10,opacity:task.done?0.65:1,transition:"all 0.2s",boxShadow:"0 2px 10px rgba(60,70,40,0.07)",position:"relative"}}>
 
       {/* Main row */}
       <div style={{display:"flex",alignItems:"flex-start",gap:9,marginBottom:8}}>
@@ -974,12 +979,14 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
         </div>
         {/* Task name */}
         <div style={{flex:1}}>
-          <div style={{fontWeight:700,fontSize:15,lineHeight:1.4,color:task.done?C.soft:C.txt,textDecoration:task.done?"line-through":"none",wordBreak:"break-word"}}>{task.name}</div>
+          <div style={{fontWeight:700,fontSize:16,lineHeight:1.4,color:task.done?C.soft:"#1A1A10",textDecoration:task.done?"line-through":"none",wordBreak:"break-word"}}>{task.name}</div>
           {task.url&&<UrlBadge url={task.url}/>}
           {subs.length>0&&<div style={{fontSize:11,color:C.soft,marginTop:2,fontWeight:600}}>{subsDone}/{subs.length} sub-items done</div>}
         </div>
         {/* Complete */}
-        <button onClick={()=>onComplete(task.id)} style={{background:task.done?C.ll:sw.num,color:task.done?C.mid:C.wh,border:"none",borderRadius:9,width:34,height:34,cursor:"pointer",fontSize:15,flexShrink:0}}>{task.done?"↩":"✓"}</button>
+        <button onClick={()=>onComplete(task.id)} style={{background:task.done?C.ll:sw.num,color:task.done?C.mid:"#fff",border:"none",borderRadius:9,width:34,height:34,cursor:"pointer",fontSize:15,flexShrink:0}}>{task.done?"↩":"✓"}</button>
+        {/* Delete — visible on card */}
+        {onDelete&&<button onClick={()=>onDelete(task.id)} style={{background:"rgba(192,57,43,0.09)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:9,width:34,height:34,cursor:"pointer",fontSize:14,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>}
         {/* 3-dot menu */}
         <button onClick={()=>setMenuOpen(m=>!m)} style={{background:C.ll,color:C.mp,border:"none",borderRadius:9,width:34,height:34,cursor:"pointer",fontSize:18,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>⋮</button>
       </div>
@@ -1003,8 +1010,30 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
         </div>
       )}
 
-      {/* Timer */}
-      <TimerWidget icon="⏱" label="Task Timer" mins={mins} setMins={setMins} left={left} start={(secs)=>{setLeft(secs||mins*60);setOn(true);}} stop={stop} fmt={fmt} glass={false} accent={sw.border} accentText={sw.num}/>
+      {/* Compact inline timer — not a full widget */}
+      {!task.done&&(
+        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,padding:"7px 10px",background:"rgba(90,120,72,0.06)",borderRadius:12,border:"1px solid rgba(90,120,72,0.12)"}}>
+          <span style={{fontSize:14}}>⏱</span>
+          {left!==null?(
+            <>
+              <span style={{fontFamily:"monospace",fontSize:15,fontWeight:700,color:left<60?"#c0392b":"#3A6020",flex:1}}>{fmt(left)}</span>
+              <div style={{height:4,flex:1,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",margin:"0 4px"}}>
+                <div style={{height:"100%",width:`${Math.round((left/(on?left+1:mins*60||300))*100)}%`,background:left<60?"#c0392b":sw.fill,borderRadius:100,transition:"width 1s linear"}}/>
+              </div>
+              <button onClick={stop} style={{background:"rgba(192,57,43,0.12)",color:"#c0392b",border:"none",borderRadius:8,padding:"3px 8px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
+            </>
+          ):(
+            <>
+              <span style={{fontSize:12,color:"#8A8070",flex:1}}>Task timer</span>
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                {[10,20,30,50].map(t=>(
+                  <button key={t} onClick={()=>{setMins(t);start(t*60);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:8,padding:"3px 7px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{t}m</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Calendar */}
       {!task.done&&(
@@ -1238,9 +1267,9 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
           <div key={task.id}>
             {i===0&&active.length>0&&(
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <div style={{height:1,flex:1,background:"rgba(255,80,80,0.35)"}}/>
-                <span style={{fontSize:10,fontWeight:800,color:"#FF4444",letterSpacing:1.5,textTransform:"uppercase"}}>🔴 Top 3 — Most Important</span>
-                <div style={{height:1,flex:1,background:"rgba(255,80,80,0.35)"}}/>
+                <div style={{height:1,flex:1,background:"rgba(90,120,72,0.25)"}}/>
+                <span style={{fontSize:10,fontWeight:800,color:"#5A7848",letterSpacing:1.5,textTransform:"uppercase"}}>⭐ Top 3 — Focus here first</span>
+                <div style={{height:1,flex:1,background:"rgba(90,120,72,0.25)"}}/>
               </div>
             )}
             {i===3&&(
@@ -3110,7 +3139,6 @@ function StudyStudio({page,onClose}){
 
         {/* ── SLIDES ── */}
         {mode==="slides"&&data&&Array.isArray(data)&&(()=>{
-          const [slideIdx,setSlideIdx]=useState(0);
           const slide=data[slideIdx];
           const slideColors=["linear-gradient(135deg,#3D5A2A,#5A7848)","linear-gradient(135deg,#1a5276,#2980b9)","linear-gradient(135deg,#1e8449,#27ae60)","linear-gradient(135deg,#7d1a1a,#c0392b)","linear-gradient(135deg,#4a148c,#8e44ad)"];
           return(
@@ -3155,10 +3183,32 @@ function StudyStudio({page,onClose}){
 }
 
 function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen}) {
+  // ── ALL hooks at top level — never inside conditionals or IIFEs ──
   const [pdfFile,setPdfFile]=useState(null);
   const [pdfPodcast,setPdfPodcast]=useState("");
   const [pdfLoading,setPdfLoading]=useState(false);
   const [podcastSaved,setPodcastSaved]=useState(false);
+  const [sectionId,setSectionId]=useState(null);
+  const [pageId,setPageId]=useState(null);
+  const [sendOpen,setSendOpen]=useState(false);
+  const [toast,setToast]=useState("");
+  const [studioOpen,setStudioOpen]=useState(false);
+  const [notesMode,setNotesMode]=useState(null); // null = show vault hub
+  const [cabinetData,setCabinetData]=useState([]);
+  const [addingSectionForm,setAddingSectionForm]=useState(false);
+  const [addingPageForm,setAddingPageForm]=useState(false);
+  const [newSectionName,setNewSectionName]=useState('');
+  const [newPageName,setNewPageName]=useState('');
+  // Vault hub drag state
+  const [hubOrder,setHubOrder]=useState(()=>{try{const v=localStorage.getItem('thinko_vault_order');return v?JSON.parse(v):["notes","filing","ideas","studio"];}catch{return ["notes","filing","ideas","studio"];}});
+  const [dragVault,setDragVault]=useState(null);
+  const vaultTouchRef=useRef(null);
+  // Notes section drag state
+  const [dragSecId,setDragSecId]=useState(null);
+  const secTouchRef=useRef(null);
+  // Slides index (for Study Studio slides mode)
+  const [slideIdx,setSlideIdx]=useState(0);
+  const pdfInputRef=useRef(null);
 
   const handlePdf=async(e)=>{
     const file=e.target.files[0];if(!file)return;
@@ -3168,23 +3218,32 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     reader.onload=async(ev)=>{
       try{
         if(isPDF){
-          // Send PDF as base64 document — Claude reads it natively
+          // Try base64 PDF via direct API (needs anthropic-version header + key via proxy)
           const base64=ev.target.result.split(",")[1];
-          const res=await fetch("https://api.anthropic.com/v1/messages",{
-            method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,
-              messages:[{role:"user",content:[
-                {type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},
-                {type:"text",text:"Convert this PDF into a warm 2-minute podcast script. Flowing, natural narration. No headers or bullet points — spoken word only."}
-              ]}]})
-          });
-          if(res.ok){const j=await res.json();const t=j.content?.[0]?.text;if(t){setPdfPodcast(t);setPdfLoading(false);return;}}
-          // Text extraction fallback
+          try{
+            const res=await fetch("/api/ai",{
+              method:"POST",
+              headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({
+                model:"claude-sonnet-4-20250514",max_tokens:700,
+                messages:[{role:"user",content:[
+                  {type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},
+                  {type:"text",text:"Convert this PDF into a warm 2-minute podcast script. Flowing, natural narration. No headers or bullet points — spoken word only."}
+                ]}]
+              })
+            });
+            if(res.ok){
+              const j=await res.json();
+              const t=j.content?.[0]?.text||j.text||"";
+              if(t){setPdfPodcast(t);setPdfLoading(false);return;}
+            }
+          }catch{}
+          // Fallback: extract text and send as plain text prompt
           const r2=new FileReader();
           r2.onload=async ev2=>{
             const text=(ev2.target.result||"").slice(0,3000).replace(/[^\x20-\x7E\n]/g," ").trim();
             if(text.length<50){
-              setPdfPodcast("Could not read this PDF — it may be a scanned image.\n\n📱 Android: open in Google Drive → tap ⋮ → Open with Google Docs → copy text → save as .txt → upload here.\n\n🍎 iPhone: open in Files app → Share → Save as .txt → upload here.");
+              setPdfPodcast("Could not read this PDF — it may be a scanned image.\n\n📱 Android: open in Google Drive → Open with Google Docs → copy text → save as .txt → upload here.\n\n🍎 iPhone: open in Files → Share → Save as .txt → upload here.");
             }else{
               const result=await callAI("Convert this text into a warm 2-minute podcast script. Flowing narration, no headers:\n\n"+text,700);
               setPdfPodcast(result||"Could not convert — try saving the PDF content as a .txt file and uploading that.");
@@ -3193,31 +3252,20 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
           };
           r2.readAsText(file);
         }else{
-          // Plain text file — works perfectly
+          // Plain text — works reliably
           const text=(ev.target.result||"").slice(0,4000);
           const result=await callAI("Convert this text into a warm 2-minute podcast script. Spoken naturally, flowing narration:\n\n"+text,700);
           setPdfPodcast(result||"Could not convert — try again.");
           setPdfLoading(false);
         }
       }catch{
-        setPdfPodcast("Something went wrong reading the file.\n\n📱 Android: open PDF in Google Drive → Open with Google Docs → copy text → save as .txt → upload here.\n\n🍎 iPhone: open in Files → Share → Save as .txt → upload here.");
+        setPdfPodcast("Something went wrong. Try saving the PDF as a .txt file and uploading that instead.");
         setPdfLoading(false);
       }
     };
     if(isPDF)reader.readAsDataURL(file);else reader.readAsText(file);
   };
 
-  const [sectionId,setSectionId]=useState(null);
-  const [pageId,setPageId]=useState(null);
-  const [sendOpen,setSendOpen]=useState(false);
-  const [toast,setToast]=useState("");
-  const [studioOpen,setStudioOpen]=useState(false);
-  const [notesMode,setNotesMode]=useState("notes"); // go straight to notes
-  const [cabinetData,setCabinetData]=useState([]);
-  const [addingSectionForm,setAddingSectionForm]=useState(false);
-  const [addingPageForm,setAddingPageForm]=useState(false);
-  const [newSectionName,setNewSectionName]=useState('');
-  const [newPageName,setNewPageName]=useState('');
   const section=data.find(s=>s.id===sectionId);
   const page=section?.pages.find(p=>p.id===pageId);
 
@@ -3273,15 +3321,15 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
       {studioOpen&&<StudyStudio page={page} onClose={()=>setStudioOpen(false)}/>}
       {/* PDF → Podcast */}
-      <input id="vaultPdfIn" type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
       <div style={{margin:"0 14px 14px"}}>
-        <button onClick={()=>document.getElementById("vaultPdfIn").click()} style={{width:"100%",padding:"14px",background:"rgba(72,96,80,0.10)",border:"1.5px solid rgba(72,96,80,0.22)",borderRadius:22,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+        <label style={{display:"flex",width:"100%",padding:"14px",background:"rgba(72,96,80,0.10)",border:"1.5px solid rgba(72,96,80,0.22)",borderRadius:22,alignItems:"center",gap:12,cursor:"pointer"}}>
+          <input type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
           <span style={{fontSize:28}}>📄</span>
           <div style={{textAlign:"left"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>PDF → Podcast</div>
             <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>Upload a PDF or .txt file to convert to a podcast script</div>
           </div>
-        </button>
+        </label>
       </div>
       {(pdfLoading||pdfPodcast)&&(
         <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>{setPdfPodcast("");setPdfFile(null);}}>
@@ -3485,6 +3533,17 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   );
 
   // Route sub-modes
+  if(notesMode==="voice") return(
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setNotesMode(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>🎙️ Voice to Text</div>
+      </div>
+      <div style={{padding:"16px 14px"}}><VoiceToText setNotesData={setData}/></div>
+    </div>
+  );
   if(notesMode==="ideas") return(
     <div style={{minHeight:"100vh",background:"transparent"}}>
       <Ideas data={ideasData} setData={setIdeasData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} onBack={()=>setNotesMode(null)}/>
@@ -3502,8 +3561,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       return a;
     });
   };
-  const [dragSecId,setDragSecId]=useState(null);
-  const secTouchRef=useRef(null);
   const secDragOver=(toId)=>{
     if(!dragSecId||dragSecId===toId)return;
     setData(ds=>{const a=[...ds];const fi=a.findIndex(s=>s.id===dragSecId),ti=a.findIndex(s=>s.id===toId);if(fi<0||ti<0||fi===ti)return ds;const[m]=a.splice(fi,1);a.splice(ti,0,m);return a;});
@@ -3583,15 +3640,13 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     {id:"notes",  icon:"📓", name:"Notes",           desc:"Sections, pages & freewriting", grad:"#5A7848", count:`${data.reduce((s,sec)=>s+sec.pages.length,0)} pages`},
     {id:"filing", icon:"🗄️", name:"Filing Cabinet",  desc:"Drawers, folders, PDFs & photos",grad:"#486878", count:`${cabinetData.length} drawers`},
     {id:"ideas",  icon:"💡", name:"Ideas",            desc:"Capture sparks, plant as goals",  grad:"#7A6038", count:`${(ideasData||[]).length} ideas`},
+    {id:"voice",  icon:"🎙️", name:"Voice to Text",   desc:"Speak and save straight to notes",grad:"#486050", count:"Tap to record"},
     {id:"studio", icon:"🎓", name:"Study Studio",     desc:"Flashcards, quiz & slides",       grad:"#3A6848", count:"AI powered"},
   ];
-  const [hubOrder,setHubOrder]=useState(()=>{try{const v=localStorage.getItem('thinko_vault_order');return v?JSON.parse(v):HUB_MODES.map(m=>m.id);}catch{return HUB_MODES.map(m=>m.id);}});
-  const [dragVault,setDragVault]=useState(null);
   const orderedHub=hubOrder.map(id=>HUB_MODES.find(m=>m.id===id)).filter(Boolean);
   const vaultDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragVault(id);};
   const vaultDragOver=(e,id)=>{e.preventDefault();if(!dragVault||dragVault===id)return;setHubOrder(o=>{const a=[...o];const fi=a.indexOf(dragVault),ti=a.indexOf(id);a.splice(fi,1);a.splice(ti,0,dragVault);try{localStorage.setItem('thinko_vault_order',JSON.stringify(a));}catch{}return a;});};
   // Touch drag for vault cards
-  const vaultTouchRef=useRef(null);
   const vaultTouchStart=(e,id)=>{vaultTouchRef.current=setTimeout(()=>setDragVault(id),200);};
   const vaultTouchMove=(e)=>{
     if(!dragVault)return;e.preventDefault();
@@ -3621,16 +3676,15 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 
         {/* PDF → Podcast feature card — prominent */}
         <div style={{marginBottom:16}}>
-          <input id="vaultPdfIn2" type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
-          <button onClick={()=>document.getElementById("vaultPdfIn2").click()}
-            style={{width:"100%",padding:"16px 18px",background:"linear-gradient(135deg,rgba(90,100,72,0.15),rgba(72,90,80,0.12))",backdropFilter:"blur(12px)",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:22,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left",boxShadow:"0 2px 12px rgba(60,70,40,0.08)"}}>
+          <label style={{display:"flex",width:"100%",padding:"16px 18px",background:"linear-gradient(135deg,rgba(90,100,72,0.15),rgba(72,90,80,0.12))",backdropFilter:"blur(12px)",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:22,alignItems:"center",gap:14,cursor:"pointer",textAlign:"left",boxShadow:"0 2px 12px rgba(60,70,40,0.08)"}}>
+            <input type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
             <span style={{fontSize:36,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.10))"}}>📄</span>
             <div style={{flex:1}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>PDF → Podcast</div>
               <div style={{fontSize:12,color:"#8A8070"}}>Upload any PDF or text file — AI turns it into a warm podcast script</div>
             </div>
             <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{flexShrink:0,opacity:0.35}}><path d="M1 1l6 6-6 6" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
-          </button>
+          </label>
         </div>
 
         {/* PDF modal */}
@@ -5442,6 +5496,13 @@ function BudgetPlanner({data,setData,setScreen}){
   );
 }
 
+function SectionLabel({n,label}){
+  return <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+    <div style={{width:24,height:24,borderRadius:"50%",background:"#5A7848",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,flexShrink:0}}>{n}</div>
+    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{label}</div>
+  </div>;
+}
+
 function BudgetDetail({budget,onBack,onUpdate,onDelete}){
   const b=budget;
   const upd=ch=>onUpdate({...b,...ch});
@@ -5614,241 +5675,6 @@ const SHOP_TEMPLATES=[
    items:[]},
 ];
 
-function ShoppingList({data,setData,setScreen}){
-  const [activeId,setActiveId]=useState(null);
-  const [showTemplates,setShowTemplates]=useState(!data||data.length===0);
-  const [customising,setCustomising]=useState(null); // template being customised
-  const [customItems,setCustomItems]=useState([]);   // ticked items for that template
-  const [dragShop,setDragShop]=useState(null);
-  const [shopOrder,setShopOrder]=useState(()=>{
-    try{const v=localStorage.getItem('thinko_shop_order');return v?JSON.parse(v):null;}catch{return null;}
-  });
-
-  const active=data.find(l=>l.id===activeId);
-  if(active) return <ShopListDetail list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(l=>l.id===u.id?u:l))} onDelete={id=>{setData(ds=>ds.filter(l=>l.id!==id));setActiveId(null);}}/>;
-
-  // Ordered list for display
-  const orderedLists=shopOrder
-    ?(shopOrder.map(id=>data.find(l=>l.id===id)).filter(Boolean).concat(data.filter(l=>!shopOrder.includes(l.id))))
-    :data;
-
-  const shopDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragShop(id);};
-  const shopDragOver=(e,id)=>{
-    e.preventDefault();
-    if(!dragShop||dragShop===id)return;
-    const ids=orderedLists.map(l=>l.id);
-    const fi=ids.indexOf(dragShop),ti=ids.indexOf(id);
-    ids.splice(fi,1);ids.splice(ti,0,dragShop);
-    setShopOrder(ids);
-    try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}
-  };
-  // Touch drag for shopping list hub
-  const shopTouchRef=useRef(null);
-  const shopTouchStart=(e,id)=>{shopTouchRef.current=setTimeout(()=>setDragShop(id),200);};
-  const shopTouchMove=(e)=>{
-    if(!dragShop)return;e.preventDefault();
-    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
-    const tid=el?.dataset?.shoplistid;
-    if(tid&&Number(tid)!==dragShop){
-      const ids=orderedLists.map(l=>l.id);
-      const fi=ids.indexOf(dragShop),ti=ids.indexOf(Number(tid));
-      if(fi>=0&&ti>=0&&fi!==ti){ids.splice(fi,1);ids.splice(ti,0,dragShop);setShopOrder(ids);try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}}
-    }
-  };
-  const shopTouchEnd=()=>{clearTimeout(shopTouchRef.current);setDragShop(null);};
-
-  // Step 1: pick template → go to customise
-  const pickTemplate=(t)=>{
-    if(t.id==="blank"){loadTemplate(t,[]);return;}
-    setCustomising(t);
-    setCustomItems(t.items.map(n=>({name:n,on:true})));
-  };
-
-  // Step 2: load with chosen items
-  const loadTemplate=(t,chosenItems)=>{
-    const items=(chosenItems||customItems.filter(ci=>ci.on).map(ci=>ci.name))
-      .map((name,i)=>({...mkItem(typeof name==="string"?name:name.name),id:Date.now()+i}));
-    const nl={...mkShopList(t.name,t.icon),items,color:t.color};
-    setData(ds=>[...(ds||[]),nl]);
-    setActiveId(nl.id);
-    setShowTemplates(false);setCustomising(null);
-  };
-
-  // — Customise screen —
-  if(customising) return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setCustomising(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <div style={{flex:1}}>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{customising.icon} {customising.name}</div>
-          <div style={{fontSize:12,color:"#8A8070"}}>Untick items you never need — they won't be added</div>
-        </div>
-        <button onClick={()=>loadTemplate(customising)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
-          Load →
-        </button>
-      </div>
-      <div style={{padding:"16px 14px"}}>
-        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,overflow:"hidden",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 14px rgba(60,70,40,0.06)"}}>
-          <div style={{height:4,background:customising.color}}/>
-          <div style={{padding:"14px 16px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <span style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{customItems.filter(i=>i.on).length} of {customItems.length} items selected</span>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:true})))} style={{fontSize:11,color:"#5A7848",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>All</button>
-                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:false})))} style={{fontSize:11,color:"#c0392b",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>None</button>
-              </div>
-            </div>
-            {customItems.map((item,i)=>(
-              <div key={i} onClick={()=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,on:!x.on}:x))}
-                style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",borderBottom:i<customItems.length-1?"1px solid rgba(90,80,60,0.07)":"none",cursor:"pointer"}}>
-                <div style={{width:26,height:26,borderRadius:"50%",border:`2px solid ${item.on?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.on?"#5A7848":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
-                  {item.on&&<svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>}
-                </div>
-                <span style={{fontSize:14,fontWeight:500,color:item.on?"#1A1A10":"#B0A898",textDecoration:item.on?"none":"line-through"}}>{item.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{fontSize:11,color:"#8A8070",textAlign:"center",marginTop:12,lineHeight:1.6}}>
-          Your choices only apply to this list — the template stays unchanged for next time
-        </div>
-      </div>
-    </div>
-  );
-
-  return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <Header title="🛒 Shopping" onBack={()=>setScreen("home")} right={
-        <button onClick={()=>setShowTemplates(true)} style={{background:"rgba(248,245,236,0.85)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ New List</button>
-      }/>
-
-      <div style={{padding:"16px 14px"}}>
-
-        {/* Template picker */}
-        {showTemplates&&(
-          <div style={{background:"rgba(248,245,236,0.94)",borderRadius:26,padding:"20px 16px",marginBottom:16,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 4px 24px rgba(60,70,40,0.10)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:4}}>Choose a list template</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>Tap one to pick which items you want — untick anything you don't need, then load. Templates stay unchanged for next time.</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {SHOP_TEMPLATES.map(t=>(
-                <button key={t.id} onClick={()=>pickTemplate(t)}
-                  style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:20,padding:"14px 12px",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 8px rgba(60,70,40,0.05)",overflow:"hidden",position:"relative"}}>
-                  <div style={{height:3,background:t.color,borderRadius:2,marginBottom:10,marginLeft:-12,marginRight:-12,marginTop:-14}}/>
-                  <div style={{fontSize:26,marginBottom:6}}>{t.icon}</div>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{t.name}</div>
-                  <div style={{fontSize:10,color:"#8A8070"}}>{t.items.length>0?`${t.items.length} items — tap to customise`:"Start from scratch"}</div>
-                </button>
-              ))}
-            </div>
-            {data&&data.length>0&&(
-              <button onClick={()=>setShowTemplates(false)} style={{width:"100%",marginTop:12,padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
-            )}
-          </div>
-        )}
-
-        {/* List hub — draggable cards */}
-        {!showTemplates&&data.length===0&&(
-          <div style={{textAlign:"center",padding:"60px 20px"}}>
-            <div style={{fontSize:48,marginBottom:12}}>🛒</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No lists yet</div>
-            <div style={{color:"#8A8070",fontSize:14,marginBottom:20}}>Tap "+ New List" to get started</div>
-            <button onClick={()=>setShowTemplates(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create list</button>
-          </div>
-        )}
-
-        {/* List cards grid — most bought spans full width */}
-        {!showTemplates&&data.length>0&&(
-          <div style={{display:"grid",gridTemplateColumns:"1fr",gap:0}}>
-            {!showTemplates&&orderedLists.map((list)=>{
-          const total=list.items.length;
-          const done=list.items.filter(it=>it.checked).length;
-          const pct=total>0?Math.round((done/total)*100):0;
-          const accent=list.color||"#5A7848";
-          const isMostBought=list.name==="Most Bought Items";
-          return(
-            <div key={list.id}
-              data-shoplistid={list.id}
-              draggable
-              onDragStart={e=>shopDragStart(e,list.id)}
-              onDragOver={e=>shopDragOver(e,list.id)}
-              onDragEnd={()=>setDragShop(null)}
-              onTouchStart={e=>shopTouchStart(e,list.id)}
-              onTouchMove={shopTouchMove}
-              onTouchEnd={shopTouchEnd}
-              onClick={()=>setActiveId(list.id)}
-              style={{
-                background:dragShop===list.id?"rgba(255,255,255,0.98)":"rgba(248,245,236,0.90)",
-                borderRadius:22,marginBottom:12,overflow:"hidden",
-                boxShadow:dragShop===list.id?"0 10px 32px rgba(60,70,40,0.16)":"0 2px 14px rgba(60,70,40,0.08)",
-                border:"1px solid rgba(255,255,255,0.9)",cursor:"grab",
-                transform:dragShop===list.id?"scale(1.03) rotate(-0.5deg)":"scale(1)",
-                transition:"all 0.18s",position:"relative",
-                // Most Bought = wide row layout like Charge
-                ...(isMostBought?{gridColumn:"1 / -1"}:{}),
-              }}>
-              <div style={{height:4,background:accent}}/>
-              {/* Drag dots */}
-              <div style={{position:"absolute",top:14,right:14,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
-                {[0,1,2].map(i=><div key={i} style={{display:"flex",gap:2.5}}>{[0,1].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"#3A3020"}}/>)}</div>)}
-              </div>
-              <div style={{padding:isMostBought?"14px 16px":"14px 16px",display:"flex",alignItems:"center",gap:12,flexDirection:"row"}}>
-                <div style={{width:44,height:44,borderRadius:14,background:`${accent}18`,border:`1.5px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{list.icon}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10"}}>{list.name}</div>
-                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>
-                    {total===0?"Empty — tap to add items":`${done}/${total} done`}
-                    {pct===100&&total>0&&<span style={{color:"#5A9040",fontWeight:700}}> ✅</span>}
-                    {isMostBought&&total>0&&<span style={{marginLeft:6,fontSize:11}}>· Your everyday essentials</span>}
-                  </div>
-                  {/* Item preview inline for wide card */}
-                  {isMostBought&&total>0&&(
-                    <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
-                      {list.items.filter(it=>!it.checked).slice(0,8).map(it=>(
-                        <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:10,fontWeight:600,borderRadius:100,padding:"1px 8px"}}>{it.name}</span>
-                      ))}
-                      {list.items.filter(it=>!it.checked).length>8&&<span style={{color:"#8A8070",fontSize:10,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-8} more</span>}
-                    </div>
-                  )}
-                </div>
-                {/* Progress bar inline for wide card */}
-                {isMostBought&&total>0&&(
-                  <div style={{width:80,flexShrink:0}}>
-                    <div style={{fontSize:11,color:"#8A8070",textAlign:"right",marginBottom:4}}>{pct}%</div>
-                    <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:100,transition:"width 0.4s"}}/>
-                    </div>
-                  </div>
-                )}
-                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.25,marginRight:4}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${list.name}"?`))setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
-              </div>
-              {/* Progress + preview for regular cards */}
-              {!isMostBought&&total>0&&(
-                <>
-                  <div style={{height:3,background:"rgba(90,80,60,0.08)",margin:"0 16px"}}>
-                    <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:2,transition:"width 0.4s"}}/>
-                  </div>
-                  <div style={{padding:"8px 16px 12px",display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {list.items.filter(it=>!it.checked).slice(0,6).map(it=>(
-                      <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:11,fontWeight:600,borderRadius:100,padding:"2px 10px"}}>{CAT_EMOJI[it.cat]||""} {it.name}</span>
-                    ))}
-                    {list.items.filter(it=>!it.checked).length>6&&<span style={{color:"#8A8070",fontSize:11,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-6} more</span>}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
-        )})}
-          </div>
-        )}
-        {!showTemplates&&data.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",marginTop:4}}>⠿ Hold and drag lists to reorder</div>}
-      </div>
-    </div>
-  );
-}
 
 function ShopListDetail({list,onBack,onUpdate,onDelete}){
   const [newItemText,setNewItemText]=useState("");
@@ -6098,6 +5924,337 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ShoppingList({data,setData,setScreen}){
+  const [activeId,setActiveId]=useState(null);
+  const [showTemplates,setShowTemplates]=useState(!data||data.length===0);
+  const [customising,setCustomising]=useState(null); // template being customised
+  const [customItems,setCustomItems]=useState([]);   // ticked items for that template
+  const [custDrag,setCustDrag]=useState(null);       // drag index in customise screen
+  const [dragShop,setDragShop]=useState(null);
+  const [templateOrder,setTemplateOrder]=useState(()=>{
+    try{const v=localStorage.getItem('thinko_template_order');return v?JSON.parse(v):SHOP_TEMPLATES.filter(t=>t.id!=="blank").map(t=>t.id);}catch{return SHOP_TEMPLATES.filter(t=>t.id!=="blank").map(t=>t.id);}
+  });
+  const [hiddenTemplates,setHiddenTemplates]=useState(()=>{
+    try{const v=localStorage.getItem('thinko_hidden_templates');return v?JSON.parse(v):[];}catch{return [];}
+  });
+  const [dragTemplId,setDragTemplId]=useState(null);
+  const [shopOrder,setShopOrder]=useState(()=>{
+    try{const v=localStorage.getItem('thinko_shop_order');return v?JSON.parse(v):null;}catch{return null;}
+  });
+
+  const active=data.find(l=>l.id===activeId);
+  if(active) return <ShopListDetail list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(l=>l.id===u.id?u:l))} onDelete={id=>{setData(ds=>ds.filter(l=>l.id!==id));setActiveId(null);}}/>;
+
+  // Ordered list for display
+  const orderedLists=shopOrder
+    ?(shopOrder.map(id=>data.find(l=>l.id===id)).filter(Boolean).concat(data.filter(l=>!shopOrder.includes(l.id))))
+    :data;
+
+  const shopDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragShop(id);};
+  const shopDragOver=(e,id)=>{
+    e.preventDefault();
+    if(!dragShop||dragShop===id)return;
+    const ids=orderedLists.map(l=>l.id);
+    const fi=ids.indexOf(dragShop),ti=ids.indexOf(id);
+    ids.splice(fi,1);ids.splice(ti,0,dragShop);
+    setShopOrder(ids);
+    try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}
+  };
+  // Touch drag for shopping list hub
+  const shopTouchStart=(e,id)=>{shopTouchRef.current=setTimeout(()=>setDragShop(id),200);};
+  const shopTouchMove=(e)=>{
+    if(!dragShop)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.shoplistid;
+    if(tid&&Number(tid)!==dragShop){
+      const ids=orderedLists.map(l=>l.id);
+      const fi=ids.indexOf(dragShop),ti=ids.indexOf(Number(tid));
+      if(fi>=0&&ti>=0&&fi!==ti){ids.splice(fi,1);ids.splice(ti,0,dragShop);setShopOrder(ids);try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}}
+    }
+  };
+  const shopTouchEnd=()=>{clearTimeout(shopTouchRef.current);setDragShop(null);};
+
+  // Step 1: pick template → go to customise
+  const pickTemplate=(t)=>{
+    if(t.id==="blank"){loadTemplate(t,[]);return;}
+    setCustomising(t);
+    setCustomItems(t.items.map(n=>({name:n,on:true})));
+  };
+
+  // Step 2: load with chosen items
+  const loadTemplate=(t,chosenItems)=>{
+    const items=(chosenItems||customItems.filter(ci=>ci.on).map(ci=>ci.name))
+      .map((name,i)=>({...mkItem(typeof name==="string"?name:name.name),id:Date.now()+i}));
+    const nl={...mkShopList(t.name,t.icon),items,color:t.color};
+    setData(ds=>[...(ds||[]),nl]);
+    setActiveId(nl.id);
+    setShowTemplates(false);setCustomising(null);
+  };
+
+  // — Customise screen —
+  if(customising) return(
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setCustomising(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{customising.icon} {customising.name}</div>
+          <div style={{fontSize:12,color:"#8A8070"}}>Tick items to include · 🗑 to permanently remove · drag to reorder</div>
+        </div>
+        <button onClick={()=>loadTemplate(customising)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
+          Load →
+        </button>
+      </div>
+      <div style={{padding:"16px 14px"}}>
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,overflow:"hidden",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 14px rgba(60,70,40,0.06)"}}>
+          <div style={{height:4,background:customising.color}}/>
+          <div style={{padding:"14px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <span style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{customItems.filter(i=>i.on).length} of {customItems.length} selected</span>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:true})))} style={{fontSize:11,color:"#5A7848",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>All</button>
+                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:false})))} style={{fontSize:11,color:"#c0392b",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>None</button>
+              </div>
+            </div>
+            {customItems.map((item,i)=>(
+              <div key={i}
+                draggable
+                onDragStart={e=>{e.dataTransfer.effectAllowed="move";setCustDrag(i);}}
+                onDragOver={e=>{e.preventDefault();if(custDrag===null||custDrag===i)return;setCustomItems(ci=>{const a=[...ci];const[m]=a.splice(custDrag,1);a.splice(i,0,m);return a;});setCustDrag(i);}}
+                onDragEnd={()=>setCustDrag(null)}
+                style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",borderBottom:i<customItems.length-1?"1px solid rgba(90,80,60,0.07)":"none",cursor:"grab",opacity:custDrag===i?0.5:1,transition:"opacity 0.15s"}}>
+                {/* Drag handle */}
+                <div style={{color:"rgba(90,120,72,0.30)",fontSize:16,flexShrink:0,letterSpacing:1}}>⠿</div>
+                {/* Tick */}
+                <div onClick={()=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,on:!x.on}:x))}
+                  style={{width:26,height:26,borderRadius:"50%",border:`2px solid ${item.on?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.on?"#5A7848":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
+                  {item.on&&<svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>}
+                </div>
+                <span onClick={()=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,on:!x.on}:x))}
+                  style={{flex:1,fontSize:14,fontWeight:500,color:item.on?"#1A1A10":"#B0A898",textDecoration:item.on?"none":"line-through",cursor:"pointer"}}>{item.name}</span>
+                {/* Permanent delete */}
+                <button onClick={()=>{if(window.confirm(`Permanently remove "${item.name}" from this template?`))setCustomItems(ci=>ci.filter((_,j)=>j!==i));}}
+                  style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+              </div>
+            ))}
+            {/* Add custom item */}
+            <div style={{display:"flex",gap:8,marginTop:12,paddingTop:12,borderTop:"1px solid rgba(90,80,60,0.07)"}}>
+              <input
+                placeholder="Add your own item…"
+                style={{flex:1,padding:"9px 13px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.85)"}}
+                onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){setCustomItems(ci=>[...ci,{name:e.target.value.trim(),on:true}]);e.target.value="";}}}
+              />
+              <span style={{fontSize:11,color:"#8A8070",alignSelf:"center",flexShrink:0}}>Enter to add</span>
+            </div>
+          </div>
+        </div>
+        <div style={{fontSize:11,color:"#8A8070",textAlign:"center",marginTop:12,lineHeight:1.6}}>
+          🗑 permanently removes from template · untick just skips for this list
+        </div>
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <Header title="🛒 Shopping" onBack={()=>setScreen("home")} right={
+        <button onClick={()=>setShowTemplates(true)} style={{background:"rgba(248,245,236,0.85)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ New List</button>
+      }/>
+
+      <div style={{padding:"16px 14px"}}>
+
+        {/* Template picker */}
+        {showTemplates&&(
+          <div style={{background:"rgba(248,245,236,0.94)",borderRadius:26,padding:"20px 16px",marginBottom:16,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 4px 24px rgba(60,70,40,0.10)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:4}}>Choose a list template</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>Tap one to pick which items you want — drag to reorder templates. 🗑 permanently removes items.</div>
+            {/* My Own List — wide rectangular like Charge */}
+            {(()=>{
+              const t=SHOP_TEMPLATES.find(x=>x.id==="blank");
+              return t?(
+                <button onClick={()=>pickTemplate(t)}
+                  style={{width:"100%",background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:20,padding:"14px 16px",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 8px rgba(60,70,40,0.05)",marginBottom:10,display:"flex",alignItems:"center",gap:14,overflow:"hidden",position:"relative"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:t.color}}/>
+                  <div style={{fontSize:30,marginTop:2}}>{t.icon}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>{t.name}</div>
+                    <div style={{fontSize:11,color:"#8A8070"}}>Start from scratch — build it your way</div>
+                  </div>
+                  <div style={{fontSize:24,opacity:0.25,flexShrink:0}}>→</div>
+                </button>
+              ):null;
+            })()}
+            {/* Other templates — draggable grid, order persists */}
+            {(()=>{
+              const orderedTemplates=templateOrder
+                .filter(id=>!hiddenTemplates.includes(id))
+                .map(id=>SHOP_TEMPLATES.find(t=>t.id===id)).filter(Boolean);
+              if(orderedTemplates.length===0) return(
+                <div style={{textAlign:"center",padding:"20px 0",color:"#8A8070"}}>
+                  <div style={{fontSize:32,marginBottom:8}}>😶</div>
+                  <div style={{fontSize:13,marginBottom:12}}>All templates hidden</div>
+                  <button onClick={()=>{setHiddenTemplates([]);try{localStorage.removeItem('thinko_hidden_templates');}catch{}}}
+                    style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    Restore all templates
+                  </button>
+                </div>
+              );
+              return(
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                  {orderedTemplates.map((t)=>(
+                    <div key={t.id} style={{position:"relative"}}>
+                      {/* Template card */}
+                      <button onClick={()=>pickTemplate(t)}
+                        draggable
+                        onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragTemplId(t.id);e.stopPropagation();}}
+                        onDragOver={e=>{
+                          e.preventDefault();e.stopPropagation();
+                          if(!dragTemplId||dragTemplId===t.id)return;
+                          setTemplateOrder(o=>{
+                            const a=[...o];
+                            const fi=a.indexOf(dragTemplId),ti=a.indexOf(t.id);
+                            if(fi<0||ti<0||fi===ti)return o;
+                            a.splice(fi,1);a.splice(ti,0,dragTemplId);
+                            try{localStorage.setItem('thinko_template_order',JSON.stringify(a));}catch{}
+                            return a;
+                          });
+                        }}
+                        onDragEnd={e=>{e.stopPropagation();setDragTemplId(null);}}
+                        style={{width:"100%",background:dragTemplId===t.id?"rgba(220,235,210,0.95)":"rgba(248,245,236,0.88)",border:`1.5px solid ${dragTemplId===t.id?"#6A8858":"rgba(90,80,60,0.10)"}`,borderRadius:20,padding:"14px 12px 14px 12px",paddingRight:36,cursor:"grab",textAlign:"left",boxShadow:dragTemplId===t.id?"0 6px 20px rgba(60,70,40,0.14)":"0 1px 8px rgba(60,70,40,0.05)",overflow:"hidden",position:"relative",transform:dragTemplId===t.id?"scale(1.03)":"scale(1)",transition:"all 0.15s"}}>
+                        <div style={{height:3,background:t.color,borderRadius:2,marginBottom:10,marginLeft:-12,marginRight:-36,marginTop:-14}}/>
+                        <div style={{fontSize:26,marginBottom:6}}>{t.icon}</div>
+                        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{t.name}</div>
+                        <div style={{fontSize:10,color:"#8A8070"}}>{t.items.length>0?`${t.items.length} items`:"Start fresh"}</div>
+                      </button>
+                      {/* Delete button — sits ON TOP of card, outside button element */}
+                      <div onClick={e=>{
+                        e.stopPropagation();
+                        const updated=[...hiddenTemplates,t.id];
+                        setHiddenTemplates(updated);
+                        try{localStorage.setItem('thinko_hidden_templates',JSON.stringify(updated));}catch{}
+                      }}
+                        style={{position:"absolute",top:8,right:8,background:"rgba(192,57,43,0.12)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:"50%",width:26,height:26,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",zIndex:20,userSelect:"none"}}>🗑</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {/* Restore hidden templates */}
+            {hiddenTemplates.length>0&&(
+              <button onClick={()=>{setHiddenTemplates([]);try{localStorage.removeItem('thinko_hidden_templates');}catch{}}}
+                style={{width:"100%",marginTop:8,padding:"8px",background:"transparent",color:"#8A8070",border:"none",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>
+                Restore {hiddenTemplates.length} hidden template{hiddenTemplates.length!==1?"s":""}
+              </button>
+            )}
+            {data&&data.length>0&&(
+              <button onClick={()=>setShowTemplates(false)} style={{width:"100%",marginTop:12,padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
+            )}
+          </div>
+        )}
+
+        {/* List hub — draggable cards */}
+        {!showTemplates&&data.length===0&&(
+          <div style={{textAlign:"center",padding:"60px 20px"}}>
+            <div style={{fontSize:48,marginBottom:12}}>🛒</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No lists yet</div>
+            <div style={{color:"#8A8070",fontSize:14,marginBottom:20}}>Tap "+ New List" to get started</div>
+            <button onClick={()=>setShowTemplates(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create list</button>
+          </div>
+        )}
+
+        {/* List cards grid — most bought spans full width */}
+        {!showTemplates&&data.length>0&&(
+          <div style={{display:"grid",gridTemplateColumns:"1fr",gap:0}}>
+            {!showTemplates&&orderedLists.map((list)=>{
+          const total=list.items.length;
+          const done=list.items.filter(it=>it.checked).length;
+          const pct=total>0?Math.round((done/total)*100):0;
+          const accent=list.color||"#5A7848";
+          const isMostBought=list.name==="Most Bought Items";
+          return(
+            <div key={list.id}
+              data-shoplistid={list.id}
+              draggable
+              onDragStart={e=>shopDragStart(e,list.id)}
+              onDragOver={e=>shopDragOver(e,list.id)}
+              onDragEnd={()=>setDragShop(null)}
+              onTouchStart={e=>shopTouchStart(e,list.id)}
+              onTouchMove={shopTouchMove}
+              onTouchEnd={shopTouchEnd}
+              onClick={()=>setActiveId(list.id)}
+              style={{
+                background:dragShop===list.id?"rgba(255,255,255,0.98)":"rgba(248,245,236,0.90)",
+                borderRadius:22,marginBottom:12,overflow:"hidden",
+                boxShadow:dragShop===list.id?"0 10px 32px rgba(60,70,40,0.16)":"0 2px 14px rgba(60,70,40,0.08)",
+                border:"1px solid rgba(255,255,255,0.9)",cursor:"grab",
+                transform:dragShop===list.id?"scale(1.03) rotate(-0.5deg)":"scale(1)",
+                transition:"all 0.18s",position:"relative",
+                // Most Bought = wide row layout like Charge
+                ...(isMostBought?{gridColumn:"1 / -1"}:{}),
+              }}>
+              <div style={{height:4,background:accent}}/>
+              {/* Drag dots */}
+              <div style={{position:"absolute",top:14,right:14,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
+                {[0,1,2].map(i=><div key={i} style={{display:"flex",gap:2.5}}>{[0,1].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"#3A3020"}}/>)}</div>)}
+              </div>
+              <div style={{padding:isMostBought?"14px 16px":"14px 16px",display:"flex",alignItems:"center",gap:12,flexDirection:"row"}}>
+                <div style={{width:44,height:44,borderRadius:14,background:`${accent}18`,border:`1.5px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{list.icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10"}}>{list.name}</div>
+                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>
+                    {total===0?"Empty — tap to add items":`${done}/${total} done`}
+                    {pct===100&&total>0&&<span style={{color:"#5A9040",fontWeight:700}}> ✅</span>}
+                    {isMostBought&&total>0&&<span style={{marginLeft:6,fontSize:11}}>· Your everyday essentials</span>}
+                  </div>
+                  {/* Item preview inline for wide card */}
+                  {isMostBought&&total>0&&(
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
+                      {list.items.filter(it=>!it.checked).slice(0,8).map(it=>(
+                        <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:10,fontWeight:600,borderRadius:100,padding:"1px 8px"}}>{it.name}</span>
+                      ))}
+                      {list.items.filter(it=>!it.checked).length>8&&<span style={{color:"#8A8070",fontSize:10,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-8} more</span>}
+                    </div>
+                  )}
+                </div>
+                {/* Progress bar inline for wide card */}
+                {isMostBought&&total>0&&(
+                  <div style={{width:80,flexShrink:0}}>
+                    <div style={{fontSize:11,color:"#8A8070",textAlign:"right",marginBottom:4}}>{pct}%</div>
+                    <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:100,transition:"width 0.4s"}}/>
+                    </div>
+                  </div>
+                )}
+                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.25,marginRight:4}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${list.name}"?`))setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+              </div>
+              {/* Progress + preview for regular cards */}
+              {!isMostBought&&total>0&&(
+                <>
+                  <div style={{height:3,background:"rgba(90,80,60,0.08)",margin:"0 16px"}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:2,transition:"width 0.4s"}}/>
+                  </div>
+                  <div style={{padding:"8px 16px 12px",display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {list.items.filter(it=>!it.checked).slice(0,6).map(it=>(
+                      <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:11,fontWeight:600,borderRadius:100,padding:"2px 10px"}}>{CAT_EMOJI[it.cat]||""} {it.name}</span>
+                    ))}
+                    {list.items.filter(it=>!it.checked).length>6&&<span style={{color:"#8A8070",fontSize:11,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-6} more</span>}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+        )})}
+          </div>
+        )}
+        {!showTemplates&&data.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",marginTop:4}}>⠿ Hold and drag lists to reorder</div>}
+      </div>
     </div>
   );
 }
@@ -6537,10 +6694,9 @@ const TOOLS=[
 ];
 
 function Tools({setScreen, notesData, setNotesData}) {
-  const [active, setActive] = useState("voice");
+  const [active, setActive] = useState("translate");
 
   const TOOL_TABS=[
-    {id:"voice",    icon:"🎙️", name:"Voice"},
     {id:"translate",icon:"🌍", name:"Translate"},
     {id:"currency", icon:"💱", name:"Currency"},
     {id:"calc",     icon:"🧮", name:"Calc"},
@@ -6550,14 +6706,14 @@ function Tools({setScreen, notesData, setNotesData}) {
   ];
 
   // ── VOICE TO TEXT ─────────────────────────────────────
-  const VoiceToText=()=>{
+  const VoiceToText=({setNotesData:setND})=>{
     const [listening,setListening]=useState(false);
     const [transcript,setTranscript]=useState("");
     const [copied,setCopied]=useState(false);
     const [saved,setSaved]=useState(false);
     const [lang,setLang]=useState("en-GB");
     const recRef=useRef(null);
-    const LANGS=[
+    const VLANGS=[
       {code:"en-GB",label:"🇬🇧 English (UK)"},{code:"en-US",label:"🇺🇸 English (US)"},
       {code:"es-ES",label:"🇪🇸 Spanish"},{code:"fr-FR",label:"🇫🇷 French"},
       {code:"de-DE",label:"🇩🇪 German"},{code:"pl-PL",label:"🇵🇱 Polish"},
@@ -6574,9 +6730,9 @@ function Tools({setScreen, notesData, setNotesData}) {
     };
     const stop=()=>{recRef.current?.stop();setListening(false);};
     const moveToNotes=()=>{
-      if(!transcript.trim()||!setNotesData)return;
+      if(!transcript.trim()||!setND)return;
       const title=transcript.trim().split(/[.!?\n]/)[0].slice(0,50)||"Voice Note";
-      setNotesData(secs=>{
+      setND(secs=>{
         const page={id:Date.now(),title,content:transcript.trim(),created:Date.now(),updated:Date.now()};
         if(!secs||!secs.length)return [{id:Date.now(),name:"Voice Notes",color:"#5A7848",pages:[page]}];
         const u=[...secs];u[0]={...u[0],pages:[...(u[0].pages||[]),page]};return u;
@@ -6588,7 +6744,7 @@ function Tools({setScreen, notesData, setNotesData}) {
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>🎙️ Voice to Text</div>
         <div style={{fontSize:12,color:"#8A8070",marginBottom:14}}>Speak — words appear as you talk. Needs Chrome (Android) or Safari (iPhone).</div>
         <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:13,color:"#1A1A10",outline:"none",marginBottom:14}}>
-          {LANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
+          {VLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
         </select>
         <div style={{textAlign:"center",marginBottom:14}}>
           <button onClick={listening?stop:start} style={{width:80,height:80,borderRadius:"50%",background:listening?"rgba(192,57,43,0.85)":"#5A7848",color:"#fff",border:"none",cursor:"pointer",fontSize:32,boxShadow:listening?"0 0 0 8px rgba(192,57,43,0.18)":"0 4px 20px rgba(58,80,38,0.30)",transition:"all 0.2s"}}>{listening?"⏹":"🎙️"}</button>
@@ -6598,7 +6754,7 @@ function Tools({setScreen, notesData, setNotesData}) {
           style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.7,marginBottom:10}}/>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>{copied?"✅ Copied":"📋 Copy"}</button>
-          <button onClick={moveToNotes} disabled={!transcript.trim()} style={{flex:1,padding:"12px",background:saved?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",opacity:!transcript.trim()?0.5:1}}>{saved?"✅ Saved!":"📓 → Notes"}</button>
+          <button onClick={()=>moveToNotes()} disabled={!transcript.trim()} style={{flex:1,padding:"12px",background:saved?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",opacity:!transcript.trim()?0.5:1}}>{saved?"✅ Saved!":"📓 → Notes"}</button>
           <button onClick={()=>setTranscript("")} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Clear</button>
         </div>
       </div>
@@ -6756,8 +6912,7 @@ function Tools({setScreen, notesData, setNotesData}) {
           <div style={{width:36}}/>
         </div>
         <div style={{padding:"16px 14px"}}>
-          {active==="voice"    &&<VoiceToText/>}
-          {active==="translate"&&<Translator/>}
+              {active==="translate"&&<Translator/>}
           {active==="currency" &&<CurrencyConverter/>}
           {active==="calc"     &&<Calculator/>}
           {active==="sw"       &&<Stopwatch/>}
@@ -6817,22 +6972,7 @@ function Tools({setScreen, notesData, setNotesData}) {
         ))}
       </div>
 
-      {/* Voice to Text — wide card below */}
-      <div style={{padding:"14px 14px 0"}}>
-        <button onClick={()=>setActive("voice")}
-          style={{width:"100%",background:"rgba(228,234,222,0.90)",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderRadius:28,border:"1.5px solid rgba(255,255,255,0.88)",padding:"20px 24px",display:"flex",alignItems:"center",gap:18,cursor:"pointer",boxShadow:"0 4px 20px rgba(60,70,40,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",transition:"transform 0.15s"}}
-          onMouseDown={e=>e.currentTarget.style.transform="scale(0.98)"}
-          onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
-          onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"}
-          onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-          <span style={{fontSize:52,lineHeight:1,filter:"drop-shadow(0 4px 10px rgba(0,0,0,0.12))",flexShrink:0}}>🎙️</span>
-          <div style={{flex:1,textAlign:"left"}}>
-            <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,color:"#1A1A10",marginBottom:3}}>Voice to Text</div>
-            <div style={{fontSize:12,color:"rgba(60,50,30,0.50)"}}>Speak — words appear as you talk</div>
-          </div>
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{flexShrink:0,opacity:0.3}}><path d="M1 1l6 6-6 6" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
-        </button>
-      </div>
+
 
     </div>
   );
@@ -8630,16 +8770,20 @@ function NavBar({current,setScreen}) {
       <div style={{display:"flex",overflowX:"auto",padding:"8px 4px 12px",gap:0,scrollbarWidth:"none",msOverflowStyle:"none"}}>
         <style>{`.navscroll::-webkit-scrollbar{display:none}`}</style>
         <div className="navscroll" style={{display:"flex",minWidth:"100%",justifyContent:"space-around"}}>
+          {/* Home — always first, clearly visible */}
+          <button onClick={()=>setScreen("home")} style={{background:current==="home"?"rgba(90,120,72,0.12)":"none",border:current==="home"?"1.5px solid rgba(90,120,72,0.25)":"1.5px solid transparent",borderRadius:12,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 10px",opacity:1,transition:"all 0.15s",flexShrink:0}}>
+            <span style={{fontSize:22,lineHeight:1}}>🏠</span>
+            <span style={{fontSize:9,color:current==="home"?C.mp:"rgba(60,56,40,0.7)",fontWeight:current==="home"?800:700,letterSpacing:0.3}}>Home</span>
+          </button>
+          {/* Divider */}
+          <div style={{width:1,background:"rgba(90,80,60,0.12)",margin:"6px 2px",borderRadius:1,flexShrink:0}}/>
+          {/* All other modules */}
           {MODULES.map(m=>(
             <button key={m.id} onClick={()=>setScreen(m.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 8px",opacity:current===m.id?1:0.45,transition:"opacity 0.15s",flexShrink:0}}>
               <span style={{fontSize:20,lineHeight:1}}>{m.icon}</span>
               <span style={{fontSize:8,color:current===m.id?C.mp:"rgba(60,56,40,0.5)",fontWeight:current===m.id?800:500,letterSpacing:0.3,whiteSpace:"nowrap"}}>{m.name}</span>
             </button>
           ))}
-          <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 10px",opacity:current==="home"?1:0.5,transition:"opacity 0.15s",flexShrink:0}}>
-            <span style={{fontSize:20}}>🏠</span>
-            <span style={{fontSize:8,color:current==="home"?C.mp:"rgba(60,56,40,0.5)",fontWeight:600,letterSpacing:0.3}}>Home</span>
-          </button>
         </div>
       </div>
     </div>
