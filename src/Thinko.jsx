@@ -5522,116 +5522,120 @@ function mkItem(name){
   return {id:Date.now(),name:name.trim(),qty:"1",unit:"",cat:"General",note:"",url:"",checked:false};
 }
 
+const SHOP_TEMPLATES=[
+  {id:"grocery",  icon:"🛒", name:"Weekly Food Shop",    color:"#5A7848",
+   items:["Bread","Milk","Eggs","Butter","Cheese","Yoghurt","Chicken","Mince","Salmon","Pasta","Rice","Potatoes","Onions","Garlic","Tomatoes","Spinach","Apples","Bananas","Orange juice","Coffee","Tea","Sugar","Olive oil","Tinned tomatoes","Cereal"]},
+  {id:"christmas",icon:"🎄", name:"Christmas Presents",  color:"#7A2828",
+   items:["Wrapping paper","Sellotape","Gift bags","Gift tags","Ribbon","Tissue paper","Card for Mum","Card for Dad","Card for kids","Stocking fillers","Batteries","Chocolates"]},
+  {id:"toiletries",icon:"🧴",name:"Toiletries & Health",  color:"#486878",
+   items:["Shampoo","Conditioner","Body wash","Deodorant","Toothpaste","Toothbrush","Moisturiser","Face wash","Razor","Cotton pads","Hand soap","Paracetamol","Vitamins"]},
+  {id:"household",icon:"🏠", name:"Household Essentials", color:"#7A6038",
+   items:["Washing powder","Fabric softener","Washing up liquid","Bleach","Toilet cleaner","Bin bags","Cling film","Foil","Kitchen roll","Toilet roll","Sponges","Batteries","Lightbulbs"]},
+  {id:"baby",     icon:"🍼", name:"Baby & Kids",          color:"#486050",
+   items:["Nappies","Baby wipes","Baby milk formula","Nappy cream","Cotton wool","Baby bath wash","Baby lotion","Dummies","Bibs","Baby food pouches"]},
+  {id:"pets",     icon:"🐾", name:"Pet Supplies",         color:"#3A5060",
+   items:["Dog food","Cat food","Treats","Poo bags","Cat litter","Pet shampoo","Flea treatment","Worm treatment"]},
+  {id:"party",    icon:"🎉", name:"Party Shopping",       color:"#7A3870",
+   items:["Balloons","Paper plates","Napkins","Cups","Candles","Party bags","Streamers","Crisps","Dips","Fizzy drinks","Juice","Wine","Beer","Birthday cake","Ice cream"]},
+  {id:"blank",    icon:"📝", name:"My Own List",          color:"#5A5848",
+   items:[]},
+];
+
 function ShoppingList({data,setData,setScreen}){
   const [activeId,setActiveId]=useState(null);
-  const [adding,setAdding]=useState(false);
-  const [newName,setNewName]=useState("");
-  const [newIcon,setNewIcon]=useState("🛒");
+  const [showTemplates,setShowTemplates]=useState(!data||data.length===0);
   const inputRef=useRef(null);
-  useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
-  // Auto-open: go straight to list, skip hub
-  useEffect(()=>{
-    if(!activeId){
-      if(data&&data.length===1){setActiveId(data[0].id);}
-      else if(!data||data.length===0){
-        const nl=mkShopList("My Shopping","🛒");
-        setData(ds=>[...(ds||[]),nl]);
-        setActiveId(nl.id);
-      }
-    }
-  },[]);
 
   const active=data.find(l=>l.id===activeId);
   if(active) return <ShopListDetail list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(l=>l.id===u.id?u:l))} onDelete={id=>{setData(ds=>ds.filter(l=>l.id!==id));setActiveId(null);}}/>;
 
-  const submit=()=>{
-    if(!newName.trim())return;
-    setData(ds=>[...ds,mkShopList(newName.trim(),newIcon)]);
-    setNewName("");setNewIcon("🛒");setAdding(false);
+  const loadTemplate=(t)=>{
+    const items=t.items.map((name,i)=>({...mkItem(name),id:Date.now()+i}));
+    const nl={...mkShopList(t.name,t.icon),items,color:t.color};
+    setData(ds=>[...(ds||[]),nl]);
+    setActiveId(nl.id);
+    setShowTemplates(false);
   };
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      
       <Header title="🛒 Shopping" onBack={()=>setScreen("home")} right={
-        <button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
+        <button onClick={()=>setShowTemplates(true)} style={{background:"rgba(248,245,236,0.85)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ New List</button>
       }/>
-      <div style={{padding:"20px 16px"}}>
 
-        {/* New list form */}
-        {adding&&(
-          <GlassCard style={{marginBottom:18}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:12}}>New Shopping List</div>
-            <input ref={inputRef} value={newName} onChange={e=>setNewName(e.target.value)}
-              onKeyDown={e=>{if(e.key==="Enter")submit();if(e.key==="Escape"){setAdding(false);setNewName("");}}}
-              placeholder="e.g. Groceries, Christmas Presents…"
-              style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:12}}/>
-            {/* Icon picker */}
-            <div style={{fontSize:12,fontWeight:700,color:C.soft,marginBottom:8}}>Choose an icon</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-              {SHOP_LIST_ICONS.map(ic=>(
-                <button key={ic} onClick={()=>setNewIcon(ic)} style={{fontSize:22,width:40,height:40,borderRadius:10,border:`2px solid ${newIcon===ic?C.pp:C.ll}`,background:newIcon===ic?C.ll:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {ic}
+      <div style={{padding:"16px 14px"}}>
+
+        {/* Template picker — shown when adding or no lists yet */}
+        {showTemplates&&(
+          <div style={{background:"rgba(248,245,236,0.94)",borderRadius:26,padding:"20px 16px",marginBottom:16,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 4px 24px rgba(60,70,40,0.10)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:4}}>Choose a list template</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>Tap one to load it with suggested items — you can add, remove or rename anything. Or start blank and build your own.</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {SHOP_TEMPLATES.map(t=>(
+                <button key={t.id} onClick={()=>loadTemplate(t)}
+                  style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:20,padding:"14px 12px",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 8px rgba(60,70,40,0.05)",transition:"all 0.12s",overflow:"hidden",position:"relative"}}>
+                  <div style={{height:3,background:t.color,borderRadius:2,marginBottom:10,marginLeft:-12,marginRight:-12,marginTop:-14}}/>
+                  <div style={{fontSize:26,marginBottom:6}}>{t.icon}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{t.name}</div>
+                  <div style={{fontSize:10,color:"#8A8070",lineHeight:1.4}}>{t.items.length>0?`${t.items.length} suggested items`:"Start completely fresh"}</div>
                 </button>
               ))}
             </div>
-            <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
-              <button onClick={()=>{setAdding(false);setNewName("");}} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>Cancel</button>
-              <PurpleBtn onClick={submit}>Create List</PurpleBtn>
-            </div>
-          </GlassCard>
-        )}
-
-        {data.length===0&&!adding&&(
-          <div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:80,fontSize:15,lineHeight:2}}>
-            Tap + to create your first shopping list
+            {data&&data.length>0&&(
+              <button onClick={()=>setShowTemplates(false)} style={{width:"100%",marginTop:12,padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>
+                Cancel
+              </button>
+            )}
           </div>
         )}
 
-        {data.map((list,i)=>{
+        {/* Existing lists */}
+        {!showTemplates&&data.length===0&&(
+          <div style={{textAlign:"center",padding:"60px 20px"}}>
+            <div style={{fontSize:48,marginBottom:12}}>🛒</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No lists yet</div>
+            <div style={{color:"#8A8070",fontSize:14,marginBottom:20}}>Tap "+ New List" to create your first shopping list</div>
+            <button onClick={()=>setShowTemplates(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create list</button>
+          </div>
+        )}
+
+        {!showTemplates&&data.map((list,i)=>{
           const total=list.items.length;
           const done=list.items.filter(it=>it.checked).length;
           const pct=total>0?Math.round((done/total)*100):0;
-          const grads=[
-            `linear-gradient(135deg,#6a1b9a,#9c27b0)`,
-            `linear-gradient(135deg,#1565c0,#1976d2)`,
-            `linear-gradient(135deg,#2e7d32,#388e3c)`,
-            `linear-gradient(135deg,#e65100,#f57c00)`,
-            `linear-gradient(135deg,#880e4f,#c2185b)`,
-          ];
-          const grad=grads[i%grads.length];
+          const accent=list.color||["#5A7848","#486878","#7A6038","#7A2828","#486050"][i%5];
           return(
             <div key={list.id} onClick={()=>setActiveId(list.id)}
-              style={{background:"rgba(255,255,255,0.92)",borderRadius:20,marginBottom:14,overflow:"hidden",boxShadow:"0 4px 18px rgba(90,80,60,0.12)",border:`1.5px solid ${C.ll}`,cursor:"pointer",transition:"transform 0.15s"}}
-              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-              onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-              {/* Coloured header */}
-              <div style={{background:grad,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:44,height:44,borderRadius:12,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{list.icon}</div>
-                <div style={{flex:1}}>
-                  <div style={{color:"#1A1A10",fontWeight:900,fontSize:18}}>{list.name}</div>
-                  <div style={{color:"rgba(255,255,255,0.75)",fontSize:12,marginTop:2}}>{done}/{total} items done</div>
-                </div>
-                <button onClick={e=>{e.stopPropagation();setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1px solid rgba(255,255,255,0.3)",borderRadius:9,width:32,height:32,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
-              </div>
-              {/* Progress bar */}
-              <div style={{height:5,background:C.ll}}>
-                <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#27ae60":"#7c5cbf",transition:"width 0.4s"}}/>
-              </div>
-              {/* Item preview */}
-              <div style={{padding:"10px 16px"}}>
-                {total===0?(
-                  <div style={{color:C.soft,fontSize:13,fontStyle:"italic"}}>No items yet — tap to add</div>
-                ):(
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {list.items.filter(it=>!it.checked).slice(0,5).map(it=>(
-                      <span key={it.id} style={{background:C.ll,color:C.mp,fontSize:11,fontWeight:700,borderRadius:20,padding:"2px 9px"}}>{it.name}</span>
-                    ))}
-                    {list.items.filter(it=>!it.checked).length>5&&<span style={{color:C.soft,fontSize:11,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-5} more</span>}
-                    {pct===100&&<span style={{color:"#27ae60",fontSize:12,fontWeight:800}}>✅ All done!</span>}
+              style={{background:"rgba(248,245,236,0.90)",borderRadius:22,marginBottom:12,overflow:"hidden",boxShadow:"0 2px 14px rgba(60,70,40,0.08)",border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",transition:"transform 0.12s"}}
+              onMouseDown={e=>e.currentTarget.style.transform="scale(0.985)"}
+              onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
+              onTouchStart={e=>e.currentTarget.style.transform="scale(0.985)"}
+              onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+              <div style={{height:4,background:accent}}/>
+              <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:44,height:44,borderRadius:14,background:`${accent}18`,border:`1.5px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{list.icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10"}}>{list.name}</div>
+                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>
+                    {total===0?"Empty — tap to add items":`${done}/${total} done`}
+                    {pct===100&&total>0&&<span style={{color:"#5A9040",fontWeight:700}}> ✅</span>}
                   </div>
-                )}
+                </div>
+                <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${list.name}"?`))setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
               </div>
+              {total>0&&(
+                <>
+                  <div style={{height:3,background:"rgba(90,80,60,0.08)",margin:"0 16px"}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:2,transition:"width 0.4s"}}/>
+                  </div>
+                  <div style={{padding:"8px 16px 12px",display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {list.items.filter(it=>!it.checked).slice(0,6).map(it=>(
+                      <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:11,fontWeight:600,borderRadius:100,padding:"2px 10px"}}>{CAT_EMOJI[it.cat]||""} {it.name}</span>
+                    ))}
+                    {list.items.filter(it=>!it.checked).length>6&&<span style={{color:"#8A8070",fontSize:11,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-6} more</span>}
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
