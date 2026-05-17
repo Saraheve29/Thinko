@@ -5511,9 +5511,9 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
    quantities, notes, URL per item, sort by category
 ═══════════════════════════════════════════════════════ */
 const SHOP_LIST_ICONS=["🛒","🎁","🍎","👗","🏠","🐾","💊","📚","🎉","✈️"];
-const SHOP_CATS=["General","Fresh Food","Frozen","Drinks","Household","Health & Beauty","Baby & Kids","Pets","Clothing","Electronics","Other"];
-const CAT_COLORS={"General":"#7c5cbf","Fresh Food":"#27ae60","Frozen":"#2980b9","Drinks":"#e67e22","Household":"#8e44ad","Health & Beauty":"#e91e8c","Baby & Kids":"#f39c12","Pets":"#16a085","Clothing":"#c0392b","Electronics":"#1a5276","Other":"#546e7a"};
-const CAT_EMOJI={"General":"🛒","Fresh Food":"🥦","Frozen":"🧊","Drinks":"🥤","Household":"🏠","Health & Beauty":"💄","Baby & Kids":"🍼","Pets":"🐾","Clothing":"👗","Electronics":"📱","Other":"📦","All":"✨"};
+const SHOP_CATS=["General","Fresh Food","Frozen","Drinks","Household","Health & Beauty","Pets","Clothing","Electronics","Presents","Other"];
+const CAT_COLORS={"General":"#7c5cbf","Fresh Food":"#27ae60","Frozen":"#2980b9","Drinks":"#e67e22","Household":"#8e44ad","Health & Beauty":"#e91e8c","Pets":"#16a085","Clothing":"#c0392b","Electronics":"#1a5276","Presents":"#d4a017","Other":"#546e7a"};
+const CAT_EMOJI={"General":"🛒","Fresh Food":"🥦","Frozen":"🧊","Drinks":"🥤","Household":"🏠","Health & Beauty":"💄","Pets":"🐾","Clothing":"👗","Electronics":"📱","Presents":"🎁","Other":"📦","All":"✨"};
 
 function mkShopList(name="Groceries",icon="🛒"){
   return {id:Date.now(),name,icon,items:[],created:Date.now()};
