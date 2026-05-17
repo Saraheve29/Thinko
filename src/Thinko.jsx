@@ -5663,46 +5663,51 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <Header title={`${list.icon} ${list.name}`} onBack={onBack} right={
-        <button onClick={()=>{if(window.confirm("Delete this list?"))onDelete(list.id);}} style={{background:"rgba(192,57,43,0.3)",color:"#1A1A10",border:"1.5px solid rgba(255,100,100,0.4)",borderRadius:10,padding:"6px 10px",fontWeight:800,fontSize:13,cursor:"pointer"}}>🗑</button>
-      }/>
+      {/* Garden-style header — no purple */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10"}}>{list.icon} {list.name}</div>
+        <button onClick={()=>{if(window.confirm("Delete this list?"))onDelete(list.id);}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,padding:"7px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>🗑</button>
+      </div>
 
       {/* Progress bar */}
       {list.items.length>0&&(
-        <div style={{height:5,background:"rgba(255,255,255,0.15)"}}>
-          <div style={{height:"100%",width:`${Math.round((totalDone/list.items.length)*100)}%`,background:totalDone===list.items.length?"#27ae60":C.lp,transition:"width 0.4s"}}/>
+        <div style={{height:4,background:"rgba(90,80,60,0.08)"}}>
+          <div style={{height:"100%",width:`${Math.round((totalDone/list.items.length)*100)}%`,background:totalDone===list.items.length?"#5A9040":"#6A8858",transition:"width 0.4s"}}/>
         </div>
       )}
 
       <div style={{padding:"14px 14px"}}>
 
         {/* Quick add bar */}
-        <div style={{display:"flex",gap:8,marginBottom:10,background:"rgba(255,255,255,0.92)",borderRadius:14,padding:"10px 14px",border:`1.5px solid ${C.ll}`,boxShadow:"0 2px 10px rgba(90,80,60,0.08)"}}>
+        <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"10px 14px",border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 2px 10px rgba(60,70,40,0.06)"}}>
           <input ref={inputRef} value={newItemText} onChange={e=>setNewItemText(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&addItem()}
             placeholder="Add item… press Enter to add more"
-            style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:600,color:C.txt,background:"transparent"}}/>
-          <button onClick={addItem} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:10,width:36,height:36,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+            style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:500,color:"#1A1A10",background:"transparent"}}/>
+          <button onClick={addItem} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:"50%",width:34,height:34,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 8px rgba(58,80,38,0.28)"}}>+</button>
         </div>
 
-        {/* Toolbar */}
-        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+        {/* Toolbar — garden colours, no white-on-white */}
+        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:14,flexWrap:"wrap"}}>
           {/* Category filter chips */}
           {["All",...cats].map(c=>(
-            <button key={c} onClick={()=>setFilterCat(c)} style={{flexShrink:0,border:`1.5px solid ${c==="All"?"rgba(255,255,255,0.4)":(CAT_COLORS[c]||C.pp)+"88"}`,borderRadius:20,padding:"5px 12px",fontSize:12,cursor:"pointer",fontWeight:filterCat===c?800:600,background:filterCat===c?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.18)",color:filterCat===c?C.dp:C.wh,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
+            <button key={c} onClick={()=>setFilterCat(c)} style={{flexShrink:0,border:`1.5px solid ${filterCat===c?"#5A7848":"rgba(90,80,60,0.18)"}`,borderRadius:100,padding:"6px 12px",fontSize:12,cursor:"pointer",fontWeight:filterCat===c?700:500,background:filterCat===c?"#5A7848":"rgba(248,245,236,0.85)",color:filterCat===c?"#fff":"#3A3020",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
               <span>{CAT_EMOJI[c]||"🛒"}</span><span>{c}</span>
             </button>
           ))}
-          {/* Sort toggle */}
-          <button onClick={()=>setSortByCat(s=>!s)} style={{flexShrink:0,border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:sortByCat?800:600,cursor:"pointer",background:sortByCat?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.15)",color:sortByCat?C.dp:C.wh}}>
+          {/* Sort by category */}
+          <button onClick={()=>setSortByCat(s=>!s)} style={{flexShrink:0,border:`1.5px solid ${sortByCat?"#5A7848":"rgba(90,80,60,0.18)"}`,borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:sortByCat?700:500,cursor:"pointer",background:sortByCat?"#5A7848":"rgba(248,245,236,0.85)",color:sortByCat?"#fff":"#3A3020"}}>
             📂 By category
           </button>
           {/* Hide done */}
-          <button onClick={()=>setShowDone(s=>!s)} style={{flexShrink:0,border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:!showDone?800:600,cursor:"pointer",background:!showDone?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.15)",color:!showDone?C.dp:C.wh}}>
-            {showDone?"Hide done":"Show done"}
+          <button onClick={()=>setShowDone(s=>!s)} style={{flexShrink:0,border:`1.5px solid ${"rgba(90,80,60,0.18)"}`,borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:500,cursor:"pointer",background:"rgba(248,245,236,0.85)",color:"#3A3020"}}>
+            {showDone?"Hide done ✓":"Show done"}
           </button>
           {totalDone>0&&(
-            <button onClick={clearDone} style={{flexShrink:0,border:"1px solid rgba(255,100,100,0.4)",borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",background:"rgba(192,57,43,0.25)",color:C.wh}}>
+            <button onClick={clearDone} style={{flexShrink:0,border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:500,cursor:"pointer",background:"rgba(192,57,43,0.08)",color:"#c0392b"}}>
               🗑 Clear done ({totalDone})
             </button>
           )}
@@ -5720,7 +5725,7 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
             {cat&&(
               <div style={{display:"flex",alignItems:"center",gap:8,margin:"12px 0 6px"}}>
                 <div style={{height:1,flex:1,background:`${CAT_COLORS[cat]||C.pp}`}}/>
-                <span style={{fontSize:12,fontWeight:800,color:CAT_COLORS[cat]||C.wh,letterSpacing:0.8,textTransform:"uppercase"}}>{CAT_EMOJI[cat]||""} {cat}</span>
+                <span style={{fontSize:12,fontWeight:800,color:CAT_COLORS[cat]||"#3A3020",letterSpacing:0.8,textTransform:"uppercase"}}>{CAT_EMOJI[cat]||""} {cat}</span>
                 <div style={{height:1,flex:1,background:`${CAT_COLORS[cat]||C.pp}`}}/>
               </div>
             )}
@@ -5730,13 +5735,13 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
                 onDragStart={e=>{if(sortByCat)return;e.dataTransfer.effectAllowed="move";setDragItemId(item.id);}}
                 onDragOver={e=>!sortByCat&&itemDragOver(e,item.id)}
                 onDragEnd={()=>setDragItemId(null)}
-                style={{background:dragItemId===item.id?"rgba(160,190,140,0.35)":item.checked?"rgba(255,255,255,0.50)":"rgba(255,255,255,0.92)",borderRadius:14,padding:"11px 14px",marginBottom:8,border:`1.5px solid ${dragItemId===item.id?C.pp:item.checked?C.done:C.ll}`,opacity:item.checked&&dragItemId!==item.id?0.7:1,transition:"all 0.2s",display:"flex",alignItems:"flex-start",gap:10,transform:dragItemId===item.id?"scale(1.02)":"scale(1)",boxShadow:dragItemId===item.id?"0 6px 20px rgba(45,10,94,0.2)":"none",cursor:sortByCat?"default":"grab"}}>
+                style={{background:dragItemId===item.id?"rgba(160,190,140,0.35)":item.checked?"rgba(255,255,255,0.50)":"rgba(255,255,255,0.92)",borderRadius:14,padding:"11px 14px",marginBottom:8,border:`1.5px solid ${dragItemId===item.id?"#6A8858":item.checked?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.15)"}`,opacity:item.checked&&dragItemId!==item.id?0.7:1,transition:"all 0.2s",display:"flex",alignItems:"flex-start",gap:10,transform:dragItemId===item.id?"scale(1.02)":"scale(1)",boxShadow:dragItemId===item.id?"0 6px 20px rgba(60,80,40,0.18)":"none",cursor:sortByCat?"default":"grab"}}>
 
                 {/* Drag handle — hidden when sorting by category */}
                 {!sortByCat&&<div style={{color:"rgba(90,120,72,0.20)",fontSize:14,flexShrink:0,alignSelf:"center",lineHeight:1,cursor:"grab"}}>⠿</div>}
 
                 {/* Checkbox */}
-                <button onClick={()=>toggle(item.id)} style={{width:26,height:26,borderRadius:"50%",border:`2.5px solid ${item.checked?"#27ae60":C.lp}`,background:item.checked?"#27ae60":"transparent",cursor:"pointer",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#1A1A10",fontSize:14,fontWeight:900}}>
+                <button onClick={()=>toggle(item.id)} style={{width:26,height:26,borderRadius:"50%",border:`2.5px solid ${item.checked?"#5A9040":"rgba(90,120,72,0.35)"}`,background:item.checked?"#27ae60":"transparent",cursor:"pointer",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#1A1A10",fontSize:14,fontWeight:900}}>
                   {item.checked?"✓":""}
                 </button>
 
@@ -5744,10 +5749,10 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                     <span style={{fontWeight:700,fontSize:15,color:item.checked?C.soft:C.txt,textDecoration:item.checked?"line-through":"none"}}>{item.name}</span>
-                    {item.qty&&item.qty!=="1"&&<span style={{background:C.ll,color:C.mp,fontSize:11,fontWeight:700,borderRadius:20,padding:"1px 7px"}}>{item.qty}{item.unit?" "+item.unit:""}</span>}
+                    {item.qty&&item.qty!=="1"&&<span style={{background:"rgba(90,120,72,0.15)",color:C.mp,fontSize:11,fontWeight:700,borderRadius:20,padding:"1px 7px"}}>{item.qty}{item.unit?" "+item.unit:""}</span>}
                     {item.cat&&item.cat!=="General"&&<span style={{background:(CAT_COLORS[item.cat]||C.pp)+"22",color:CAT_COLORS[item.cat]||C.pp,fontSize:10,fontWeight:700,borderRadius:20,padding:"1px 7px",border:`1px solid ${(CAT_COLORS[item.cat]||C.pp)+"44"}`}}>{item.cat}</span>}
                   </div>
-                  {item.note&&<div style={{fontSize:12,color:C.soft,marginTop:2,lineHeight:1.4}}>{item.note}</div>}
+                  {item.note&&<div style={{fontSize:12,color:"#8A8070",marginTop:2,lineHeight:1.4}}>{item.note}</div>}
                   {item.url?<UrlBadge url={item.url}/>:(
                     !item.checked&&<button onClick={()=>setEditItem({...item})} style={{marginTop:3,background:"transparent",border:"none",color:"#1565c0",fontSize:11,fontWeight:700,cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>🔗 Add link</button>
                   )}
@@ -5769,19 +5774,19 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
           <div style={{background:C.wh,borderRadius:"22px 22px 0 0",padding:"0 0 30px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(45,10,94,0.4)",maxHeight:"88vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"center",padding:"12px 0 6px"}}><div style={{width:40,height:4,borderRadius:2,background:C.ll}}/></div>
             <div style={{padding:"0 18px"}}>
-              <div style={{fontWeight:900,color:C.dp,fontSize:15,marginBottom:14}}>✏️ Edit Item</div>
+              <div style={{fontWeight:900,color:"#1A1A10",fontSize:15,marginBottom:14}}>✏️ Edit Item</div>
 
               {/* Name */}
-              <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Item name</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#8A8070",textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Item name</div>
               <input value={editItem.name} onChange={e=>setEditItem(d=>({...d,name:e.target.value}))}
-                style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:12}}/>
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:12}}/>
 
               {/* Qty + Unit */}
               <div style={{display:"flex",gap:10,marginBottom:12}}>
                 <div style={{flex:1}}>
                   <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Quantity</div>
                   <input value={editItem.qty} onChange={e=>setEditItem(d=>({...d,qty:e.target.value}))}
-                    placeholder="1" style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:14,fontWeight:600,color:C.txt,outline:"none"}}/>
+                    placeholder="1" style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,fontWeight:600,color:"#1A1A10",outline:"none"}}/>
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Unit</div>
