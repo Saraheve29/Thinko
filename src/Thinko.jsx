@@ -1430,6 +1430,18 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
   const [newLink,setNewLink]=useState("");
   const inputRef=useRef(null);
   useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
+  // Auto-open: go straight to map, skip hub
+  useEffect(()=>{
+    if(!mapId){
+      if(data&&data.length===1){setMapId(data[0].id);}
+      else if(!data||data.length===0){
+        const rootNode={id:Date.now(),text:"My Mind Map",x:0,y:0,parent:null,color:"crystal"};
+        const nm={id:Date.now()+1,name:"My Mind Map",nodes:[rootNode]};
+        setData(ms=>[...(ms||[]),nm]);
+        setMapId(nm.id);
+      }
+    }
+  },[]);
 
   const map=data.find(m=>m.id===mapId);
 
@@ -3129,7 +3141,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [sendOpen,setSendOpen]=useState(false);
   const [toast,setToast]=useState("");
   const [studioOpen,setStudioOpen]=useState(false);
-  const [notesMode,setNotesMode]=useState(null);
+  const [notesMode,setNotesMode]=useState("notes"); // go straight to notes
   const [cabinetData,setCabinetData]=useState([]);
   const [addingSectionForm,setAddingSectionForm]=useState(false);
   const [addingPageForm,setAddingPageForm]=useState(false);
@@ -5396,6 +5408,17 @@ function ShoppingList({data,setData,setScreen}){
   const [newIcon,setNewIcon]=useState("🛒");
   const inputRef=useRef(null);
   useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
+  // Auto-open: go straight to list, skip hub
+  useEffect(()=>{
+    if(!activeId){
+      if(data&&data.length===1){setActiveId(data[0].id);}
+      else if(!data||data.length===0){
+        const nl=mkShopList("My Shopping","🛒");
+        setData(ds=>[...(ds||[]),nl]);
+        setActiveId(nl.id);
+      }
+    }
+  },[]);
 
   const active=data.find(l=>l.id===activeId);
   if(active) return <ShopListDetail list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(l=>l.id===u.id?u:l))} onDelete={id=>{setData(ds=>ds.filter(l=>l.id!==id));setActiveId(null);}}/>;
