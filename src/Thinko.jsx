@@ -3463,58 +3463,76 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   };
 
   if(notesMode==="notes") return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
-      <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 3px 16px rgba(90,80,60,0.35)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setNotesMode(null)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
-        <span style={{flex:1,color:"#1A1A10",fontWeight:900,fontSize:17}}>📓 Notes</span>
-        <button onClick={()=>setNotesMode(null)} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>🏠 Home</button>
-        <button onClick={addSection} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:40,height:40,fontSize:26,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      {/* Garden header */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setNotesMode(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>📓 Notes</div>
+        <button onClick={addSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>+ Section</button>
       </div>
-      <div style={{padding:"20px 16px"}}>
+      <div style={{padding:"16px 16px"}}>
         {addingSectionForm&&(
-          <div style={{background:"rgba(255,255,255,0.92)",borderRadius:16,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${C.lp}`}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>New section</div>
+          <div style={{background:"rgba(248,245,236,0.92)",borderRadius:20,padding:"16px 18px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.22)",boxShadow:"0 2px 14px rgba(60,70,40,0.08)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>New section</div>
             <input autoFocus value={newSectionName} onChange={e=>setNewSectionName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitSection();if(e.key==="Escape")setAddingSectionForm(false);}}
-              placeholder="Section name..." style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:10}}/>
+              placeholder="Section name..." style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.88)"}}/>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-              <button onClick={()=>{setAddingSectionForm(false);setNewSectionName('');}} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,cursor:"pointer",fontSize:14}}>Cancel</button>
-              <PurpleBtn onClick={submitSection}>Create</PurpleBtn>
+              <button onClick={()=>{setAddingSectionForm(false);setNewSectionName('');}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,cursor:"pointer",fontSize:14,padding:"8px 14px"}}>Cancel</button>
+              <button onClick={submitSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>Create</button>
             </div>
           </div>
         )}
-        {data.length===0&&!addingSectionForm&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:80,fontSize:15}}>Tap + to create a notebook section</div>}
+        {data.length===0&&!addingSectionForm&&(
+          <div style={{textAlign:"center",padding:"48px 24px"}}>
+            <div style={{fontSize:48,marginBottom:12}}>📓</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No sections yet</div>
+            <div style={{color:"#8A8070",fontSize:14,marginBottom:20,lineHeight:1.7}}>Create a section to start writing.<br/>Think of sections like notebooks — one for each topic.</div>
+            <button onClick={addSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create first section</button>
+          </div>
+        )}
         {data.map((s,idx)=>(
           <div key={s.id}
-            style={{display:"flex",alignItems:"center",gap:10,background:cardGlass,backdropFilter:"blur(8px)",borderRadius:18,padding:"12px 14px",marginBottom:12,border:`1px solid rgba(255,255,255,0.3)`,borderLeft:`5px solid ${s.color}`,transition:"all 0.15s"}}>
-            {/* Up/down buttons */}
-            <div style={{display:"flex",flexDirection:"column",gap:3,flexShrink:0}}>
-              <button onClick={()=>moveSection(s.id,-1)} disabled={idx===0}
-                style={{background:idx===0?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.18)",color:idx===0?"rgba(255,255,255,0.2)":C.wh,border:"none",borderRadius:7,width:26,height:22,cursor:idx===0?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,lineHeight:1}}>▲</button>
-              <button onClick={()=>moveSection(s.id,1)} disabled={idx===data.length-1}
-                style={{background:idx===data.length-1?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.18)",color:idx===data.length-1?"rgba(255,255,255,0.2)":C.wh,border:"none",borderRadius:7,width:26,height:22,cursor:idx===data.length-1?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,lineHeight:1}}>▼</button>
-            </div>
-            {/* Section card — tappable */}
-            <div onClick={()=>setSectionId(s.id)} style={{display:"flex",alignItems:"center",gap:12,flex:1,cursor:"pointer"}}>
-              <div style={{width:40,height:40,borderRadius:11,background:`linear-gradient(135deg,${s.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>📒</div>
-              <div style={{flex:1}}>
-                <div style={{color:"#1A1A10",fontWeight:700,fontSize:17}}>{s.name}</div>
-                <div style={{color:"rgba(255,255,255,0.45)",fontSize:13}}>{s.pages.length} page{s.pages.length!==1?"s":""}</div>
+            style={{background:"rgba(248,245,236,0.88)",backdropFilter:"blur(12px)",borderRadius:20,padding:"0",marginBottom:10,border:"1px solid rgba(255,255,255,0.92)",boxShadow:"0 2px 12px rgba(60,70,40,0.06)",overflow:"hidden",transition:"all 0.15s"}}>
+            <div style={{height:4,background:s.color||"#5A7848"}}/>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px"}}>
+              {/* Up/down reorder */}
+              <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
+                <button onClick={()=>moveSection(s.id,-1)} disabled={idx===0}
+                  style={{background:"none",border:"none",cursor:idx===0?"default":"pointer",color:idx===0?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:13,lineHeight:1,padding:"1px 4px",fontWeight:700}}>▲</button>
+                <button onClick={()=>moveSection(s.id,1)} disabled={idx===data.length-1}
+                  style={{background:"none",border:"none",cursor:idx===data.length-1?"default":"pointer",color:idx===data.length-1?"rgba(90,120,72,0.2)":"rgba(90,120,72,0.6)",fontSize:13,lineHeight:1,padding:"1px 4px",fontWeight:700}}>▼</button>
               </div>
+              {/* Section card — tappable */}
+              <div onClick={()=>setSectionId(s.id)} style={{display:"flex",alignItems:"center",gap:12,flex:1,cursor:"pointer"}}>
+                <div style={{width:42,height:42,borderRadius:13,background:`${s.color||"#5A7848"}22`,border:`1.5px solid ${s.color||"#5A7848"}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>📒</div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Georgia,serif",color:"#1A1A10",fontWeight:700,fontSize:16}}>{s.name}</div>
+                  <div style={{color:"#8A8070",fontSize:12,marginTop:1}}>{s.pages.length} page{s.pages.length!==1?"s":""}</div>
+                </div>
+                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.3}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              </div>
+              <button onClick={e=>{e.stopPropagation();deleteSection(s.id);}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:"50%",width:30,height:30,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
             </div>
-            <button onClick={e=>{e.stopPropagation();deleteSection(s.id);}} style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:9,width:32,height:32,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
           </div>
         ))}
       </div>
     </div>
   );
 
-  // Hub home screen — 4 big buttons
+  // Hub home screen — 4 draggable cards
   const HUB_MODES=[
     {id:"notes",  icon:"📓", name:"Notes",           desc:"Sections, pages & freewriting", grad:"#5A7848", count:`${data.reduce((s,sec)=>s+sec.pages.length,0)} pages`},
     {id:"filing", icon:"🗄️", name:"Filing Cabinet",  desc:"Drawers, folders, PDFs & photos",grad:"#486878", count:`${cabinetData.length} drawers`},
     {id:"ideas",  icon:"💡", name:"Ideas",            desc:"Capture sparks, plant as goals",  grad:"#7A6038", count:`${(ideasData||[]).length} ideas`},
     {id:"studio", icon:"🎓", name:"Study Studio",     desc:"Flashcards, quiz & slides",       grad:"#3A6848", count:"AI powered"},
   ];
+  const [hubOrder,setHubOrder]=useState(()=>{try{const v=localStorage.getItem('thinko_vault_order');return v?JSON.parse(v):HUB_MODES.map(m=>m.id);}catch{return HUB_MODES.map(m=>m.id);}});
+  const [dragVault,setDragVault]=useState(null);
+  const orderedHub=hubOrder.map(id=>HUB_MODES.find(m=>m.id===id)).filter(Boolean);
+  const vaultDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragVault(id);};
+  const vaultDragOver=(e,id)=>{e.preventDefault();if(!dragVault||dragVault===id)return;setHubOrder(o=>{const a=[...o];const fi=a.indexOf(dragVault),ti=a.indexOf(id);a.splice(fi,1);a.splice(ti,0,dragVault);try{localStorage.setItem('thinko_vault_order',JSON.stringify(a));}catch{}return a;});};
   const totalPages=data.reduce((s,sec)=>s+sec.pages.length,0);
   const recentPages=data.flatMap(s=>s.pages.map(p=>({...p,section:s.name,sectionId:s.id}))).sort((a,b)=>(b.updated||0)-(a.updated||0)).slice(0,3);
 
@@ -3576,16 +3594,28 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
           </div>
         )}
 
-        {/* 2×2 mode grid */}
+        {/* 2×2 draggable mode grid */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-          {HUB_MODES.map(m=>(
-            <div key={m.id} onClick={()=>m.id==="studio"?setNotesMode("notes"):setNotesMode(m.id)}
-              style={{background:"rgba(248,245,236,0.88)",backdropFilter:"blur(14px)",borderRadius:24,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",overflow:"hidden",boxShadow:"0 2px 14px rgba(60,70,40,0.07)",transition:"transform 0.15s"}}
-              onMouseDown={e=>e.currentTarget.style.transform="scale(0.97)"}
-              onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
-              onTouchStart={e=>e.currentTarget.style.transform="scale(0.97)"}
-              onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+          {orderedHub.map(m=>(
+            <div key={m.id}
+              draggable
+              onDragStart={e=>vaultDragStart(e,m.id)}
+              onDragOver={e=>vaultDragOver(e,m.id)}
+              onDragEnd={()=>setDragVault(null)}
+              onClick={()=>m.id==="studio"?setNotesMode("notes"):setNotesMode(m.id)}
+              style={{
+                background:dragVault===m.id?"rgba(255,255,255,0.96)":"rgba(248,245,236,0.88)",
+                backdropFilter:"blur(14px)",borderRadius:24,
+                border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",overflow:"hidden",
+                boxShadow:dragVault===m.id?"0 10px 32px rgba(60,70,40,0.16)":"0 2px 14px rgba(60,70,40,0.07)",
+                transform:dragVault===m.id?"scale(1.04) rotate(-1deg)":"scale(1)",
+                transition:"all 0.18s ease",position:"relative",
+              }}>
               <div style={{height:4,background:m.grad}}/>
+              {/* Drag dots */}
+              <div style={{position:"absolute",top:12,right:12,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
+                {[0,1,2].map(i=><div key={i} style={{display:"flex",gap:2.5}}>{[0,1].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"#3A3020"}}/>)}</div>)}
+              </div>
               <div style={{padding:"16px 14px"}}>
                 <div style={{fontSize:30,marginBottom:8,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.10))"}}>{m.icon}</div>
                 <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:3}}>{m.name}</div>
@@ -3594,6 +3624,9 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
               </div>
             </div>
           ))}
+        </div>
+        <div style={{textAlign:"center",marginBottom:12}}>
+          <span style={{fontSize:11,color:"rgba(60,56,40,0.40)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
         </div>
 
         {/* Recent pages */}
