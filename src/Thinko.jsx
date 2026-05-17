@@ -3514,45 +3514,118 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 
   // Hub home screen — 4 big buttons
   const HUB_MODES=[
-    {id:"notes", summary:"Notes · Ideas · Filing cabinet · PDF to Podcast",   icon:"📓", name:"Notes",          desc:"Sections, pages, freewriting",  grad:`linear-gradient(135deg,#1a5276,#2980b9)`, count:`${data.reduce((s,sec)=>s+sec.pages.length,0)} pages`},
-    {id:"filing",  icon:"🗄️", name:"Filing Cabinet", desc:"Drawers, folders, PDFs & photos",grad:`linear-gradient(135deg,#3d1a00,#8b4a00)`, count:`${cabinetData.length} drawers`},
-    {id:"ideas",   icon:"💡", name:"Ideas",          desc:"Capture sparks, plant as goals",   grad:`linear-gradient(135deg,#d68910,#e91e8c)`, count:`${(ideasData||[]).length} ideas`},
-    {id:"studio",  icon:"🎓", name:"Study Studio",   desc:"Flashcards, quiz, slides — AI powered",grad:`linear-gradient(135deg,#0d3b0d,#1e8449)`, count:"Open a note first"},
+    {id:"notes",  icon:"📓", name:"Notes",           desc:"Sections, pages & freewriting", grad:"#5A7848", count:`${data.reduce((s,sec)=>s+sec.pages.length,0)} pages`},
+    {id:"filing", icon:"🗄️", name:"Filing Cabinet",  desc:"Drawers, folders, PDFs & photos",grad:"#486878", count:`${cabinetData.length} drawers`},
+    {id:"ideas",  icon:"💡", name:"Ideas",            desc:"Capture sparks, plant as goals",  grad:"#7A6038", count:`${(ideasData||[]).length} ideas`},
+    {id:"studio", icon:"🎓", name:"Study Studio",     desc:"Flashcards, quiz & slides",       grad:"#3A6848", count:"AI powered"},
   ];
+  const totalPages=data.reduce((s,sec)=>s+sec.pages.length,0);
+  const recentPages=data.flatMap(s=>s.pages.map(p=>({...p,section:s.name,sectionId:s.id}))).sort((a,b)=>(b.updated||0)-(a.updated||0)).slice(0,3);
+
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      {/* Top nav bar with home button */}
-      <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 24px rgba(90,80,60,0.35)"}}>
-        <div style={{flex:1,textAlign:"center"}}>
-          <div style={{fontSize:22,fontWeight:900,color:C.wh}}>📚 The Vault</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.55)"}}>Your space for everything</div>
+      {/* Header */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 16px",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:24,color:"#1A1A10",letterSpacing:-0.5}}>📚 The Vault</div>
+            <div style={{fontSize:12,color:"#8A8070",marginTop:1}}>Your space for everything</div>
+          </div>
         </div>
-        <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 13px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-          🏠 <span style={{fontSize:12}}>Home</span>
-        </button>
       </div>
-      <div style={{padding:"16px 14px"}}>
-        {HUB_MODES.map(m=>(
-          <div key={m.id}
-            onClick={()=>m.id==="studio"?setNotesMode("notes"):setNotesMode(m.id)}
-            style={{display:"flex",alignItems:"center",gap:16,borderRadius:20,padding:"0",marginBottom:14,overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.25)",cursor:"pointer",transition:"transform 0.15s"}}
-            onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-            onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-            {/* Colour sidebar */}
-            <div style={{background:m.grad,width:72,alignSelf:"stretch",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,flexShrink:0}}>
-              {m.icon}
+
+      <div style={{padding:"18px 14px"}}>
+
+        {/* PDF → Podcast feature card — prominent */}
+        <div style={{marginBottom:16}}>
+          <input id="vaultPdfIn2" type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
+          <button onClick={()=>document.getElementById("vaultPdfIn2").click()}
+            style={{width:"100%",padding:"16px 18px",background:"linear-gradient(135deg,rgba(90,100,72,0.15),rgba(72,90,80,0.12))",backdropFilter:"blur(12px)",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:22,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left",boxShadow:"0 2px 12px rgba(60,70,40,0.08)"}}>
+            <span style={{fontSize:36,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.10))"}}>📄</span>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>PDF → Podcast</div>
+              <div style={{fontSize:12,color:"#8A8070"}}>Upload any PDF or text file — AI turns it into a warm podcast script</div>
             </div>
-            {/* Content */}
-            <div style={{flex:1,background:"rgba(255,255,255,0.92)",padding:"16px 14px 16px 4px"}}>
-              <div style={{fontWeight:900,fontSize:17,color:C.dp,marginBottom:3}}>{m.name}</div>
-              <div style={{fontSize:13,color:C.soft,marginBottom:4,lineHeight:1.4}}>{m.desc}</div>
-              <div style={{display:"inline-block",background:C.ll,color:C.mp,fontSize:11,fontWeight:700,borderRadius:20,padding:"2px 9px"}}>{m.count}</div>
-            </div>
-            <div style={{background:"rgba(255,255,255,0.92)",padding:"16px 14px 16px 0",alignSelf:"stretch",display:"flex",alignItems:"center"}}>
-              <span style={{color:C.soft,fontSize:20}}>›</span>
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{flexShrink:0,opacity:0.35}}><path d="M1 1l6 6-6 6" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+
+        {/* PDF modal */}
+        {(pdfLoading||pdfPodcast)&&(
+          <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>{setPdfPodcast("");setPdfFile(null);}}>
+            <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"85vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+              <div style={{padding:"0 20px 14px",flexShrink:0}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:2}}>📄 PDF → Podcast</div>
+                {pdfFile&&<div style={{color:"#8A8070",fontSize:13}}>{pdfFile.name}</div>}
+              </div>
+              <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
+                {pdfLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>🌿 Reading your file…<div style={{fontSize:12,color:"#8A8070",marginTop:8}}>This can take 15–20 seconds</div></div>}
+                {pdfPodcast&&!pdfLoading&&(
+                  <div>
+                    <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:14}}>
+                      <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#1A2810",lineHeight:1.9,whiteSpace:"pre-line"}}>{pdfPodcast}</div>
+                    </div>
+                    {!pdfPodcast.startsWith("Could not")&&<div style={{display:"flex",gap:10,marginBottom:10}}>
+                      <button onClick={()=>navigator.clipboard?.writeText(pdfPodcast)} style={{flex:1,padding:"13px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 Copy</button>
+                      <button onClick={()=>{setPdfPodcast("");setPdfFile(null);}} style={{padding:"13px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Close</button>
+                    </div>}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        ))}
+        )}
+
+        {/* 2×2 mode grid */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+          {HUB_MODES.map(m=>(
+            <div key={m.id} onClick={()=>m.id==="studio"?setNotesMode("notes"):setNotesMode(m.id)}
+              style={{background:"rgba(248,245,236,0.88)",backdropFilter:"blur(14px)",borderRadius:24,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",overflow:"hidden",boxShadow:"0 2px 14px rgba(60,70,40,0.07)",transition:"transform 0.15s"}}
+              onMouseDown={e=>e.currentTarget.style.transform="scale(0.97)"}
+              onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
+              onTouchStart={e=>e.currentTarget.style.transform="scale(0.97)"}
+              onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+              <div style={{height:4,background:m.grad}}/>
+              <div style={{padding:"16px 14px"}}>
+                <div style={{fontSize:30,marginBottom:8,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.10))"}}>{m.icon}</div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:3}}>{m.name}</div>
+                <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5,marginBottom:8}}>{m.desc}</div>
+                <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"3px 10px",border:`1px solid ${m.grad}30`}}>{m.count}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent pages */}
+        {recentPages.length>0&&(
+          <div style={{marginBottom:16}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Recently edited</div>
+            {recentPages.map(p=>(
+              <div key={p.id} onClick={()=>setNotesMode("notes")}
+                style={{background:"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",marginBottom:8,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 8px rgba(60,70,40,0.05)"}}>
+                <span style={{fontSize:22}}>📄</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.title||"Untitled"}</div>
+                  <div style={{fontSize:11,color:"#8A8070",marginTop:1}}>{p.section} · {p.content?(p.content.slice(0,40)+"…"):"Empty"}</div>
+                </div>
+                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.3}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {totalPages===0&&(ideasData||[]).length===0&&(
+          <div style={{textAlign:"center",padding:"24px 0",color:"#8A8070",fontSize:14,lineHeight:1.8}}>
+            <div style={{fontSize:48,marginBottom:10}}>📝</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>Your Vault is empty</div>
+            <div>Tap Notes to start writing, or Filing Cabinet<br/>to organise your important documents</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -5427,6 +5500,7 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
 const SHOP_LIST_ICONS=["🛒","🎁","🍎","👗","🏠","🐾","💊","📚","🎉","✈️"];
 const SHOP_CATS=["General","Fresh Food","Frozen","Drinks","Household","Health & Beauty","Baby & Kids","Pets","Clothing","Electronics","Other"];
 const CAT_COLORS={"General":"#7c5cbf","Fresh Food":"#27ae60","Frozen":"#2980b9","Drinks":"#e67e22","Household":"#8e44ad","Health & Beauty":"#e91e8c","Baby & Kids":"#f39c12","Pets":"#16a085","Clothing":"#c0392b","Electronics":"#1a5276","Other":"#546e7a"};
+const CAT_EMOJI={"General":"🛒","Fresh Food":"🥦","Frozen":"🧊","Drinks":"🥤","Household":"🏠","Health & Beauty":"💄","Baby & Kids":"🍼","Pets":"🐾","Clothing":"👗","Electronics":"📱","Other":"📦","All":"✨"};
 
 function mkShopList(name="Groceries",icon="🛒"){
   return {id:Date.now(),name,icon,items:[],created:Date.now()};
@@ -5635,8 +5709,8 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
         <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
           {/* Category filter chips */}
           {["All",...cats].map(c=>(
-            <button key={c} onClick={()=>setFilterCat(c)} style={{flexShrink:0,border:`1.5px solid ${c==="All"?"rgba(255,255,255,0.4)":(CAT_COLORS[c]||C.pp)+"88"}`,borderRadius:20,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:filterCat===c?800:600,background:filterCat===c?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.18)",color:filterCat===c?C.dp:C.wh,whiteSpace:"nowrap"}}>
-              {c}
+            <button key={c} onClick={()=>setFilterCat(c)} style={{flexShrink:0,border:`1.5px solid ${c==="All"?"rgba(255,255,255,0.4)":(CAT_COLORS[c]||C.pp)+"88"}`,borderRadius:20,padding:"5px 12px",fontSize:12,cursor:"pointer",fontWeight:filterCat===c?800:600,background:filterCat===c?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.18)",color:filterCat===c?C.dp:C.wh,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
+              <span>{CAT_EMOJI[c]||"🛒"}</span><span>{c}</span>
             </button>
           ))}
           {/* Sort toggle */}
@@ -5666,7 +5740,7 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
             {cat&&(
               <div style={{display:"flex",alignItems:"center",gap:8,margin:"12px 0 6px"}}>
                 <div style={{height:1,flex:1,background:`${CAT_COLORS[cat]||C.pp}`}}/>
-                <span style={{fontSize:11,fontWeight:800,color:CAT_COLORS[cat]||C.wh,letterSpacing:1,textTransform:"uppercase"}}>{cat}</span>
+                <span style={{fontSize:12,fontWeight:800,color:CAT_COLORS[cat]||C.wh,letterSpacing:0.8,textTransform:"uppercase"}}>{CAT_EMOJI[cat]||""} {cat}</span>
                 <div style={{height:1,flex:1,background:`${CAT_COLORS[cat]||C.pp}`}}/>
               </div>
             )}
