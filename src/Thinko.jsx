@@ -7416,6 +7416,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const rewardUnlocked=daysHit>=rewardFreq;
 
   const [dragChargeId,setDragChargeId]=useState(null);
+  const chargeAddRef=useRef(null);
   // Task timers — {taskIdx: {left, on, intervalId}}
   const [taskTimers,setTaskTimers]=useState({});
   const taskTimerRefs=useRef({});
@@ -7590,169 +7591,74 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             {data.targetTask&&<div style={{fontSize:12,color:"#5A7848",marginTop:8,fontStyle:"italic"}}>🎯 Today's focus: {data.targetTask}</div>}
           </div>
 
-          {/* ── Today's named task slots ── always visible */}
+          {/* ── Today's tasks ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15}}>Today's {target} task{target!==1?"s":""}</div>
-                {/* Reward unlock clarity */}
-                {rewardName&&!rewardUnlocked&&(
-                  <div style={{fontSize:11,color:"#5A7848",marginTop:2,fontWeight:600}}>
-                    ✅ Complete all {target} → {daysUntilReward===1?"unlock your reward tomorrow 🌟":"day "+daysHit+" of "+rewardFreq+" toward "+rewardName}
-                    {data.rewardDate&&<span style={{color:"#8A8070"}}> · by {new Date(data.rewardDate).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</span>}
-                  </div>
-                )}
-                {rewardUnlocked&&rewardName&&<div style={{fontSize:11,color:"#3A8020",marginTop:2,fontWeight:700}}>🎉 Reward ready — you've earned it!</div>}
-              </div>
-              <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️ Edit</button>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16}}>⚡ Today's Tasks</div>
+              <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️ Setup</button>
             </div>
-            {/* Always-visible add task input */}
-            {(()=>{
-              const tasks=data.targetTasks||[];
-              const filled=tasks.filter(t=>t?.trim()).length;
-              if(filled<target||target===0) return(
-                <div style={{marginBottom:10,display:"flex",gap:8,alignItems:"center"}}>
-                  <input
-                    placeholder={`Add task ${filled+1}…`}
-                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
-                    onKeyDown={e=>{
-                      if(e.key==="Enter"&&e.target.value.trim()){
-                        const next=[...tasks];
-                        const emptyIdx=next.findIndex(t=>!t?.trim());
-                        if(emptyIdx>=0) next[emptyIdx]=e.target.value.trim();
-                        else next.push(e.target.value.trim());
-                        // Also increase target if needed
-                        const newTarget=Math.max(target,next.filter(t=>t?.trim()).length);
-                        upd({targetTasks:next,dailyTarget:newTarget});
-                        e.target.value="";
-                      }
-                    }}/>
-                  <span style={{fontSize:11,color:"#8A8070",flexShrink:0}}>↵ Enter</span>
-                </div>
-              );
-              return null;
-            })()}
-            {(data.targetTasks||[]).some(t=>t?.trim())
-              ?(()=>{
-                const tasks=(data.targetTasks||[]);
-                const activeTasks=tasks.map((t,i)=>({text:t,origIdx:i})).filter(t=>t.text?.trim());
-                return activeTasks.map(({text:task,origIdx},i)=>{
-                  const done=charged.includes(task);
-                  const isFirst=i===0;
-                  const isLast=i===activeTasks.length-1;
-                  const moveTask=(dir)=>{
-                    // swap in the targetTasks array
-                    const next=[...tasks];
-                    const swapIdx=dir===-1
-                      ?(activeTasks[i-1]?.origIdx)
-                      :(activeTasks[i+1]?.origIdx);
-                    if(swapIdx===undefined)return;
-                    [next[origIdx],next[swapIdx]]=[next[swapIdx],next[origIdx]];
-                    upd({targetTasks:next});
-                  };
-                  return(
-                    <div key={origIdx}
-                      data-chargeidx={origIdx}
-                      draggable={!done}
-                      onDragStart={e=>{if(done)return;e.dataTransfer.effectAllowed="move";setDragChargeId(origIdx);}}
-                      onDragOver={e=>{e.preventDefault();if(!done)chargeDragOver(origIdx,tasks);}}
-                      onDragEnd={()=>setDragChargeId(null)}
-                      onTouchStart={e=>{if(!done)chargeTouchStart(e,origIdx);}}
-                      onTouchMove={e=>chargeTouchMove(e,tasks)}
-                      onTouchEnd={chargeTouchEnd}
-                      style={{background:dragChargeId===origIdx?"rgba(220,240,210,0.80)":done?"rgba(90,160,80,0.10)":"rgba(255,255,255,0.80)",borderRadius:18,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${dragChargeId===origIdx?"#6A8858":done?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,transition:"all 0.2s",transform:dragChargeId===origIdx?"scale(1.02)":"scale(1)",boxShadow:dragChargeId===origIdx?"0 6px 20px rgba(60,80,40,0.14)":"none",cursor:done?"default":"grab",touchAction:"none"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        {/* Drag handle */}
-                        {!done&&(
-                          <div style={{cursor:"grab",color:"rgba(90,120,72,0.35)",fontSize:16,padding:"0 4px",letterSpacing:1,flexShrink:0}}>⠿</div>
-                        )}
-                        {/* Task name */}
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:15,fontWeight:done?500:700,color:done?"#6A9060":"#1A1A10",textDecoration:done?"line-through":"none",lineHeight:1.3}}>{task}</div>
-                          {done&&<div style={{fontSize:11,color:"#5A9040",marginTop:2,fontWeight:600}}>⚡ Done!</div>}
-                        </div>
-                        {/* Single Done button — or done state */}
-                        {!done
-                          ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontSize:13,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
-                            ⚡ Done
-                          </button>
-                          :<div style={{background:"rgba(90,160,80,0.15)",color:"#3A7020",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,flexShrink:0}}>✓ Done</div>
-                        }
-                        {/* Delete */}
-                        <button onClick={()=>{
-                          if(window.confirm(`Delete "${task}"?`)){
-                            const next=[...tasks];next[origIdx]="";
-                            if(done)updToday({charged:charged.filter(c=>c!==task)});
-                            upd({targetTasks:next});showToast("🗑 Task deleted");
-                          }
-                        }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"7px 11px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>🗑</button>
-                      </div>
-                      {/* Compact task timer */}
-                      {!done&&(()=>{
-                        const tt=taskTimers[origIdx];
-                        const running=tt?.on&&tt?.left>0;
-                        return(
-                          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,padding:"7px 10px",background:"rgba(90,120,72,0.06)",borderRadius:12,border:"1px solid rgba(90,120,72,0.12)"}}>
-                            <span style={{fontSize:13}}>⏱</span>
-                            {running?(
-                              <>
-                                <span style={{fontFamily:"monospace",fontSize:14,fontWeight:700,color:tt.left<60?"#c0392b":"#3A6020",flex:1}}>{fmtTimer(tt.left)}</span>
-                                <div style={{flex:1,height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",margin:"0 4px"}}>
-                                  <div style={{height:"100%",width:`${Math.round((tt.left/(tt.total||600))*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
-                                </div>
-                                <button onClick={()=>stopTaskTimer(origIdx)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:8,padding:"3px 8px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
-                              </>
-                            ):(
-                              <>
-                                <span style={{fontSize:11,color:"#8A8070",flex:1}}>Task timer</span>
-                                <div style={{display:"flex",gap:4}}>
-                                  {[10,20,30,50].map(m=>(
-                                    <button key={m} onClick={()=>{setTaskTimers(t=>({...t,[origIdx]:{left:m*60,on:true,total:m*60}}));startTaskTimer(origIdx,m*60);}}
-                                      style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:8,padding:"3px 7px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{m}m</button>
-                                  ))}
-                                </div>
-                              </>
-                            )}
+            {/* Task list */}
+            {(data.targetTasks||[]).map((task,origIdx)=>{
+              if(!task?.trim()) return null;
+              const done=charged.includes(task);
+              const tt=taskTimers[origIdx];
+              const running=tt?.on&&tt?.left>0;
+              return(
+                <div key={origIdx}
+                  data-chargeidx={origIdx}
+                  draggable={!done}
+                  onDragStart={e=>{if(done)return;e.dataTransfer.effectAllowed="move";setDragChargeId(origIdx);}}
+                  onDragOver={e=>{e.preventDefault();if(!done)chargeDragOver(origIdx,data.targetTasks||[]);}}
+                  onDragEnd={()=>setDragChargeId(null)}
+                  onTouchStart={e=>{if(!done)chargeTouchStart(e,origIdx);}}
+                  onTouchMove={e=>chargeTouchMove(e,data.targetTasks||[])}
+                  onTouchEnd={chargeTouchEnd}
+                  style={{background:done?"rgba(90,160,80,0.08)":"rgba(255,255,255,0.85)",borderRadius:16,padding:"11px 13px",marginBottom:8,border:`1.5px solid ${done?"rgba(90,160,80,0.25)":"rgba(90,120,72,0.12)"}`,cursor:done?"default":"grab",touchAction:"none"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    {!done&&<div style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:15,flexShrink:0}}>⠿</div>}
+                    <div style={{flex:1,fontSize:15,fontWeight:done?400:700,color:done?"#8A9080":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</div>
+                    {!done
+                      ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:13,fontWeight:800,cursor:"pointer",flexShrink:0}}>⚡ Done</button>
+                      :<span style={{fontSize:12,color:"#5A9040",fontWeight:700,flexShrink:0}}>✓</span>
+                    }
+                    <button onClick={()=>{const next=[...(data.targetTasks||[])];next[origIdx]="";if(done)updToday({charged:charged.filter(c=>c!==task)});upd({targetTasks:next});showToast("🗑 Deleted");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"6px 10px",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>
+                  </div>
+                  {!done&&(
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,padding:"6px 10px",background:"rgba(90,120,72,0.05)",borderRadius:10,border:"1px solid rgba(90,120,72,0.10)"}}>
+                      <span style={{fontSize:12}}>⏱</span>
+                      {running?(
+                        <>
+                          <span style={{fontFamily:"monospace",fontSize:13,fontWeight:700,color:tt.left<60?"#c0392b":"#3A6020",flex:1}}>{fmtTimer(tt.left)}</span>
+                          <div style={{flex:2,height:3,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+                            <div style={{height:"100%",width:`${Math.round((tt.left/(tt.total||600))*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",transition:"width 1s linear"}}/>
                           </div>
-                        );
-                      })()}
+                          <button onClick={()=>stopTaskTimer(origIdx)} style={{background:"none",color:"#c0392b",border:"none",fontSize:11,cursor:"pointer",fontWeight:700}}>✕</button>
+                        </>
+                      ):(
+                        <div style={{display:"flex",gap:4,flex:1}}>
+                          {[10,20,30,50].map(m=>(
+                            <button key={m} onClick={()=>startTaskTimer(origIdx,m*60)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.15)",borderRadius:8,padding:"3px 8px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{m}m</button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  );
-                });
-              })()
-              :<div style={{textAlign:"center",padding:"8px 0",color:"#8A8070",fontSize:13}}>
-                Type a task above and press Enter to add it
-              </div>
-            }
-            {/* Prioritise within section — drag to reorder */}
-            {(data.targetTasks||[]).filter(t=>t?.trim()).length>1&&(
-              <div style={{marginTop:6,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:14,border:"1px solid rgba(90,120,72,0.12)",display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:14}}>⠿</span>
-                <span style={{fontSize:12,color:"#5A7040",fontWeight:600,flex:1}}>Hold & drag tasks above to prioritise — most important at the top</span>
-              </div>
-            )}
-            {/* Quick add task inline */}
-            {(()=>{
-              const tasks=data.targetTasks||[];
-              const filled=tasks.filter(t=>t?.trim()).length;
-              if(filled<target) return(
-                <div style={{marginTop:10,display:"flex",gap:8,alignItems:"center"}}>
-                  <input placeholder={`Add task ${filled+1} of ${target}…`}
-                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
-                    onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){
-                      const next=[...tasks];
-                      const emptyIdx=next.findIndex((t,i)=>!t?.trim());
-                      if(emptyIdx>=0)next[emptyIdx]=e.target.value.trim();
-                      else next.push(e.target.value.trim());
-                      upd({targetTasks:next.slice(0,target)});
-                      e.target.value="";
-                    }}}/>
-                  <span style={{fontSize:11,color:"#8A8070",flexShrink:0}}>Enter to add</span>
+                  )}
                 </div>
               );
-              return null;
-            })()}
+            })}
+            {/* Add task — always visible */}
+            <div style={{display:"flex",gap:8,marginTop:4}}>
+              <input ref={chargeAddRef}
+                placeholder="Add a task and press +"
+                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                onKeyDown={e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;const next=[...(data.targetTasks||[]),v];upd({targetTasks:next,dailyTarget:Math.max(target,next.filter(t=>t?.trim()).length)});e.target.value="";}}}/>
+              <button onClick={()=>{const inp=chargeAddRef.current;if(!inp||!inp.value.trim())return;const next=[...(data.targetTasks||[]),inp.value.trim()];upd({targetTasks:next,dailyTarget:Math.max(target,next.filter(t=>t?.trim()).length)});inp.value="";inp.focus();}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:40,height:40,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+            </div>
+            {(data.targetTasks||[]).filter(t=>t?.trim()).length>1&&(
+              <div style={{marginTop:8,fontSize:11,color:"rgba(90,80,60,0.40)",textAlign:"center"}}>⠿ Hold & drag to prioritise</div>
+            )}
           </div>
+
 
           {/* ── Celebration overlay ── */}
           {celebration&&(
