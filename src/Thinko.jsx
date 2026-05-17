@@ -8112,6 +8112,7 @@ const NATURE_SOUNDS=WN_PRESETS; // reuse the existing audio engine
 
 function RestSpace({setScreen}){
   const [tab,setTab]=useState("meditate");
+  const [forestWalkPlaying,setForestWalkPlaying]=useState(false);
   // Meditation state — supports up to 8 slots (5 user videos + 3 guided)
   const [audioFiles,setAudioFiles]=useState({});   // {slotId: {src, type, name}}
   const [activeMed,setActiveMed]=useState(null);
@@ -8322,7 +8323,34 @@ function RestSpace({setScreen}){
               </div>
             ))}
 
-            {/* User video slots */}
+            {/* Sarah's Forest Walk — built-in YouTube meditation */}
+            {/* Sarah's Forest Walk — built-in YouTube meditation */}
+            {forestWalkPlaying?(
+              <div style={{marginBottom:14,borderRadius:22,overflow:"hidden",boxShadow:"0 4px 20px rgba(60,70,40,0.16)"}}>
+                <div style={{background:"#1A1A10",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:20}}>🌲</span>
+                  <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#fff",flex:1}}>Forest Walk Meditation</span>
+                  <button onClick={()=>setForestWalkPlaying(false)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>✕ Close</button>
+                </div>
+                <div style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                  <iframe src="https://www.youtube.com/embed/IBqq-XelvcE?autoplay=1&rel=0&modestbranding=1"
+                    style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+                    allow="autoplay; fullscreen" allowFullScreen/>
+                </div>
+              </div>
+            ):(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,marginBottom:14,border:"1.5px solid rgba(90,120,72,0.20)",overflow:"hidden",boxShadow:"0 2px 12px rgba(60,70,40,0.08)"}}>
+                <div style={{height:3,background:"linear-gradient(90deg,#3A6028,#5A8048,#3A6028)"}}/>
+                <div style={{padding:"16px 16px",display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:52,height:52,borderRadius:16,background:"rgba(58,96,40,0.12)",border:"1.5px solid rgba(58,96,40,0.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🌲</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Forest Walk Meditation</div>
+                    <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>A gentle 6-minute guided walk through a peaceful forest 🌿</div>
+                  </div>
+                  <button onClick={()=>setForestWalkPlaying(true)} style={{background:"#3A6028",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(40,70,30,0.28)"}}>▶ Play</button>
+                </div>
+              </div>
+            )}
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",margin:"18px 0 10px"}}>🎬 My Meditation Videos</div>
             <div style={{color:"#8A8070",fontSize:12,marginBottom:12,lineHeight:1.6}}>Upload your own guided meditation videos. Tap a slot to add your file — MP4, MOV or any video format.</div>
             {USER_SLOTS.map(med=>(
