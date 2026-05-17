@@ -5642,20 +5642,26 @@ function ShoppingList({data,setData,setScreen}){
 
 function ShopListDetail({list,onBack,onUpdate,onDelete}){
   const [newItemText,setNewItemText]=useState("");
-  const [editItem,setEditItem]=useState(null); // full item being edited
-  const [filterCat,setFilterCat]=useState("All");
+  const [pickingCat,setPickingCat]=useState(false); // show category picker after typing
+  const [pendingItem,setPendingItem]=useState(""); // item text waiting for category
+  const [editItem,setEditItem]=useState(null);
   const [showDone,setShowDone]=useState(true);
-  const [sortByCat,setSortByCat]=useState(false);
   const [dragItemId,setDragItemId]=useState(null);
   const inputRef=useRef(null);
 
   const upd=changes=>onUpdate({...list,...changes});
   const updItems=items=>upd({items});
 
-  const addItem=()=>{
+  const startAdd=()=>{
     if(!newItemText.trim())return;
-    updItems([...list.items,mkItem(newItemText)]);
+    setPendingItem(newItemText.trim());
     setNewItemText("");
+    setPickingCat(true);
+  };
+
+  const addWithCat=(cat)=>{
+    updItems([...list.items,{...mkItem(pendingItem),cat}]);
+    setPendingItem("");setPickingCat(false);
     if(inputRef.current)inputRef.current.focus();
   };
 
@@ -5671,7 +5677,6 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
   const itemDragOver=(e,toId)=>{
     e.preventDefault();
     if(!dragItemId||dragItemId===toId)return;
-    // Only reorder within the master items array (not the filtered view)
     const arr=[...list.items];
     const fi=arr.findIndex(x=>x.id===dragItemId);
     const ti=arr.findIndex(x=>x.id===toId);
@@ -5681,17 +5686,14 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
     updItems(arr);
   };
 
-  const cats=[...new Set(list.items.map(it=>it.cat))].filter(Boolean);
   const totalDone=list.items.filter(it=>it.checked).length;
-
   let visible=list.items;
-  if(filterCat!=="All") visible=visible.filter(it=>it.cat===filterCat);
   if(!showDone) visible=visible.filter(it=>!it.checked);
-  if(sortByCat) visible=[...visible].sort((a,b)=>a.cat.localeCompare(b.cat));
 
-  // Group by category when sorting
-  const grouped=sortByCat
-    ? SHOP_CATS.filter(c=>visible.some(it=>it.cat===c)).map(c=>({cat:c,items:visible.filter(it=>it.cat===c)}))
+  // Group by category
+  const usedCats=[...new Set(visible.map(it=>it.cat).filter(Boolean))];
+  const grouped=usedCats.length>1
+    ? usedCats.map(c=>({cat:c,items:visible.filter(it=>it.cat===c)}))
     : [{cat:null,items:visible}];
 
   return(
@@ -5714,30 +5716,41 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
 
       <div style={{padding:"14px 14px"}}>
 
-        {/* Quick add bar */}
+        {/* Add bar */}
         <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"10px 14px",border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 2px 10px rgba(60,70,40,0.06)"}}>
           <input ref={inputRef} value={newItemText} onChange={e=>setNewItemText(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&addItem()}
-            placeholder="Add item… press Enter to add more"
+            onKeyDown={e=>e.key==="Enter"&&startAdd()}
+            placeholder="Add item… then choose category"
             style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:500,color:"#1A1A10",background:"transparent"}}/>
-          <button onClick={addItem} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:"50%",width:34,height:34,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 8px rgba(58,80,38,0.28)"}}>+</button>
+          <button onClick={startAdd} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:"50%",width:34,height:34,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 8px rgba(58,80,38,0.28)"}}>+</button>
         </div>
 
-        {/* Toolbar — garden colours, no white-on-white */}
-        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:14,flexWrap:"wrap"}}>
-          {/* Category filter chips */}
-          {["All",...cats].map(c=>(
-            <button key={c} onClick={()=>setFilterCat(c)} style={{flexShrink:0,border:`1.5px solid ${filterCat===c?"#5A7848":"rgba(90,80,60,0.18)"}`,borderRadius:100,padding:"6px 12px",fontSize:12,cursor:"pointer",fontWeight:filterCat===c?700:500,background:filterCat===c?"#5A7848":"rgba(248,245,236,0.85)",color:filterCat===c?"#fff":"#3A3020",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
-              <span>{CAT_EMOJI[c]||"🛒"}</span><span>{c}</span>
-            </button>
-          ))}
-          {/* Sort by category */}
-          <button onClick={()=>setSortByCat(s=>!s)} style={{flexShrink:0,border:`1.5px solid ${sortByCat?"#5A7848":"rgba(90,80,60,0.18)"}`,borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:sortByCat?700:500,cursor:"pointer",background:sortByCat?"#5A7848":"rgba(248,245,236,0.85)",color:sortByCat?"#fff":"#3A3020"}}>
-            📂 By category
-          </button>
-          {/* Hide done */}
-          <button onClick={()=>setShowDone(s=>!s)} style={{flexShrink:0,border:`1.5px solid ${"rgba(90,80,60,0.18)"}`,borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:500,cursor:"pointer",background:"rgba(248,245,236,0.85)",color:"#3A3020"}}>
-            {showDone?"Hide done ✓":"Show done"}
+        {/* Category picker — slides in after typing item name */}
+        {pickingCat&&(
+          <div style={{background:"rgba(248,245,236,0.96)",borderRadius:24,padding:"16px 16px 18px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.22)",boxShadow:"0 4px 20px rgba(60,70,40,0.10)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>"{pendingItem}"</div>
+                <div style={{fontSize:12,color:"#8A8070",marginTop:1}}>Choose a category</div>
+              </div>
+              <button onClick={()=>addWithCat("General")} style={{background:"rgba(90,120,72,0.10)",color:"#5A7848",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Skip →</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+              {SHOP_CATS.filter(c=>c!=="General").map(c=>(
+                <button key={c} onClick={()=>addWithCat(c)}
+                  style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:16,padding:"10px 4px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,transition:"all 0.12s",boxShadow:"0 1px 6px rgba(60,70,40,0.04)"}}>
+                  <span style={{fontSize:24}}>{CAT_EMOJI[c]}</span>
+                  <span style={{fontSize:10,fontWeight:500,color:"#3A3020",textAlign:"center",lineHeight:1.2}}>{c}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Slim toolbar */}
+        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+          <button onClick={()=>setShowDone(s=>!s)} style={{flexShrink:0,border:"1.5px solid rgba(90,80,60,0.18)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:500,cursor:"pointer",background:!showDone?"#5A7848":"rgba(248,245,236,0.85)",color:!showDone?"#fff":"#3A3020"}}>
+            {showDone?"Hide done ✓":"Show all"}
           </button>
           {totalDone>0&&(
             <button onClick={clearDone} style={{flexShrink:0,border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:500,cursor:"pointer",background:"rgba(192,57,43,0.08)",color:"#c0392b"}}>
@@ -5748,53 +5761,44 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
 
         {/* Item list */}
         {visible.length===0&&(
-          <div style={{textAlign:"center",color:"rgba(255,255,255,0.5)",marginTop:40,fontSize:14,fontStyle:"italic"}}>
-            {list.items.length===0?"Tap the bar above to add your first item":"Nothing to show with this filter"}
+          <div style={{textAlign:"center",color:"#8A8070",marginTop:40,fontSize:14,fontStyle:"italic"}}>
+            {list.items.length===0?"Add your first item above":"Nothing here yet"}
           </div>
         )}
 
         {grouped.map(({cat,items})=>(
           <div key={cat||"all"}>
             {cat&&(
-              <div style={{display:"flex",alignItems:"center",gap:8,margin:"12px 0 6px"}}>
-                <div style={{height:1,flex:1,background:`${CAT_COLORS[cat]||C.pp}`}}/>
-                <span style={{fontSize:12,fontWeight:800,color:CAT_COLORS[cat]||"#3A3020",letterSpacing:0.8,textTransform:"uppercase"}}>{CAT_EMOJI[cat]||""} {cat}</span>
-                <div style={{height:1,flex:1,background:`${CAT_COLORS[cat]||C.pp}`}}/>
+              <div style={{display:"flex",alignItems:"center",gap:8,margin:"14px 0 8px"}}>
+                <div style={{height:1,flex:1,background:"rgba(90,80,60,0.12)"}}/>
+                <span style={{fontSize:13,fontWeight:700,color:"#3A3020"}}>{CAT_EMOJI[cat]||""} {cat}</span>
+                <div style={{height:1,flex:1,background:"rgba(90,80,60,0.12)"}}/>
               </div>
             )}
             {items.map(item=>(
               <div key={item.id}
-                draggable={!sortByCat}
-                onDragStart={e=>{if(sortByCat)return;e.dataTransfer.effectAllowed="move";setDragItemId(item.id);}}
-                onDragOver={e=>!sortByCat&&itemDragOver(e,item.id)}
+                draggable
+                onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragItemId(item.id);}}
+                onDragOver={e=>itemDragOver(e,item.id)}
                 onDragEnd={()=>setDragItemId(null)}
-                style={{background:dragItemId===item.id?"rgba(160,190,140,0.35)":item.checked?"rgba(255,255,255,0.50)":"rgba(255,255,255,0.92)",borderRadius:14,padding:"11px 14px",marginBottom:8,border:`1.5px solid ${dragItemId===item.id?"#6A8858":item.checked?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.15)"}`,opacity:item.checked&&dragItemId!==item.id?0.7:1,transition:"all 0.2s",display:"flex",alignItems:"flex-start",gap:10,transform:dragItemId===item.id?"scale(1.02)":"scale(1)",boxShadow:dragItemId===item.id?"0 6px 20px rgba(60,80,40,0.18)":"none",cursor:sortByCat?"default":"grab"}}>
-
-                {/* Drag handle — hidden when sorting by category */}
-                {!sortByCat&&<div style={{color:"rgba(90,120,72,0.20)",fontSize:14,flexShrink:0,alignSelf:"center",lineHeight:1,cursor:"grab"}}>⠿</div>}
-
+                style={{background:dragItemId===item.id?"rgba(160,190,140,0.35)":item.checked?"rgba(248,245,236,0.60)":"rgba(248,245,236,0.92)",borderRadius:16,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${dragItemId===item.id?"#6A8858":item.checked?"rgba(90,160,80,0.20)":"rgba(90,120,72,0.15)"}`,opacity:item.checked?0.75:1,transition:"all 0.2s",display:"flex",alignItems:"center",gap:10,boxShadow:dragItemId===item.id?"0 6px 20px rgba(60,80,40,0.14)":"none",cursor:"grab"}}>
+                <div style={{color:"rgba(90,120,72,0.25)",fontSize:14,flexShrink:0,cursor:"grab"}}>⠿</div>
                 {/* Checkbox */}
-                <button onClick={()=>toggle(item.id)} style={{width:26,height:26,borderRadius:"50%",border:`2.5px solid ${item.checked?"#5A9040":"rgba(90,120,72,0.35)"}`,background:item.checked?"#27ae60":"transparent",cursor:"pointer",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#1A1A10",fontSize:14,fontWeight:900}}>
+                <button onClick={()=>toggle(item.id)} style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${item.checked?"#5A9040":"rgba(90,120,72,0.35)"}`,background:item.checked?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>
                   {item.checked?"✓":""}
                 </button>
-
+                {/* Category emoji */}
+                {item.cat&&item.cat!=="General"&&<span style={{fontSize:18,flexShrink:0}}>{CAT_EMOJI[item.cat]||"🛒"}</span>}
                 {/* Content */}
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                    <span style={{fontWeight:700,fontSize:15,color:item.checked?C.soft:C.txt,textDecoration:item.checked?"line-through":"none"}}>{item.name}</span>
-                    {item.qty&&item.qty!=="1"&&<span style={{background:"rgba(90,120,72,0.15)",color:C.mp,fontSize:11,fontWeight:700,borderRadius:20,padding:"1px 7px"}}>{item.qty}{item.unit?" "+item.unit:""}</span>}
-                    {item.cat&&item.cat!=="General"&&<span style={{background:(CAT_COLORS[item.cat]||C.pp)+"22",color:CAT_COLORS[item.cat]||C.pp,fontSize:10,fontWeight:700,borderRadius:20,padding:"1px 7px",border:`1px solid ${(CAT_COLORS[item.cat]||C.pp)+"44"}`}}>{item.cat}</span>}
-                  </div>
+                  <span style={{fontWeight:600,fontSize:15,color:item.checked?"#9A9080":"#1A1A10",textDecoration:item.checked?"line-through":"none"}}>{item.name}</span>
+                  {item.qty&&item.qty!=="1"&&<span style={{marginLeft:6,background:"rgba(90,120,72,0.12)",color:"#3A6020",fontSize:11,fontWeight:700,borderRadius:100,padding:"1px 8px"}}>{item.qty}{item.unit?" "+item.unit:""}</span>}
                   {item.note&&<div style={{fontSize:12,color:"#8A8070",marginTop:2,lineHeight:1.4}}>{item.note}</div>}
-                  {item.url?<UrlBadge url={item.url}/>:(
-                    !item.checked&&<button onClick={()=>setEditItem({...item})} style={{marginTop:3,background:"transparent",border:"none",color:"#1565c0",fontSize:11,fontWeight:700,cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>🔗 Add link</button>
-                  )}
                 </div>
-
                 {/* Edit */}
-                <button onClick={()=>setEditItem({...item})} style={{background:C.ll,color:C.mp,border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
+                <button onClick={()=>setEditItem({...item})} style={{background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"none",borderRadius:"50%",width:30,height:30,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
                 {/* Delete */}
-                <button onClick={()=>del(item.id)} style={{background:"#fce4e4",color:"#c0392b",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+                <button onClick={()=>del(item.id)} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:30,height:30,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
               </div>
             ))}
           </div>
@@ -5828,12 +5832,13 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
                 </div>
               </div>
 
-              {/* Category */}
-              <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Category</div>
-              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>
+              {/* Category — emoji tiles */}
+              <div style={{fontSize:11,fontWeight:700,color:"#8A8070",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Category</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
                 {SHOP_CATS.map(c=>(
-                  <button key={c} onClick={()=>setEditItem(d=>({...d,cat:c}))} style={{border:`1.5px solid ${(CAT_COLORS[c]||C.pp)+"88"}`,borderRadius:20,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:editItem.cat===c?800:600,background:editItem.cat===c?(CAT_COLORS[c]||C.pp):"transparent",color:editItem.cat===c?C.wh:(CAT_COLORS[c]||C.pp)}}>
-                    {c}
+                  <button key={c} onClick={()=>setEditItem(d=>({...d,cat:c}))} style={{background:editItem.cat===c?"#5A7848":"rgba(248,245,236,0.88)",border:`1.5px solid ${editItem.cat===c?"#5A7848":"rgba(90,80,60,0.12)"}`,borderRadius:14,padding:"8px 4px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"all 0.15s"}}>
+                    <span style={{fontSize:20}}>{CAT_EMOJI[c]||"🛒"}</span>
+                    <span style={{fontSize:9,fontWeight:editItem.cat===c?700:500,color:editItem.cat===c?"#fff":"#3A3020",textAlign:"center",lineHeight:1.2}}>{c.split(" ")[0]}</span>
                   </button>
                 ))}
               </div>
@@ -6241,42 +6246,45 @@ function WhiteNoise() {
   useEffect(()=>()=>stopAll(),[]);
 
   return(
-    <div style={{background:"rgba(255,255,255,0.10)",borderRadius:22,padding:"20px"}}>
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
       {/* Volume */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-        <span style={{fontSize:16}}>🔊</span>
-        <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e=>setVol(Number(e.target.value))}
-          style={{flex:1,accentColor:"#7c5cbf"}}/>
-        <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,minWidth:32}}>{Math.round(vol*100)}%</span>
+      <div style={{background:"rgba(248,245,236,0.90)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 12px rgba(60,70,40,0.06)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:18}}>🔊</span>
+          <span style={{fontSize:13,fontWeight:600,color:"#3A3020",flex:1}}>Volume</span>
+          <input type="range" min={0} max={1} step={0.01} value={vol} onChange={e=>setVol(Number(e.target.value))}
+            style={{flex:2,accentColor:"#5A7848"}}/>
+          <span style={{color:"#8A8070",fontSize:12,fontWeight:700,minWidth:36,textAlign:"right"}}>{Math.round(vol*100)}%</span>
+        </div>
       </div>
 
       {/* Presets */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {WN_PRESETS.map(p=>(
-          <button key={p.id} onClick={()=>play(p.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"12px 14px",borderRadius:14,background:playing===p.id?"#7c5cbf":"rgba(255,255,255,0.12)",border:`1.5px solid ${playing===p.id?"#7c5cbf":"rgba(255,255,255,0.2)"}`,color:"#1A1A10",cursor:"pointer",fontWeight:playing===p.id?800:600,fontSize:13,transition:"all 0.15s"}}>
-            <span style={{fontSize:20}}>{p.icon}</span>
-            <span>{p.name}</span>
-            {playing===p.id&&<span style={{marginLeft:"auto",fontSize:16}}>⏹</span>}
+          <button key={p.id} onClick={()=>play(p.id)} style={{display:"flex",alignItems:"center",gap:10,padding:"14px 14px",borderRadius:20,background:playing===p.id?"#5A7848":"rgba(248,245,236,0.88)",border:`1.5px solid ${playing===p.id?"#5A7848":"rgba(90,120,72,0.18)"}`,color:playing===p.id?"#fff":"#1A1A10",cursor:"pointer",fontWeight:playing===p.id?700:500,fontSize:14,transition:"all 0.15s",boxShadow:playing===p.id?"0 3px 14px rgba(58,80,38,0.28)":"0 1px 8px rgba(60,70,40,0.05)"}}>
+            <span style={{fontSize:22}}>{p.icon}</span>
+            <span style={{flex:1,textAlign:"left",fontFamily:"Georgia,serif"}}>{p.name}</span>
+            {playing===p.id&&<span style={{fontSize:14,opacity:0.8}}>⏹</span>}
           </button>
         ))}
       </div>
 
       {/* Custom tone */}
-      <div style={{background:"rgba(255,255,255,0.08)",borderRadius:16,padding:"14px"}}>
-        <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Custom Tone</div>
-        <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+      <div style={{background:"rgba(248,245,236,0.88)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 1px 8px rgba(60,70,40,0.05)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,color:"#1A1A10",marginBottom:12}}>🎛 Custom Tone</div>
+        <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
           {["sine","square","sawtooth","triangle"].map(t=>(
-            <button key={t} onClick={()=>setCustomType(t)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${customType===t?"#c4aee8":"rgba(255,255,255,0.2)"}`,background:customType===t?"rgba(160,190,140,0.35)":"transparent",color:"#1A1A10",fontSize:11,fontWeight:customType===t?800:600,cursor:"pointer",textTransform:"capitalize"}}>{t}</button>
+            <button key={t} onClick={()=>setCustomType(t)} style={{padding:"6px 14px",borderRadius:100,border:`1.5px solid ${customType===t?"#5A7848":"rgba(90,80,60,0.18)"}`,background:customType===t?"#5A7848":"transparent",color:customType===t?"#fff":"#3A3020",fontSize:12,fontWeight:customType===t?700:500,cursor:"pointer",textTransform:"capitalize"}}>{t}</button>
           ))}
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-          <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,minWidth:48}}>Freq</span>
+          <span style={{color:"#8A8070",fontSize:12,minWidth:36}}>Freq</span>
           <input type="range" min={20} max={2000} step={5} value={customFreq} onChange={e=>setCustomFreq(Number(e.target.value))}
-            style={{flex:1,accentColor:"#c4aee8"}}/>
-          <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,minWidth:52}}>{customFreq}Hz</span>
+            style={{flex:1,accentColor:"#5A7848"}}/>
+          <span style={{color:"#8A8070",fontSize:12,fontWeight:700,minWidth:52}}>{customFreq}Hz</span>
         </div>
-        <button onClick={playCustom} style={{width:"100%",padding:"11px",background:playing==="custom"?"#FF0022":"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.25)",borderRadius:12,fontWeight:800,fontSize:14,cursor:"pointer"}}>
-          {playing==="custom"?"⏹ Stop Custom":"▶ Play Custom Tone"}
+        <button onClick={playCustom} style={{width:"100%",padding:"12px",background:playing==="custom"?"#c0392b":"rgba(90,120,72,0.10)",color:playing==="custom"?"#fff":"#3A6020",border:`1.5px solid ${playing==="custom"?"#c0392b":"rgba(90,120,72,0.22)"}`,borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+          {playing==="custom"?"⏹ Stop Custom Tone":"▶ Play Custom Tone"}
         </button>
       </div>
     </div>
