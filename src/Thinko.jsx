@@ -3239,7 +3239,7 @@ function VoiceToText({setNotesData:setND}){
   );
 }
 
-function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen}) {
+function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen,initialMode=null}) {
   // ── ALL hooks at top level — never inside conditionals or IIFEs ──
   const [pdfFile,setPdfFile]=useState(null);
   const [pdfPodcast,setPdfPodcast]=useState("");
@@ -3250,7 +3250,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [sendOpen,setSendOpen]=useState(false);
   const [toast,setToast]=useState("");
   const [studioOpen,setStudioOpen]=useState(false);
-  const [notesMode,setNotesMode]=useState(null); // null = show vault hub
+  const [notesMode,setNotesMode]=useState(initialMode||null); // null = show vault hub
   const [cabinetData,setCabinetData]=useState([]);
   const [addingSectionForm,setAddingSectionForm]=useState(false);
   const [addingPageForm,setAddingPageForm]=useState(false);
@@ -3896,7 +3896,25 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
                 <div style={{fontSize:30,marginBottom:8,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.10))"}}>{m.icon}</div>
                 <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:3}}>{m.name}</div>
                 <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5,marginBottom:8}}>{m.desc}</div>
-                <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"3px 10px",border:`1px solid ${m.grad}30`}}>{m.count}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"3px 10px",border:`1px solid ${m.grad}30`}}>{m.count}</div>
+                  {(m.id==="notes"||m.id==="filing")&&(()=>{
+                    const pinId=m.id==="notes"?"noteshub":"filing";
+                    let order=[]; try{order=JSON.parse(localStorage.getItem('thinko_order')||'[]');}catch{}
+                    const pinned=order.includes(pinId);
+                    return(
+                      <button onClick={e=>{e.stopPropagation();
+                        let o=[]; try{o=JSON.parse(localStorage.getItem('thinko_order')||'[]');}catch{}
+                        const next=pinned?o.filter(id=>id!==pinId):[...o,pinId];
+                        try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
+                        // Force re-render hint
+                        alert(pinned?`${m.name} unpinned from home screen`:`${m.name} pinned to home screen ✅\n\nYou'll see it next time you visit home.`);
+                      }} style={{display:"inline-flex",alignItems:"center",gap:4,background:pinned?"rgba(192,57,43,0.08)":"rgba(90,120,72,0.10)",color:pinned?"#c0392b":"#3A6020",border:`1px solid ${pinned?"rgba(192,57,43,0.18)":"rgba(90,120,72,0.22)"}`,borderRadius:100,padding:"3px 10px",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                        {pinned?"📌 Unpin":"📌 Pin"}
+                      </button>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           ))}
@@ -6445,8 +6463,19 @@ function Translator(){
       if(!srcText.trim())return;
       setLoading(true);setResult("");
       const tName=l=>({en:"English",es:"Spanish",fr:"French",de:"German",it:"Italian",pl:"Polish",ro:"Romanian",nl:"Dutch",ar:"Arabic",zh:"Chinese",ja:"Japanese",pt:"Portuguese",tr:"Turkish",ru:"Russian",hi:"Hindi",uk:"Ukrainian",sv:"Swedish",no:"Norwegian"}[l]||l);
-      const res=await callAI(`Translate this text from ${tName(srcLang)} to ${tName(tgtLang)}. Return ONLY the translated text, no explanations:\n\n${srcText.trim()}`,400);
-      setResult(res||"Translation failed — check your connection and API key");
+      // Try AI first
+      const res=await callAI(`Translate this text from ${tName(srcLang)} to ${tName(tgtLang)}. Return ONLY the translated text, nothing else:\n\n${srcText.trim()}`,400);
+      if(res&&res.length>1&&!res.toLowerCase().includes("sorry")&&!res.toLowerCase().includes("cannot")){
+        setResult(res);setLoading(false);return;
+      }
+      // Fallback: MyMemory (free, no key needed)
+      try{
+        const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(srcText.trim().slice(0,500))}&langpair=${srcLang}|${tgtLang}`);
+        const j=await r.json();
+        const txt=j.responseData?.translatedText;
+        if(txt&&txt.length>0&&!txt.toLowerCase().includes("invalid")){setResult(txt);setLoading(false);return;}
+      }catch{}
+      setResult("Translation unavailable right now — check your internet connection or try a shorter phrase.");
       setLoading(false);
     };
     const swap=()=>{setSrcLang(tgtLang);setTgtLang(srcLang);setSrcText(result);setResult("");};
@@ -6963,7 +6992,7 @@ const TOOLS=[
   {id:"noise", name:"Sounds",     icon:"🎵"},
 ];
 
-function Tools({setScreen, notesData, setNotesData}) {
+function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}) {
   const [active, setActive] = useState("translate");
 
   const TOOL_TABS=[
@@ -7018,50 +7047,54 @@ function Tools({setScreen, notesData, setNotesData}) {
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
-      {/* Header */}
-      <div style={{padding:"52px 24px 20px",textAlign:"center"}}>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:34,color:"#1A1A10",letterSpacing:-0.5,marginBottom:4}}>
-          Tools <span style={{fontSize:22,verticalAlign:"middle"}}>✦</span>
-        </div>
-        <div style={{fontSize:13,color:"rgba(60,50,30,0.45)",fontStyle:"italic"}}>Ask AI for help with any tool 🤖</div>
+      {/* Header with back button */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🔧 Tools</div>
       </div>
 
-      {/* 3-column icon grid — large tiles */}
-      <div style={{padding:"0 14px",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
-        {TOOL_GRID.map(t=>(
-          <button key={t.id} onClick={()=>setActive(t.id)}
-            style={{
-              position:"relative",
-              background:"rgba(228,234,222,0.90)",
-              backdropFilter:"blur(14px)",
-              WebkitBackdropFilter:"blur(14px)",
-              borderRadius:28,
-              border:"1.5px solid rgba(255,255,255,0.88)",
-              padding:"0",
-              display:"flex",flexDirection:"column",
-              alignItems:"center",justifyContent:"flex-end",
-              cursor:"pointer",
-              boxShadow:"0 4px 20px rgba(60,70,40,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
-              transition:"transform 0.15s, box-shadow 0.15s",
-              aspectRatio:"1",
-              overflow:"hidden",
-            }}
-            onMouseDown={e=>e.currentTarget.style.transform="scale(0.96)"}
-            onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
-            onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"}
-            onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-            {/* NEW badge */}
-            {t.badge&&<div style={{position:"absolute",top:10,right:10,background:"#3A6028",color:"#fff",borderRadius:100,fontSize:9,fontWeight:800,padding:"3px 7px",letterSpacing:0.5,zIndex:2}}>{t.badge}</div>}
-            {/* Big emoji fills most of the tile */}
-            <div style={{fontSize:64,lineHeight:1,marginBottom:14,filter:"drop-shadow(0 4px 10px rgba(0,0,0,0.14))",marginTop:"auto",paddingTop:24}}>
-              {t.emoji}
+      {/* Pin to home tip */}
+      <div style={{padding:"12px 18px 0",fontSize:12,color:"#8A8070",display:"flex",alignItems:"center",gap:6}}>
+        <span>📌</span><span>Long-press any tool tile below to pin it to your home screen</span>
+      </div>
+
+      {/* 3-column icon grid */}
+      <div style={{padding:"14px 14px 0",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
+        {TOOL_GRID.map(t=>{
+          // Map tool id to module id
+          const modId={translate:"translate",currency:"currency",calc:"calc"}[t.id]||null;
+          const isPinned=modId&&moduleOrder&&moduleOrder.includes(modId);
+          let pressTimer=null;
+          return(
+            <div key={t.id} style={{position:"relative"}}>
+              <button
+                onClick={()=>setActive(t.id)}
+                onMouseDown={()=>{if(modId)pressTimer=setTimeout(()=>{
+                  const next=isPinned?(moduleOrder||[]).filter(id=>id!==modId):[...(moduleOrder||[]),modId];
+                  try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
+                  if(setModuleOrder)setModuleOrder(next);
+                  alert(isPinned?`${t.label} removed from home screen`:`${t.label} pinned to home screen ✅`);
+                },600);}}
+                onMouseUp={()=>clearTimeout(pressTimer)}
+                onTouchStart={()=>{if(modId)pressTimer=setTimeout(()=>{
+                  const next=isPinned?(moduleOrder||[]).filter(id=>id!==modId):[...(moduleOrder||[]),modId];
+                  try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
+                  if(setModuleOrder)setModuleOrder(next);
+                  alert(isPinned?`${t.label} removed from home screen`:`${t.label} pinned to home screen ✅`);
+                },600);}}
+                onTouchEnd={()=>clearTimeout(pressTimer)}
+                style={{width:"100%",position:"relative",background:"rgba(228,234,222,0.90)",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderRadius:28,border:"1.5px solid rgba(255,255,255,0.88)",padding:"0",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",cursor:"pointer",boxShadow:"0 4px 20px rgba(60,70,40,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",transition:"transform 0.15s",aspectRatio:"1",overflow:"hidden"}}
+                onMouseLeave={e=>{clearTimeout(pressTimer);e.currentTarget.style.transform="scale(1)";}}>
+                {t.badge&&<div style={{position:"absolute",top:10,right:10,background:"#3A6028",color:"#fff",borderRadius:100,fontSize:9,fontWeight:800,padding:"3px 7px",letterSpacing:0.5,zIndex:2}}>{t.badge}</div>}
+                {isPinned&&<div style={{position:"absolute",top:10,left:10,fontSize:12,zIndex:2}}>📌</div>}
+                <div style={{fontSize:56,lineHeight:1,marginBottom:10,filter:"drop-shadow(0 4px 10px rgba(0,0,0,0.14))",marginTop:"auto",paddingTop:20}}>{t.emoji}</div>
+                <div style={{fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,color:"#1A1A10",textAlign:"center",lineHeight:1.25,whiteSpace:"pre-line",padding:"0 8px 16px",width:"100%"}}>{t.label}</div>
+              </button>
             </div>
-            {/* Label at bottom */}
-            <div style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,color:"#1A1A10",textAlign:"center",lineHeight:1.25,whiteSpace:"pre-line",padding:"0 8px 18px",width:"100%"}}>
-              {t.label}
-            </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
 
@@ -8633,6 +8666,10 @@ const MODULES=[
    summary:"Live exchange rates · 150 currencies",optional:true},
   {id:"study",       icon:"🎓", name:"Study Studio", color:"#5A4878",
    summary:"Flashcards · Quiz · AI study tools",  optional:true},
+  {id:"noteshub",    icon:"📓", name:"Notes",        color:"#5A7848",
+   summary:"Jump straight into your notes",       optional:true},
+  {id:"filing",      icon:"🗄️", name:"Filing Cabinet",color:"#486878",
+   summary:"Tickets · Vouchers · Documents",      optional:true},
 ];
 
 function ProLoginModal({onClose,onSignIn}){
@@ -8783,13 +8820,15 @@ export default function App() {
   if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
-  if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData}/><NavBar current="tools" setScreen={setScreen}/></div></>);
+  if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
   if(screen==="rest") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
   // Individual tool shortcuts
   if(screen==="calc") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🧮 Calculator</div></div><div style={{padding:"16px 14px"}}><Calculator/></div><NavBar current="calc" setScreen={setScreen}/></div></>);
   if(screen==="translate") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🌍 Translator</div></div><div style={{padding:"16px 14px"}}><Translator/></div><NavBar current="translate" setScreen={setScreen}/></div></>);
   if(screen==="currency") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>💱 Currency</div></div><div style={{padding:"16px 14px"}}><CurrencyConverter/></div><NavBar current="currency" setScreen={setScreen}/></div></>);
   if(screen==="study") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🎓 Study Studio</div></div><div style={{padding:"16px 14px",textAlign:"center"}}><div style={{fontSize:48,marginBottom:12}}>🎓</div><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:8}}>Study Studio</div><div style={{fontSize:14,color:"#8A8070",marginBottom:20,lineHeight:1.7}}>Study Studio works with your notes — open a note in The Vault and tap the 🎓 button to generate flashcards, quizzes, infographics and slides from it.</div><button onClick={()=>setScreen("notes")} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>📚 Open The Vault</button></div><NavBar current="study" setScreen={setScreen}/></div></>);
+  if(screen==="noteshub") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="noteshub" setScreen={setScreen}/></div></>);
+  if(screen==="filing") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen} initialMode="filing"/><NavBar current="filing" setScreen={setScreen}/></div></>);
 
   return (
     <>
