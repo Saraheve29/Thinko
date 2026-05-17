@@ -6771,16 +6771,26 @@ function WhiteNoise() {
       if(!ctxRef.current||ctxRef.current.state==="closed") ctxRef.current=new(window.AudioContext||window.webkitAudioContext)();
       const ctx=ctxRef.current;
       if(ctx.state==="suspended")await ctx.resume();
-      gainRef.current=ctx.createGain();gainRef.current.gain.value=vol;gainRef.current.connect(ctx.destination);
+      // Create gain node for volume control
+      gainRef.current=ctx.createGain();
+      gainRef.current.gain.value=vol;
+      gainRef.current.connect(ctx.destination);
       const preset=WN_PRESETS.find(p=>p.id===id);
       if(preset){
-        // wrap stop to go through gain
-        const stopWrap={current:null};
-        const origStop=stopWrap;
-        preset.gen({...ctx,destination:gainRef.current},stopRef);
+        // Pass a proxy ctx where destination = gainRef (so sounds go through volume)
+        const ctxProxy={
+          createBuffer:(ch,len,sr)=>ctx.createBuffer(ch,len,sr),
+          createBufferSource:()=>ctx.createBufferSource(),
+          createBiquadFilter:()=>ctx.createBiquadFilter(),
+          createGain:()=>ctx.createGain(),
+          createOscillator:()=>ctx.createOscillator(),
+          sampleRate:ctx.sampleRate,
+          destination:gainRef.current,
+        };
+        preset.gen(ctxProxy,stopRef);
       }
       setPlaying(id);
-    }catch(e){console.error(e);}
+    }catch(e){console.error("Sound error:",e);}
   };
 
   const playCustom=async()=>{
@@ -8118,23 +8128,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
    White noise moved here from Tools
 ═══════════════════════════════════════════════════════ */
 
-const MEDITATIONS=[
-  {id:"breath",   icon:"🌬️", title:"Breathing Rest",      duration:300,
-   desc:"Gentle guided breathing to calm the nervous system",
-   script:["Close your eyes and let your body settle...","Breathe in slowly for 4 counts... 1... 2... 3... 4...","Hold gently for 2... 1... 2...","Breathe out slowly for 6... 1... 2... 3... 4... 5... 6...","Feel your body becoming heavier and more relaxed...","You are safe. You are resting. Nothing needs doing right now...","Continue this gentle rhythm... in for 4... hold for 2... out for 6...","Let any thoughts float past like clouds... you don't need to follow them...","Your body is doing the healing work now. You just rest...","When you're ready, take a deeper breath and gently open your eyes."]},
-  {id:"body",     icon:"🌿", title:"Body Scan Rest",       duration:300,
-   desc:"Slowly release tension from head to toe",
-   script:["Find a comfortable position and close your eyes...","Begin with your face... let your jaw soften... your eyes relax...","Feel your shoulders drop away from your ears...","Let your arms become heavy and warm...","Notice your chest rising and falling... no effort needed...","Let your belly soften with each breath out...","Feel the weight of your hips and legs against whatever supports you...","Your whole body is heavy... warm... supported...","You don't need to do anything right now. Just rest here...","Slowly, gently, come back when you feel ready."]},
-  {id:"light",    icon:"✨", title:"Light & Peace",         duration:300,
-   desc:"Visualise warm healing light filling your body",
-   script:["Settle into stillness and close your eyes softly...","Imagine a warm golden light just above you...","With each breath in, that light flows gently into the crown of your head...","It moves slowly down through your neck and shoulders... warm and peaceful...","Down through your chest... filling your heart with quiet warmth...","Down through your stomach... your hips... flowing gently...","All the way down to your feet... your whole body glowing softly...","This is the light of rest... of peace... of being enough exactly as you are...","Rest here in this warmth for a moment...","When you're ready, carry this peace back with you."]},
-  {id:"nature",   icon:"🌸", title:"Garden Visualisation",  duration:300,
-   desc:"A gentle walk through a peaceful garden",
-   script:["Close your eyes and take three slow breaths...","Imagine you are stepping into a beautiful garden...","The air is warm and gentle... you can smell flowers and fresh earth...","There is a soft path beneath your feet... you walk slowly, no destination...","You notice a bench in a sunny spot and sit down quietly...","Birdsong drifts around you... a breeze moves through the leaves...","There is nothing to do here. Nothing to fix. Nothing to be...","You are simply here, in this garden, completely at rest...","Let your body drink in this peace... your whole system settling...","Slowly become aware of the room around you, carrying the garden's calm with you."]},
-  {id:"fatigue",  icon:"💙", title:"Fatigue Recovery Rest", duration:420,
-   desc:"Specifically designed for fatigue — no sleep, deep rest",
-   script:["This is your permission to rest fully without sleeping...","Let your body be completely supported... release all effort...","You do not need to achieve anything in the next few minutes...","Notice any tension and simply let it be there without fighting it...","Your nervous system is doing important work right now as you rest...","Each breath out... releasing a little more... each breath in... receiving rest...","Your body knows how to restore itself. Trust this process...","You are not being lazy. You are being wise. Rest is productive...","Stay here as long as you need... there is no rush, no pressure...","When you return, you will feel a little more resourced. Rest well."]},
-];
 
 const NATURE_SOUNDS=WN_PRESETS; // reuse the existing audio engine
 
@@ -8173,15 +8166,6 @@ function RestSpace({setScreen}){
     try{localStorage.setItem('thinko_rest_audio',JSON.stringify(updated));}catch{}
   };
 
-  // Guided meditations (built-in text scripts — user can replace with their own video)
-  const GUIDED=[
-    {id:"breath",  icon:"🌬️", title:"Breathing Rest",      desc:"Gentle breathing to calm the nervous system",
-     script:["Close your eyes and let your body settle...","Breathe in slowly for 4… hold for 2… out for 6...","Feel your body becoming heavier and more relaxed...","You are safe. You are resting. Nothing needs doing right now...","Stay here as long as you need. Rest well."]},
-    {id:"body",    icon:"🌿", title:"Body Scan",            desc:"Slowly release tension from head to toe",
-     script:["Find a comfortable position and close your eyes...","Let your jaw soften… your shoulders drop…","Feel your arms become heavy and warm...","Your body is supported. You don't need to do anything right now...","Slowly, gently, come back when you feel ready."]},
-    {id:"garden",  icon:"🌸", title:"Garden Visualisation", desc:"A peaceful walk through a calm garden",
-     script:["Close your eyes and take three slow breaths...","Imagine stepping into a beautiful garden...","The air is warm and gentle. You can smell flowers and earth...","Sit on a bench in a sunny spot. Nothing to do, nowhere to be...","When you're ready, carry this peace back with you."]},
-  ];
 
   // User video slots — 5 spaces
   const USER_SLOTS=[
@@ -8192,17 +8176,9 @@ function RestSpace({setScreen}){
     {id:"my5",icon:"🎬",title:"My Meditation 5",desc:"Upload your own guided meditation"},
   ];
 
-  const allMeds=[...GUIDED,...USER_SLOTS];
+  const allMeds=[...USER_SLOTS];
 
-  // Text auto-advance for guided (no file uploaded)
-  useEffect(()=>{
-    if(!medRunning||!activeMed||audioFiles[activeMed.id])return;
-    const med=allMeds.find(m=>m.id===activeMed.id);
-    if(!med?.script)return;
-    if(medStep>=med.script.length){setMedDone(true);setMedRunning(false);return;}
-    const t=setTimeout(()=>setMedStep(s=>s+1),(30000/med.script.length));
-    return()=>clearTimeout(t);
-  },[medRunning,medStep,activeMed,audioFiles]);
+  // Text scripts removed — user uploads only
 
   // Break timer
   useEffect(()=>{
@@ -8326,30 +8302,6 @@ function RestSpace({setScreen}){
           {!activeMed&&<>
             {/* Built-in guided meditations */}
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:10}}>🧘 Guided Meditations</div>
-            {GUIDED.map(med=>(
-              <div key={med.id} style={{background:"rgba(248,245,236,0.88)",borderRadius:22,marginBottom:10,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 12px rgba(60,70,40,0.06)",overflow:"hidden"}}>
-                <div style={{height:3,background:"#5A7848"}}/>
-                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-                  <span style={{fontSize:26}}>{med.icon}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:2}}>{med.title}</div>
-                    <div style={{fontSize:12,color:"#8A8070"}}>{audioFiles[med.id]?`📁 ${audioFiles[med.id].name?.slice(0,30)}`:med.desc}</div>
-                  </div>
-                  <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                    {/* Upload/remove */}
-                    {audioFiles[med.id]
-                      ?<button onClick={()=>removeFile(med.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
-                      :<label style={{background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                        📁 Upload<input type="file" accept="audio/*,video/*" style={{display:"none"}} onChange={e=>uploadFile(med.id,e)}/>
-                      </label>
-                    }
-                    <button onClick={()=>startMed(med)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
-                      ▶ Start
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
 
             {/* Sarah's Forest Walk — built-in YouTube meditation */}
             {/* Sarah's Forest Walk — built-in YouTube meditation */}
