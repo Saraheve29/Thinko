@@ -3241,10 +3241,6 @@ function VoiceToText({setNotesData:setND}){
 
 function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen,initialMode=null}) {
   // ── ALL hooks at top level — never inside conditionals or IIFEs ──
-  const [pdfFile,setPdfFile]=useState(null);
-  const [pdfPodcast,setPdfPodcast]=useState("");
-  const [pdfLoading,setPdfLoading]=useState(false);
-  const [podcastSaved,setPodcastSaved]=useState(false);
   const [sectionId,setSectionId]=useState(null);
   const [pageId,setPageId]=useState(null);
   const [sendOpen,setSendOpen]=useState(false);
@@ -3277,7 +3273,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const secTouchRef=useRef(null);
   // Slides index (for Study Studio slides mode)
   const [slideIdx,setSlideIdx]=useState(0);
-  const pdfInputRef=useRef(null);
 
 
   // Clear section/page when leaving notes mode
@@ -3285,61 +3280,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
   },[notesMode]);
 
-  const handlePdf=async(e)=>{
-    const file=e.target.files[0];if(!file)return;
-    setPdfFile(file);setPdfPodcast("");setPdfLoading(true);setPodcastSaved(false);
-    const isPDF=file.type==="application/pdf"||file.name.toLowerCase().endsWith(".pdf");
-    const reader=new FileReader();
-    reader.onload=async(ev)=>{
-      try{
-        if(isPDF){
-          // Try base64 PDF via direct API (needs anthropic-version header + key via proxy)
-          const base64=ev.target.result.split(",")[1];
-          try{
-            const res=await fetch("/api/ai",{
-              method:"POST",
-              headers:{"Content-Type":"application/json"},
-              body:JSON.stringify({
-                model:"claude-sonnet-4-20250514",max_tokens:700,
-                messages:[{role:"user",content:[
-                  {type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},
-                  {type:"text",text:"Convert this PDF into a warm 2-minute podcast script. Flowing, natural narration. No headers or bullet points — spoken word only."}
-                ]}]
-              })
-            });
-            if(res.ok){
-              const j=await res.json();
-              const t=j.content?.[0]?.text||j.text||"";
-              if(t){setPdfPodcast(t);setPdfLoading(false);return;}
-            }
-          }catch{}
-          // Fallback: extract text and send as plain text prompt
-          const r2=new FileReader();
-          r2.onload=async ev2=>{
-            const text=(ev2.target.result||"").slice(0,3000).replace(/[^\x20-\x7E\n]/g," ").trim();
-            if(text.length<50){
-              setPdfPodcast("Could not read this PDF — it may be a scanned image.\n\n📱 Android: open in Google Drive → Open with Google Docs → copy text → save as .txt → upload here.\n\n🍎 iPhone: open in Files → Share → Save as .txt → upload here.");
-            }else{
-              const result=await callAI("Convert this text into a warm 2-minute podcast script. Flowing narration, no headers:\n\n"+text,700);
-              setPdfPodcast(result||"Could not convert — try saving the PDF content as a .txt file and uploading that.");
-            }
-            setPdfLoading(false);
-          };
-          r2.readAsText(file);
-        }else{
-          // Plain text — works reliably
-          const text=(ev.target.result||"").slice(0,4000);
-          const result=await callAI("Convert this text into a warm 2-minute podcast script. Spoken naturally, flowing narration:\n\n"+text,700);
-          setPdfPodcast(result||"Could not convert — try again.");
-          setPdfLoading(false);
-        }
-      }catch{
-        setPdfPodcast("Something went wrong. Try saving the PDF as a .txt file and uploading that instead.");
-        setPdfLoading(false);
-      }
-    };
-    if(isPDF)reader.readAsDataURL(file);else reader.readAsText(file);
-  };
 
   const section=data.find(s=>s.id===sectionId);
   const page=section?.pages.find(p=>p.id===pageId);
@@ -3395,49 +3335,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   if(notesMode==="notes"&&page&&section) return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
       {studioOpen&&<StudyStudio page={page} onClose={()=>setStudioOpen(false)}/>}
-      {/* PDF → Podcast */}
-      <div style={{margin:"0 14px 14px"}}>
-        <label style={{display:"flex",width:"100%",padding:"14px",background:"rgba(72,96,80,0.10)",border:"1.5px solid rgba(72,96,80,0.22)",borderRadius:22,alignItems:"center",gap:12,cursor:"pointer"}}>
-          <input type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
-          <span style={{fontSize:28}}>📄</span>
-          <div style={{textAlign:"left"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>PDF → Podcast</div>
-            <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>Upload a PDF or .txt file to convert to a podcast script</div>
-          </div>
-        </label>
-      </div>
-      {(pdfLoading||pdfPodcast)&&(
-        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>{setPdfPodcast("");setPdfFile(null);}}>
-          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"85vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
-            <div style={{padding:"0 20px 14px",flexShrink:0}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:2}}>📄 PDF → Podcast</div>
-              {pdfFile&&<div style={{color:"#8A8070",fontSize:13}}>{pdfFile.name}</div>}
-            </div>
-            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
-              {pdfLoading&&(
-                <div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>
-                  🌿 Reading your file and writing podcast…
-                  <div style={{fontSize:12,color:"#8A8070",marginTop:8}}>This can take 15–20 seconds</div>
-                </div>
-              )}
-              {pdfPodcast&&!pdfLoading&&(
-                <div>
-                  <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:14}}>
-                    <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#1A2810",lineHeight:1.9,whiteSpace:"pre-line"}}>{pdfPodcast}</div>
-                  </div>
-                  {!pdfPodcast.startsWith("Could not")&&!pdfPodcast.startsWith("Something")&&(
-                    <div style={{display:"flex",gap:10,marginBottom:10}}>
-                      <button onClick={()=>{navigator.clipboard?.writeText(pdfPodcast);}} style={{flex:1,padding:"13px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 Copy</button>
-                      <button onClick={()=>{setPdfPodcast("");setPdfFile(null);}} style={{padding:"13px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Close</button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       {/* Page editor nav bar */}
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"10px 12px",display:"flex",alignItems:"center",gap:8,boxShadow:"0 3px 16px rgba(90,80,60,0.35)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
         <button onClick={()=>setPageId(null)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
@@ -3789,7 +3686,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
     {id:"notes",  icon:"📓", name:"Notes",           desc:"Sections, pages & freewriting", grad:"#5A7848", count:`${data.reduce((s,sec)=>s+sec.pages.length,0)} pages`},
     {id:"filing", icon:"🗄️", name:"Filing Cabinet",  desc:"Drawers, folders, PDFs & photos",grad:"#486878", count:`${cabinetData.length} drawers`},
     {id:"voice",  icon:"🎙️", name:"Voice to Text",   desc:"Speak and save straight to notes",grad:"#486050", count:"Tap to record"},
-    {id:"studio", icon:"🎓", name:"Study Studio",     desc:"Flashcards, quiz & slides",       grad:"#3A6848", count:"AI powered"},
+    {id:"studio", icon:"💡", name:"Ideas",     desc:"For those light bulb moments ✨",       grad:"#7A6020", count:`${(ideasData||[]).length} ideas`},
   ];
   const orderedHub=hubOrder.map(id=>HUB_MODES.find(m=>m.id===id)).filter(Boolean);
   const vaultDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragVault(id);};
@@ -3821,57 +3718,10 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       </div>
 
       <div style={{padding:"18px 14px"}}>
-
-        {/* PDF → Podcast feature card — prominent */}
-        <div style={{marginBottom:16}}>
-          <label style={{display:"flex",width:"100%",padding:"16px 18px",background:"linear-gradient(135deg,rgba(90,100,72,0.15),rgba(72,90,80,0.12))",backdropFilter:"blur(12px)",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:22,alignItems:"center",gap:14,cursor:"pointer",textAlign:"left",boxShadow:"0 2px 12px rgba(60,70,40,0.08)"}}>
-            <input type="file" accept=".pdf,.txt,application/pdf,text/plain" style={{display:"none"}} onChange={handlePdf}/>
-            <span style={{fontSize:36,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.10))"}}>📄</span>
-            <div style={{flex:1}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>PDF → Podcast</div>
-              <div style={{fontSize:12,color:"#8A8070"}}>Upload any PDF or text file — AI turns it into a warm podcast script</div>
-            </div>
-            <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{flexShrink:0,opacity:0.35}}><path d="M1 1l6 6-6 6" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
-          </label>
-        </div>
-
-        {/* PDF modal */}
-        {(pdfLoading||pdfPodcast)&&(
-          <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>{setPdfPodcast("");setPdfFile(null);}}>
-            <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"85vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-              <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
-              <div style={{padding:"0 20px 14px",flexShrink:0}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginBottom:2}}>📄 PDF → Podcast</div>
-                {pdfFile&&<div style={{color:"#8A8070",fontSize:13}}>{pdfFile.name}</div>}
-              </div>
-              <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
-                {pdfLoading&&<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>🌿 Reading your file…<div style={{fontSize:12,color:"#8A8070",marginTop:8}}>This can take 15–20 seconds</div></div>}
-                {pdfPodcast&&!pdfLoading&&(
-                  <div>
-                    <div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"16px 18px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:14}}>
-                      <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#1A2810",lineHeight:1.9,whiteSpace:"pre-line"}}>{pdfPodcast}</div>
-                    </div>
-                    {!pdfPodcast.startsWith("Could not")&&<div style={{display:"flex",gap:10,marginBottom:10}}>
-                      <button onClick={()=>navigator.clipboard?.writeText(pdfPodcast)} style={{flex:1,padding:"13px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 Copy</button>
-                      <button onClick={()=>{setPdfPodcast("");setPdfFile(null);}} style={{padding:"13px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Close</button>
-                    </div>}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 2×2 draggable mode grid */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-          {/* Pin to home explanation */}
-          <div style={{gridColumn:"1 / -1",padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:14,border:"1px solid rgba(90,120,72,0.14)",display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:18,flexShrink:0}}>📌</span>
-            <span style={{fontSize:12,color:"#5A7040",lineHeight:1.5}}>Tap <strong>📌 Pin to home</strong> on Notes or Filing Cabinet to add them as shortcuts on your home screen.</span>
-          </div>
+        {/* Hub card grid */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
           {orderedHub.map(m=>(
             <div key={m.id}
-              draggable
               data-vaultid={m.id}
               draggable
               onDragStart={e=>vaultDragStart(e,m.id)}
@@ -3881,46 +3731,30 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
               onTouchMove={vaultTouchMove}
               onTouchEnd={vaultTouchEnd}
               onClick={()=>{
-                if(m.id==="studio")setNotesMode("notes");
+                if(m.id==="studio")setNotesMode("ideas");
                 else setNotesMode(m.id);
               }}
-              style={{
-                background:dragVault===m.id?"rgba(255,255,255,0.96)":"rgba(248,245,236,0.88)",
-                backdropFilter:"blur(14px)",borderRadius:24,
-                border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",overflow:"hidden",
-                boxShadow:dragVault===m.id?"0 10px 32px rgba(60,70,40,0.16)":"0 2px 14px rgba(60,70,40,0.07)",
-                transform:dragVault===m.id?"scale(1.04) rotate(-1deg)":"scale(1)",
-                transition:"all 0.18s ease",position:"relative",
-              }}>
-              <div style={{height:4,background:m.grad}}/>
-              {/* Drag dots */}
-              <div style={{position:"absolute",top:12,right:12,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
-                {[0,1,2].map(i=><div key={i} style={{display:"flex",gap:2.5}}>{[0,1].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"#3A3020"}}/>)}</div>)}
-              </div>
-              <div style={{padding:"16px 14px"}}>
-                <div style={{fontSize:30,marginBottom:8,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.10))"}}>{m.icon}</div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:3}}>{m.name}</div>
-                <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5,marginBottom:8}}>{m.desc}</div>
-                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                  <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"3px 10px",border:`1px solid ${m.grad}30`}}>{m.count}</div>
-                  {(m.id==="notes"||m.id==="filing")&&(()=>{
-                    const pinId=m.id==="notes"?"noteshub":"filing";
-                    let order=[]; try{order=JSON.parse(localStorage.getItem('thinko_order')||'[]');}catch{}
-                    const pinned=order.includes(pinId);
-                    return(
-                      <button onClick={e=>{e.stopPropagation();
-                        let o=[]; try{o=JSON.parse(localStorage.getItem('thinko_order')||'[]');}catch{}
-                        const next=pinned?o.filter(id=>id!==pinId):[...o,pinId];
-                        try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
-                        // Force re-render hint
-                        alert(pinned?`${m.name} unpinned from home screen`:`${m.name} pinned to home screen ✅\n\nYou'll see it next time you visit home.`);
-                      }} style={{display:"inline-flex",alignItems:"center",gap:4,background:pinned?"rgba(192,57,43,0.08)":"rgba(90,120,72,0.10)",color:pinned?"#c0392b":"#3A6020",border:`1px solid ${pinned?"rgba(192,57,43,0.18)":"rgba(90,120,72,0.22)"}`,borderRadius:100,padding:"3px 10px",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-                        {pinned?"📌 Unpin":"📌 Pin"}
-                      </button>
-                    );
-                  })()}
-                </div>
-              </div>
+              style={{background:`${m.grad}14`,border:`1.5px solid ${m.grad}30`,borderRadius:22,padding:"18px 16px",cursor:"pointer",boxShadow:"0 2px 12px rgba(60,70,40,0.07)",transition:"all 0.15s",transform:dragVault===m.id?"scale(1.04)":"scale(1)",position:"relative"}}>
+              <div style={{fontSize:32,marginBottom:8}}>{m.icon}</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:3}}>{m.name}</div>
+              <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5,marginBottom:8}}>{m.desc}</div>
+              <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"3px 10px",border:`1px solid ${m.grad}30`}}>{m.count}</div>
+              {/* Pin buttons for Notes and Filing */}
+              {(m.id==="notes"||m.id==="filing")&&(()=>{
+                const pinId=m.id==="notes"?"noteshub":"filing";
+                let order=[]; try{order=JSON.parse(localStorage.getItem('thinko_order')||'[]');}catch{}
+                const pinned=order.includes(pinId);
+                return(
+                  <button onClick={e=>{e.stopPropagation();
+                    let o=[]; try{o=JSON.parse(localStorage.getItem('thinko_order')||'[]');}catch{}
+                    const next=pinned?o.filter(id=>id!==pinId):[...o,pinId];
+                    try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
+                    alert(pinned?`${m.name} unpinned from home`:`${m.name} pinned to home ✅`);
+                  }} style={{position:"absolute",top:10,right:10,background:pinned?"rgba(90,120,72,0.15)":"rgba(248,245,236,0.90)",border:`1px solid ${pinned?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.15)"}`,borderRadius:100,padding:"3px 8px",fontSize:10,fontWeight:700,color:pinned?"#3A6020":"#6A6050",cursor:"pointer"}}>
+                    📌{pinned?" Pinned":" Pin"}
+                  </button>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -3973,7 +3807,6 @@ function VaultHub({data,setData,priData,ideasData,setIdeasData,cabinetData,setNo
     {id:"notes",  icon:"📓",name:"Notes",         desc:totalPages+" pages",    color:"#5A7848",action:()=>setNotesMode("notes")},
     {id:"ideas",  icon:"💡",name:"Ideas",          desc:totalIdeas+" ideas",    color:"#7A6038",action:()=>setNotesMode("ideas")},
     {id:"filing", icon:"🗄️",name:"Filing Cabinet", desc:totalDrawers+" drawers",color:"#486878",action:()=>setNotesMode("filing")},
-    {id:"pdf",    icon:"📄",name:"PDF → Podcast",  desc:"PDF or .txt → podcast",color:"#486050",action:()=>setNotesMode("pdf")},
   ];
   const searchResults=search.trim().length>1
     ?(data||[]).flatMap(s=>(s.pages||[]).filter(p=>
@@ -7578,6 +7411,17 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [dragChargeId,setDragChargeId]=useState(null);
   const [comparing,setComparing]=useState(false);
   const chargeAddRef=useRef(null);
+  // Break timer
+  const [breakMins,setBreakMins]=useState(5);
+  const [breakLeft,setBreakLeft]=useState(null);
+  const [breakOn,setBreakOn]=useState(false);
+  const chargeBreakRef=useRef(null);
+  useEffect(()=>{
+    if(breakOn&&breakLeft>0){chargeBreakRef.current=setInterval(()=>setBreakLeft(l=>l-1),1000);}
+    else{clearInterval(chargeBreakRef.current);if(breakLeft===0&&breakOn){setBreakOn(false);playAlarm("gentle");}}
+    return()=>clearInterval(chargeBreakRef.current);
+  },[breakOn,breakLeft]);
+  const fmtBreak=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const setupAddRef=useRef(null);
   // Task timers — {taskIdx: {left, on, intervalId}}
   const [taskTimers,setTaskTimers]=useState({});
@@ -7943,6 +7787,40 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               </div>
             );
           })()}
+
+          {/* ── Break Timer ── */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:10}}>☕ Break Timer</div>
+            {breakLeft!==null?(
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"monospace",fontSize:52,fontWeight:300,color:breakLeft<60?"#c0392b":"#2C3820",lineHeight:1,marginBottom:8}}>{fmtBreak(breakLeft)}</div>
+                <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:12}}>
+                  <div style={{height:"100%",width:`${Math.round((breakLeft/(breakMins*60))*100)}%`,background:breakLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+                </div>
+                <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                  <button onClick={()=>setBreakOn(b=>!b)} style={{flex:1,padding:"11px",background:breakOn?"rgba(192,57,43,0.10)":"#5A7848",color:breakOn?"#c0392b":"#fff",border:`1.5px solid ${breakOn?"rgba(192,57,43,0.25)":"#5A7848"}`,borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                    {breakOn?"⏸ Pause":"▶ Resume"}
+                  </button>
+                  <button onClick={()=>{clearInterval(chargeBreakRef.current);setBreakLeft(null);setBreakOn(false);}} style={{flex:1,padding:"11px",background:"rgba(90,80,60,0.08)",color:"#6A6050",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>✕ End break</button>
+                </div>
+              </div>
+            ):(
+              <div>
+                <div style={{display:"flex",gap:8,marginBottom:10}}>
+                  {[5,10,15,20,30].map(m=>(
+                    <button key={m} onClick={()=>setBreakMins(m)}
+                      style={{flex:1,padding:"9px 0",background:breakMins===m?"#5A7848":"rgba(248,245,236,0.88)",color:breakMins===m?"#fff":"#3A5020",border:`1.5px solid ${breakMins===m?"#5A7848":"rgba(90,120,72,0.22)"}`,borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+                <button onClick={()=>{setBreakLeft(breakMins*60);setBreakOn(true);}}
+                  style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
+                  ☕ Start {breakMins}min break
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Stale/overdue tasks */}
           {allStale.length>0&&(
@@ -8646,7 +8524,7 @@ const MODULES=[
   {id:"mindmap",     icon:"🧠", name:"Mind Map",     color:"#486878",
    summary:"Visual thinking · AI branch grow · Voice notes · 8 templates"},
   {id:"notes",       icon:"📚", name:"The Vault",    color:"#7A5838",
-   summary:"Notes · Ideas · Filing cabinet · PDF to Podcast"},
+   summary:"Notes · Ideas · Filing cabinet · Voice to Text"},
   {id:"meals",       icon:"🍽️", name:"Meal Planner", color:"#6A8858",
    summary:"7-day plan · Photo recipes · Shopping export"},
   {id:"goals",       icon:"🎯", name:"Goals",        color:"#3A6848",
