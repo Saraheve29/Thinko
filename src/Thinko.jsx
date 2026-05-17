@@ -3503,6 +3503,38 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
               }} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
                 <span style={{fontSize:18}}>🌐</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Save as .html file</span>
               </button>
+              <button onClick={()=>{
+                // Build styled HTML then print-to-PDF via browser
+                const w=window.open("","_blank");
+                if(!w)return;
+                w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${page.title}</title><style>@page{margin:2cm}body{font-family:Georgia,serif;max-width:680px;margin:0 auto;line-height:1.9;color:#1A1A10;font-size:14pt;}h1{color:#2C3820;border-bottom:2px solid #5A7848;padding-bottom:8px;margin-bottom:20px;}pre,div{white-space:pre-line;}</style></head><body><h1>${page.title}</h1><div>${(page.content||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
+                w.document.close();
+                showToast("🖨️ Opening print dialog — save as PDF");
+                setSendOpen(false);
+              }} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
+                <span style={{fontSize:18}}>📕</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Save as PDF (print)</span>
+              </button>
+              <button onClick={async()=>{
+                // Render to canvas then save as JPEG
+                const canvas=document.createElement("canvas");
+                const scale=2;canvas.width=800*scale;
+                const lines=(page.content||"").split("\n");
+                const lh=26*scale;const pad=40*scale;
+                canvas.height=(lines.length*lh+120*scale);
+                const ctx=canvas.getContext("2d");
+                ctx.fillStyle="#FEFCF0";ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle="#2C3820";ctx.font=`bold ${22*scale}px Georgia,serif`;ctx.fillText(page.title||"Note",pad,pad*1.2);
+                ctx.fillStyle="#444";ctx.font=`${14*scale}px Georgia,serif`;
+                lines.forEach((l,i)=>ctx.fillText(l,pad,pad*1.8+i*lh));
+                const url=canvas.toDataURL("image/jpeg",0.92);
+                const a=document.createElement("a");a.href=url;
+                a.download=`${page.title||"note"}.jpg`;
+                document.body.appendChild(a);a.click();document.body.removeChild(a);
+                showToast("🖼️ Saved as JPEG!");
+                setSendOpen(false);
+              }} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
+                <span style={{fontSize:18}}>🖼️</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Save as JPEG image</span>
+              </button>
                 <button key={l.id} onClick={()=>sendToPri(l.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
                   <span style={{fontSize:18}}>📋</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Prioritizer — {l.name}</span>
                 </button>
@@ -8805,12 +8837,56 @@ export default function App() {
       {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
 
       {/* ── GREETING SECTION ── */}
-      <div style={{padding:"56px 24px 20px",textAlign:"center",flexShrink:0}}>
-        {/* Greeting */}
-        <div style={{fontFamily:"Georgia,serif",fontSize:36,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,marginBottom:6,textShadow:"0 2px 12px rgba(255,255,255,0.6)"}}>
-          {(()=>{const {word,emoji}=getGreeting();return <>{word}{userName?`, ${userName}`:""} {emoji}</>;})()}
+      <div style={{padding:"40px 24px 20px",textAlign:"center",flexShrink:0}}>
+        {/* Glowing sun / moon / stars based on time */}
+        {(()=>{
+          const h=new Date().getHours();
+          const isMorn=h>=5&&h<12;
+          const isAftern=h>=12&&h<17;
+          const isEvening=h>=17&&h<21;
+          const isNight=h>=21||h<5;
+          return(
+            <div style={{marginBottom:16,position:"relative",display:"inline-block"}}>
+              <style>{`
+                @keyframes sunPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 18px #FFD700) drop-shadow(0 0 36px #FFA500);}50%{transform:scale(1.12);filter:drop-shadow(0 0 28px #FFD700) drop-shadow(0 0 56px #FF8C00);}}
+                @keyframes sunRays{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+                @keyframes moonGlow{0%,100%{filter:drop-shadow(0 0 14px #B0C8FF) drop-shadow(0 0 28px #6080FF);}50%{filter:drop-shadow(0 0 22px #C0D8FF) drop-shadow(0 0 44px #8090FF);}}
+                @keyframes starTwinkle{0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1.2);}}
+                @keyframes eveningGlow{0%,100%{filter:drop-shadow(0 0 14px #FF8C60) drop-shadow(0 0 28px #FF6030);}50%{filter:drop-shadow(0 0 22px #FFB080) drop-shadow(0 0 44px #FF7040);}}
+              `}</style>
+              {(isMorn||isAftern)&&(
+                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
+                  {/* Rays */}
+                  <div style={{position:"absolute",inset:-20,animation:"sunRays 12s linear infinite"}}>
+                    {[0,30,60,90,120,150,210,240,270,300,330].map(deg=>(
+                      <div key={deg} style={{position:"absolute",top:"50%",left:"50%",width:3,height:24,background:`linear-gradient(to bottom,${isMorn?"#FFD700":"#FFC200"},transparent)`,borderRadius:2,transformOrigin:"0 0",transform:`rotate(${deg}deg) translateX(-1.5px) translateY(-65px)`,opacity:0.7}}/>
+                    ))}
+                  </div>
+                  {/* Sun disc */}
+                  <div style={{position:"absolute",inset:0,borderRadius:"50%",background:isMorn?"radial-gradient(circle,#FFFDE7,#FFD700,#FFA500)":"radial-gradient(circle,#FFF9C4,#FFE082,#FFB300)",animation:"sunPulse 3s ease-in-out infinite",boxShadow:isMorn?"0 0 30px #FFD700, 0 0 60px rgba(255,200,0,0.4)":"0 0 30px #FFB300, 0 0 60px rgba(255,160,0,0.4)"}}/>
+                </div>
+              )}
+              {isEvening&&(
+                <div style={{fontSize:72,lineHeight:1,animation:"eveningGlow 2.5s ease-in-out infinite",display:"block"}}>🌅</div>
+              )}
+              {isNight&&(
+                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
+                  {/* Stars */}
+                  {[[10,15,0.8],[70,8,1.4],[15,65,1.1],[75,60,0.9],[40,5,1.6],[85,35,1.0],[5,40,1.3]].map(([x,y,s],i)=>(
+                    <div key={i} style={{position:"absolute",left:`${x}%`,top:`${y}%`,width:s*5,height:s*5,borderRadius:"50%",background:"#E8F0FF",animation:`starTwinkle ${1.5+i*0.4}s ease-in-out infinite`,animationDelay:`${i*0.3}s`,boxShadow:"0 0 4px #C0D0FF"}}/>
+                  ))}
+                  {/* Moon */}
+                  <div style={{position:"absolute",inset:10,fontSize:60,lineHeight:1,textAlign:"center",animation:"moonGlow 3s ease-in-out infinite"}}>🌙</div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        {/* Greeting text */}
+        <div style={{fontFamily:"Georgia,serif",fontSize:34,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,marginBottom:6,textShadow:"0 2px 12px rgba(255,255,255,0.7)"}}>
+          {(()=>{const {word}=getGreeting();return <>{word}{userName?`, ${userName}`:""}</>; })()}
         </div>
-        <div style={{fontSize:14,color:"rgba(42,42,20,0.65)",marginBottom:22,fontStyle:"italic",letterSpacing:0.2}}>Think it. 🤔 Plan it. Live it.</div>
+        <div style={{fontSize:14,color:"rgba(42,42,20,0.60)",marginBottom:22,fontStyle:"italic",letterSpacing:0.2}}>Think it. 🤔 Plan it. Live it.</div>
 
         {/* Briefing card */}
         <button onClick={getHomeBriefing} style={{width:"100%",padding:"16px 20px",background:"rgba(255,252,240,0.82)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:"1.5px solid rgba(220,195,120,0.45)",borderRadius:24,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left",boxShadow:"0 4px 24px rgba(200,170,80,0.18), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
