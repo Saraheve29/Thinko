@@ -3247,10 +3247,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [pageId,setPageId]=useState(null);
   const [sendOpen,setSendOpen]=useState(false);
   const [toast,setToast]=useState("");
-  // Clear section/page state when leaving notes mode
-  useEffect(()=>{
-    if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
-  },[notesMode]);
   const [studioOpen,setStudioOpen]=useState(false);
   const [notesMode,setNotesMode]=useState(null); // null = show vault hub
   const [cabinetData,setCabinetData]=useState([]);
@@ -3280,6 +3276,12 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   // Slides index (for Study Studio slides mode)
   const [slideIdx,setSlideIdx]=useState(0);
   const pdfInputRef=useRef(null);
+
+
+  // Clear section/page when leaving notes mode
+  useEffect(()=>{
+    if(notesMode!=="notes"){setSectionId(null);setPageId(null);}
+  },[notesMode]);
 
   const handlePdf=async(e)=>{
     const file=e.target.files[0];if(!file)return;
