@@ -3468,8 +3468,41 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
                   <span style={{fontSize:16}}>{q.emoji}</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Matrix — {q.label}</span>
                 </button>
               ))}
-              {/* Prioritizer lists */}
-              {priData.map(l=>(
+              {/* Export options */}
+              <button onClick={()=>{
+                const txt=`${page.title}\n${"─".repeat(40)}\n${page.content||""}`;
+                navigator.clipboard?.writeText(txt);
+                showToast("📋 Copied to clipboard!");
+                setSendOpen(false);
+              }} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
+                <span style={{fontSize:18}}>📋</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Copy note to clipboard</span>
+              </button>
+              <button onClick={()=>{
+                const txt=`${page.title}\n${"─".repeat(40)}\n${page.content||""}`;
+                const blob=new Blob([txt],{type:"text/plain"});
+                const url=URL.createObjectURL(blob);
+                const a=document.createElement("a");
+                a.href=url;a.download=`${page.title||"note"}.txt`;
+                document.body.appendChild(a);a.click();
+                document.body.removeChild(a);URL.revokeObjectURL(url);
+                showToast("💾 Saved as .txt file!");
+                setSendOpen(false);
+              }} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
+                <span style={{fontSize:18}}>💾</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Save as .txt file</span>
+              </button>
+              <button onClick={()=>{
+                const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${page.title}</title><style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;line-height:1.8;color:#1A1A10;padding:0 20px;}h1{border-bottom:2px solid #5A7848;padding-bottom:10px;}</style></head><body><h1>${page.title}</h1><div style="white-space:pre-line">${page.content||""}</div></body></html>`;
+                const blob=new Blob([html],{type:"text/html"});
+                const url=URL.createObjectURL(blob);
+                const a=document.createElement("a");
+                a.href=url;a.download=`${page.title||"note"}.html`;
+                document.body.appendChild(a);a.click();
+                document.body.removeChild(a);URL.revokeObjectURL(url);
+                showToast("💾 Saved as .html file!");
+                setSendOpen(false);
+              }} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
+                <span style={{fontSize:18}}>🌐</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Save as .html file</span>
+              </button>
                 <button key={l.id} onClick={()=>sendToPri(l.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
                   <span style={{fontSize:18}}>📋</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Prioritizer — {l.name}</span>
                 </button>
