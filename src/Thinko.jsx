@@ -70,12 +70,14 @@ async function callAIJson(prompt, maxTokens=500) {
 
 // ── PREMADE DRAWERS ──────────────────────────────────────
 const PREMADE_DRAWERS = [
-  {name:"💳 Receipts",      icon:"💳", color:"#2A7A3A", subs:["Physical Receipts","Digital Receipts","Warranty Docs","Returns"]},
-  {name:"🪪 Identity Docs", icon:"🪪", color:"#2A5A8A", subs:["Passport / ID","Driving Licence","Birth Certificate","NI / Tax"]},
-  {name:"🏥 Medical",       icon:"🏥", color:"#8A2A2A", subs:["Test Results","Prescriptions","Referrals","Insurance"]},
-  {name:"💰 Bills",         icon:"💰", color:"#7A5A20", subs:["Energy","Broadband","Council Tax","Subscriptions"]},
-  {name:"📋 Contracts",     icon:"📋", color:"#3A3A7A", subs:["Tenancy","Employment","Insurance","Finance"]},
-  {name:"🎓 Education",     icon:"🎓", color:"#2A6A5A", subs:["Certificates","Transcripts","Courses","References"]},
+  {name:"💳 Receipts",        icon:"💳", color:"#2A7A3A", subs:["Physical Receipts","Digital Receipts","Warranty Docs","Returns"]},
+  {name:"🪪 Identity Docs",   icon:"🪪", color:"#2A5A8A", subs:["Passport / ID","Driving Licence","Birth Certificate","NI / Tax"]},
+  {name:"🏥 Medical",         icon:"🏥", color:"#8A2A2A", subs:["Test Results","Prescriptions","Referrals","Insurance"]},
+  {name:"💰 Bills",           icon:"💰", color:"#7A5A20", subs:["Energy","Broadband","Council Tax","Subscriptions"]},
+  {name:"📋 Contracts",       icon:"📋", color:"#3A3A7A", subs:["Tenancy","Employment","Insurance","Finance"]},
+  {name:"🎓 Education",       icon:"🎓", color:"#2A6A5A", subs:["Certificates","Transcripts","Courses","References"]},
+  {name:"🎟️ Tickets",         icon:"🎟️", color:"#6A3A7A", subs:["Events & Concerts","Travel & Transport","Cinema & Theatre","Sports","Theme Parks","Festivals"]},
+  {name:"🏷️ Vouchers & Coupons",icon:"🏷️",color:"#7A4A20",subs:["Discount Codes","Gift Vouchers","Cashback Offers","Restaurant & Takeaway","Shopping","Loyalty Cards"]},
 ];
 
 
@@ -7489,6 +7491,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [dragChargeId,setDragChargeId]=useState(null);
   const [comparing,setComparing]=useState(false);
   const chargeAddRef=useRef(null);
+  const setupAddRef=useRef(null);
   // Task timers — {taskIdx: {left, on, intervalId}}
   const [taskTimers,setTaskTimers]=useState({});
   const taskTimerRefs=useRef({});
@@ -7949,56 +7952,54 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
 
         {/* ══ SETUP ══ */}
         {view==="settings"&&<>
-          {/* ── Daily Target — task slots ── */}
+          {/* ── Daily Tasks Setup ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:4}}>⚡ Daily target</div>
-            <div style={{color:"#8A8070",fontSize:13,marginBottom:12}}>Pick how many tasks — then name each one</div>
-            {/* Number selector */}
-            <div style={{display:"flex",gap:8,marginBottom:16}}>
-              {[1,2,3,4,5].map(n=>(
-                <button key={n} onClick={()=>{
-                  upd({dailyTarget:n});
-                  // Resize the task slots array
-                  const current=data.targetTasks||[];
-                  const resized=Array.from({length:n},(_,i)=>current[i]||"");
-                  upd({dailyTarget:n,targetTasks:resized});
-                }} style={{flex:1,minWidth:48,padding:"13px 8px",background:target===n?"#6A8858":"rgba(248,245,236,0.95)",color:target===n?"#fff":"#3A3020",border:`1.5px solid ${target===n?"#6A8858":"rgba(90,80,60,0.18)"}`,borderRadius:16,fontWeight:700,fontSize:16,cursor:"pointer"}}>{n}</button>
-              ))}
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:2}}>⚡ Today's Tasks</div>
+            <div style={{color:"#8A8070",fontSize:12,marginBottom:14,lineHeight:1.5}}>Add your tasks here — they appear straight on your Today page. Edit or delete anytime.</div>
+            {/* Existing tasks */}
+            {(data.targetTasks||[]).map((task,i)=>{
+              if(!task?.trim()) return null;
+              return(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{width:26,height:26,borderRadius:"50%",background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#3A6020",flexShrink:0}}>{i+1}</div>
+                  <input
+                    value={task}
+                    onChange={e=>{
+                      const next=[...(data.targetTasks||[])];
+                      next[i]=e.target.value;
+                      upd({targetTasks:next});
+                    }}
+                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                  />
+                  <button onClick={()=>{
+                    const next=(data.targetTasks||[]).filter((_,j)=>j!==i);
+                    upd({targetTasks:next,dailyTarget:next.filter(t=>t?.trim()).length||1});
+                  }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:"50%",width:30,height:30,fontSize:14,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+                </div>
+              );
+            })}
+            {/* Add new task */}
+            <div style={{display:"flex",gap:8,marginTop:4}}>
+              <input ref={setupAddRef}
+                placeholder="Add a task…"
+                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                onKeyDown={e=>{
+                  if(e.key==="Enter"&&e.target.value.trim()){
+                    const next=[...(data.targetTasks||[]).filter(t=>t?.trim()),e.target.value.trim()];
+                    upd({targetTasks:next,dailyTarget:next.length});
+                    e.target.value="";
+                  }
+                }}/>
+              <button onClick={()=>{
+                const inp=setupAddRef.current;
+                if(!inp||!inp.value.trim())return;
+                const next=[...(data.targetTasks||[]).filter(t=>t?.trim()),inp.value.trim()];
+                upd({targetTasks:next,dailyTarget:next.length});
+                inp.value="";inp.focus();
+              }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:40,height:40,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
             </div>
-            {/* Task input slots — one per target number */}
-            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
-              {Array.from({length:target}).map((_,i)=>{
-                const tasks=data.targetTasks||[];
-                return(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#3A6020",flexShrink:0}}>{i+1}</div>
-                    <input
-                      value={tasks[i]||""}
-                      onChange={e=>{
-                        const next=[...(data.targetTasks||Array.from({length:target},()=>""))];
-                        next[i]=e.target.value;
-                        upd({targetTasks:next});
-                      }}
-                      placeholder={`Task ${i+1}…`}
-                      style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
-                    />
-                    {tasks[i]?.trim()&&(
-                      <button onClick={()=>{
-                        const next=[...(data.targetTasks||Array.from({length:target},()=>""))];
-                        next[i]="";
-                        upd({targetTasks:next});
-                      }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:"50%",width:28,height:28,fontSize:14,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>✕</button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {/* Prioritise within Charge — drag to reorder */}
-            {(data.targetTasks||[]).filter(t=>t?.trim()).length>1&&(
-              <div style={{marginTop:6,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:14,border:"1px solid rgba(90,120,72,0.12)",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:14}}>⠿</span>
-                <span style={{fontSize:12,color:"#5A7040",fontWeight:600,flex:1}}>Hold & drag tasks to prioritise order</span>
-              </div>
+            {(data.targetTasks||[]).filter(t=>t?.trim()).length>0&&(
+              <div style={{marginTop:10,fontSize:11,color:"#5A7040",fontWeight:600,textAlign:"center"}}>✅ {(data.targetTasks||[]).filter(t=>t?.trim()).length} task{(data.targetTasks||[]).filter(t=>t?.trim()).length!==1?"s":""} ready on your Today page</div>
             )}
           </div>
 
