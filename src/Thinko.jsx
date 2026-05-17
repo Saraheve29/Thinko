@@ -2737,7 +2737,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
         <div style={{display:"flex",gap:8}}>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
           <button onClick={()=>setAddingDrawer(true)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>+ Drawer</button>
-          <button onClick={()=>setShowTemplates(t=>!t)} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:12,padding:"8px 14px",fontWeight:700,fontSize:13,cursor:"pointer"}}>📋</button>
+          <button onClick={()=>setShowTemplates(t=>!t)} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:100,padding:"8px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>📋 <span>+ Templates</span></button>
         </div>
       }/>
 
@@ -6998,7 +6998,7 @@ const TOOLS=[
 ];
 
 function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}) {
-  const [active, setActive] = useState("translate");
+  const [active, setActive] = useState(null);
 
   const TOOL_TABS=[
     {id:"translate",icon:"🌍", name:"Translate"},
@@ -7069,7 +7069,7 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
       {/* 3-column icon grid */}
       <div style={{padding:"14px 14px 0",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
         {TOOL_GRID.map(t=>{
-          const modId={translate:"translate",currency:"currency",calc:"calc"}[t.id]||null;
+          const modId={translate:"translate",currency:"currency",calc:"calc",sw:"stopwatch",timer:"countdown",alarm:"alarm"}[t.id]||null;
           const isPinned=modId&&moduleOrder&&moduleOrder.includes(modId);
           const togglePin=(e)=>{
             e.stopPropagation();
@@ -8676,6 +8676,12 @@ const MODULES=[
    summary:"Jump straight into your notes",       optional:true},
   {id:"filing",      icon:"🗄️", name:"Filing Cabinet",color:"#486878",
    summary:"Tickets · Vouchers · Documents",      optional:true},
+  {id:"stopwatch",   icon:"⏱️", name:"Stopwatch",    color:"#6A5838",
+   summary:"Lap timer · Start stop",              optional:true},
+  {id:"countdown",   icon:"⏳", name:"Timer",        color:"#7A5838",
+   summary:"Countdown timer · Custom duration",   optional:true},
+  {id:"alarm",       icon:"🔔", name:"Alarm",        color:"#6A4848",
+   summary:"Set alarms · Sound alert",            optional:true},
 ];
 
 function ProLoginModal({onClose,onSignIn}){
@@ -8835,6 +8841,7 @@ export default function App() {
   if(screen==="study") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🎓 Study Studio</div></div><div style={{padding:"16px 14px",textAlign:"center"}}><div style={{fontSize:48,marginBottom:12}}>🎓</div><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:8}}>Study Studio</div><div style={{fontSize:14,color:"#8A8070",marginBottom:20,lineHeight:1.7}}>Study Studio works with your notes — open a note in The Vault and tap the 🎓 button to generate flashcards, quizzes, infographics and slides from it.</div><button onClick={()=>setScreen("notes")} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>📚 Open The Vault</button></div><NavBar current="study" setScreen={setScreen}/></div></>);
   if(screen==="noteshub") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="noteshub" setScreen={setScreen}/></div></>);
   if(screen==="filing") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen} initialMode="filing"/><NavBar current="filing" setScreen={setScreen}/></div></>);
+  if(screen==="stopwatch"||screen==="countdown"||screen==="alarm") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>{screen==="stopwatch"?"⏱️ Stopwatch":screen==="countdown"?"⏳ Timer":"🔔 Alarm"}</div></div><div style={{padding:"16px 14px"}}>{screen==="stopwatch"&&<Stopwatch/>}{screen==="countdown"&&<CountdownTool/>}{screen==="alarm"&&<AlarmTool/>}</div><NavBar current={screen} setScreen={setScreen}/></div></>);
 
   return (
     <>
@@ -9000,8 +9007,11 @@ export default function App() {
       )}
 
       {/* ── DRAG HINT ── */}
-      <div style={{textAlign:"center",marginBottom:10,flexShrink:0}}>
+      <div style={{textAlign:"center",marginBottom:10,flexShrink:0,display:"flex",flexDirection:"column",gap:3}}>
         <span style={{fontSize:11,color:"rgba(60,56,40,0.40)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
+        {orderedModules.some(m=>MODULES.find(mod=>mod.id===m.id)?.optional)&&(
+          <span style={{fontSize:11,color:"rgba(60,56,40,0.40)",letterSpacing:0.5}}>📌 Tap Unpin on any card to remove it</span>
+        )}
       </div>
 
       {/* ── MODULE CARDS GRID ── */}
