@@ -1130,7 +1130,7 @@ function HomeBar({setScreen,title,onBack}){
   );
 }
 
-function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
+function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusMins,setFocusMins,focusLeft,setFocusLeft,focusOn,setFocusOn,setFocusAlerted,fmtTimer}) {
   const [newTask,setNewTask]=useState("");
   const [newUrl,setNewUrl]=useState("");
   const [prioritized,setPrioritized]=useState(false);
@@ -1313,7 +1313,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
   };
   const priTouchEnd=()=>{clearTimeout(priTouchRef.current);setDragId(null);};
 
-  if(active) return <PriList list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ls=>ls.map(l=>l.id===u.id?u:l))} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/>;
+  if(active) return <PriList list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ls=>ls.map(l=>l.id===u.id?u:l))} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer}/>;
   const listColors=["#5A7848","#7A6038","#486878","#6A5870","#486050","#705848"];
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
@@ -7993,7 +7993,50 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             DAYS={DAYS}
           />
 
-
+          {/* Add to Calendar */}
+          {(data.targetTasks||[]).some((_,i)=>plan.assignments?.[String(i)])&&(
+            <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:4}}>📅 Add to Calendar</div>
+              <div style={{fontSize:12,color:"#8A8070",marginBottom:12,lineHeight:1.5}}>Add your planned tasks to Google Calendar — one event per day with all tasks listed.</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {/* One button per assigned day */}
+                {DAYS.map((day,di)=>{
+                  const tasksForDay=(data.targetTasks||[]).filter((t,i)=>t?.trim()&&plan.assignments?.[String(i)]===day);
+                  if(!tasksForDay.length) return null;
+                  return(
+                    <button key={day} onClick={()=>{
+                      // Calculate next occurrence of this weekday
+                      const now=new Date();
+                      const diff=((di-((now.getDay()+6)%7))+7)%7||7;
+                      const d=new Date(now);d.setDate(now.getDate()+diff);
+                      const pad=n=>String(n).padStart(2,"0");
+                      const dt=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+                      const title=`${DAY_EMOJI[di]} ${day} — My Tasks`;
+                      const details=tasksForDay.map((t,i)=>`• ${t}`).join('\n');
+                      const url=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dt}T090000/${dt}T170000&details=${encodeURIComponent(details)}`;
+                      window.open(url,"_blank");
+                    }} style={{width:"100%",padding:"11px 14px",background:"rgba(66,133,244,0.08)",color:"#4285f4",border:"1.5px solid rgba(66,133,244,0.22)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left"}}>
+                      <span style={{fontSize:16}}>{DAY_EMOJI[di]}</span>
+                      <span style={{flex:1}}>{day}</span>
+                      <span style={{fontSize:12,opacity:0.7}}>{tasksForDay.length} task{tasksForDay.length!==1?"s":""}</span>
+                      <span style={{fontSize:12}}>→ Calendar</span>
+                    </button>
+                  );
+                })}
+                {/* Copy all to clipboard */}
+                <button onClick={()=>{
+                  const lines=DAYS.flatMap((day,di)=>{
+                    const t=(data.targetTasks||[]).filter((t,i)=>t?.trim()&&plan.assignments?.[String(i)]===day);
+                    return t.length?[`${DAY_EMOJI[di]} ${day}:`,...t.map(t=>`  • ${t}`),""]:[];
+                  });
+                  navigator.clipboard?.writeText(lines.join('\n'));
+                  showToast("📋 Plan copied to clipboard!");
+                }} style={{width:"100%",padding:"11px",background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                  📋 Copy full plan to clipboard
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Bar chart */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
