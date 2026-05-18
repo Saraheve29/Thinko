@@ -7910,6 +7910,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
 
         {/* ══ WEEK ══ */}
         {view==="week"&&<>
+
+          {/* Orb + summary */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"22px 20px",marginBottom:14,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
             <OrbOfLight pct={weekPcts.reduce((a,b)=>a+b,0)/7} size={140}/>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginTop:12}}>Weekly Light</div>
@@ -7921,12 +7923,13 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               </div>
             )}
           </div>
+
+          {/* Bar chart */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:14}}>This week</div>
             <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}}>
               {weekDays.map((d,i)=>{
-                const p=weekPcts[i];
-                const isToday=d===today;
+                const p=weekPcts[i];const isToday=d===today;
                 return(
                   <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
                     <div style={{width:"100%",height:60,background:"rgba(90,80,60,0.08)",borderRadius:8,display:"flex",alignItems:"flex-end",overflow:"hidden"}}>
@@ -7939,38 +7942,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             </div>
           </div>
 
-          {/* Planned tasks per day — from The Plan */}
-          {(()=>{
-            const allTasks=(data.targetTasks||[]).filter(t=>t?.trim());
-            const hasAnyAssigned=allTasks.some((_,i)=>plan.assignments[i]);
-            if(!hasAnyAssigned) return null;
-            return(
-              <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:12}}>🗓️ Your Plan</div>
-                {DAYS.map((day,di)=>{
-                  const tasksForDay=allTasks.filter((_,i)=>plan.assignments[i]===day);
-                  if(tasksForDay.length===0) return null;
-                  const isToday=new Date().toLocaleDateString("en-GB",{weekday:"long"})===day;
-                  return(
-                    <div key={day} style={{marginBottom:10,borderRadius:16,overflow:"hidden",border:`1.5px solid ${isToday?"rgba(90,120,72,0.35)":"rgba(90,80,60,0.10)"}`}}>
-                      <div style={{background:isToday?"rgba(90,120,72,0.12)":"rgba(90,80,60,0.04)",padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{fontSize:14}}>{DAY_EMOJI[di]}</span>
-                        <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{day}</span>
-                        {isToday&&<span style={{fontSize:10,fontWeight:700,color:"#5A7848",background:"rgba(90,120,72,0.12)",borderRadius:100,padding:"2px 8px"}}>Today</span>}
-                      </div>
-                      <div style={{padding:"8px 14px 10px"}}>
-                        {tasksForDay.map((task,ti)=>(
-                          <div key={ti} style={{fontSize:13,color:"#1A1A10",padding:"4px 0",borderBottom:ti<tasksForDay.length-1?"1px solid rgba(90,80,60,0.07)":"none",display:"flex",alignItems:"center",gap:6}}>
-                            <span style={{color:"rgba(90,120,72,0.40)",fontSize:10}}>●</span>{task}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+          {/* Streak */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div style={{fontSize:40}}>🔥</div>
@@ -7980,6 +7952,86 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               </div>
             </div>
           </div>
+
+          {/* Day task cards — only if plan has assignments */}
+          {(()=>{
+            const allTasks=(data.targetTasks||[]).filter(t=>t?.trim());
+            const hasAny=allTasks.some((_,i)=>plan.assignments[i]);
+            if(!hasAny) return null;
+            const todayName=new Date().toLocaleDateString("en-GB",{weekday:"long"});
+            const todayDi=DAYS.indexOf(todayName);
+            const ADVICE=[
+              "Try breaking this into smaller steps — even 5 minutes counts 🌱",
+              "What's the very first tiny action you can take? Start there 🐾",
+              "Could you do just one part of this? A little progress is still progress 💚",
+              "Be kind to yourself — reschedule and try again 🌿",
+              "Every missed task is just information, not failure ✨",
+            ];
+            return(
+              <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:12}}>🗓️ Your Plan</div>
+                {DAYS.map((day,di)=>{
+                  const tasksForDay=allTasks.filter((_,i)=>plan.assignments[i]===day);
+                  if(tasksForDay.length===0) return null;
+                  const isToday=di===todayDi;
+                  const isPast=di<todayDi;
+                  const isFuture=di>todayDi;
+                  // Work out completed tasks for that day
+                  const d=new Date();d.setDate(d.getDate()+(di-todayDi));
+                  const dayStr=d.toISOString().slice(0,10);
+                  const dayCharged=isToday?charged:(data.days?.[dayStr]?.charged||[]);
+                  const completed=tasksForDay.filter(t=>dayCharged.includes(t));
+                  const missed=isPast?tasksForDay.filter(t=>!dayCharged.includes(t)):[];
+                  const allDone=tasksForDay.length>0&&completed.length===tasksForDay.length&&isPast;
+                  return(
+                    <div key={day} style={{borderRadius:18,marginBottom:10,border:`2px solid ${allDone?"rgba(90,160,80,0.35)":isToday?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.09)"}`,overflow:"hidden",background:allDone?"rgba(90,160,80,0.04)":"rgba(255,255,255,0.60)"}}>
+                      {/* Day header */}
+                      <div style={{padding:"10px 14px",background:allDone?"rgba(90,160,80,0.10)":isToday?"rgba(90,120,72,0.08)":"rgba(90,80,60,0.03)",display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:16}}>{DAY_EMOJI[di]}</span>
+                        <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",flex:1}}>{day}</span>
+                        {isToday&&<span style={{background:"#5A7848",color:"#fff",fontSize:10,fontWeight:700,borderRadius:100,padding:"2px 10px"}}>Today</span>}
+                        {isFuture&&<span style={{fontSize:11,color:"#8A8070",fontStyle:"italic"}}>Upcoming</span>}
+                        {allDone&&<span style={{fontSize:22}}>✅</span>}
+                      </div>
+
+                      {/* Big celebration if all done */}
+                      {allDone&&(
+                        <div style={{textAlign:"center",padding:"14px 16px 10px",borderBottom:"1px solid rgba(90,160,80,0.15)"}}>
+                          <div style={{fontSize:44,marginBottom:4}}>🎉</div>
+                          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#2A6010",marginBottom:2}}>Incredible — all done!</div>
+                          <div style={{fontSize:12,color:"#5A7848",lineHeight:1.5}}>Every task on {day} completed. You should be proud 🌟</div>
+                        </div>
+                      )}
+
+                      {/* Task list */}
+                      <div style={{padding:"8px 14px 12px"}}>
+                        {tasksForDay.map((task,ti)=>{
+                          const done=completed.includes(task);
+                          const isMissed=missed.includes(task);
+                          return(
+                            <div key={ti} style={{marginBottom:isMissed?8:4}}>
+                              <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:ti<tasksForDay.length-1&&!isMissed?"1px solid rgba(90,80,60,0.07)":"none"}}>
+                                <span style={{fontSize:15,flexShrink:0}}>{done?"✅":isMissed?"⚠️":"◦"}</span>
+                                <span style={{flex:1,fontSize:13,fontWeight:done?400:600,color:done?"#8A9080":isMissed?"#7A5020":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</span>
+                              </div>
+                              {isMissed&&(
+                                <div style={{marginLeft:24,padding:"7px 12px",background:"rgba(255,200,50,0.10)",borderRadius:12,border:"1px solid rgba(200,150,30,0.18)"}}>
+                                  <div style={{fontSize:11,color:"#7A5020",lineHeight:1.6}}>
+                                    💡 {ADVICE[ti%ADVICE.length]}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
         </>}
 
         {/* ══ SETUP ══ */}
