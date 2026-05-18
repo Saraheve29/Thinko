@@ -7962,11 +7962,20 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
           </div>
 
           {/* Day task cards — only if plan has assignments */}
+          {/* Day task cards — debug + plan */}
           {(()=>{
             const rawTasks=(data.targetTasks||[]);
-            const hasAny=rawTasks.some((_,i)=>plan.assignments[String(i)]);
-            if(!hasAny) return null;
-            // getDay(): 0=Sun,1=Mon..6=Sat → DAYS array is Mon=0..Sun=6
+            const assignments=plan?.assignments||{};
+            // Debug: show what we have
+            const debugInfo=`Tasks: ${JSON.stringify(rawTasks)} | Assignments: ${JSON.stringify(assignments)}`;
+            const hasAny=Object.values(assignments).some(v=>v&&v.trim());
+            if(!hasAny) return(
+              <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:8}}>🗓️ Your Plan</div>
+                <div style={{fontSize:12,color:"#8A8070",marginBottom:8}}>No tasks assigned yet — go to Setup → The Plan to assign tasks to days.</div>
+                <div style={{fontSize:9,color:"#aaa",wordBreak:"break-all"}}>{debugInfo}</div>
+              </div>
+            );
             const todayDi=(new Date().getDay()+6)%7;
             const ADVICE=[
               "Try breaking this into smaller steps — even 5 minutes counts 🌱",
