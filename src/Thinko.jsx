@@ -7547,6 +7547,16 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [dragChargeId,setDragChargeId]=useState(null);
   const [comparing,setComparing]=useState(false);
   const chargeAddRef=useRef(null);
+  // Focus session timer (one timer for whole session)
+  const [focusMins,setFocusMins]=useState(25);
+  const [focusLeft,setFocusLeft]=useState(null);
+  const [focusOn,setFocusOn]=useState(false);
+  const focusRef=useRef(null);
+  useEffect(()=>{
+    if(focusOn&&focusLeft>0){focusRef.current=setInterval(()=>setFocusLeft(l=>l-1),1000);}
+    else{clearInterval(focusRef.current);if(focusLeft===0&&focusOn){setFocusOn(false);playAlarm("focus");showToast("⏱ Focus session complete!");}}
+    return()=>clearInterval(focusRef.current);
+  },[focusOn,focusLeft]);
   // Break timer
   const [breakMins,setBreakMins]=useState(5);
   const [breakLeft,setBreakLeft]=useState(null);
@@ -7559,29 +7569,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   },[breakOn,breakLeft]);
   const fmtBreak=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const setupAddRef=useRef(null);
-  // Task timers — {taskIdx: {left, on, intervalId}}
-  const [taskTimers,setTaskTimers]=useState({});
-  const taskTimerRefs=useRef({});
-  const startTaskTimer=(idx,secs)=>{
-    if(taskTimerRefs.current[idx])clearInterval(taskTimerRefs.current[idx]);
-    setTaskTimers(t=>({...t,[idx]:{left:secs,on:true,total:secs}}));
-    taskTimerRefs.current[idx]=setInterval(()=>{
-      setTaskTimers(t=>{
-        const cur=t[idx];
-        if(!cur||cur.left<=1){
-          clearInterval(taskTimerRefs.current[idx]);
-          playAlarm("gentle");
-          return {...t,[idx]:{left:0,on:false,total:cur?.total||secs}};
-        }
-        return {...t,[idx]:{...cur,left:cur.left-1}};
-      });
-    },1000);
-  };
-  const stopTaskTimer=(idx)=>{
-    if(taskTimerRefs.current[idx])clearInterval(taskTimerRefs.current[idx]);
-    setTaskTimers(t=>({...t,[idx]:{left:null,on:false}}));
-  };
-  const fmtTimer=s=>s==null?"":String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const chargeTouchRef=useRef(null);
   const chargeDragOver=(toOrigIdx,allTasks)=>{
     if(dragChargeId===null||dragChargeId===toOrigIdx)return;
@@ -7750,6 +7737,42 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             />
           )}
 
+          {/* ── Focus Timer — one timer for the whole session ── */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>⏱ Focus Timer</div>
+            {focusLeft!==null?(
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"monospace",fontSize:52,fontWeight:300,color:focusLeft<60?"#c0392b":"#2C3820",lineHeight:1,marginBottom:8}}>{fmtTimer(focusLeft)}</div>
+                <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:12}}>
+                  <div style={{height:"100%",width:`${Math.round((focusLeft/(focusMins*60))*100)}%`,background:focusLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+                </div>
+                <div style={{fontSize:11,color:"#8A8070",marginBottom:10}}>Timer runs across all tasks — tap ⚡ Done as you complete each one</div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setFocusOn(f=>!f)} style={{flex:1,padding:"11px",background:focusOn?"rgba(192,57,43,0.10)":"#5A7848",color:focusOn?"#c0392b":"#fff",border:`1.5px solid ${focusOn?"rgba(192,57,43,0.25)":"#5A7848"}`,borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                    {focusOn?"⏸ Pause":"▶ Resume"}
+                  </button>
+                  <button onClick={()=>{clearInterval(focusRef.current);setFocusLeft(null);setFocusOn(false);}} style={{flex:1,padding:"11px",background:"rgba(90,80,60,0.08)",color:"#6A6050",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>✕ End</button>
+                </div>
+              </div>
+            ):(
+              <div>
+                <div style={{fontSize:11,color:"#8A8070",marginBottom:8}}>Set a focus duration — the timer keeps running as you complete tasks one by one.</div>
+                <div style={{display:"flex",gap:6,marginBottom:10}}>
+                  {[10,20,30,50].map(m=>(
+                    <button key={m} onClick={()=>setFocusMins(m)}
+                      style={{flex:1,padding:"9px 0",background:focusMins===m?"#5A7848":"rgba(248,245,236,0.88)",color:focusMins===m?"#fff":"#3A5020",border:`1.5px solid ${focusMins===m?"#5A7848":"rgba(90,120,72,0.22)"}`,borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+                <button onClick={()=>{setFocusLeft(focusMins*60);setFocusOn(true);}}
+                  style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
+                  ⏱ Start {focusMins}min focus session
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* ── Today's tasks ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
@@ -7782,26 +7805,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                     }
                     <button onClick={()=>{const next=[...(data.targetTasks||[])];next[origIdx]="";if(done)updToday({charged:charged.filter(c=>c!==task)});upd({targetTasks:next});showToast("🗑 Deleted");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"6px 10px",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>
                   </div>
-                  {!done&&(
-                    <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,padding:"6px 10px",background:"rgba(90,120,72,0.05)",borderRadius:10,border:"1px solid rgba(90,120,72,0.10)"}}>
-                      <span style={{fontSize:12}}>⏱</span>
-                      {running?(
-                        <>
-                          <span style={{fontFamily:"monospace",fontSize:13,fontWeight:700,color:tt.left<60?"#c0392b":"#3A6020",flex:1}}>{fmtTimer(tt.left)}</span>
-                          <div style={{flex:2,height:3,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${Math.round((tt.left/(tt.total||600))*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",transition:"width 1s linear"}}/>
-                          </div>
-                          <button onClick={()=>stopTaskTimer(origIdx)} style={{background:"none",color:"#c0392b",border:"none",fontSize:11,cursor:"pointer",fontWeight:700}}>✕</button>
-                        </>
-                      ):(
-                        <div style={{display:"flex",gap:4,flex:1}}>
-                          {[10,20,30,50].map(m=>(
-                            <button key={m} onClick={()=>startTaskTimer(origIdx,m*60)} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.15)",borderRadius:8,padding:"3px 8px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{m}m</button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -8308,21 +8311,57 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
 
           {/* ── Transfer tasks ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>↔️ Transfer tasks</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:10,lineHeight:1.6}}>Move tasks between The Charge, Prioritizer and Matrix</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:6}}>↔️ Transfer Tasks</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:12,lineHeight:1.6}}>Send today's tasks to Prioritizer or Matrix, or pull tasks from Prioritizer into today.</div>
+
+            {/* Today's tasks preview */}
+            {(data.targetTasks||[]).filter(t=>t?.trim()).length===0?(
+              <div style={{fontSize:12,color:"#8A8070",fontStyle:"italic",marginBottom:10}}>No tasks set for today yet.</div>
+            ):(
+              <div style={{marginBottom:12}}>
+                {(data.targetTasks||[]).filter(t=>t?.trim()).map((t,i)=>(
+                  <div key={i} style={{fontSize:13,color:"#1A1A10",padding:"3px 0",display:"flex",gap:6,alignItems:"center"}}>
+                    <span style={{color:"rgba(90,120,72,0.40)",fontSize:10}}>●</span>{t}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {/* Send to Prioritizer */}
               <button onClick={()=>{
-                const frogs=(data.days[todayStr()]?.frogs||[]).filter(f=>!f.done);
-                if(!frogs.length){showToast("No tasks to send!");return;}
-                setPriData&&setPriData(ls=>{if(!ls.length)return ls;return ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,...frogs.map(f=>({id:Date.now()+Math.random(),name:f.text,done:false,color:"lilac"}))]}:l);});
+                const tasks=(data.targetTasks||[]).filter(t=>t?.trim());
+                if(!tasks.length){showToast("No tasks to send!");return;}
+                setPriData&&setPriData(ls=>{
+                  if(!ls.length){showToast("Add a Prioritizer list first!");return ls;}
+                  return ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,...tasks.map(name=>({id:Date.now()+Math.random(),name,done:false,color:"sage"}))]}:l);
+                });
                 showToast("📋 Sent to Prioritizer!");
-              }} style={{flex:1,padding:"10px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:12,fontWeight:700,cursor:"pointer"}}>⚡ → 📋 Prioritizer</button>
+              }} style={{width:"100%",padding:"11px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                ⚡ → 📋 Send today's tasks to Prioritizer
+              </button>
+
+              {/* Send to Matrix */}
               <button onClick={()=>{
-                const frogs=(data.days[todayStr()]?.frogs||[]).filter(f=>!f.done);
-                if(!frogs.length){showToast("No tasks to send!");return;}
-                setMatrixData&&setMatrixData(ds=>[...ds,...frogs.map(f=>({id:Date.now()+Math.random(),text:f.text,quad:"do",created:Date.now(),touched:Date.now()}))]);
+                const tasks=(data.targetTasks||[]).filter(t=>t?.trim());
+                if(!tasks.length){showToast("No tasks to send!");return;}
+                setMatrixData&&setMatrixData(ds=>[...ds,...tasks.map(text=>({id:Date.now()+Math.random(),text,quad:"do",created:Date.now(),touched:Date.now()}))]);
                 showToast("⚖️ Sent to Matrix!");
-              }} style={{flex:1,padding:"10px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:12,fontWeight:700,cursor:"pointer"}}>⚡ → ⚖️ Matrix</button>
+              }} style={{width:"100%",padding:"11px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                ⚡ → ⚖️ Send today's tasks to Matrix
+              </button>
+
+              {/* Pull from Prioritizer */}
+              <button onClick={()=>{
+                const priTasks=(priData||[]).flatMap(l=>(l.tasks||[]).filter(t=>!t.done).map(t=>t.name)).filter(Boolean);
+                if(!priTasks.length){showToast("No active tasks in Prioritizer!");return;}
+                const current=(data.targetTasks||[]).filter(t=>t?.trim());
+                const merged=[...new Set([...current,...priTasks])];
+                upd({targetTasks:merged,dailyTarget:merged.length});
+                showToast(`📋 Pulled ${priTasks.length} task${priTasks.length!==1?"s":""} from Prioritizer!`);
+              }} style={{width:"100%",padding:"11px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                📋 → ⚡ Pull tasks from Prioritizer into today
+              </button>
             </div>
           </div>
         </>}
@@ -8913,9 +8952,19 @@ export default function App() {
   const [ideasData,setIdeasData]=useState(()=>{try{const v=localStorage.getItem('thinko_ideas');return v?JSON.parse(v):[];}catch{return [];}});
   const [matrixData,setMatrixData]=useState(()=>{try{const v=localStorage.getItem('thinko_matrix');return v?JSON.parse(v):[];}catch{return [];}});
   const [budgetData,setBudgetData]=useState(()=>{try{const v=localStorage.getItem('thinko_budget');return v?JSON.parse(v):[];}catch{return [];}});
-  const [shopData,setShopData]=useState(()=>{try{const v=localStorage.getItem('thinko_shop');return v?JSON.parse(v):[];}catch{return [];}});
+  const [shopData,setShopDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_shop');return v?JSON.parse(v):[];}catch{return [];}});
+  const setShopData=d=>{const next=typeof d==="function"?d(shopData):d;setShopDataRaw(next);try{localStorage.setItem('thinko_shop',JSON.stringify(next));}catch{}};
   const [goalsData,setGoalsData]=useState(()=>{try{const v=localStorage.getItem('thinko_goals');return v?JSON.parse(v):[];}catch{return [];}});
   const [chargeData,setChargeData]=useState(()=>{try{const v=localStorage.getItem('thinko_charge');return v?JSON.parse(v):{dailyTarget:3,weeklyAward:'',days:{},streak:0};}catch{return {dailyTarget:3,weeklyAward:'',days:{},streak:0};}});
+
+  // ── Persist all data to localStorage on change ──
+  useEffect(()=>{try{localStorage.setItem('thinko_notes',JSON.stringify(notesData));}catch{}},[notesData]);
+  useEffect(()=>{try{localStorage.setItem('thinko_meal',JSON.stringify(mealData));}catch{}},[mealData]);
+  useEffect(()=>{try{localStorage.setItem('thinko_ideas',JSON.stringify(ideasData));}catch{}},[ideasData]);
+  useEffect(()=>{try{localStorage.setItem('thinko_matrix',JSON.stringify(matrixData));}catch{}},[matrixData]);
+  useEffect(()=>{try{localStorage.setItem('thinko_budget',JSON.stringify(budgetData));}catch{}},[budgetData]);
+  useEffect(()=>{try{localStorage.setItem('thinko_goals',JSON.stringify(goalsData));}catch{}},[goalsData]);
+  useEffect(()=>{try{localStorage.setItem('thinko_shop',JSON.stringify(shopData));}catch{}},[shopData]);
   const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
   const [showProModal,setShowProModal]=useState(false);
   const [proLimitHit,setProLimitHit]=useState('');
@@ -8924,7 +8973,6 @@ export default function App() {
       const v=localStorage.getItem('thinko_order');
       if(v){
         const saved=JSON.parse(v);
-        // Add any new non-optional modules not yet in saved order
         const allCore=MODULES.filter(m=>!m.optional).map(m=>m.id);
         const merged=[...saved.filter(id=>MODULES.find(m=>m.id===id)),...allCore.filter(id=>!saved.includes(id))];
         return merged;
@@ -8932,6 +8980,7 @@ export default function App() {
       return MODULES.filter(m=>!m.optional).map(m=>m.id);
     }catch{return MODULES.filter(m=>!m.optional).map(m=>m.id);}
   });
+  useEffect(()=>{try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}},[moduleOrder]);
   const [showHomeEdit,setShowHomeEdit]=useState(false);
   const [dragHome,setDragHome]=useState(null);
   const orderedModules=moduleOrder.map(id=>MODULES.find(m=>m.id===id)).filter(Boolean);
@@ -8978,13 +9027,14 @@ export default function App() {
   const getGreeting=()=>{const h=new Date().getHours();if(h>=5&&h<12)return{word:'Good morning',emoji:'✨'};if(h>=12&&h<17)return{word:'Good afternoon',emoji:'☀️'};if(h>=17&&h<21)return{word:'Good evening',emoji:'🌅'};return{word:'Good night',emoji:'🌙'};};
   const saveName=()=>{const n=nameInput.trim();if(!n)return;try{localStorage.setItem('thinko_username',n);}catch{}setUserName(n);setShowNameModal(false);};
 
+  const saveModuleOrder=o=>{setModuleOrder(o);try{localStorage.setItem('thinko_order',JSON.stringify(o));}catch{}};
   const homeDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragHome(id);};
   const homeDragOver=(e,id)=>{
     e.preventDefault();
     if(!dragHome||dragHome===id)return;
     setModuleOrder(o=>{const a=[...o];const from=a.indexOf(dragHome),to=a.indexOf(id);a.splice(from,1);a.splice(to,0,dragHome);return a;});
   };
-  const homeDragEnd=()=>setDragHome(null);
+  const homeDragEnd=()=>{setDragHome(null);try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}};
   // Touch drag for home modules
   const homeTouchRef=useRef(null);
   const homeTouchId=useRef(null);
@@ -8994,7 +9044,7 @@ export default function App() {
     const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
     const tid=el?.dataset?.modid;if(tid&&tid!==dragHome)setModuleOrder(o=>{const a=[...o];const fi=a.indexOf(dragHome),ti=a.indexOf(tid);if(fi<0||ti<0||fi===ti)return o;a.splice(fi,1);a.splice(ti,0,dragHome);return a;});
   };
-  const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;};
+  const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}};
 
   if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
