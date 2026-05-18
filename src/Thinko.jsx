@@ -7938,6 +7938,39 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               })}
             </div>
           </div>
+
+          {/* Planned tasks per day — from The Plan */}
+          {(()=>{
+            const allTasks=(data.targetTasks||[]).filter(t=>t?.trim());
+            const hasAnyAssigned=allTasks.some((_,i)=>plan.assignments[i]);
+            if(!hasAnyAssigned) return null;
+            return(
+              <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:12}}>🗓️ Your Plan</div>
+                {DAYS.map((day,di)=>{
+                  const tasksForDay=allTasks.filter((_,i)=>plan.assignments[i]===day);
+                  if(tasksForDay.length===0) return null;
+                  const isToday=new Date().toLocaleDateString("en-GB",{weekday:"long"})===day;
+                  return(
+                    <div key={day} style={{marginBottom:10,borderRadius:16,overflow:"hidden",border:`1.5px solid ${isToday?"rgba(90,120,72,0.35)":"rgba(90,80,60,0.10)"}`}}>
+                      <div style={{background:isToday?"rgba(90,120,72,0.12)":"rgba(90,80,60,0.04)",padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:14}}>{DAY_EMOJI[di]}</span>
+                        <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{day}</span>
+                        {isToday&&<span style={{fontSize:10,fontWeight:700,color:"#5A7848",background:"rgba(90,120,72,0.12)",borderRadius:100,padding:"2px 8px"}}>Today</span>}
+                      </div>
+                      <div style={{padding:"8px 14px 10px"}}>
+                        {tasksForDay.map((task,ti)=>(
+                          <div key={ti} style={{fontSize:13,color:"#1A1A10",padding:"4px 0",borderBottom:ti<tasksForDay.length-1?"1px solid rgba(90,80,60,0.07)":"none",display:"flex",alignItems:"center",gap:6}}>
+                            <span style={{color:"rgba(90,120,72,0.40)",fontSize:10}}>●</span>{task}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div style={{fontSize:40}}>🔥</div>
@@ -8102,10 +8135,13 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               <>
                 {(data.targetTasks||[]).filter(t=>t?.trim()).map((task,i)=>{
                   const assigned=plan.assignments[i];
+                  const steps=plan.steps?.[i]||[];
+                  const showSteps=plan.expandedSteps?.[i];
                   return(
                     <div key={i} style={{background:"rgba(255,255,255,0.80)",borderRadius:16,padding:"11px 14px",marginBottom:10,border:"1px solid rgba(90,120,72,0.12)"}}>
                       <div style={{fontSize:14,fontWeight:700,color:"#1A1A10",marginBottom:8}}>{task}</div>
-                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                      {/* Day picker */}
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
                         {DAYS.map((day,di)=>{
                           const sel=assigned===day;
                           return(
@@ -8116,7 +8152,31 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                           );
                         })}
                       </div>
-                      {assigned&&<div style={{marginTop:6,fontSize:11,color:"#5A7848",fontWeight:600}}>→ {assigned}</div>}
+                      {assigned&&<div style={{fontSize:11,color:"#5A7848",fontWeight:600,marginBottom:6}}>→ {assigned}</div>}
+                      {/* Break into steps toggle */}
+                      <button onClick={()=>savePlan({...plan,expandedSteps:{...(plan.expandedSteps||{}),[i]:!showSteps}})}
+                        style={{background:"none",border:"none",color:"#8A8070",fontSize:11,fontWeight:600,cursor:"pointer",padding:"0",display:"flex",alignItems:"center",gap:4}}>
+                        <span>{showSteps?"▼":"▶"}</span>
+                        <span>{steps.length>0?`${steps.length} steps`:"Break into steps (optional)"}</span>
+                      </button>
+                      {showSteps&&(
+                        <div style={{marginTop:8,paddingLeft:8,borderLeft:"2px solid rgba(90,120,72,0.20)"}}>
+                          {steps.map((step,si)=>(
+                            <div key={si} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                              <span style={{fontSize:11,color:"rgba(90,120,72,0.40)"}}>●</span>
+                              <span style={{flex:1,fontSize:12,color:"#1A1A10"}}>{step}</span>
+                              <button onClick={()=>{const ns=[...steps];ns.splice(si,1);savePlan({...plan,steps:{...(plan.steps||{}),[i]:ns}});}}
+                                style={{background:"none",border:"none",color:"#c0392b",cursor:"pointer",fontSize:11}}>✕</button>
+                            </div>
+                          ))}
+                          <div style={{display:"flex",gap:6,marginTop:4}}>
+                            <input placeholder="Add a step…"
+                              style={{flex:1,padding:"6px 10px",borderRadius:100,border:"1px solid rgba(90,120,72,0.20)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.85)"}}
+                              onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){savePlan({...plan,steps:{...(plan.steps||{}),[i]:[...steps,e.target.value.trim()]}});e.target.value="";}}}/>
+                            <span style={{fontSize:10,color:"#8A8070",alignSelf:"center",flexShrink:0}}>↵</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
