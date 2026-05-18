@@ -8689,6 +8689,42 @@ function RestSpace({setScreen}){
             );
           })()}
 
+          {/* Campfire — YouTube */}
+          {(()=>{
+            const isPlaying=activeSnd==="campfire_yt";
+            return(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(120,80,40,0.25)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+                <div style={{height:3,background:isPlaying?"#8A5028":"rgba(120,80,40,0.20)"}}/>
+                {isPlaying?(
+                  <>
+                    <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:28}}>🔥</span>
+                      <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>Campfire</span>
+                      <button onClick={()=>setActiveSnd(null)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>
+                    </div>
+                    <div style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                      <iframe src="https://www.youtube.com/embed/x93RcLhn7WM?autoplay=1&loop=1&playlist=x93RcLhn7WM&rel=0&modestbranding=1&controls=0"
+                        style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+                        allow="autoplay" allowFullScreen/>
+                    </div>
+                  </>
+                ):(
+                  <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:28}}>🔥</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Campfire</div>
+                      <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
+                    </div>
+                    <button onClick={()=>setActiveSnd("campfire_yt")}
+                      style={{background:"#8A5028",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(100,50,20,0.25)"}}>
+                      ▶ Play
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <div style={{textAlign:"center",marginTop:14,fontSize:12,color:"#8A8070",fontStyle:"italic"}}>🌿 More nature sounds coming soon</div>
         </div>
 
