@@ -8026,6 +8026,20 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             )}
           </div>
 
+
+          {/* Your Plan — day cards */}
+          <WeekPlan
+            targetTasks={data.targetTasks||[]}
+            plan={plan}
+            charged={charged}
+            days={data.days||{}}
+            today={today}
+            DAY_EMOJI={DAY_EMOJI}
+            DAYS={DAYS}
+          />
+
+
+
           {/* Bar chart */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:14}}>This week</div>
@@ -8044,6 +8058,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             </div>
           </div>
 
+
           {/* Streak */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -8054,18 +8069,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               </div>
             </div>
           </div>
-
-          {/* Your Plan — day cards */}
-          <WeekPlan
-            targetTasks={data.targetTasks||[]}
-            plan={plan}
-            charged={charged}
-            days={data.days||{}}
-            today={today}
-            DAY_EMOJI={DAY_EMOJI}
-            DAYS={DAYS}
-          />
-
 
         </>}
 
