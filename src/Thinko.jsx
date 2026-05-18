@@ -8666,10 +8666,12 @@ function RestSpace({setScreen}){
                       <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>Ocean Waves</span>
                       <button onClick={()=>setActiveSnd(null)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>
                     </div>
-                    <div style={{position:"relative",paddingBottom:"56.25%",height:0}}>
-                      <iframe src="https://www.youtube.com/embed/7J6QOIpqGk4?autoplay=1&loop=1&playlist=7J6QOIpqGk4&rel=0&modestbranding=1&controls=0"
+                    <div className="ocean-frame" style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                      <iframe src="https://www.youtube.com/embed/7J6QOIpqGk4?autoplay=1&loop=1&playlist=7J6QOIpqGk4&rel=0&modestbranding=1&controls=0&iv_load_policy=3&disablekb=1"
                         style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
                         allow="autoplay" allowFullScreen/>
+                      {/* Transparent overlay blocks tap-to-YouTube */}
+                      <div style={{position:"absolute",inset:0,zIndex:2,cursor:"default"}} onClick={e=>e.preventDefault()}/>
                     </div>
                   </>
                 ):(
@@ -8700,12 +8702,15 @@ function RestSpace({setScreen}){
                     <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
                       <span style={{fontSize:28}}>🔥</span>
                       <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>Campfire</span>
+                      <button onClick={()=>{const el=document.querySelector('.camp-frame');if(el?.requestFullscreen)el.requestFullscreen();else if(el?.webkitRequestFullscreen)el.webkitRequestFullscreen();}} style={{background:"rgba(120,80,40,0.10)",color:"#8A5028",border:"none",borderRadius:100,padding:"8px 12px",fontWeight:700,fontSize:13,cursor:"pointer",marginRight:6}}>⛶ Expand</button>
                       <button onClick={()=>setActiveSnd(null)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>
                     </div>
-                    <div style={{position:"relative",paddingBottom:"56.25%",height:0}}>
-                      <iframe src="https://www.youtube.com/embed/x93RcLhn7WM?autoplay=1&loop=1&playlist=x93RcLhn7WM&rel=0&modestbranding=1&controls=0"
+                    <div className="camp-frame" style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                      <iframe src="https://www.youtube.com/embed/x93RcLhn7WM?autoplay=1&loop=1&playlist=x93RcLhn7WM&rel=0&modestbranding=1&controls=0&iv_load_policy=3&disablekb=1"
                         style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
                         allow="autoplay" allowFullScreen/>
+                      {/* Transparent overlay blocks tap-to-YouTube */}
+                      <div style={{position:"absolute",inset:0,zIndex:2,cursor:"default"}} onClick={e=>e.preventDefault()}/>
                     </div>
                   </>
                 ):(
