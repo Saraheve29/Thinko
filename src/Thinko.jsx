@@ -7403,7 +7403,15 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [toast,setToast]=useState("");
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
   // The Plan
-  const [plan,setPlan]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_plan')||'null')||{tasks:[],assignments:{}};}catch{return {tasks:[],assignments:{}};}});
+  const [plan,setPlan]=useState(()=>{
+    try{
+      const raw=JSON.parse(localStorage.getItem('thinko_plan')||'null')||{tasks:[],assignments:{}};
+      // Migrate: ensure all assignment keys are strings
+      const assignments={};
+      Object.entries(raw.assignments||{}).forEach(([k,v])=>{assignments[String(k)]=v;});
+      return {...raw,assignments};
+    }catch{return {tasks:[],assignments:{}};}
+  });
   const savePlan=p=>{setPlan(p);try{localStorage.setItem('thinko_plan',JSON.stringify(p));}catch{}};
   const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
   const DAY_EMOJI=["🌱","🔥","💪","⚡","🌟","🌿","☀️"];
@@ -7956,7 +7964,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
           {/* Day task cards — only if plan has assignments */}
           {(()=>{
             const allTasks=(data.targetTasks||[]).filter(t=>t?.trim());
-            const hasAny=allTasks.some((_,i)=>plan.assignments[i]);
+            const hasAny=allTasks.some((_,i)=>plan.assignments[String(i)]);
             if(!hasAny) return null;
             const todayName=new Date().toLocaleDateString("en-GB",{weekday:"long"});
             const todayDi=DAYS.indexOf(todayName);
@@ -7971,7 +7979,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
                 <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:12}}>🗓️ Your Plan</div>
                 {DAYS.map((day,di)=>{
-                  const tasksForDay=allTasks.filter((_,i)=>plan.assignments[i]===day);
+                  const tasksForDay=allTasks.filter((_,i)=>plan.assignments[String(i)]===day);
                   if(tasksForDay.length===0) return null;
                   const isToday=di===todayDi;
                   const isPast=di<todayDi;
@@ -8186,9 +8194,9 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             ):(
               <>
                 {(data.targetTasks||[]).filter(t=>t?.trim()).map((task,i)=>{
-                  const assigned=plan.assignments[i];
-                  const steps=plan.steps?.[i]||[];
-                  const showSteps=plan.expandedSteps?.[i];
+                  const assigned=plan.assignments[String(i)];
+                  const steps=plan.steps?.[String(i)]||[];
+                  const showSteps=plan.expandedSteps?.[String(i)];
                   return(
                     <div key={i} style={{background:"rgba(255,255,255,0.80)",borderRadius:16,padding:"11px 14px",marginBottom:10,border:"1px solid rgba(90,120,72,0.12)"}}>
                       <div style={{fontSize:14,fontWeight:700,color:"#1A1A10",marginBottom:8}}>{task}</div>
@@ -8197,7 +8205,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                         {DAYS.map((day,di)=>{
                           const sel=assigned===day;
                           return(
-                            <button key={day} onClick={()=>savePlan({...plan,assignments:{...plan.assignments,[i]:sel?null:day}})}
+                            <button key={day} onClick={()=>savePlan({...plan,assignments:{...plan.assignments,[String(i)]:sel?null:day}})}
                               style={{padding:"5px 10px",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer",background:sel?"#5A7848":"rgba(90,120,72,0.08)",color:sel?"#fff":"#5A7848",border:`1px solid ${sel?"#5A7848":"rgba(90,120,72,0.20)"}`,transition:"all 0.12s"}}>
                               {DAY_EMOJI[di]} {day.slice(0,3)}
                             </button>
@@ -8206,7 +8214,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                       </div>
                       {assigned&&<div style={{fontSize:11,color:"#5A7848",fontWeight:600,marginBottom:6}}>→ {assigned}</div>}
                       {/* Break into steps toggle */}
-                      <button onClick={()=>savePlan({...plan,expandedSteps:{...(plan.expandedSteps||{}),[i]:!showSteps}})}
+                      <button onClick={()=>savePlan({...plan,expandedSteps:{...(plan.expandedSteps||{}),[String(i)]:!showSteps}})}
                         style={{background:"none",border:"none",color:"#8A8070",fontSize:11,fontWeight:600,cursor:"pointer",padding:"0",display:"flex",alignItems:"center",gap:4}}>
                         <span>{showSteps?"▼":"▶"}</span>
                         <span>{steps.length>0?`${steps.length} steps`:"Break into steps (optional)"}</span>
@@ -8217,14 +8225,14 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                             <div key={si} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
                               <span style={{fontSize:11,color:"rgba(90,120,72,0.40)"}}>●</span>
                               <span style={{flex:1,fontSize:12,color:"#1A1A10"}}>{step}</span>
-                              <button onClick={()=>{const ns=[...steps];ns.splice(si,1);savePlan({...plan,steps:{...(plan.steps||{}),[i]:ns}});}}
+                              <button onClick={()=>{const ns=[...steps];ns.splice(si,1);savePlan({...plan,steps:{...(plan.steps||{}),[String(i)]:ns}});}}
                                 style={{background:"none",border:"none",color:"#c0392b",cursor:"pointer",fontSize:11}}>✕</button>
                             </div>
                           ))}
                           <div style={{display:"flex",gap:6,marginTop:4}}>
                             <input placeholder="Add a step…"
                               style={{flex:1,padding:"6px 10px",borderRadius:100,border:"1px solid rgba(90,120,72,0.20)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.85)"}}
-                              onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){savePlan({...plan,steps:{...(plan.steps||{}),[i]:[...steps,e.target.value.trim()]}});e.target.value="";}}}/>
+                              onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){savePlan({...plan,steps:{...(plan.steps||{}),[String(i)]:[...steps,e.target.value.trim()]}});e.target.value="";}}}/>
                             <span style={{fontSize:10,color:"#8A8070",alignSelf:"center",flexShrink:0}}>↵</span>
                           </div>
                         </div>
@@ -8235,14 +8243,14 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                 {Object.values(plan.assignments).some(Boolean)&&(
                   <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:4}}>
                     <button onClick={()=>{
-                      const weekTasks=DAYS.map(day=>({day,tasks:(data.targetTasks||[]).filter((t,i)=>t?.trim()&&plan.assignments[i]===day)}));
+                      const weekTasks=DAYS.map(day=>({day,tasks:(data.targetTasks||[]).filter((t,i)=>t?.trim()&&plan.assignments[String(i)]===day)}));
                       try{localStorage.setItem('thinko_week_plan',JSON.stringify(weekTasks));}catch{}
                       showToast("📅 Sent to your Week & Briefing!");
                     }} style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
                       📅 Send to My Week & Briefing
                     </button>
                     <button onClick={()=>{
-                      const assigned=(data.targetTasks||[]).map((t,i)=>({text:t,day:plan.assignments[i]})).filter(x=>x.text?.trim()&&x.day);
+                      const assigned=(data.targetTasks||[]).map((t,i)=>({text:t,day:plan.assignments[String(i)]})).filter(x=>x.text?.trim()&&x.day);
                       const summary=assigned.map(x=>`${x.text} — ${x.day}`).join("\n");
                       navigator.clipboard?.writeText(summary);
                       const first=assigned[0];
