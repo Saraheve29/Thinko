@@ -3796,7 +3796,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 /* ═══════════════════════════════════════════════════════
    MEAL PLANNER  — Day 1–7, each day has a label + meals list
 ═══════════════════════════════════════════════════════ */
-const DEFAULT_DAY_LABELS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const DEFAULT_DAY_LABELS=["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"];
 
 function VaultHub({data,setData,priData,ideasData,setIdeasData,cabinetData,setNotesMode,setScreen}){
   const [search,setSearch]=useState("");
@@ -8095,94 +8095,64 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
           {/* ── The Plan ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>🗓️ The Plan</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Add tasks and assign them to days of the week. Spread your workload, then send to your Week view and Morning Briefing.</div>
-
-            {/* Add task to plan */}
-            <div style={{display:"flex",gap:8,marginBottom:14}}>
-              <input value={planTaskInput} onChange={e=>setPlanTaskInput(e.target.value)}
-                onKeyDown={e=>{if(e.key==="Enter"&&planTaskInput.trim()){savePlan({...plan,tasks:[...plan.tasks,{id:Date.now(),text:planTaskInput.trim()}]});setPlanTaskInput("");}}}
-                placeholder="Add a task to your plan…"
-                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}/>
-              <button onClick={()=>{if(!planTaskInput.trim())return;savePlan({...plan,tasks:[...plan.tasks,{id:Date.now(),text:planTaskInput.trim()}]});setPlanTaskInput("");}}
-                style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontWeight:700,fontSize:14,cursor:"pointer"}}>+ Add</button>
-            </div>
-
-            {/* Task list with day assignment */}
-            {plan.tasks.length>0&&(
-              <div style={{marginBottom:14}}>
-                {plan.tasks.map(task=>(
-                  <div key={task.id} style={{background:"rgba(255,255,255,0.80)",borderRadius:16,padding:"10px 14px",marginBottom:8,border:"1px solid rgba(90,120,72,0.12)"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                      <span style={{flex:1,fontSize:14,fontWeight:600,color:"#1A1A10"}}>{task.text}</span>
-                      <button onClick={()=>savePlan({...plan,tasks:plan.tasks.filter(t=>t.id!==task.id),assignments:Object.fromEntries(Object.entries(plan.assignments).filter(([k])=>k!==String(task.id)))})}
-                        style={{background:"none",color:"#c0392b",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>✕</button>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Your tasks are listed below. Tap a day to assign each one — spread them across the week. Then send to your Week and Briefing.</div>
+            {(data.targetTasks||[]).filter(t=>t?.trim()).length===0?(
+              <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks in Today's Tasks above first</div>
+            ):(
+              <>
+                {(data.targetTasks||[]).filter(t=>t?.trim()).map((task,i)=>{
+                  const assigned=plan.assignments[i];
+                  return(
+                    <div key={i} style={{background:"rgba(255,255,255,0.80)",borderRadius:16,padding:"11px 14px",marginBottom:10,border:"1px solid rgba(90,120,72,0.12)"}}>
+                      <div style={{fontSize:14,fontWeight:700,color:"#1A1A10",marginBottom:8}}>{task}</div>
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                        {DAYS.map((day,di)=>{
+                          const sel=assigned===day;
+                          return(
+                            <button key={day} onClick={()=>savePlan({...plan,assignments:{...plan.assignments,[i]:sel?null:day}})}
+                              style={{padding:"5px 10px",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer",background:sel?"#5A7848":"rgba(90,120,72,0.08)",color:sel?"#fff":"#5A7848",border:`1px solid ${sel?"#5A7848":"rgba(90,120,72,0.20)"}`,transition:"all 0.12s"}}>
+                              {DAY_EMOJI[di]} {day.slice(0,3)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {assigned&&<div style={{marginTop:6,fontSize:11,color:"#5A7848",fontWeight:600}}>→ {assigned}</div>}
                     </div>
-                    {/* Day picker */}
-                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                      {DAYS.map((day,di)=>{
-                        const assigned=plan.assignments[task.id]===day;
-                        return(
-                          <button key={day} onClick={()=>savePlan({...plan,assignments:{...plan.assignments,[task.id]:assigned?null:day}})}
-                            style={{padding:"4px 10px",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer",background:assigned?"#5A7848":"rgba(90,120,72,0.08)",color:assigned?"#fff":"#5A7848",border:`1px solid ${assigned?"#5A7848":"rgba(90,120,72,0.20)"}`,transition:"all 0.15s"}}>
-                            {DAY_EMOJI[di]} {day.slice(0,3)}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  );
+                })}
+                {Object.values(plan.assignments).some(Boolean)&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:4}}>
+                    <button onClick={()=>{
+                      const weekTasks=DAYS.map(day=>({day,tasks:(data.targetTasks||[]).filter((t,i)=>t?.trim()&&plan.assignments[i]===day)}));
+                      try{localStorage.setItem('thinko_week_plan',JSON.stringify(weekTasks));}catch{}
+                      showToast("📅 Sent to your Week & Briefing!");
+                    }} style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
+                      📅 Send to My Week & Briefing
+                    </button>
+                    <button onClick={()=>{
+                      const assigned=(data.targetTasks||[]).map((t,i)=>({text:t,day:plan.assignments[i]})).filter(x=>x.text?.trim()&&x.day);
+                      const summary=assigned.map(x=>`${x.text} — ${x.day}`).join("\n");
+                      navigator.clipboard?.writeText(summary);
+                      const first=assigned[0];
+                      if(first){
+                        const di=DAYS.indexOf(first.day);
+                        const now=new Date();const diff=((di-now.getDay()+8)%7)||7;
+                        const d=new Date(now);d.setDate(now.getDate()+diff);
+                        const pad=n=>String(n).padStart(2,"0");
+                        const dt=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+                        window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("My Weekly Plan")}&dates=${dt}T090000/${dt}T100000&details=${encodeURIComponent(summary)}`,"_blank");
+                      }
+                      showToast("📋 Opening Google Calendar");
+                    }} style={{width:"100%",padding:"12px",background:"rgba(66,133,244,0.10)",color:"#4285f4",border:"1.5px solid rgba(66,133,244,0.22)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                      📅 Save to Google Calendar
+                    </button>
+                    <button onClick={()=>savePlan({tasks:[],assignments:{}})}
+                      style={{width:"100%",padding:"8px",background:"transparent",color:"#8A8070",border:"none",fontSize:12,cursor:"pointer"}}>
+                      🗑 Clear assignments
+                    </button>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {plan.tasks.length===0&&(
-              <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks above then assign them to days</div>
-            )}
-
-            {/* Actions */}
-            {plan.tasks.some(t=>plan.assignments[t.id])&&(
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {/* Send to Meal Planner week view days */}
-                <button onClick={()=>{
-                  // Update meal planner day labels to Mon-Sun
-                  // and note tasks for each day
-                  const weekTasks=DAYS.map((day,i)=>{
-                    const tasksForDay=plan.tasks.filter(t=>plan.assignments[t.id]===day).map(t=>t.text);
-                    return {day,tasks:tasksForDay};
-                  });
-                  // Store in localStorage for Morning Briefing to pick up
-                  try{localStorage.setItem('thinko_week_plan',JSON.stringify(weekTasks));}catch{}
-                  showToast("📅 Plan saved to your week!");
-                }} style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
-                  📅 Send to My Week
-                </button>
-                {/* Google Calendar */}
-                <button onClick={()=>{
-                  const lines=plan.tasks.filter(t=>plan.assignments[t.id]).map(t=>`${t.text} — ${plan.assignments[t.id]}`);
-                  const text=lines.join("\n");
-                  navigator.clipboard?.writeText(text);
-                  // Build Google Calendar URL for first assigned task
-                  const first=plan.tasks.find(t=>plan.assignments[t.id]);
-                  if(first){
-                    const dayName=plan.assignments[first.id];
-                    const dayNum=DAYS.indexOf(dayName);
-                    const now=new Date();
-                    const diff=(dayNum+1-now.getDay()+7)%7||7;
-                    const target=new Date(now);target.setDate(now.getDate()+diff);
-                    const pad=n=>String(n).padStart(2,"0");
-                    const dt=`${target.getFullYear()}${pad(target.getMonth()+1)}${pad(target.getDate())}`;
-                    const url=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(first.text)}&dates=${dt}T090000/${dt}T100000&details=${encodeURIComponent(lines.join("%0A"))}`;
-                    window.open(url,"_blank");
-                  }
-                  showToast("📋 Copied & opening Google Calendar");
-                }} style={{width:"100%",padding:"12px",background:"rgba(66,133,244,0.12)",color:"#4285f4",border:"1.5px solid rgba(66,133,244,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
-                  📅 Save to Google Calendar
-                </button>
-                {/* Clear plan */}
-                <button onClick={()=>savePlan({tasks:[],assignments:{}})}
-                  style={{width:"100%",padding:"10px",background:"transparent",color:"#8A8070",border:"none",borderRadius:100,fontSize:12,cursor:"pointer"}}>
-                  🗑 Clear plan
-                </button>
-              </div>
+                )}
+              </>
             )}
           </div>
 
@@ -9146,26 +9116,105 @@ export default function App() {
   );
 }
 function NavBar({current,setScreen}) {
+  const [navOrder,setNavOrder]=useState(()=>{
+    try{const v=localStorage.getItem('thinko_nav_order');return v?JSON.parse(v):null;}catch{return null;}
+  });
+  const [dragNav,setDragNav]=useState(null);
+  const [editing,setEditing]=useState(false);
+
+  // Core nav items — always shown
+  const ALL_NAV=[
+    {id:"home",    icon:"🏠", name:"Home"},
+    {id:"charge",  icon:"⚡", name:"Charge"},
+    {id:"prioritizer",icon:"📋",name:"Tasks"},
+    {id:"notes",   icon:"📚", name:"Vault"},
+    {id:"goals",   icon:"🎯", name:"Goals"},
+    {id:"matrix",  icon:"⚖️", name:"Matrix"},
+    {id:"meals",   icon:"🍽️", name:"Meals"},
+    {id:"shopping",icon:"🛒", name:"Shop"},
+    {id:"budget",  icon:"💰", name:"Budget"},
+    {id:"mindmap", icon:"🧠", name:"Mind Map"},
+    {id:"tools",   icon:"🔧", name:"Tools"},
+    {id:"rest",    icon:"🌿", name:"Rest"},
+  ];
+
+  const DEFAULT_NAV=["home","charge","prioritizer","notes","goals","matrix","meals","shopping","tools","rest"];
+
+  const [visibleIds,setVisibleIds]=useState(()=>{
+    try{const v=localStorage.getItem('thinko_nav_visible');return v?JSON.parse(v):DEFAULT_NAV;}catch{return DEFAULT_NAV;}
+  });
+
+  const orderedNav=(navOrder||visibleIds)
+    .filter(id=>visibleIds.includes(id))
+    .map(id=>ALL_NAV.find(n=>n.id===id)).filter(Boolean);
+
+  const saveNav=(order,visible)=>{
+    const o=order||navOrder;const v=visible||visibleIds;
+    if(order){setNavOrder(o);try{localStorage.setItem('thinko_nav_order',JSON.stringify(o));}catch{}}
+    if(visible){setVisibleIds(v);try{localStorage.setItem('thinko_nav_visible',JSON.stringify(v));}catch{}}
+  };
+
+  const navDragOver=(e,toId)=>{
+    e.preventDefault();
+    if(!dragNav||dragNav===toId)return;
+    const ids=orderedNav.map(n=>n.id);
+    const fi=ids.indexOf(dragNav),ti=ids.indexOf(toId);
+    ids.splice(fi,1);ids.splice(ti,0,dragNav);
+    setNavOrder(ids);
+    try{localStorage.setItem('thinko_nav_order',JSON.stringify(ids));}catch{}
+  };
+
+  if(editing) return(
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(238,232,218,0.99)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",zIndex:100,maxHeight:"60vh",overflow:"auto",padding:"14px 16px 24px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>⚙️ Customise Tab Bar</div>
+        <button onClick={()=>setEditing(false)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Done</button>
+      </div>
+      <div style={{fontSize:11,color:"#8A8070",marginBottom:10}}>Tap to show/hide · drag ⠿ to reorder</div>
+      {ALL_NAV.map(n=>{
+        const on=visibleIds.includes(n.id);
+        const isHome=n.id==="home";
+        return(
+          <div key={n.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
+            <span style={{fontSize:20,width:28,textAlign:"center"}}>{n.icon}</span>
+            <span style={{flex:1,fontSize:14,fontWeight:600,color:"#1A1A10"}}>{n.name}</span>
+            {isHome
+              ?<span style={{fontSize:11,color:"#8A8070"}}>Always shown</span>
+              :<button onClick={()=>{
+                const next=on?visibleIds.filter(id=>id!==n.id):[...visibleIds,n.id];
+                setVisibleIds(next);try{localStorage.setItem('thinko_nav_visible',JSON.stringify(next));}catch{}
+              }} style={{background:on?"rgba(90,120,72,0.12)":"rgba(90,80,60,0.08)",color:on?"#3A6020":"#8A8070",border:`1px solid ${on?"rgba(90,120,72,0.25)":"rgba(90,80,60,0.15)"}`,borderRadius:100,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                {on?"✓ Shown":"+ Add"}
+              </button>
+            }
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(238,232,218,0.96)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",zIndex:100,boxShadow:"0 -2px 16px rgba(60,70,40,0.1)"}}>
-      <div style={{display:"flex",overflowX:"auto",padding:"8px 4px 12px",gap:0,scrollbarWidth:"none",msOverflowStyle:"none"}}>
+      <div style={{display:"flex",overflowX:"auto",padding:"8px 2px 12px",scrollbarWidth:"none",msOverflowStyle:"none",alignItems:"center"}}>
         <style>{`.navscroll::-webkit-scrollbar{display:none}`}</style>
-        <div className="navscroll" style={{display:"flex",minWidth:"100%",justifyContent:"space-around"}}>
-          {/* Home — always first, clearly visible */}
-          <button onClick={()=>setScreen("home")} style={{background:current==="home"?"rgba(90,120,72,0.12)":"none",border:current==="home"?"1.5px solid rgba(90,120,72,0.25)":"1.5px solid transparent",borderRadius:12,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 10px",opacity:1,transition:"all 0.15s",flexShrink:0}}>
-            <span style={{fontSize:22,lineHeight:1}}>🏠</span>
-            <span style={{fontSize:9,color:current==="home"?C.mp:"rgba(60,56,40,0.7)",fontWeight:current==="home"?800:700,letterSpacing:0.3}}>Home</span>
+        {orderedNav.map(n=>(
+          <button key={n.id}
+            draggable
+            onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragNav(n.id);}}
+            onDragOver={e=>navDragOver(e,n.id)}
+            onDragEnd={()=>setDragNav(null)}
+            onClick={()=>setScreen(n.id)}
+            style={{background:current===n.id?"rgba(90,120,72,0.14)":"none",border:current===n.id?"1.5px solid rgba(90,120,72,0.28)":"1.5px solid transparent",borderRadius:12,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"4px 8px",opacity:1,transition:"all 0.15s",flexShrink:0,minWidth:48,transform:dragNav===n.id?"scale(0.93)":"scale(1)"}}>
+            <span style={{fontSize:20,lineHeight:1}}>{n.icon}</span>
+            <span style={{fontSize:8,color:current===n.id?C.mp:"rgba(60,56,40,0.65)",fontWeight:current===n.id?800:600,letterSpacing:0.2,whiteSpace:"nowrap"}}>{n.name}</span>
           </button>
-          {/* Divider */}
-          <div style={{width:1,background:"rgba(90,80,60,0.12)",margin:"6px 2px",borderRadius:1,flexShrink:0}}/>
-          {/* All other modules */}
-          {MODULES.map(m=>(
-            <button key={m.id} onClick={()=>setScreen(m.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 8px",opacity:current===m.id?1:0.45,transition:"opacity 0.15s",flexShrink:0}}>
-              <span style={{fontSize:20,lineHeight:1}}>{m.icon}</span>
-              <span style={{fontSize:8,color:current===m.id?C.mp:"rgba(60,56,40,0.5)",fontWeight:current===m.id?800:500,letterSpacing:0.3,whiteSpace:"nowrap"}}>{m.name}</span>
-            </button>
-          ))}
-        </div>
+        ))}
+        {/* Customise button */}
+        <button onClick={()=>setEditing(true)}
+          style={{background:"none",border:"1px solid rgba(90,80,60,0.15)",borderRadius:12,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"4px 8px",opacity:0.55,flexShrink:0,minWidth:36,marginLeft:2}}>
+          <span style={{fontSize:16,lineHeight:1}}>⚙️</span>
+          <span style={{fontSize:7,color:"rgba(60,56,40,0.55)",fontWeight:600}}>Edit</span>
+        </button>
       </div>
     </div>
   );
