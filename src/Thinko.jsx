@@ -3796,7 +3796,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 /* ═══════════════════════════════════════════════════════
    MEAL PLANNER  — Day 1–7, each day has a label + meals list
 ═══════════════════════════════════════════════════════ */
-const DEFAULT_DAY_LABELS=["Day 1","Day 2","Day 3","Day 4","Day 5","Day 6","Day 7"];
+const DEFAULT_DAY_LABELS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
 function VaultHub({data,setData,priData,ideasData,setIdeasData,cabinetData,setNotesMode,setScreen}){
   const [search,setSearch]=useState("");
@@ -7402,6 +7402,12 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [rewardDraft,setRewardDraft]=useState({name:"",cost:"",url:"",photo:""});
   const [toast,setToast]=useState("");
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
+  // The Plan
+  const [plan,setPlan]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_plan')||'null')||{tasks:[],assignments:{}};}catch{return {tasks:[],assignments:{}};}});
+  const savePlan=p=>{setPlan(p);try{localStorage.setItem('thinko_plan',JSON.stringify(p));}catch{}};
+  const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const DAY_EMOJI=["🌱","🔥","💪","⚡","🌟","🌿","☀️"];
+  const [planTaskInput,setPlanTaskInput]=useState("");
 
   const upd=ch=>{const nd={...data,...ch};setData(nd);try{localStorage.setItem('thinko_charge',JSON.stringify(nd));}catch{}};
   const today=todayStr();
@@ -8086,6 +8092,100 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             )}
           </div>
 
+          {/* ── The Plan ── */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>🗓️ The Plan</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Add tasks and assign them to days of the week. Spread your workload, then send to your Week view and Morning Briefing.</div>
+
+            {/* Add task to plan */}
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
+              <input value={planTaskInput} onChange={e=>setPlanTaskInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter"&&planTaskInput.trim()){savePlan({...plan,tasks:[...plan.tasks,{id:Date.now(),text:planTaskInput.trim()}]});setPlanTaskInput("");}}}
+                placeholder="Add a task to your plan…"
+                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}/>
+              <button onClick={()=>{if(!planTaskInput.trim())return;savePlan({...plan,tasks:[...plan.tasks,{id:Date.now(),text:planTaskInput.trim()}]});setPlanTaskInput("");}}
+                style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontWeight:700,fontSize:14,cursor:"pointer"}}>+ Add</button>
+            </div>
+
+            {/* Task list with day assignment */}
+            {plan.tasks.length>0&&(
+              <div style={{marginBottom:14}}>
+                {plan.tasks.map(task=>(
+                  <div key={task.id} style={{background:"rgba(255,255,255,0.80)",borderRadius:16,padding:"10px 14px",marginBottom:8,border:"1px solid rgba(90,120,72,0.12)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <span style={{flex:1,fontSize:14,fontWeight:600,color:"#1A1A10"}}>{task.text}</span>
+                      <button onClick={()=>savePlan({...plan,tasks:plan.tasks.filter(t=>t.id!==task.id),assignments:Object.fromEntries(Object.entries(plan.assignments).filter(([k])=>k!==String(task.id)))})}
+                        style={{background:"none",color:"#c0392b",border:"none",cursor:"pointer",fontSize:13,fontWeight:700}}>✕</button>
+                    </div>
+                    {/* Day picker */}
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                      {DAYS.map((day,di)=>{
+                        const assigned=plan.assignments[task.id]===day;
+                        return(
+                          <button key={day} onClick={()=>savePlan({...plan,assignments:{...plan.assignments,[task.id]:assigned?null:day}})}
+                            style={{padding:"4px 10px",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer",background:assigned?"#5A7848":"rgba(90,120,72,0.08)",color:assigned?"#fff":"#5A7848",border:`1px solid ${assigned?"#5A7848":"rgba(90,120,72,0.20)"}`,transition:"all 0.15s"}}>
+                            {DAY_EMOJI[di]} {day.slice(0,3)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {plan.tasks.length===0&&(
+              <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks above then assign them to days</div>
+            )}
+
+            {/* Actions */}
+            {plan.tasks.some(t=>plan.assignments[t.id])&&(
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {/* Send to Meal Planner week view days */}
+                <button onClick={()=>{
+                  // Update meal planner day labels to Mon-Sun
+                  // and note tasks for each day
+                  const weekTasks=DAYS.map((day,i)=>{
+                    const tasksForDay=plan.tasks.filter(t=>plan.assignments[t.id]===day).map(t=>t.text);
+                    return {day,tasks:tasksForDay};
+                  });
+                  // Store in localStorage for Morning Briefing to pick up
+                  try{localStorage.setItem('thinko_week_plan',JSON.stringify(weekTasks));}catch{}
+                  showToast("📅 Plan saved to your week!");
+                }} style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
+                  📅 Send to My Week
+                </button>
+                {/* Google Calendar */}
+                <button onClick={()=>{
+                  const lines=plan.tasks.filter(t=>plan.assignments[t.id]).map(t=>`${t.text} — ${plan.assignments[t.id]}`);
+                  const text=lines.join("\n");
+                  navigator.clipboard?.writeText(text);
+                  // Build Google Calendar URL for first assigned task
+                  const first=plan.tasks.find(t=>plan.assignments[t.id]);
+                  if(first){
+                    const dayName=plan.assignments[first.id];
+                    const dayNum=DAYS.indexOf(dayName);
+                    const now=new Date();
+                    const diff=(dayNum+1-now.getDay()+7)%7||7;
+                    const target=new Date(now);target.setDate(now.getDate()+diff);
+                    const pad=n=>String(n).padStart(2,"0");
+                    const dt=`${target.getFullYear()}${pad(target.getMonth()+1)}${pad(target.getDate())}`;
+                    const url=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(first.text)}&dates=${dt}T090000/${dt}T100000&details=${encodeURIComponent(lines.join("%0A"))}`;
+                    window.open(url,"_blank");
+                  }
+                  showToast("📋 Copied & opening Google Calendar");
+                }} style={{width:"100%",padding:"12px",background:"rgba(66,133,244,0.12)",color:"#4285f4",border:"1.5px solid rgba(66,133,244,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                  📅 Save to Google Calendar
+                </button>
+                {/* Clear plan */}
+                <button onClick={()=>savePlan({tasks:[],assignments:{}})}
+                  style={{width:"100%",padding:"10px",background:"transparent",color:"#8A8070",border:"none",borderRadius:100,fontSize:12,cursor:"pointer"}}>
+                  🗑 Clear plan
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* ── Transfer tasks ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>↔️ Transfer tasks</div>
@@ -8124,6 +8224,30 @@ const NATURE_SOUNDS=WN_PRESETS; // reuse the existing audio engine
 function RestSpace({setScreen}){
   const [tab,setTab]=useState("meditate");
   const [forestWalkPlaying,setForestWalkPlaying]=useState(false);
+  const [activeSnd,setActiveSnd]=useState(null);
+  const sndCtxRef=useRef(null);
+  const sndStopRef=useRef(null);
+  const playSnd=async(id)=>{
+    if(sndStopRef.current){try{sndStopRef.current();}catch{}}
+    try{
+      if(!sndCtxRef.current||sndCtxRef.current.state==="closed")sndCtxRef.current=new(window.AudioContext||window.webkitAudioContext)();
+      const ctx=sndCtxRef.current;
+      if(ctx.state==="suspended")await ctx.resume();
+      const preset=WN_PRESETS.find(p=>p.id===id);
+      if(preset?.mp3){
+        const res=await fetch(preset.mp3);
+        const buf=await ctx.decodeAudioData(await res.arrayBuffer());
+        const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+        src.connect(ctx.destination);src.start();
+        sndStopRef.current=()=>src.stop();
+      }
+      setActiveSnd(id);
+    }catch(e){console.error(e);}
+  };
+  const stopSnd=()=>{
+    if(sndStopRef.current){try{sndStopRef.current();}catch{}}
+    sndStopRef.current=null;setActiveSnd(null);
+  };
   // Meditation state — supports up to 8 slots (5 user videos + 3 guided)
   const [audioFiles,setAudioFiles]=useState({});   // {slotId: {src, type, name}}
   const [activeMed,setActiveMed]=useState(null);
@@ -8159,11 +8283,7 @@ function RestSpace({setScreen}){
 
   // User video slots — 5 spaces
   const USER_SLOTS=[
-    {id:"my1",icon:"🎬",title:"My Meditation 1",desc:"Upload your own guided meditation"},
-    {id:"my2",icon:"🎬",title:"My Meditation 2",desc:"Upload your own guided meditation"},
-    {id:"my3",icon:"🎬",title:"My Meditation 3",desc:"Upload your own guided meditation"},
-    {id:"my4",icon:"🎬",title:"My Meditation 4",desc:"Upload your own guided meditation"},
-    {id:"my5",icon:"🎬",title:"My Meditation 5",desc:"Upload your own guided meditation"},
+    {id:"my1",icon:"🎬",title:"My Meditation Video",desc:"Upload your own guided meditation"},
   ];
 
   const allMeds=[...USER_SLOTS];
@@ -8356,60 +8476,66 @@ function RestSpace({setScreen}){
         {/* ══ SOUNDS ══ */}
         <div style={{display:tab==="sounds"?"block":"none"}}>
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:4}}>🎵 My Sounds</div>
-          <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Upload your own MP3 sound files — rain, forest, ocean, anything you love. They loop automatically.</div>
+          <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Tap a sound to play — it loops continuously. More sounds coming soon.</div>
 
-          {/* User MP3 upload slots */}
-          {(()=>{
-            const SOUND_SLOTS=[
-              {id:"snd1",icon:"🌧️",label:"Sound 1"},
-              {id:"snd2",icon:"🌊",label:"Sound 2"},
-              {id:"snd3",icon:"🌲",label:"Sound 3"},
-              {id:"snd4",icon:"🔥",label:"Sound 4"},
-              {id:"snd5",icon:"💧",label:"Sound 5"},
-              {id:"snd6",icon:"🌿",label:"Sound 6"},
-            ];
-            return SOUND_SLOTS.map(slot=>{
-              const file=audioFiles[slot.id];
-              const isPlaying=activeMed?.id===slot.id;
-              return(
-                <div key={slot.id} style={{background:file?"rgba(248,245,236,0.92)":"rgba(248,245,236,0.60)",borderRadius:18,marginBottom:10,border:`1.5px ${file?"solid":"dashed"} ${file?"rgba(90,120,72,0.25)":"rgba(90,80,60,0.15)"}`,overflow:"hidden"}}>
-                  {file&&<div style={{height:3,background:"#486878"}}/>}
-                  <div style={{padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
-                    <span style={{fontSize:24}}>{file?slot.icon:"➕"}</span>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                        {file?file.name?.replace(/\.[^.]+$/,"").slice(0,35)||slot.label:slot.label}
-                      </div>
-                      <div style={{fontSize:11,color:"#8A8070"}}>{file?"MP3 ready — tap ▶ to play":"Upload an MP3 sound file"}</div>
-                    </div>
-                    <div style={{display:"flex",gap:6,flexShrink:0}}>
-                      {file?(
-                        <>
-                          <button onClick={()=>removeFile(slot.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
-                          <button onClick={()=>{
-                            if(isPlaying){stopMed();return;}
-                            startMed({...slot,title:file.name?.replace(/\.[^.]+$/,"")||slot.label});
-                          }} style={{background:isPlaying?"rgba(192,57,43,0.12)":"#486878",color:isPlaying?"#c0392b":"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,60,80,0.22)"}}>
-                            {isPlaying?"⏹ Stop":"▶ Play"}
-                          </button>
-                        </>
-                      ):(
-                        <label style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.22)"}}>
-                          + Upload<input type="file" accept="audio/mp3,audio/mpeg,audio/*" style={{display:"none"}} onChange={e=>uploadFile(slot.id,e)}/>
-                        </label>
-                      )}
-                    </div>
+          {/* Real embedded sounds — Stream and Forest */}
+          {WN_PRESETS.filter(p=>p.mp3).map(p=>{
+            const isPlaying=activeSnd===p.id;
+            return(
+              <div key={p.id} style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(90,120,72,0.20)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+                <div style={{height:3,background:isPlaying?"#5A7848":"rgba(90,120,72,0.20)"}}/>
+                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:28}}>{p.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>{p.name}</div>
+                    <div style={{fontSize:11,color:"#8A8070"}}>{isPlaying?"▶ Playing — loops continuously":"Tap to play"}</div>
                   </div>
+                  <button onClick={()=>isPlaying?(stopSnd()):(playSnd(p.id))}
+                    style={{background:isPlaying?"rgba(192,57,43,0.10)":"#5A7848",color:isPlaying?"#c0392b":"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:isPlaying?"none":"0 2px 10px rgba(58,80,38,0.25)"}}>
+                    {isPlaying?"⏹ Stop":"▶ Play"}
+                  </button>
                 </div>
-              );
-            });
+              </div>
+            );
+          })}
+
+          {/* Ocean Waves — YouTube */}
+          {(()=>{
+            const isPlaying=activeSnd==="ocean_yt";
+            return(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(72,104,120,0.25)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+                <div style={{height:3,background:isPlaying?"#486878":"rgba(72,104,120,0.20)"}}/>
+                {isPlaying?(
+                  <>
+                    <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:28}}>🌊</span>
+                      <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>Ocean Waves</span>
+                      <button onClick={()=>setActiveSnd(null)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>
+                    </div>
+                    <div style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                      <iframe src="https://www.youtube.com/embed/7J6QOIpqGk4?autoplay=1&loop=1&playlist=7J6QOIpqGk4&rel=0&modestbranding=1&controls=0"
+                        style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+                        allow="autoplay" allowFullScreen/>
+                    </div>
+                  </>
+                ):(
+                  <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:28}}>🌊</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Ocean Waves</div>
+                      <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
+                    </div>
+                    <button onClick={()=>setActiveSnd("ocean_yt")}
+                      style={{background:"#486878",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,60,80,0.25)"}}>
+                      ▶ Play
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
           })()}
 
-          <div style={{marginTop:18}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:4}}>🎛️ Generated Tones</div>
-            <div style={{fontSize:11,color:"#8A8070",marginBottom:12}}>Simple computer-generated background tones while you find your own sounds.</div>
-            <WhiteNoise/>
-          </div>
+          <div style={{textAlign:"center",marginTop:14,fontSize:12,color:"#8A8070",fontStyle:"italic"}}>🌿 More nature sounds coming soon</div>
         </div>
 
         {/* ══ BREAK TIMER ══ */}
