@@ -810,102 +810,43 @@ function BreakTimer({setScreen}) {
   const [mins,setMins]=useState(5);
   const [left,setLeft]=useState(null);
   const [on,setOn]=useState(false);
+  const [alerted,setAlerted]=useState(false);
   const ref=useRef(null);
   useEffect(()=>{
-    if(on&&left>0)ref.current=setInterval(()=>setLeft(l=>l-1),1000);
-    else{clearInterval(ref.current);if(left===0){setOn(false);playAlarm("gentle");}}
+    clearInterval(ref.current);
+    if(!on) return;
+    ref.current=setInterval(()=>setLeft(l=>{
+      if(l===0&&!alerted){playAlarm("gentle");setAlerted(true);}
+      return l-1;
+    }),1000);
     return()=>clearInterval(ref.current);
-  },[on,left]);
-  const toggle=()=>{
-    if(on){setOn(false);clearInterval(ref.current);}
-    else{
-      if(left===null)setLeft(mins*60);
-      setOn(true);
-    }
-  };
-  const reset=()=>{setOn(false);setLeft(null);clearInterval(ref.current);};
-  const totalSecs=mins*60;
-  const displaySecs=left!==null?left:totalSecs;
-  const hh=String(Math.floor(displaySecs/3600)).padStart(2,"0");
-  const mm=String(Math.floor((displaySecs%3600)/60)).padStart(2,"0");
-  const ss=String(displaySecs%60).padStart(2,"0");
+  },[on]);
+  const fmt=s=>{const abs=Math.abs(s);const str=String(Math.floor(abs/60)).padStart(2,"0")+":"+String(abs%60).padStart(2,"0");return s<0?"+"+str:str;};
   return (
-    <div style={{marginBottom:18}}>
-      {/* Break Timer header row */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3}}>Break Timer</span>
-          <span style={{fontSize:20}}>☕</span>
+    <div style={{background:"rgba(248,245,236,0.88)",borderRadius:18,padding:"14px 16px",marginBottom:12,border:"1px solid rgba(255,255,255,0.9)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+        <span style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,color:"#1A1A10",flex:1}}>☕ Break Timer</span>
+        {left!==null&&<span style={{fontFamily:"monospace",fontSize:18,fontWeight:700,color:left<0?"#c0392b":left<60?"#E08020":"#2C3820"}}>{fmt(left)}</span>}
+      </div>
+      {left!==null&&left>=0&&(
+        <div style={{height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:10}}>
+          <div style={{height:"100%",width:`${Math.round((left/(mins*60))*100)}%`,background:left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
         </div>
-        {/* Play/Pause button — large sage circle */}
-        <button onClick={toggle} style={{
-          width:56,height:56,borderRadius:"50%",
-          background:"#5A7848",
-          border:"none",cursor:"pointer",
-          display:"flex",alignItems:"center",justifyContent:"center",
-          boxShadow:"0 4px 18px rgba(58,80,38,0.35)",
-          flexShrink:0,
-          transition:"all 0.15s",
-        }}>
-          {on
-            ? <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>
-            : <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M5 3l11 6-11 6V3z"/></svg>
-          }
-        </button>
-      </div>
-      {/* Large timer display */}
-      <div style={{
-        fontFamily:"Georgia,serif",
-        fontSize:72,
-        fontWeight:400,
-        color:"#5A7848",
-        letterSpacing:4,
-        textAlign:"center",
-        lineHeight:1,
-        marginBottom:28,
-        opacity:on?1:0.85,
-      }}>
-        {hh}<span style={{opacity:0.5,margin:"0 6px"}}>:</span>{mm}<span style={{opacity:0.5,margin:"0 6px"}}>:</span>{ss}
-      </div>
-      {/* Pill time buttons */}
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:16}}>
-        {[5,10,15,20,30].map(p=>(
-          <button key={p} onClick={()=>{setMins(p);setLeft(null);setOn(false);}} style={{
-            border:"1.5px solid",
-            borderColor:mins===p?"transparent":"rgba(90,120,72,0.3)",
-            borderRadius:100,
-            padding:"9px 18px",
-            fontSize:14,
-            fontWeight:600,
-            cursor:"pointer",
-            background:mins===p?"#5A7848":"rgba(255,255,255,0.75)",
-            color:mins===p?"#fff":"#3A3020",
-            boxShadow:mins===p?"0 2px 10px rgba(58,80,38,0.28)":"none",
-            transition:"all 0.15s",
-          }}>{p}m</button>
-        ))}
-      </div>
-      {/* Open Rest Space */}
-      {setScreen&&(
-        <button onClick={()=>setScreen("rest")} style={{
-          width:"100%",
-          padding:"16px",
-          background:"#5A7848",
-          color:"#fff",
-          border:"none",
-          borderRadius:100,
-          fontWeight:700,
-          fontSize:16,
-          cursor:"pointer",
-          display:"flex",alignItems:"center",justifyContent:"center",gap:10,
-          boxShadow:"0 4px 18px rgba(58,80,38,0.32)",
-          marginBottom:4,
-          letterSpacing:0.2,
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3c-5 4-7 8-7 12a7 7 0 0014 0c0-4-2-8-7-12z" stroke="white" strokeWidth="1.8" fill="none" strokeLinejoin="round"/><path d="M12 10v6M9 13h6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/></svg>
-          Open Rest Space
-        </button>
       )}
+      {left===null&&(
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          {[5,10,15,20,30].map(p=>(
+            <button key={p} onClick={()=>setMins(p)} style={{flex:1,padding:"7px 0",fontSize:12,fontWeight:600,cursor:"pointer",background:mins===p?"#5A7848":"rgba(255,255,255,0.75)",color:mins===p?"#fff":"#3A3020",border:`1.5px solid ${mins===p?"transparent":"rgba(90,120,72,0.25)"}`,borderRadius:100,transition:"all 0.15s"}}>{p}m</button>
+          ))}
+        </div>
+      )}
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>{if(left===null){setLeft(mins*60);setOn(true);setAlerted(false);}else setOn(o=>!o);}} style={{flex:1,padding:"9px",background:on?"rgba(192,57,43,0.10)":"#5A7848",color:on?"#c0392b":"#fff",border:`1.5px solid ${on?"rgba(192,57,43,0.25)":"#5A7848"}`,borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          {left===null?`▶ Start ${mins}m`:on?"⏸ Pause":"▶ Resume"}
+        </button>
+        {left!==null&&<button onClick={()=>{clearInterval(ref.current);setLeft(null);setOn(false);setAlerted(false);}} style={{flex:1,padding:"9px",background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>}
+      </div>
+      {setScreen&&<button onClick={()=>setScreen("rest")} style={{width:"100%",marginTop:8,padding:"9px",background:"transparent",color:"#5A7848",border:"1px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:600,fontSize:12,cursor:"pointer"}}>🌿 Open Rest Space</button>}
     </div>
   );
 }
@@ -1254,6 +1195,32 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
       <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.25)",color:"#1A1A10",border:"1px solid rgba(90,120,72,0.25)",borderRadius:10,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
       <div style={{padding:"18px 16px"}}>
+        {/* Focus Timer — above break timer */}
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:18,padding:"14px 16px",marginBottom:12,border:"1px solid rgba(255,255,255,0.9)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <span style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,color:"#1A1A10",flex:1}}>⏱ Focus Timer</span>
+            {focusLeft!==null&&<span style={{fontFamily:"monospace",fontSize:18,fontWeight:700,color:focusLeft<0?"#c0392b":focusLeft<60?"#E08020":"#2C3820"}}>{fmtTimer?fmtTimer(focusLeft):""}</span>}
+            {focusLeft!==null&&focusLeft<0&&<span style={{fontSize:10,color:"#c0392b",fontWeight:700}}>overtime</span>}
+          </div>
+          {focusLeft!==null&&focusLeft>=0&&(
+            <div style={{height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:8}}>
+              <div style={{height:"100%",width:`${Math.round((focusLeft/((focusMins||25)*60))*100)}%`,background:focusLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+            </div>
+          )}
+          {focusLeft===null&&(
+            <div style={{display:"flex",gap:6,marginBottom:8}}>
+              {[10,20,30,50].map(m=>(
+                <button key={m} onClick={()=>setFocusMins&&setFocusMins(m)} style={{flex:1,padding:"6px 0",fontSize:12,fontWeight:600,cursor:"pointer",background:(focusMins||25)===m?"#5A7848":"rgba(255,255,255,0.75)",color:(focusMins||25)===m?"#fff":"#3A3020",border:`1.5px solid ${(focusMins||25)===m?"transparent":"rgba(90,120,72,0.25)"}`,borderRadius:100}}>{m}m</button>
+              ))}
+            </div>
+          )}
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{if(focusLeft===null){setFocusLeft&&setFocusLeft((focusMins||25)*60);setFocusOn&&setFocusOn(true);setFocusAlerted&&setFocusAlerted(false);}else setFocusOn&&setFocusOn(o=>!o);}} style={{flex:1,padding:"9px",background:focusOn?"rgba(192,57,43,0.10)":"#5A7848",color:focusOn?"#c0392b":"#fff",border:`1.5px solid ${focusOn?"rgba(192,57,43,0.25)":"#5A7848"}`,borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              {focusLeft===null?`▶ Start ${focusMins||25}m`:focusOn?"⏸ Pause":"▶ Resume"}
+            </button>
+            {focusLeft!==null&&<button onClick={()=>{setFocusLeft&&setFocusLeft(null);setFocusOn&&setFocusOn(false);setFocusAlerted&&setFocusAlerted(false);}} style={{flex:1,padding:"9px",background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>}
+          </div>
+        </div>
         <BreakTimer setScreen={setScreen}/>
         {/* Add task input */}
         <div style={{display:"flex",gap:10,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 14px 12px 20px",border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
@@ -1310,7 +1277,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen}) {
   );
 }
 
-function Prioritizer({data,setData,matrixData,setMatrixData,setScreen}) {
+function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,setFocusMins,focusLeft,setFocusLeft,focusOn,setFocusOn,setFocusAlerted,fmtTimer}) {
   const [activeId,setActiveId]=useState(null);
   const [adding,setAdding]=useState(false);
   const [name,setName]=useState("");
@@ -7767,8 +7734,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             {(data.targetTasks||[]).map((task,origIdx)=>{
               if(!task?.trim()) return null;
               const done=charged.includes(task);
-              const tt=taskTimers[origIdx];
-              const running=tt?.on&&tt?.left>0;
               return(
                 <div key={origIdx}
                   data-chargeidx={origIdx}
@@ -9077,7 +9042,7 @@ export default function App() {
   };
   const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}};
 
-  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
+  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
   if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div></>);
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
