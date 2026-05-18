@@ -7963,11 +7963,11 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
 
           {/* Day task cards — only if plan has assignments */}
           {(()=>{
-            const allTasks=(data.targetTasks||[]).filter(t=>t?.trim());
-            const hasAny=allTasks.some((_,i)=>plan.assignments[String(i)]);
+            const rawTasks=(data.targetTasks||[]);
+            const hasAny=rawTasks.some((_,i)=>plan.assignments[String(i)]);
             if(!hasAny) return null;
-            const todayName=new Date().toLocaleDateString("en-GB",{weekday:"long"});
-            const todayDi=DAYS.indexOf(todayName);
+            // getDay(): 0=Sun,1=Mon..6=Sat → DAYS array is Mon=0..Sun=6
+            const todayDi=(new Date().getDay()+6)%7;
             const ADVICE=[
               "Try breaking this into smaller steps — even 5 minutes counts 🌱",
               "What's the very first tiny action you can take? Start there 🐾",
@@ -7979,7 +7979,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
                 <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:12}}>🗓️ Your Plan</div>
                 {DAYS.map((day,di)=>{
-                  const tasksForDay=allTasks.filter((_,i)=>plan.assignments[String(i)]===day);
+                  const tasksForDay=rawTasks.map((t,i)=>({t,i})).filter(({t,i})=>t?.trim()&&plan.assignments[String(i)]===day).map(({t})=>t);
                   if(tasksForDay.length===0) return null;
                   const isToday=di===todayDi;
                   const isPast=di<todayDi;
@@ -8193,7 +8193,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
               <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks in Today's Tasks above first</div>
             ):(
               <>
-                {(data.targetTasks||[]).filter(t=>t?.trim()).map((task,i)=>{
+                {(data.targetTasks||[]).map((task,i)=>{ if(!task?.trim()) return null;
                   const assigned=plan.assignments[String(i)];
                   const steps=plan.steps?.[String(i)]||[];
                   const showSteps=plan.expandedSteps?.[String(i)];
