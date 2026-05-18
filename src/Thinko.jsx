@@ -7387,6 +7387,100 @@ function ChargeCompare({tasks, onDone}) {
   );
 }
 
+function WeekPlan({targetTasks,plan,charged,days,today,DAY_EMOJI,DAYS}){
+  const assignments=plan?.assignments||{};
+  const todayDi=(new Date().getDay()+6)%7;
+
+  // Build list of days that have assigned tasks
+  const ADVICE=[
+    "Try breaking this into smaller steps — even 5 minutes counts 🌱",
+    "What's the very first tiny action you can take? Start there 🐾",
+    "Could you do just one part of this? A little progress is still progress 💚",
+    "Be kind to yourself — reschedule and try again 🌿",
+    "Every missed task is just information, not failure ✨",
+  ];
+
+  // Find which days have tasks
+  const daysWithTasks=DAYS.filter(day=>
+    targetTasks.some((t,i)=>t?.trim()&&assignments[String(i)]===day)
+  );
+
+  if(daysWithTasks.length===0) return(
+    <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 14px rgba(0,0,0,0.05)"}}>
+      <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:6}}>🗓️ Your Plan</div>
+      <div style={{fontSize:12,color:"#8A8070"}}>Go to Setup → The Plan to assign tasks to days.</div>
+    </div>
+  );
+
+  return(
+    <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
+      <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:12}}>🗓️ Your Plan</div>
+      {DAYS.map((day,di)=>{
+        const tasksForDay=targetTasks
+          .map((t,i)=>({t,i}))
+          .filter(({t,i})=>t?.trim()&&assignments[String(i)]===day)
+          .map(({t})=>t);
+        if(tasksForDay.length===0) return null;
+
+        const isToday=di===todayDi;
+        const isPast=di<todayDi;
+        const isFuture=di>todayDi;
+
+        // Get completed tasks for this day
+        const d=new Date();d.setDate(d.getDate()+(di-todayDi));
+        const dayStr=d.toISOString().slice(0,10);
+        const dayCharged=isToday?charged:(days[dayStr]?.charged||[]);
+        const completed=tasksForDay.filter(t=>dayCharged.includes(t));
+        const missed=isPast?tasksForDay.filter(t=>!dayCharged.includes(t)):[];
+        const allDone=isPast&&tasksForDay.length>0&&missed.length===0;
+
+        return(
+          <div key={day} style={{borderRadius:18,marginBottom:10,overflow:"hidden",border:`2px solid ${allDone?"rgba(90,160,80,0.35)":isToday?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.09)"}`,background:allDone?"rgba(90,160,80,0.04)":"rgba(255,255,255,0.60)"}}>
+            {/* Day header */}
+            <div style={{padding:"10px 14px",background:allDone?"rgba(90,160,80,0.10)":isToday?"rgba(90,120,72,0.08)":"rgba(90,80,60,0.03)",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:18}}>{DAY_EMOJI[di]}</span>
+              <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>{day}</span>
+              {isToday&&<span style={{background:"#5A7848",color:"#fff",fontSize:10,fontWeight:700,borderRadius:100,padding:"2px 10px"}}>Today</span>}
+              {isFuture&&<span style={{fontSize:11,color:"#8A8070",fontStyle:"italic"}}>Upcoming</span>}
+              {allDone&&<span style={{fontSize:22}}>✅</span>}
+            </div>
+
+            {/* Celebration */}
+            {allDone&&(
+              <div style={{textAlign:"center",padding:"14px 16px 10px",borderBottom:"1px solid rgba(90,160,80,0.15)"}}>
+                <div style={{fontSize:48,marginBottom:4}}>🎉</div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#2A6010",marginBottom:2}}>Incredible — all done!</div>
+                <div style={{fontSize:12,color:"#5A7848",lineHeight:1.5}}>Every task on {day} completed. You should be proud 🌟</div>
+              </div>
+            )}
+
+            {/* Tasks */}
+            <div style={{padding:"8px 14px 12px"}}>
+              {tasksForDay.map((task,ti)=>{
+                const done=completed.includes(task);
+                const isMissed=missed.includes(task);
+                return(
+                  <div key={ti} style={{marginBottom:isMissed?8:2}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:ti<tasksForDay.length-1?"1px solid rgba(90,80,60,0.07)":"none"}}>
+                      <span style={{fontSize:16,flexShrink:0}}>{done?"✅":isMissed?"⚠️":"◦"}</span>
+                      <span style={{flex:1,fontSize:14,fontWeight:600,color:done?"#8A9080":isMissed?"#7A5020":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</span>
+                    </div>
+                    {isMissed&&(
+                      <div style={{marginLeft:26,padding:"7px 12px",background:"rgba(255,200,50,0.10)",borderRadius:12,border:"1px solid rgba(200,150,30,0.18)",marginBottom:4}}>
+                        <div style={{fontSize:12,color:"#7A5020",lineHeight:1.6}}>💡 {ADVICE[ti%ADVICE.length]}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [data,setData]=useState(()=>{
     try{return JSON.parse(localStorage.getItem('thinko_charge')||'null')||{dailyTarget:3,weeklyAward:"",rewardType:"weekly",rewardFreq:5,reward:{name:"",cost:"",url:"",photo:""},days:{},streak:0};}
@@ -7961,93 +8055,17 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             </div>
           </div>
 
-          {/* Day task cards — only if plan has assignments */}
-          {/* Day task cards — debug + plan */}
-          {(()=>{
-            const rawTasks=(data.targetTasks||[]);
-            const assignments=plan?.assignments||{};
-            // Debug: show what we have
-            const debugInfo=`Tasks: ${JSON.stringify(rawTasks)} | Assignments: ${JSON.stringify(assignments)}`;
-            const hasAny=Object.values(assignments).some(v=>v&&v.trim());
-            if(!hasAny) return(
-              <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:8}}>🗓️ Your Plan</div>
-                <div style={{fontSize:12,color:"#8A8070",marginBottom:8}}>No tasks assigned yet — go to Setup → The Plan to assign tasks to days.</div>
-                <div style={{fontSize:9,color:"#aaa",wordBreak:"break-all"}}>{debugInfo}</div>
-              </div>
-            );
-            const todayDi=(new Date().getDay()+6)%7;
-            const ADVICE=[
-              "Try breaking this into smaller steps — even 5 minutes counts 🌱",
-              "What's the very first tiny action you can take? Start there 🐾",
-              "Could you do just one part of this? A little progress is still progress 💚",
-              "Be kind to yourself — reschedule and try again 🌿",
-              "Every missed task is just information, not failure ✨",
-            ];
-            return(
-              <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:12}}>🗓️ Your Plan</div>
-                {DAYS.map((day,di)=>{
-                  const tasksForDay=rawTasks.map((t,i)=>({t,i})).filter(({t,i})=>t?.trim()&&plan.assignments[String(i)]===day).map(({t})=>t);
-                  if(tasksForDay.length===0) return null;
-                  const isToday=di===todayDi;
-                  const isPast=di<todayDi;
-                  const isFuture=di>todayDi;
-                  // Work out completed tasks for that day
-                  const d=new Date();d.setDate(d.getDate()+(di-todayDi));
-                  const dayStr=d.toISOString().slice(0,10);
-                  const dayCharged=isToday?charged:(data.days?.[dayStr]?.charged||[]);
-                  const completed=tasksForDay.filter(t=>dayCharged.includes(t));
-                  const missed=isPast?tasksForDay.filter(t=>!dayCharged.includes(t)):[];
-                  const allDone=tasksForDay.length>0&&completed.length===tasksForDay.length&&isPast;
-                  return(
-                    <div key={day} style={{borderRadius:18,marginBottom:10,border:`2px solid ${allDone?"rgba(90,160,80,0.35)":isToday?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.09)"}`,overflow:"hidden",background:allDone?"rgba(90,160,80,0.04)":"rgba(255,255,255,0.60)"}}>
-                      {/* Day header */}
-                      <div style={{padding:"10px 14px",background:allDone?"rgba(90,160,80,0.10)":isToday?"rgba(90,120,72,0.08)":"rgba(90,80,60,0.03)",display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{fontSize:16}}>{DAY_EMOJI[di]}</span>
-                        <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",flex:1}}>{day}</span>
-                        {isToday&&<span style={{background:"#5A7848",color:"#fff",fontSize:10,fontWeight:700,borderRadius:100,padding:"2px 10px"}}>Today</span>}
-                        {isFuture&&<span style={{fontSize:11,color:"#8A8070",fontStyle:"italic"}}>Upcoming</span>}
-                        {allDone&&<span style={{fontSize:22}}>✅</span>}
-                      </div>
+          {/* Your Plan — day cards */}
+          <WeekPlan
+            targetTasks={data.targetTasks||[]}
+            plan={plan}
+            charged={charged}
+            days={data.days||{}}
+            today={today}
+            DAY_EMOJI={DAY_EMOJI}
+            DAYS={DAYS}
+          />
 
-                      {/* Big celebration if all done */}
-                      {allDone&&(
-                        <div style={{textAlign:"center",padding:"14px 16px 10px",borderBottom:"1px solid rgba(90,160,80,0.15)"}}>
-                          <div style={{fontSize:44,marginBottom:4}}>🎉</div>
-                          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#2A6010",marginBottom:2}}>Incredible — all done!</div>
-                          <div style={{fontSize:12,color:"#5A7848",lineHeight:1.5}}>Every task on {day} completed. You should be proud 🌟</div>
-                        </div>
-                      )}
-
-                      {/* Task list */}
-                      <div style={{padding:"8px 14px 12px"}}>
-                        {tasksForDay.map((task,ti)=>{
-                          const done=completed.includes(task);
-                          const isMissed=missed.includes(task);
-                          return(
-                            <div key={ti} style={{marginBottom:isMissed?8:4}}>
-                              <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:ti<tasksForDay.length-1&&!isMissed?"1px solid rgba(90,80,60,0.07)":"none"}}>
-                                <span style={{fontSize:15,flexShrink:0}}>{done?"✅":isMissed?"⚠️":"◦"}</span>
-                                <span style={{flex:1,fontSize:13,fontWeight:done?400:600,color:done?"#8A9080":isMissed?"#7A5020":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</span>
-                              </div>
-                              {isMissed&&(
-                                <div style={{marginLeft:24,padding:"7px 12px",background:"rgba(255,200,50,0.10)",borderRadius:12,border:"1px solid rgba(200,150,30,0.18)"}}>
-                                  <div style={{fontSize:11,color:"#7A5020",lineHeight:1.6}}>
-                                    💡 {ADVICE[ti%ADVICE.length]}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
 
         </>}
 
