@@ -8730,6 +8730,82 @@ function RestSpace({setScreen}){
             );
           })()}
 
+          {/* Jungle — YouTube */}
+          {(()=>{
+            const isPlaying=activeSnd==="jungle_yt";
+            return(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:`1.5px solid ${isPlaying?"rgba(58,104,56,0.40)":"rgba(58,104,56,0.22)"}`,overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+                <div style={{height:3,background:isPlaying?"#3A6838":"rgba(58,104,56,0.20)"}}/>
+                {isPlaying?(
+                  <>
+                    <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:28}}>🌴</span>
+                      <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>Jungle</span>
+                      <button onClick={()=>{const el=document.querySelector('.jungle-frame');if(el?.requestFullscreen)el.requestFullscreen();else if(el?.webkitRequestFullscreen)el.webkitRequestFullscreen();}} style={{background:"rgba(58,104,56,0.10)",color:"#3A6838",border:"none",borderRadius:100,padding:"8px 12px",fontWeight:700,fontSize:13,cursor:"pointer",marginRight:6}}>⛶ Expand</button>
+                      <button onClick={()=>setActiveSnd(null)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>
+                    </div>
+                    <div className="jungle-frame" style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                      <iframe src="https://www.youtube.com/embed/Jq6pDCQqi2U?autoplay=1&loop=1&playlist=Jq6pDCQqi2U&rel=0&modestbranding=1&controls=0&iv_load_policy=3&disablekb=1"
+                        style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+                        allow="autoplay" allowFullScreen/>
+                      <div style={{position:"absolute",inset:0,zIndex:2,cursor:"default"}} onClick={e=>e.preventDefault()}/>
+                    </div>
+                  </>
+                ):(
+                  <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:28}}>🌴</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Jungle</div>
+                      <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
+                    </div>
+                    <button onClick={()=>setActiveSnd("jungle_yt")}
+                      style={{background:"#3A6838",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,90,40,0.25)"}}>
+                      ▶ Play
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Rain — YouTube */}
+          {(()=>{
+            const isPlaying=activeSnd==="rain_yt";
+            return(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:`1.5px solid ${isPlaying?"rgba(60,80,120,0.40)":"rgba(60,80,120,0.22)"}`,overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+                <div style={{height:3,background:isPlaying?"#3C5078":"rgba(60,80,120,0.20)"}}/>
+                {isPlaying?(
+                  <>
+                    <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:28}}>🌧️</span>
+                      <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>Rain</span>
+                      <button onClick={()=>{const el=document.querySelector('.rain-frame');if(el?.requestFullscreen)el.requestFullscreen();else if(el?.webkitRequestFullscreen)el.webkitRequestFullscreen();}} style={{background:"rgba(60,80,120,0.10)",color:"#3C5078",border:"none",borderRadius:100,padding:"8px 12px",fontWeight:700,fontSize:13,cursor:"pointer",marginRight:6}}>⛶ Expand</button>
+                      <button onClick={()=>setActiveSnd(null)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"none",borderRadius:100,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>
+                    </div>
+                    <div className="rain-frame" style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                      <iframe src="https://www.youtube.com/embed/nlGRF6yThh4?autoplay=1&loop=1&playlist=nlGRF6yThh4&rel=0&modestbranding=1&controls=0&iv_load_policy=3&disablekb=1"
+                        style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+                        allow="autoplay" allowFullScreen/>
+                      <div style={{position:"absolute",inset:0,zIndex:2,cursor:"default"}} onClick={e=>e.preventDefault()}/>
+                    </div>
+                  </>
+                ):(
+                  <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:28}}>🌧️</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Rain</div>
+                      <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
+                    </div>
+                    <button onClick={()=>setActiveSnd("rain_yt")}
+                      style={{background:"#3C5078",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,50,90,0.25)"}}>
+                      ▶ Play
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <div style={{textAlign:"center",marginTop:14,fontSize:12,color:"#8A8070",fontStyle:"italic"}}>🌿 More nature sounds coming soon</div>
         </div>
 
