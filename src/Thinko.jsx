@@ -7481,7 +7481,7 @@ function WeekPlan({targetTasks,plan,charged,days,today,DAY_EMOJI,DAYS}){
   );
 }
 
-function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
+function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusMins,setFocusMins,focusLeft,setFocusLeft,focusOn,setFocusOn,setFocusAlerted,breakMins,setBreakMins,breakLeft,setBreakLeft,breakOn,setBreakOn,setBreakAlerted,fmtTimer}){
   const [data,setData]=useState(()=>{
     try{return JSON.parse(localStorage.getItem('thinko_charge')||'null')||{dailyTarget:3,weeklyAward:"",rewardType:"weekly",rewardFreq:5,reward:{name:"",cost:"",url:"",photo:""},days:{},streak:0};}
     catch{return {dailyTarget:3,weeklyAward:"",rewardType:"weekly",rewardFreq:5,reward:{name:"",cost:"",url:"",photo:""},days:{},streak:0};}
@@ -7547,27 +7547,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
   const [dragChargeId,setDragChargeId]=useState(null);
   const [comparing,setComparing]=useState(false);
   const chargeAddRef=useRef(null);
-  // Focus session timer (one timer for whole session)
-  const [focusMins,setFocusMins]=useState(25);
-  const [focusLeft,setFocusLeft]=useState(null);
-  const [focusOn,setFocusOn]=useState(false);
-  const focusRef=useRef(null);
-  useEffect(()=>{
-    if(focusOn&&focusLeft>0){focusRef.current=setInterval(()=>setFocusLeft(l=>l-1),1000);}
-    else{clearInterval(focusRef.current);if(focusLeft===0&&focusOn){setFocusOn(false);playAlarm("focus");showToast("⏱ Focus session complete!");}}
-    return()=>clearInterval(focusRef.current);
-  },[focusOn,focusLeft]);
-  // Break timer
-  const [breakMins,setBreakMins]=useState(5);
-  const [breakLeft,setBreakLeft]=useState(null);
-  const [breakOn,setBreakOn]=useState(false);
-  const chargeBreakRef=useRef(null);
-  useEffect(()=>{
-    if(breakOn&&breakLeft>0){chargeBreakRef.current=setInterval(()=>setBreakLeft(l=>l-1),1000);}
-    else{clearInterval(chargeBreakRef.current);if(breakLeft===0&&breakOn){setBreakOn(false);playAlarm("gentle");}}
-    return()=>clearInterval(chargeBreakRef.current);
-  },[breakOn,breakLeft]);
-  const fmtBreak=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const setupAddRef=useRef(null);
   const chargeTouchRef=useRef(null);
   const chargeDragOver=(toOrigIdx,allTasks)=>{
@@ -7742,21 +7721,26 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>⏱ Focus Timer</div>
             {focusLeft!==null?(
               <div style={{textAlign:"center"}}>
-                <div style={{fontFamily:"monospace",fontSize:52,fontWeight:300,color:focusLeft<60?"#c0392b":"#2C3820",lineHeight:1,marginBottom:8}}>{fmtTimer(focusLeft)}</div>
-                <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:12}}>
-                  <div style={{height:"100%",width:`${Math.round((focusLeft/(focusMins*60))*100)}%`,background:focusLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+                <div style={{fontFamily:"monospace",fontSize:52,fontWeight:300,color:focusLeft<0?"#c0392b":focusLeft<60?"#E08020":"#2C3820",lineHeight:1,marginBottom:4}}>
+                  {fmtTimer(focusLeft)}
                 </div>
-                <div style={{fontSize:11,color:"#8A8070",marginBottom:10}}>Timer runs across all tasks — tap ⚡ Done as you complete each one</div>
+                {focusLeft<0&&<div style={{fontSize:12,color:"#c0392b",fontWeight:700,marginBottom:4}}>⏰ Time's up — counting overtime</div>}
+                {focusLeft>=0&&(
+                  <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:8}}>
+                    <div style={{height:"100%",width:`${Math.round((focusLeft/(focusMins*60))*100)}%`,background:focusLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+                  </div>
+                )}
+                <div style={{fontSize:11,color:"#8A8070",marginBottom:10}}>Timer runs across all tasks — keeps counting even after time is up so you know exactly how long your session took</div>
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setFocusOn(f=>!f)} style={{flex:1,padding:"11px",background:focusOn?"rgba(192,57,43,0.10)":"#5A7848",color:focusOn?"#c0392b":"#fff",border:`1.5px solid ${focusOn?"rgba(192,57,43,0.25)":"#5A7848"}`,borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>
                     {focusOn?"⏸ Pause":"▶ Resume"}
                   </button>
-                  <button onClick={()=>{clearInterval(focusRef.current);setFocusLeft(null);setFocusOn(false);}} style={{flex:1,padding:"11px",background:"rgba(90,80,60,0.08)",color:"#6A6050",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>✕ End</button>
+                  <button onClick={()=>{setFocusLeft(null);setFocusOn(false);setFocusAlerted(false);}} style={{flex:1,padding:"11px",background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>⏹ Stop</button>
                 </div>
               </div>
             ):(
               <div>
-                <div style={{fontSize:11,color:"#8A8070",marginBottom:8}}>Set a focus duration — the timer keeps running as you complete tasks one by one.</div>
+                <div style={{fontSize:11,color:"#8A8070",marginBottom:8}}>After time is up the timer keeps counting overtime — so you know exactly how long the session took.</div>
                 <div style={{display:"flex",gap:6,marginBottom:10}}>
                   {[10,20,30,50].map(m=>(
                     <button key={m} onClick={()=>setFocusMins(m)}
@@ -7765,7 +7749,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                     </button>
                   ))}
                 </div>
-                <button onClick={()=>{setFocusLeft(focusMins*60);setFocusOn(true);}}
+                <button onClick={()=>{setFocusLeft(focusMins*60);setFocusOn(true);setFocusAlerted(false);}}
                   style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
                   ⏱ Start {focusMins}min focus session
                 </button>
@@ -7932,15 +7916,18 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:10}}>☕ Break Timer</div>
             {breakLeft!==null?(
               <div style={{textAlign:"center"}}>
-                <div style={{fontFamily:"monospace",fontSize:52,fontWeight:300,color:breakLeft<60?"#c0392b":"#2C3820",lineHeight:1,marginBottom:8}}>{fmtBreak(breakLeft)}</div>
-                <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:12}}>
-                  <div style={{height:"100%",width:`${Math.round((breakLeft/(breakMins*60))*100)}%`,background:breakLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
-                </div>
+                <div style={{fontFamily:"monospace",fontSize:52,fontWeight:300,color:breakLeft<0?"#c0392b":breakLeft<60?"#E08020":"#2C3820",lineHeight:1,marginBottom:4}}>{fmtTimer(breakLeft)}</div>
+                {breakLeft<0&&<div style={{fontSize:12,color:"#c0392b",fontWeight:700,marginBottom:4}}>☕ Break over — counting overtime</div>}
+                {breakLeft>=0&&(
+                  <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:8}}>
+                    <div style={{height:"100%",width:`${Math.round((breakLeft/(breakMins*60))*100)}%`,background:breakLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+                  </div>
+                )}
                 <div style={{display:"flex",gap:8,justifyContent:"center"}}>
                   <button onClick={()=>setBreakOn(b=>!b)} style={{flex:1,padding:"11px",background:breakOn?"rgba(192,57,43,0.10)":"#5A7848",color:breakOn?"#c0392b":"#fff",border:`1.5px solid ${breakOn?"rgba(192,57,43,0.25)":"#5A7848"}`,borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>
                     {breakOn?"⏸ Pause":"▶ Resume"}
                   </button>
-                  <button onClick={()=>{clearInterval(chargeBreakRef.current);setBreakLeft(null);setBreakOn(false);}} style={{flex:1,padding:"11px",background:"rgba(90,80,60,0.08)",color:"#6A6050",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>✕ End break</button>
+                  <button onClick={()=>{setBreakLeft(null);setBreakOn(false);setBreakAlerted(false);}} style={{flex:1,padding:"11px",background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>⏹ Stop</button>
                 </div>
               </div>
             ):(
@@ -7953,7 +7940,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen}){
                     </button>
                   ))}
                 </div>
-                <button onClick={()=>{setBreakLeft(breakMins*60);setBreakOn(true);}}
+                <button onClick={()=>{setBreakLeft(breakMins*60);setBreakOn(true);setBreakAlerted(false);}}
                   style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
                   ☕ Start {breakMins}min break
                 </button>
@@ -8957,7 +8944,51 @@ export default function App() {
   const [goalsData,setGoalsData]=useState(()=>{try{const v=localStorage.getItem('thinko_goals');return v?JSON.parse(v):[];}catch{return [];}});
   const [chargeData,setChargeData]=useState(()=>{try{const v=localStorage.getItem('thinko_charge');return v?JSON.parse(v):{dailyTarget:3,weeklyAward:'',days:{},streak:0};}catch{return {dailyTarget:3,weeklyAward:'',days:{},streak:0};}});
 
-  // ── Persist all data to localStorage on change ──
+  // ── GLOBAL TIMERS — persist across all screens ──────────────────────────
+  const [focusMins,setFocusMins]=useState(25);
+  const [focusLeft,setFocusLeft]=useState(null);  // null=idle, >=0 countdown, <0 count-up
+  const [focusOn,setFocusOn]=useState(false);
+  const [focusAlerted,setFocusAlerted]=useState(false);
+  const focusRef=useRef(null);
+  useEffect(()=>{
+    clearInterval(focusRef.current);
+    if(!focusOn) return;
+    focusRef.current=setInterval(()=>{
+      setFocusLeft(l=>{
+        if(l===null) return null;
+        if(l===0&&!focusAlerted){playAlarm("focus");setFocusAlerted(true);}
+        return l-1; // goes negative = count-up overtime
+      });
+    },1000);
+    return()=>clearInterval(focusRef.current);
+  },[focusOn]);
+
+  const [breakMins,setBreakMins]=useState(5);
+  const [breakLeft,setBreakLeft]=useState(null);
+  const [breakOn,setBreakOn]=useState(false);
+  const [breakAlerted,setBreakAlerted]=useState(false);
+  const breakRef=useRef(null);
+  useEffect(()=>{
+    clearInterval(breakRef.current);
+    if(!breakOn) return;
+    breakRef.current=setInterval(()=>{
+      setBreakLeft(l=>{
+        if(l===null) return null;
+        if(l===0&&!breakAlerted){playAlarm("gentle");setBreakAlerted(true);}
+        return l-1;
+      });
+    },1000);
+    return()=>clearInterval(breakRef.current);
+  },[breakOn]);
+
+  const fmtTimer=(s)=>{
+    if(s===null) return "";
+    const abs=Math.abs(s);
+    const str=String(Math.floor(abs/60)).padStart(2,"0")+":"+String(abs%60).padStart(2,"0");
+    return s<0?"+"+str:str; // overtime shows +00:23
+  };
+  const fmtBreak=fmtTimer; // same formatter
+  // ── END GLOBAL TIMERS ──────────────────────────────────────────────────
   useEffect(()=>{try{localStorage.setItem('thinko_notes',JSON.stringify(notesData));}catch{}},[notesData]);
   useEffect(()=>{try{localStorage.setItem('thinko_meal',JSON.stringify(mealData));}catch{}},[mealData]);
   useEffect(()=>{try{localStorage.setItem('thinko_ideas',JSON.stringify(ideasData));}catch{}},[ideasData]);
@@ -9052,7 +9083,7 @@ export default function App() {
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
   if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
-  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="charge" setScreen={setScreen}/></div></>);
+  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
