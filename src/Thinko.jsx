@@ -8378,6 +8378,7 @@ const NATURE_SOUNDS=WN_PRESETS; // reuse the existing audio engine
 function RestSpace({setScreen}){
   const [tab,setTab]=useState("meditate");
   const [forestWalkPlaying,setForestWalkPlaying]=useState(false);
+  const [cscmPlaying,setCscmPlaying]=useState(false);
   const [activeSnd,setActiveSnd]=useState(null);
   const sndCtxRef=useRef(null);
   const sndStopRef=useRef(null);
@@ -8595,6 +8596,36 @@ function RestSpace({setScreen}){
                 </div>
               </div>
             )}
+            {/* Clear Space Clear Mind — built-in guided meditation */}
+            {cscmPlaying?(
+              <div style={{marginBottom:14,borderRadius:22,overflow:"hidden",boxShadow:"0 4px 20px rgba(60,70,40,0.16)"}}>
+                <div style={{background:"#2A3848",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:20}}>🧘</span>
+                  <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#fff",flex:1}}>Clear Space Clear Mind</span>
+                  <button onClick={()=>{const el=document.querySelector('.cscm-frame');if(el?.requestFullscreen)el.requestFullscreen();else if(el?.webkitRequestFullscreen)el.webkitRequestFullscreen();}} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer",marginRight:6}}>⛶ Expand</button>
+                  <button onClick={()=>setCscmPlaying(false)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏹ Stop</button>
+                </div>
+                <div className="cscm-frame" style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                  <iframe src="https://www.youtube.com/embed/NdivinbpigM?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3"
+                    style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+                    allow="autoplay; fullscreen" allowFullScreen/>
+                  <div style={{position:"absolute",inset:0,zIndex:2,cursor:"default"}} onClick={e=>e.preventDefault()}/>
+                </div>
+              </div>
+            ):(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,marginBottom:14,border:"1.5px solid rgba(42,56,72,0.22)",overflow:"hidden",boxShadow:"0 2px 12px rgba(60,70,40,0.08)"}}>
+                <div style={{height:3,background:"linear-gradient(90deg,#2A3848,#4A6878,#2A3848)"}}/>
+                <div style={{padding:"16px 16px",display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:52,height:52,borderRadius:16,background:"rgba(42,56,72,0.10)",border:"1.5px solid rgba(42,56,72,0.20)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🧘</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Clear Space Clear Mind</div>
+                    <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>Guided meditation to clear your mind and find inner calm 🌙</div>
+                  </div>
+                  <button onClick={()=>setCscmPlaying(true)} style={{background:"#2A3848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(30,50,70,0.28)"}}>▶ Play</button>
+                </div>
+              </div>
+            )}
+
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",margin:"18px 0 10px"}}>🎬 My Meditation Videos</div>
             <div style={{color:"#8A8070",fontSize:12,marginBottom:12,lineHeight:1.6}}>Upload your own guided meditation videos. Tap a slot to add your file — MP4, MOV or any video format.</div>
             {USER_SLOTS.map(med=>(
