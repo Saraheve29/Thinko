@@ -8427,6 +8427,7 @@ function RestSpace({setScreen}){
   const [tab,setTab]=useState("meditate");
   const [forestWalkPlaying,setForestWalkPlaying]=useState(false);
   const [cscmPlaying,setCscmPlaying]=useState(false);
+  const [stressPlaying,setStressPlaying]=useState(false);
   const [activeSnd,setActiveSnd]=useState(null);
   const sndCtxRef=useRef(null);
   const sndStopRef=useRef(null);
@@ -8670,6 +8671,36 @@ function RestSpace({setScreen}){
                     <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>Guided meditation to clear your mind and find inner calm 🌙</div>
                   </div>
                   <button onClick={()=>setCscmPlaying(true)} style={{background:"#2A3848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(30,50,70,0.28)"}}>▶ Play</button>
+                </div>
+              </div>
+            )}
+
+            {/* Stress Relief Meditation */}
+            {stressPlaying?(
+              <div style={{marginBottom:14,borderRadius:22,overflow:"hidden",boxShadow:"0 4px 20px rgba(60,70,40,0.16)"}}>
+                <div style={{background:"#3A2848",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:20}}>💜</span>
+                  <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#fff",flex:1}}>Stress Relief Meditation</span>
+                  <button onClick={()=>{const el=document.querySelector('.stress-frame');if(el?.requestFullscreen)el.requestFullscreen();else if(el?.webkitRequestFullscreen)el.webkitRequestFullscreen();}} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer",marginRight:6}}>⛶ Expand</button>
+                  <button onClick={()=>setStressPlaying(false)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏹ Stop</button>
+                </div>
+                <div className="stress-frame" style={{position:"relative",paddingBottom:"56.25%",height:0}}>
+                  <iframe src="https://www.youtube.com/embed/IGic3bauQx8?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3"
+                    style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}}
+                    allow="autoplay; fullscreen" allowFullScreen/>
+                  <div style={{position:"absolute",inset:0,zIndex:2,cursor:"default"}} onClick={e=>e.preventDefault()}/>
+                </div>
+              </div>
+            ):(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,marginBottom:14,border:"1.5px solid rgba(58,40,72,0.22)",overflow:"hidden",boxShadow:"0 2px 12px rgba(60,70,40,0.08)"}}>
+                <div style={{height:3,background:"linear-gradient(90deg,#3A2848,#6A4888,#3A2848)"}}/>
+                <div style={{padding:"16px 16px",display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:52,height:52,borderRadius:16,background:"rgba(58,40,72,0.10)",border:"1.5px solid rgba(58,40,72,0.20)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>💜</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Stress Relief Meditation</div>
+                    <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>Release tension and let stress melt away 🌸</div>
+                  </div>
+                  <button onClick={()=>setStressPlaying(true)} style={{background:"#3A2848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(50,30,70,0.28)"}}>▶ Play</button>
                 </div>
               </div>
             )}
