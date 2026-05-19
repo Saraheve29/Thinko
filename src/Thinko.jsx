@@ -7532,18 +7532,46 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
   const [celebration,setCelebration]=useState(null); // {name, isTarget, isReward}
   const [confettiPieces,setConfettiPieces]=useState([]);
 
-  const launchConfetti=()=>{
-    const pieces=Array.from({length:32},(_,i)=>({
+  const launchConfetti=(allDone=false)=>{
+    const count=allDone?80:45;
+    const emojis=allDone
+      ?['🎊','🎉','🏆','⭐','🌟','✨','💥','🎆','🎇','👑','🥇','💫']
+      :['🎊','🎉','✨','⭐','💥','🌟','⚡'];
+    const pieces=Array.from({length:count},(_,i)=>({
       id:i,
-      x:20+Math.random()*60,
-      color:['#6A8858','#F5C842','#E87040','#5A7898','#A060C0','#E05070','#48A880'][Math.floor(Math.random()*7)],
-      size:6+Math.random()*8,
+      x:Math.random()*100,
+      y:-10-Math.random()*20,
+      emoji:emojis[Math.floor(Math.random()*emojis.length)],
+      size:allDone?(20+Math.random()*24):(14+Math.random()*16),
       rotation:Math.random()*360,
-      delay:Math.random()*0.4,
-      drift:(Math.random()-0.5)*120,
+      delay:Math.random()*(allDone?0.8:0.5),
+      drift:(Math.random()-0.5)*(allDone?200:140),
+      speed:1.5+Math.random()*1.5,
     }));
     setConfettiPieces(pieces);
-    setTimeout(()=>setConfettiPieces([]),3000);
+    // Play sound
+    if(allDone){
+      // Triumphant fanfare
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      [[523,0],[659,0.15],[784,0.3],[1047,0.45],[1047,0.6],[1047,0.75]].forEach(([f,t])=>{
+        const o=ctx.createOscillator();const g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.value=f;g.gain.setValueAtTime(0.4,ctx.currentTime+t);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.4);
+        o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+0.5);
+      });
+    } else {
+      // Quick ascending ding
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      [[523,0],[659,0.12],[784,0.24]].forEach(([f,t])=>{
+        const o=ctx.createOscillator();const g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.value=f;g.gain.setValueAtTime(0.3,ctx.currentTime+t);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+t+0.3);
+        o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+0.4);
+      });
+    }
+    setTimeout(()=>setConfettiPieces([]),allDone?5000:3500);
   };
 
   const chargeIt=name=>{
@@ -7553,8 +7581,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
     const hitNow=nc.length>=target;
     const rewardNow=hitNow&&rewardUnlocked;
     setCelebration({name,isTarget:hitNow,isReward:rewardNow});
-    launchConfetti();
-    setTimeout(()=>setCelebration(null),4500);
+    launchConfetti(hitNow);
+    setTimeout(()=>setCelebration(null),hitNow?5500:3500);
   };
   const addFrog=()=>{
     if(!whatOff.trim())return;
@@ -7780,42 +7808,62 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
 
           {/* ── Celebration overlay ── */}
           {celebration&&(
-            <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-              {/* Confetti */}
+            <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",background:celebration.isTarget?"rgba(20,40,20,0.85)":"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
+              {/* Emoji confetti rain */}
               {confettiPieces.map(p=>(
-                <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:"40%",width:p.size,height:p.size,background:p.color,borderRadius:p.id%3===0?"50%":p.id%3===1?"0%":"30%",animation:`confettiFall 2.5s ${p.delay}s ease-out forwards`,transform:`rotate(${p.rotation}deg)`,opacity:1,
-                  // inline keyframe via style tag workaround
-                }}/>
+                <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:`${p.y}%`,fontSize:p.size,animation:`confettiFall ${p.speed}s ${p.delay}s ease-in forwards`,transform:`rotate(${p.rotation}deg)`,pointerEvents:"none",zIndex:1}}>
+                  {p.emoji}
+                </div>
               ))}
               {/* Message card */}
-              <div style={{background:"rgba(250,248,240,0.97)",borderRadius:28,padding:"32px 28px",textAlign:"center",boxShadow:"0 12px 48px rgba(0,0,0,0.18)",maxWidth:300,margin:"0 20px",pointerEvents:"all",border:"2px solid rgba(90,160,80,0.25)"}}>
-                <div style={{fontSize:52,marginBottom:10}}>
-                  {celebration.isReward?"🎁":celebration.isTarget?"🔮":"⚡"}
+              <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 32px",textAlign:"center",boxShadow:"0 20px 80px rgba(0,0,0,0.5)",maxWidth:320,margin:"0 24px",zIndex:2,border:`3px solid ${celebration.isTarget?"rgba(255,200,50,0.6)":"rgba(90,160,80,0.35)"}`,animation:"celebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+                {/* Big animated emoji */}
+                <div style={{fontSize:celebration.isTarget?80:64,marginBottom:8,animation:"celebBounce 0.6s ease-in-out infinite alternate",display:"block",lineHeight:1}}>
+                  {celebration.isTarget?"🏆":celebration.isReward?"🎁":"🎉"}
                 </div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:8}}>
-                  {celebration.isReward?"Reward unlocked! 🎉":celebration.isTarget?"Light fully lit! ✨":"Well done! ⚡"}
+                {/* Headline */}
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:celebration.isTarget?26:22,color:"#1A1A10",marginBottom:10,lineHeight:1.2}}>
+                  {celebration.isTarget
+                    ?["YOU ARE UNSTOPPABLE! 🔥","ALL DONE — LEGENDARY! 🌟","ABSOLUTELY CRUSHED IT! 💥","CHAMPION ENERGY! 👑"][Math.floor(Date.now()/1000)%4]
+                    :["TASK CRUSHED! 💪","YES! KEEP GOING! ⚡","THAT'S WHAT I'M TALKING ABOUT! 🔥","BOOM! ONE DOWN! 💥"][charged.length%4]
+                  }
                 </div>
-                <div style={{fontSize:14,color:"#5A7060",lineHeight:1.7,marginBottom:16}}>
-                  {celebration.isReward
-                    ?`You've earned "${rewardName}" — go enjoy it, you deserve it! 🌿`
-                    :celebration.isTarget
-                    ?`You hit all ${target} tasks today — your orb is blazing! 🔮`
+                {/* Sub message */}
+                <div style={{fontSize:15,color:"#5A7060",lineHeight:1.7,marginBottom:celebration.isTarget?20:14}}>
+                  {celebration.isTarget
+                    ?`All ${target} tasks complete today! Your brain is BUZZING with achievement 🧠✨`
+                    :celebration.isReward
+                    ?`You've earned "${rewardName}" — go enjoy every second of it! 🌿`
                     :[
-                        `"${celebration.name}" — done! Keep going 🌿`,
-                        `Amazing, one more down! You're on fire ⚡`,
-                        `That's the spirit! "${celebration.name}" complete 🌱`,
-                        `You did it! One step closer to your reward 🎁`,
+                        `"${celebration.name}" — DONE! You're building momentum! 🚀`,
+                        `Every task completed is a reward for your brain! Keep it up 💫`,
+                        `"${celebration.name}" complete! You're proving something to yourself 🌱`,
+                        `Look at you go! One step closer to your goal 🎯`,
                       ][charged.length%4]
                   }
                 </div>
-                <div style={{fontSize:12,color:"#A0907A"}}>
-                  {charged.length+1}/{target} tasks today
+                {/* Progress for target celebration */}
+                {celebration.isTarget&&(
+                  <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16}}>
+                    {Array.from({length:target}).map((_,i)=>(
+                      <div key={i} style={{width:16,height:16,borderRadius:"50%",background:"#5A7848",boxShadow:"0 0 8px rgba(90,120,72,0.6)",animation:`celebPulse ${0.3+i*0.1}s ease-in-out infinite alternate`}}/>
+                    ))}
+                  </div>
+                )}
+                <div style={{fontSize:12,color:"#A0907A",marginBottom:12}}>
+                  {celebration.isTarget?`🎊 Full charge achieved!`:`${charged.length+1} / ${target} tasks today`}
                 </div>
+                <div style={{fontSize:11,color:"#C0B090"}}>Tap anywhere to continue</div>
               </div>
             </div>
           )}
-          {/* Confetti animation style */}
-          <style>{`@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(300px) translateX(var(--drift,40px)) rotate(720deg);opacity:0}}`}</style>
+          {/* Celebration animations */}
+          <style>{`
+            @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) translateX(var(--drift,0px)) rotate(720deg);opacity:0}}
+            @keyframes celebPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
+            @keyframes celebBounce{0%{transform:scale(1) rotate(-5deg)}100%{transform:scale(1.15) rotate(5deg)}}
+            @keyframes celebPulse{0%{transform:scale(0.8);opacity:0.6}100%{transform:scale(1.2);opacity:1}}
+          `}</style>
 
           {/* Reward card — show setup prompt if no reward, full card if set */}
           {!rewardName?(
@@ -8216,7 +8264,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
           {/* ── The Plan ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>🗓️ The Plan</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Your tasks are listed below. Tap a day to assign each one — spread them across the week. Then send to your Week and Briefing.</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Your tasks are listed below. Tap a day to assign each one — spread them across the week. Then send to your Week.</div>
             {(data.targetTasks||[]).filter(t=>t?.trim()).length===0?(
               <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks in Today's Tasks above first</div>
             ):(
@@ -8273,9 +8321,9 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                     <button onClick={()=>{
                       const weekTasks=DAYS.map(day=>({day,tasks:(data.targetTasks||[]).filter((t,i)=>t?.trim()&&plan.assignments[String(i)]===day)}));
                       try{localStorage.setItem('thinko_week_plan',JSON.stringify(weekTasks));}catch{}
-                      showToast("📅 Sent to your Week & Briefing!");
+                      showToast("📅 Sent to your Week!");
                     }} style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>
-                      📅 Send to My Week & Briefing
+                      📅 Send to My Week
                     </button>
                     <button onClick={()=>{
                       const assigned=(data.targetTasks||[]).map((t,i)=>({text:t,day:plan.assignments[String(i)]})).filter(x=>x.text?.trim()&&x.day);
@@ -9085,9 +9133,6 @@ export default function App() {
   const [screen,setScreen]=useState("home");
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
-  const [showHomeBriefing,setShowHomeBriefing]=useState(false);
-  const [homeBriefingText,setHomeBriefingText]=useState("");
-  const [homeBriefingLoading,setHomeBriefingLoading]=useState(false);
   const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
   const [mapData,setMapData]=useState(()=>{try{const v=localStorage.getItem('thinko_map');return v?JSON.parse(v):[];}catch{return [];}});
   const [notesData,setNotesData]=useState(()=>{try{const v=localStorage.getItem('thinko_notes');return v?JSON.parse(v):[];}catch{return [];}});
@@ -9175,46 +9220,7 @@ export default function App() {
   const [userName,setUserName]=useState(()=>{try{return localStorage.getItem('thinko_username')||'';}catch{return '';}});
   const [showNameModal,setShowNameModal]=useState(()=>{try{return !localStorage.getItem('thinko_username');}catch{return true;}});
   const [nameInput,setNameInput]=useState('');
-  const getHomeBriefing=async()=>{
-    setShowHomeBriefing(true);
-    setHomeBriefingLoading(true);
-    setHomeBriefingText("");
-    const d=new Date();
-    const dayStr=d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
-    const priCount=(priData||[]).flatMap(l=>l.tasks||[]).filter(t=>!t.done).length;
-    const goalCount=(goalsData||[]).filter(g=>g.status==="active").length;
-    // Pull reward + task info from localStorage
-    let chargeInfo="";
-    try{
-      const cd=JSON.parse(localStorage.getItem('thinko_charge')||'{}');
-      const rName=cd.reward?.name||cd.weeklyAward||"";
-      const rFreq=cd.rewardFreq||5;
-      const dt=cd.dailyTarget||3;
-      const weekDays=Array.from({length:7},(_,i)=>{const dd=new Date();dd.setDate(dd.getDate()-6+i);return dd.toISOString().slice(0,10);});
-      const dHit=weekDays.filter(dd=>(cd.days?.[dd]?.charged||[]).length>=dt).length;
-      const dLeft=Math.max(0,rFreq-dHit);
-      const tasks=(cd.targetTasks||[]).filter(t=>t?.trim());
-      if(tasks.length)chargeInfo+=`Today's ${dt} tasks: ${tasks.join(", ")}. `;
-      if(rName&&dLeft===0)chargeInfo+=`IMPORTANT: Their reward "${rName}" is UNLOCKED — they can treat themselves now! Celebrate this warmly.`;
-      else if(rName&&dLeft===1)chargeInfo+=`They are ONE day away from their reward "${rName}" — if they hit today's ${dt} tasks they unlock it tomorrow! Mention this excitedly.`;
-      else if(rName&&dLeft>0)chargeInfo+=`They have ${dLeft} days left to unlock their reward "${rName}".`;
-    }catch{}
-    try{
-      const result=await callAI(
-        `Write a warm personal morning briefing for ${userName||"Sarah"}. Today: ${dayStr}. ${priCount} active tasks, ${goalCount} active goals. ${chargeInfo} Under 180 words. 3 paragraphs: 1) warm greeting + mention today's tasks by name if known, 2) reward progress if relevant, 3) uplifting close. Friendly like a supportive friend, not corporate.`,
-        320
-      );
-      setHomeBriefingText(result||"Good morning! Your calm space is ready. Whatever today holds, you've got this 🌿");
-    }catch{
-      setHomeBriefingText("Good morning! Your calm space is ready. Whatever today holds, you've got this 🌿");
-    }
-    setHomeBriefingLoading(false);
-  };
 
-  const getGreeting=()=>{const h=new Date().getHours();if(h>=5&&h<12)return{word:'Good morning',emoji:'✨'};if(h>=12&&h<17)return{word:'Good afternoon',emoji:'☀️'};if(h>=17&&h<21)return{word:'Good evening',emoji:'🌅'};return{word:'Good night',emoji:'🌙'};};
-  const saveName=()=>{const n=nameInput.trim();if(!n)return;try{localStorage.setItem('thinko_username',n);}catch{}setUserName(n);setShowNameModal(false);};
-
-  const saveModuleOrder=o=>{setModuleOrder(o);try{localStorage.setItem('thinko_order',JSON.stringify(o));}catch{}};
   const homeDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragHome(id);};
   const homeDragOver=(e,id)=>{
     e.preventDefault();
@@ -9278,98 +9284,6 @@ export default function App() {
       )}
 
       {/* ── HOME MORNING BRIEFING MODAL ── */}
-      {showHomeBriefing&&(
-        <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"flex-end",backdropFilter:"blur(8px)"}} onClick={()=>setShowHomeBriefing(false)}>
-          <div style={{background:"rgba(250,248,240,0.98)",borderRadius:"28px 28px 0 0",padding:"0 0 36px",width:"100%",boxShadow:"0 -8px 48px rgba(0,0,0,0.14)",maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px",flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(200,170,100,0.4)"}}/></div>
-            <div style={{padding:"0 20px 14px",flexShrink:0,display:"flex",alignItems:"center",gap:12}}>
-              <span style={{fontSize:28}}>☀️</span>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20}}>Morning Briefing</div>
-                <div style={{fontSize:12,color:"#8A8070"}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}</div>
-              </div>
-              <button onClick={getHomeBriefing} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Refresh</button>
-            </div>
-            <div style={{flex:1,overflowY:"auto",padding:"0 20px"}}>
-              {homeBriefingLoading
-                ?<div style={{textAlign:"center",padding:"32px 0",color:"#5A7848",fontFamily:"Georgia,serif",fontSize:15}}>🌿 Writing your briefing…</div>
-                :<div style={{background:"rgba(90,120,72,0.06)",borderRadius:20,padding:"18px 20px",border:"1px solid rgba(90,120,72,0.12)",marginBottom:16}}>
-                  <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#1A2810",lineHeight:1.9}}>{homeBriefingText}</div>
-                </div>}
-              {!homeBriefingLoading&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {[["📋","prioritizer"],["⚖️","matrix"],["🎯","goals"],["⚡","charge"]].map(([icon,screen])=>(
-                  <button key={screen} onClick={()=>{setShowHomeBriefing(false);setScreen(screen);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{icon} {screen.charAt(0).toUpperCase()+screen.slice(1)}</button>
-                ))}
-              </div>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{setShowLoginModal(false);signIn();}}/>}
-
-      {/* ── GREETING SECTION ── */}
-      <div style={{padding:"40px 24px 20px",textAlign:"center",flexShrink:0}}>
-        {/* Glowing sun / moon / stars based on time */}
-        {(()=>{
-          const h=new Date().getHours();
-          const isMorn=h>=5&&h<12;
-          const isAftern=h>=12&&h<17;
-          const isEvening=h>=17&&h<21;
-          const isNight=h>=21||h<5;
-          return(
-            <div style={{marginBottom:16,position:"relative",display:"inline-block"}}>
-              <style>{`
-                @keyframes sunPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 18px #FFD700) drop-shadow(0 0 36px #FFA500);}50%{transform:scale(1.12);filter:drop-shadow(0 0 28px #FFD700) drop-shadow(0 0 56px #FF8C00);}}
-                @keyframes sunRays{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-                @keyframes moonGlow{0%,100%{filter:drop-shadow(0 0 14px #B0C8FF) drop-shadow(0 0 28px #6080FF);}50%{filter:drop-shadow(0 0 22px #C0D8FF) drop-shadow(0 0 44px #8090FF);}}
-                @keyframes starTwinkle{0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1.2);}}
-                @keyframes eveningGlow{0%,100%{filter:drop-shadow(0 0 14px #FF8C60) drop-shadow(0 0 28px #FF6030);}50%{filter:drop-shadow(0 0 22px #FFB080) drop-shadow(0 0 44px #FF7040);}}
-              `}</style>
-              {(isMorn||isAftern)&&(
-                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
-                  {/* Rays */}
-                  <div style={{position:"absolute",inset:-20,animation:"sunRays 12s linear infinite"}}>
-                    {[0,30,60,90,120,150,210,240,270,300,330].map(deg=>(
-                      <div key={deg} style={{position:"absolute",top:"50%",left:"50%",width:3,height:24,background:`linear-gradient(to bottom,${isMorn?"#FFD700":"#FFC200"},transparent)`,borderRadius:2,transformOrigin:"0 0",transform:`rotate(${deg}deg) translateX(-1.5px) translateY(-65px)`,opacity:0.7}}/>
-                    ))}
-                  </div>
-                  {/* Sun disc */}
-                  <div style={{position:"absolute",inset:0,borderRadius:"50%",background:isMorn?"radial-gradient(circle,#FFFDE7,#FFD700,#FFA500)":"radial-gradient(circle,#FFF9C4,#FFE082,#FFB300)",animation:"sunPulse 3s ease-in-out infinite",boxShadow:isMorn?"0 0 30px #FFD700, 0 0 60px rgba(255,200,0,0.4)":"0 0 30px #FFB300, 0 0 60px rgba(255,160,0,0.4)"}}/>
-                </div>
-              )}
-              {isEvening&&(
-                <div style={{fontSize:72,lineHeight:1,animation:"eveningGlow 2.5s ease-in-out infinite",display:"block"}}>🌅</div>
-              )}
-              {isNight&&(
-                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
-                  {/* Stars */}
-                  {[[10,15,0.8],[70,8,1.4],[15,65,1.1],[75,60,0.9],[40,5,1.6],[85,35,1.0],[5,40,1.3]].map(([x,y,s],i)=>(
-                    <div key={i} style={{position:"absolute",left:`${x}%`,top:`${y}%`,width:s*5,height:s*5,borderRadius:"50%",background:"#E8F0FF",animation:`starTwinkle ${1.5+i*0.4}s ease-in-out infinite`,animationDelay:`${i*0.3}s`,boxShadow:"0 0 4px #C0D0FF"}}/>
-                  ))}
-                  {/* Moon */}
-                  <div style={{position:"absolute",inset:10,fontSize:60,lineHeight:1,textAlign:"center",animation:"moonGlow 3s ease-in-out infinite"}}>🌙</div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-        {/* Greeting text */}
-        <div style={{fontFamily:"Georgia,serif",fontSize:34,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,marginBottom:6,textShadow:"0 2px 12px rgba(255,255,255,0.7)"}}>
-          {(()=>{const {word}=getGreeting();return <>{word}{userName?`, ${userName}`:""}</>; })()}
-        </div>
-        <div style={{fontSize:14,color:"rgba(42,42,20,0.60)",marginBottom:22,fontStyle:"italic",letterSpacing:0.2}}>Think it. 🤔 Plan it. Live it.</div>
-
-        {/* Briefing card */}
-        <button onClick={getHomeBriefing} style={{width:"100%",padding:"16px 20px",background:"rgba(255,252,240,0.82)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:"1.5px solid rgba(220,195,120,0.45)",borderRadius:24,display:"flex",alignItems:"center",gap:14,cursor:"pointer",textAlign:"left",boxShadow:"0 4px 24px rgba(200,170,80,0.18), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
-          <span style={{fontSize:28,filter:"drop-shadow(0 0 8px rgba(255,200,50,0.6))"}}>☀️</span>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1208",marginBottom:1}}>Today's Briefing</div>
-            <div style={{fontSize:11,color:"rgba(80,60,20,0.6)"}}>AI morning message · tasks · goals</div>
-          </div>
-          <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{flexShrink:0,opacity:0.4}}><path d="M1 1l5 5-5 5" stroke="#5A4020" strokeWidth="2" strokeLinecap="round"/></svg>
-        </button>
-      </div>
 
       {/* ── ACTION ROW (subtle) ── */}
       <div style={{display:"flex",gap:8,padding:"0 24px 16px",justifyContent:"center",flexShrink:0}}>
