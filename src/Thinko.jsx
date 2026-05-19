@@ -7778,7 +7778,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                     <div style={{flex:1,fontSize:15,fontWeight:done?400:700,color:done?"#8A9080":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</div>
                     {!done
                       ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:13,fontWeight:800,cursor:"pointer",flexShrink:0}}>⚡ Done</button>
-                      :<span style={{fontSize:12,color:"#5A9040",fontWeight:700,flexShrink:0}}>✓</span>
+                      :<button onClick={()=>updToday({charged:charged.filter(c=>c!==task)})} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0}}>↩ Undo</button>
                     }
                     <button onClick={()=>{const next=[...(data.targetTasks||[])];next[origIdx]="";if(done)updToday({charged:charged.filter(c=>c!==task)});upd({targetTasks:next});showToast("🗑 Deleted");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"6px 10px",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>
                   </div>
@@ -9283,7 +9283,55 @@ export default function App() {
         </div>
       )}
 
-      {/* ── HOME MORNING BRIEFING MODAL ── */}
+      {/* ── GREETING SECTION ── */}
+      <div style={{padding:"36px 24px 8px",textAlign:"center",flexShrink:0}}>
+        {/* Animated sun / moon / stars */}
+        {(()=>{
+          const h=new Date().getHours();
+          const isMorn=h>=5&&h<12;
+          const isEvening=h>=17&&h<21;
+          const isNight=h>=21||h<5;
+          return(
+            <div style={{marginBottom:14,display:"inline-block"}}>
+              <style>{`
+                @keyframes sunPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 18px #FFD700) drop-shadow(0 0 36px #FFA500);}50%{transform:scale(1.12);filter:drop-shadow(0 0 28px #FFD700) drop-shadow(0 0 56px #FF8C00);}}
+                @keyframes sunRays{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+                @keyframes moonGlow{0%,100%{filter:drop-shadow(0 0 14px #B0C8FF) drop-shadow(0 0 28px #6080FF);}50%{filter:drop-shadow(0 0 22px #C0D8FF) drop-shadow(0 0 44px #8090FF);}}
+                @keyframes starTwinkle{0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1.2);}}
+                @keyframes eveningGlow{0%,100%{filter:drop-shadow(0 0 14px #FF8C60) drop-shadow(0 0 28px #FF6030);}50%{filter:drop-shadow(0 0 22px #FFB080) drop-shadow(0 0 44px #FF7040);}}
+              `}</style>
+              {(!isEvening&&!isNight)&&(
+                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
+                  <div style={{position:"absolute",inset:-20,animation:"sunRays 12s linear infinite"}}>
+                    {[0,30,60,90,120,150,210,240,270,300,330].map(deg=>(
+                      <div key={deg} style={{position:"absolute",top:"50%",left:"50%",width:3,height:24,background:`linear-gradient(to bottom,${isMorn?"#FFD700":"#FFC200"},transparent)`,borderRadius:2,transformOrigin:"0 0",transform:`rotate(${deg}deg) translateX(-1.5px) translateY(-65px)`,opacity:0.7}}/>
+                    ))}
+                  </div>
+                  <div style={{position:"absolute",inset:0,borderRadius:"50%",background:isMorn?"radial-gradient(circle,#FFFDE7,#FFD700,#FFA500)":"radial-gradient(circle,#FFF9C4,#FFE082,#FFB300)",animation:"sunPulse 3s ease-in-out infinite",boxShadow:isMorn?"0 0 30px #FFD700,0 0 60px rgba(255,200,0,0.4)":"0 0 30px #FFB300,0 0 60px rgba(255,160,0,0.4)"}}/>
+                </div>
+              )}
+              {isEvening&&<div style={{fontSize:72,lineHeight:1,animation:"eveningGlow 2.5s ease-in-out infinite",display:"block"}}>🌅</div>}
+              {isNight&&(
+                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
+                  {[[10,15,0.8],[70,8,1.4],[15,65,1.1],[75,60,0.9],[40,5,1.6],[85,35,1.0],[5,40,1.3]].map(([x,y,s],i)=>(
+                    <div key={i} style={{position:"absolute",left:`${x}%`,top:`${y}%`,width:s*5,height:s*5,borderRadius:"50%",background:"#E8F0FF",animation:`starTwinkle ${1.5+i*0.4}s ease-in-out infinite`,animationDelay:`${i*0.3}s`,boxShadow:"0 0 4px #C0D0FF"}}/>
+                  ))}
+                  <div style={{position:"absolute",inset:10,fontSize:60,lineHeight:1,textAlign:"center",animation:"moonGlow 3s ease-in-out infinite"}}>🌙</div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        {/* Greeting text */}
+        <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,marginBottom:4,textShadow:"0 2px 12px rgba(255,255,255,0.7)"}}>
+          {(()=>{
+            const h=new Date().getHours();
+            const word=h<12?"Good morning":h<17?"Good afternoon":h<21?"Good evening":"Good night";
+            return <>{word}{userName?`, ${userName}`:""}</>;
+          })()}
+        </div>
+        <div style={{fontSize:13,color:"rgba(42,42,20,0.55)",marginBottom:8,fontStyle:"italic"}}>Think it. 🤔 Plan it. Live it.</div>
+      </div>
 
       {/* ── ACTION ROW (subtle) ── */}
       <div style={{display:"flex",gap:8,padding:"0 24px 16px",justifyContent:"center",flexShrink:0}}>
