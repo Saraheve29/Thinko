@@ -7312,239 +7312,310 @@ const ROUTINE_TEMPLATES=[
 ];
 
 function Routine({routineData,setRoutineData}){
-  const [items,setItems]=useState(()=>routineData||[]);
-  const [adding,setAdding]=useState(()=>!(routineData&&routineData.length>0));
-  const [newName,setNewName]=useState("");
-  const [newMins,setNewMins]=useState(5);
-  const [newIcon,setNewIcon]=useState("⭐");
-  const [timers,setTimers]=useState({});
-  const [celebration,setCelebration]=useState(null);
-  const [confetti,setConfetti]=useState([]);
-  const [showTemplates,setShowTemplates]=useState(false);
-  const [dragId,setDragId]=useState(null);
-  const timerRefs=useRef({});
+  // routineData = array of routines: [{id, name, icon, items:[{id,name,mins,icon,doneToday,history}]}]
+  const [routines,setRoutinesRaw]=useState(()=>
+    Array.isArray(routineData)&&routineData.length>0&&typeof routineData[0]==='object'&&'items' in routineData[0]
+      ? routineData
+      : routineData?.length>0 ? [{id:1,name:"My Routine",icon:"🔄",items:routineData}] : []
+  );
+  const [activeId,setActiveId]=useState(null); // null = hub view
+  const [creatingRoutine,setCreatingRoutine]=useState(false);
+  const [newRoutineName,setNewRoutineName]=useState("");
+  const [newRoutineIcon,setNewRoutineIcon]=useState("🌅");
   const todayStr=new Date().toISOString().slice(0,10);
 
-  const ICONS=["⭐","🌅","🧘","💪","📖","🏃","🚿","🌿","☕","💊","🎵","✍️","🥗","💧","🌸","🙏","🧹","🌙","🔥","💡","🎯","🧠","❤️","🌳","⚡"];
+  const ROUTINE_ICONS=["🌅","🌙","💪","🧘","🌿","🔥","📖","🧹","🏃","☕","🎯","❤️","⭐","🌸","✨"];
 
-  const save=it=>{setItems(it);setRoutineData(it);};
-  const getStreak=item=>{
-    const hist=item.history||[];let streak=0;const d=new Date();
-    while(true){const s=d.toISOString().slice(0,10);if(hist.includes(s)){streak++;d.setDate(d.getDate()-1);}else break;}
-    return streak;
-  };
-  const startTimer=(id,secs)=>{
-    if(timerRefs.current[id])clearInterval(timerRefs.current[id]);
-    setTimers(t=>({...t,[id]:{left:secs,on:true,total:secs}}));
-    timerRefs.current[id]=setInterval(()=>{
-      setTimers(t=>{
-        const cur=t[id];
-        if(!cur||cur.left<=1){clearInterval(timerRefs.current[id]);playAlarm("gentle");return {...t,[id]:{...cur,left:0,on:false}};}
-        return {...t,[id]:{...cur,left:cur.left-1}};
+  const saveRoutines=r=>{setRoutinesRaw(r);setRoutineData(r);};
+  const active=routines.find(r=>r.id===activeId);
+
+  // ── Inner routine view ──────────────────────────────────────────────────
+  function RoutineView({routine,onBack}){
+    const [items,setItems]=useState(routine.items||[]);
+    const [adding,setAdding]=useState(items.length===0);
+    const [newName,setNewName]=useState("");
+    const [newMins,setNewMins]=useState(5);
+    const [newIcon,setNewIcon]=useState("⭐");
+    const [timers,setTimers]=useState({});
+    const [celebration,setCelebration]=useState(null);
+    const [confetti,setConfetti]=useState([]);
+    const [showTemplates,setShowTemplates]=useState(false);
+    const [dragId,setDragId]=useState(null);
+    const timerRefs=useRef({});
+
+    const ICONS=["⭐","🌅","🧘","💪","📖","🏃","🚿","🌿","☕","💊","🎵","✍️","🥗","💧","🌸","🙏","🧹","🌙","🔥","💡","🎯","🧠","❤️","🌳","⚡"];
+
+    const save=it=>{
+      setItems(it);
+      const updated=routines.map(r=>r.id===routine.id?{...r,items:it}:r);
+      saveRoutines(updated);
+    };
+
+    const getStreak=item=>{
+      const hist=item.history||[];let s=0;const d=new Date();
+      while(true){const ds=d.toISOString().slice(0,10);if(hist.includes(ds)){s++;d.setDate(d.getDate()-1);}else break;}
+      return s;
+    };
+
+    const startTimer=(id,secs)=>{
+      if(timerRefs.current[id])clearInterval(timerRefs.current[id]);
+      setTimers(t=>({...t,[id]:{left:secs,on:true,total:secs}}));
+      timerRefs.current[id]=setInterval(()=>{
+        setTimers(t=>{
+          const cur=t[id];
+          if(!cur||cur.left<=1){clearInterval(timerRefs.current[id]);playAlarm("gentle");return {...t,[id]:{...cur,left:0,on:false}};}
+          return {...t,[id]:{...cur,left:cur.left-1}};
+        });
+      },1000);
+    };
+    const stopTimer=id=>{clearInterval(timerRefs.current[id]);setTimers(t=>({...t,[id]:{...t[id],on:false,left:null}}));};
+    const fmtT=s=>{if(!s&&s!==0)return"";return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
+
+    const completeItem=id=>{
+      const updated=items.map(it=>{
+        if(it.id!==id)return it;
+        const hist=[...(it.history||[])];
+        if(!hist.includes(todayStr))hist.push(todayStr);
+        return {...it,doneToday:true,history:hist};
       });
-    },1000);
-  };
-  const stopTimer=id=>{clearInterval(timerRefs.current[id]);setTimers(t=>({...t,[id]:{...t[id],on:false,left:null}}));};
-  const fmtT=s=>{if(!s&&s!==0)return"";return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
+      save(updated);stopTimer(id);
+      const pieces=Array.from({length:44},(_,i)=>({id:i,x:Math.random()*100,emoji:["🎊","🎉","✨","⭐","🌟","💫","🌿","🔥"][i%8],size:14+Math.random()*14,delay:Math.random()*0.5,speed:1.5+Math.random()*1.2}));
+      setConfetti(pieces);setTimeout(()=>setConfetti([]),3500);
+      const allDone=updated.filter(it=>!it.doneToday).length===0;
+      setCelebration({allDone,name:updated.find(it=>it.id===id)?.name||""});
+      setTimeout(()=>setCelebration(null),allDone?5000:2800);
+    };
+    const undoItem=id=>save(items.map(it=>it.id!==id?it:{...it,doneToday:false,history:(it.history||[]).filter(d=>d!==todayStr)}));
+    const resetToday=()=>save(items.map(it=>({...it,doneToday:false})));
+    const dragOver=(toId)=>{
+      if(!dragId||dragId===toId)return;
+      const a=[...items],fi=a.findIndex(i=>i.id===dragId),ti=a.findIndex(i=>i.id===toId);
+      if(fi<0||ti<0)return;a.splice(fi,1);a.splice(ti,0,items[fi]);save(a);
+    };
+    const doneCount=items.filter(i=>i.doneToday).length;
+    const pct=items.length?Math.round((doneCount/items.length)*100):0;
 
-  const completeItem=id=>{
-    const updated=items.map(it=>{
-      if(it.id!==id)return it;
-      const hist=[...(it.history||[])];
-      if(!hist.includes(todayStr))hist.push(todayStr);
-      return {...it,doneToday:true,history:hist};
-    });
-    save(updated);stopTimer(id);
-    const pieces=Array.from({length:44},(_,i)=>({id:i,x:Math.random()*100,emoji:["🎊","🎉","✨","⭐","🌟","💫","🌿","🔥"][i%8],size:14+Math.random()*14,delay:Math.random()*0.5,speed:1.5+Math.random()*1.2}));
-    setConfetti(pieces);setTimeout(()=>setConfetti([]),3500);
-    const allDone=updated.filter(it=>!it.doneToday).length===0;
-    setCelebration({allDone,name:updated.find(it=>it.id===id)?.name||""});
-    setTimeout(()=>setCelebration(null),allDone?5000:2800);
-  };
-  const undoItem=id=>save(items.map(it=>it.id!==id?it:{...it,doneToday:false,history:(it.history||[]).filter(d=>d!==todayStr)}));
-  const resetToday=()=>save(items.map(it=>({...it,doneToday:false})));
-  const dragOver=(toId)=>{
-    if(!dragId||dragId===toId)return;
-    const a=[...items],fi=a.findIndex(i=>i.id===dragId),ti=a.findIndex(i=>i.id===toId);
-    if(fi<0||ti<0)return;a.splice(fi,1);a.splice(ti,0,items[fi]);save(a);
-  };
-  const doneCount=items.filter(i=>i.doneToday).length;
-  const pct=items.length?Math.round((doneCount/items.length)*100):0;
+    return(
+      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"Georgia,serif",paddingBottom:90}}>
+        <style>{`@keyframes routineConfetti{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}@keyframes rCelebPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}@keyframes rBounce{0%{transform:scale(1) rotate(-5deg)}100%{transform:scale(1.15) rotate(5deg)}}@keyframes rPulse{0%,100%{opacity:0.6}50%{opacity:1}}`}</style>
+
+        {confetti.map(p=>(
+          <div key={p.id} style={{position:"fixed",left:`${p.x}%`,top:"-5%",fontSize:p.size,animation:`routineConfetti ${p.speed}s ${p.delay}s ease-in forwards`,zIndex:800,pointerEvents:"none"}}>{p.emoji}</div>
+        ))}
+
+        {celebration&&(
+          <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
+            <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 28px",textAlign:"center",maxWidth:310,margin:"0 24px",border:`3px solid ${celebration.allDone?"rgba(255,200,50,0.6)":"rgba(90,160,80,0.35)"}`,animation:"rCelebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+              <div style={{fontSize:celebration.allDone?80:60,marginBottom:8,animation:"rBounce 0.6s ease-in-out infinite alternate"}}>{celebration.allDone?"🏆":"✅"}</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:celebration.allDone?24:20,color:"#1A1A10",marginBottom:10}}>{celebration.allDone?"FULL ROUTINE COMPLETE! 🔥":"Step done! Keep it up 💪"}</div>
+              <div style={{fontSize:14,color:"#5A7060",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif"}}>{celebration.allDone?"You showed up for yourself today. 🌟":`"${celebration.name}" · ${doneCount}/${items.length} done`}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Header */}
+        <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 26px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+            <button onClick={onBack} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+              <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+            </button>
+            <div style={{flex:1,textAlign:"center"}}>
+              <div style={{fontSize:28,marginBottom:2}}>{routine.icon}</div>
+              <div style={{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#fff"}}>{routine.name}</div>
+            </div>
+            <div style={{width:38}}/>
+          </div>
+          {items.length>0&&(
+            <>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",textAlign:"center",marginBottom:6,fontFamily:"'Segoe UI',sans-serif"}}>{doneCount}/{items.length} steps · {pct}%</div>
+              <div style={{height:8,background:"rgba(255,255,255,0.15)",borderRadius:100,overflow:"hidden",maxWidth:260,margin:"0 auto"}}>
+                <div style={{height:"100%",width:`${pct}%`,background:pct===100?"linear-gradient(90deg,#FFD700,#FFA500)":"rgba(255,255,255,0.75)",borderRadius:100,transition:"width 0.5s"}}/>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div style={{padding:"18px 16px"}}>
+          <div style={{display:"flex",gap:10,marginBottom:16}}>
+            <button onClick={()=>{setAdding(a=>!a);setShowTemplates(false);}} style={{flex:1,padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>{adding?"✕ Cancel":"+ Add step"}</button>
+            <button onClick={()=>{setShowTemplates(t=>!t);setAdding(false);}} style={{flex:1,padding:"12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 Templates</button>
+            {doneCount>0&&<button onClick={resetToday} style={{padding:"12px 14px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontSize:13,cursor:"pointer"}}>↺</button>}
+          </div>
+
+          {adding&&(
+            <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first step":"New step"}</div>
+              <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+                {ICONS.map(ic=>(
+                  <button key={ic} onClick={()=>setNewIcon(ic)} style={{width:40,height:40,borderRadius:12,border:`2px solid ${newIcon===ic?"#5A7848":"rgba(90,120,72,0.18)"}`,background:newIcon===ic?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.85)",fontSize:20,cursor:"pointer"}}>{ic}</button>
+                ))}
+              </div>
+              <input value={newName} onChange={e=>setNewName(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
+                placeholder="Step name…"
+                style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.92)"}}/>
+              <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:10}}>⏱ Duration</div>
+              <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+                {[1,2,5,10,15,20,30].map(m=>(
+                  <button key={m} onClick={()=>setNewMins(m)} style={{padding:"9px 14px",borderRadius:100,fontSize:13,fontFamily:"Georgia,serif",fontWeight:600,cursor:"pointer",background:newMins===m?"#5A7848":"rgba(255,255,255,0.88)",color:newMins===m?"#fff":"#3A6020",border:`1.5px solid ${newMins===m?"#5A7848":"rgba(90,120,72,0.22)"}`}}>{m}m</button>
+                ))}
+              </div>
+              <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
+                style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>✅ Add step</button>
+            </div>
+          )}
+
+          {showTemplates&&(
+            <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.15)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:12}}>Choose a template</div>
+              {ROUTINE_TEMPLATES.map((tmpl,ti)=>(
+                <button key={ti} onClick={()=>{const newItems=tmpl.items.map((it,i)=>({id:Date.now()+i,name:it.name,mins:it.mins,icon:it.icon||"⭐",doneToday:false,history:[]}));save([...items,...newItems]);setShowTemplates(false);}}
+                  style={{width:"100%",padding:"14px 16px",marginBottom:8,background:"rgba(90,120,72,0.06)",color:"#1A1A10",border:"1.5px solid rgba(90,120,72,0.15)",borderRadius:18,fontFamily:"Georgia,serif",fontWeight:600,fontSize:15,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span>{tmpl.name}</span><span style={{opacity:0.5,fontSize:12}}>{tmpl.items.length} steps →</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {items.length===0&&!adding&&(
+            <div style={{textAlign:"center",padding:"40px 20px"}}>
+              <div style={{fontSize:60,marginBottom:12}}>{routine.icon}</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A1A10",marginBottom:8}}>Add your first step</div>
+              <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif",marginBottom:20}}>Build your {routine.name} step by step.</div>
+              <button onClick={()=>setAdding(true)} style={{padding:"14px 28px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.28)"}}>+ Add first step</button>
+            </div>
+          )}
+
+          {items.map((item)=>{
+            const tt=timers[item.id];const running=tt?.on&&tt?.left>0;const streak=getStreak(item);
+            return(
+              <div key={item.id} draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
+                style={{background:item.doneToday?"rgba(90,160,80,0.06)":"rgba(248,245,236,0.95)",borderRadius:24,padding:"0",marginBottom:12,border:`2px solid ${item.doneToday?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,boxShadow:"0 3px 16px rgba(60,60,40,0.07)",opacity:dragId===item.id?0.5:1,overflow:"hidden",transition:"all 0.15s"}}>
+                <div style={{height:4,background:item.doneToday?"linear-gradient(90deg,#5A9848,#7AB868)":"linear-gradient(90deg,#5A7848,#7A9868)"}}/>
+                <div style={{padding:"16px 18px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:item.doneToday?0:10}}>
+                    <div style={{width:52,height:52,borderRadius:18,background:item.doneToday?"rgba(90,160,80,0.12)":"rgba(90,120,72,0.10)",border:`2px solid ${item.doneToday?"rgba(90,160,80,0.25)":"rgba(90,120,72,0.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,cursor:"grab"}}>
+                      {item.doneToday?"✅":item.icon||"⭐"}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
+                        <span style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif"}}>⏱ {item.mins}min</span>
+                        {streak>0&&<span style={{fontSize:12,color:"#E07030",fontWeight:700,fontFamily:"'Segoe UI',sans-serif"}}>🔥 {streak} day{streak!==1?"s":""}</span>}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
+                      {item.doneToday
+                        ?<button onClick={()=>undoItem(item.id)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>↩ Undo</button>
+                        :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>✅ Done</button>
+                      }
+                      <button onClick={()=>save(items.filter(i=>i.id!==item.id))} style={{background:"none",color:"rgba(192,57,43,0.40)",border:"none",cursor:"pointer",fontSize:11,padding:"2px 6px"}}>🗑 Remove</button>
+                    </div>
+                  </div>
+                  {!item.doneToday&&(
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1px solid rgba(90,120,72,0.10)"}}>
+                      {running?(
+                        <><span style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:tt.left<60?"#c0392b":"#2C3820",minWidth:54}}>{fmtT(tt.left)}</span>
+                        <div style={{flex:1,height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}><div style={{height:"100%",width:`${Math.round((tt.left/tt.total)*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/></div>
+                        <button onClick={()=>stopTimer(item.id)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>⏹ Stop</button></>
+                      ):(
+                        <>{tt?.left===0
+                          ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap ✅</span>
+                          :<span style={{fontSize:13,color:"#8A8070",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>Start your {item.mins}min timer</span>
+                        }
+                        <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶ Start</button></>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Hub — My Routines list ───────────────────────────────────────────────
+  if(activeId&&active) return <RoutineView routine={active} onBack={()=>setActiveId(null)}/>;
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"Georgia,serif",paddingBottom:90}}>
-      <style>{`
-        @keyframes routineConfetti{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
-        @keyframes rCelebPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
-        @keyframes rBounce{0%{transform:scale(1) rotate(-5deg)}100%{transform:scale(1.15) rotate(5deg)}}
-        @keyframes rPulse{0%,100%{opacity:0.6;transform:scale(0.95)}50%{opacity:1;transform:scale(1.05)}}
-      `}</style>
-
-      {confetti.map(p=>(
-        <div key={p.id} style={{position:"fixed",left:`${p.x}%`,top:"-5%",fontSize:p.size,animation:`routineConfetti ${p.speed}s ${p.delay}s ease-in forwards`,zIndex:800,pointerEvents:"none"}}>{p.emoji}</div>
-      ))}
-
-      {celebration&&(
-        <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
-          <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 28px",textAlign:"center",maxWidth:310,margin:"0 24px",border:`3px solid ${celebration.allDone?"rgba(255,200,50,0.6)":"rgba(90,160,80,0.35)"}`,animation:"rCelebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
-            <div style={{fontSize:celebration.allDone?80:60,marginBottom:8,animation:"rBounce 0.6s ease-in-out infinite alternate"}}>{celebration.allDone?"🏆":"✅"}</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:celebration.allDone?24:20,color:"#1A1A10",marginBottom:10}}>
-              {celebration.allDone?"FULL ROUTINE COMPLETE! 🔥":"Step done! Keep it up 💪"}
-            </div>
-            <div style={{fontSize:14,color:"#5A7060",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif"}}>
-              {celebration.allDone
-                ?"You showed up for yourself today. That's who you're becoming. 🌟"
-                :`"${celebration.name}" complete · ${doneCount}/${items.length} steps done`}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 26px",textAlign:"center"}}>
+      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 28px",textAlign:"center"}}>
         <div style={{fontSize:38,marginBottom:6}}>🔄</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,color:"#fff",marginBottom:4,letterSpacing:-0.5}}>My Routine</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",marginBottom:items.length>0?14:0,fontStyle:"italic"}}>"We are what we repeatedly do."</div>
-        {items.length>0&&(
-          <>
-            <div style={{fontSize:14,color:"rgba(255,255,255,0.80)",marginBottom:8,fontFamily:"'Segoe UI',sans-serif"}}>{doneCount} of {items.length} steps · {pct}%</div>
-            <div style={{height:8,background:"rgba(255,255,255,0.15)",borderRadius:100,overflow:"hidden",maxWidth:260,margin:"0 auto"}}>
-              <div style={{height:"100%",width:`${pct}%`,background:pct===100?"linear-gradient(90deg,#FFD700,#FFA500)":"rgba(255,255,255,0.75)",borderRadius:100,transition:"width 0.5s"}}/>
-            </div>
-          </>
-        )}
+        <div style={{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,color:"#fff",marginBottom:4}}>My Routines</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",fontStyle:"italic"}}>"We are what we repeatedly do."</div>
       </div>
 
       <div style={{padding:"18px 16px"}}>
 
-        <div style={{display:"flex",gap:10,marginBottom:16}}>
-          <button onClick={()=>{setAdding(a=>!a);setShowTemplates(false);}} style={{flex:1,padding:"13px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>
-            {adding?"✕ Cancel":"+ Add step"}
-          </button>
-          <button onClick={()=>{setShowTemplates(t=>!t);setAdding(false);}} style={{flex:1,padding:"13px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
-            📋 Templates
-          </button>
-          {doneCount>0&&<button onClick={resetToday} style={{padding:"13px 16px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontSize:13,cursor:"pointer"}}>↺</button>}
-        </div>
-
-        {/* Add form */}
-        {adding&&(
+        {/* Create new */}
+        {creatingRoutine?(
           <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first step":"New step"}</div>
-            {/* Icon picker */}
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>✨ New routine</div>
             <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
-              {ICONS.map(ic=>(
-                <button key={ic} onClick={()=>setNewIcon(ic)} style={{width:40,height:40,borderRadius:12,border:`2px solid ${newIcon===ic?"#5A7848":"rgba(90,120,72,0.18)"}`,background:newIcon===ic?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.85)",fontSize:20,cursor:"pointer",transition:"all 0.12s"}}>{ic}</button>
+              {ROUTINE_ICONS.map(ic=>(
+                <button key={ic} onClick={()=>setNewRoutineIcon(ic)} style={{width:44,height:44,borderRadius:14,border:`2px solid ${newRoutineIcon===ic?"#5A7848":"rgba(90,120,72,0.18)"}`,background:newRoutineIcon===ic?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.85)",fontSize:22,cursor:"pointer"}}>{ic}</button>
               ))}
             </div>
-            <input value={newName} onChange={e=>setNewName(e.target.value)}
-              onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
-              placeholder="Step name… e.g. Meditate, Stretch"
+            <input value={newRoutineName} onChange={e=>setNewRoutineName(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&newRoutineName.trim()){const r={id:Date.now(),name:newRoutineName.trim(),icon:newRoutineIcon,items:[]};const next=[...routines,r];saveRoutines(next);setActiveId(r.id);setNewRoutineName("");setCreatingRoutine(false);}}}
+              placeholder="Routine name… e.g. Morning Routine"
               style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.92)"}}/>
-            <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:10}}>⏱ Duration</div>
-            <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-              {[1,2,5,10,15,20,30].map(m=>(
-                <button key={m} onClick={()=>setNewMins(m)} style={{padding:"9px 14px",borderRadius:100,fontSize:13,fontFamily:"Georgia,serif",fontWeight:600,cursor:"pointer",background:newMins===m?"#5A7848":"rgba(255,255,255,0.88)",color:newMins===m?"#fff":"#3A6020",border:`1.5px solid ${newMins===m?"#5A7848":"rgba(90,120,72,0.22)"}`,transition:"all 0.12s"}}>{m}m</button>
-              ))}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{if(!newRoutineName.trim())return;const r={id:Date.now(),name:newRoutineName.trim(),icon:newRoutineIcon,items:[]};const next=[...routines,r];saveRoutines(next);setActiveId(r.id);setNewRoutineName("");setCreatingRoutine(false);}}
+                style={{flex:1,padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>Create routine</button>
+              <button onClick={()=>setCreatingRoutine(false)} style={{flex:1,padding:"14px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>Cancel</button>
             </div>
-            <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
-              style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>
-              ✅ Add step
-            </button>
           </div>
+        ):(
+          <button onClick={()=>setCreatingRoutine(true)} style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)",marginBottom:16}}>
+            + Create new routine
+          </button>
         )}
 
-        {/* Templates */}
-        {showTemplates&&(
-          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.15)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:12}}>Choose a template</div>
-            {ROUTINE_TEMPLATES.map((tmpl,ti)=>(
-              <button key={ti} onClick={()=>{
-                const newItems=tmpl.items.map((it,i)=>({id:Date.now()+i,name:it.name,mins:it.mins,icon:it.icon||"⭐",doneToday:false,history:[]}));
-                save([...items,...newItems]);setShowTemplates(false);
-              }} style={{width:"100%",padding:"14px 16px",marginBottom:8,background:"rgba(90,120,72,0.06)",color:"#1A1A10",border:"1.5px solid rgba(90,120,72,0.15)",borderRadius:18,fontFamily:"Georgia,serif",fontWeight:600,fontSize:15,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <span>{tmpl.name}</span>
-                <span style={{opacity:0.5,fontSize:12}}>{tmpl.items.length} steps →</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {items.length===0&&!adding&&(
+        {/* Routine cards */}
+        {routines.length===0&&!creatingRoutine&&(
           <div style={{textAlign:"center",padding:"40px 20px"}}>
             <div style={{fontSize:64,marginBottom:16}}>🌱</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:24,color:"#1A1A10",marginBottom:10}}>Build your daily rhythm</div>
-            <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,marginBottom:24,fontFamily:"'Segoe UI',sans-serif",maxWidth:280,margin:"0 auto 24px"}}>Add the things you do every day. Each step gets its own timer and streak. Show up. Become.</div>
-            <button onClick={()=>setAdding(true)} style={{padding:"16px 32px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>+ Add your first step</button>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:24,color:"#1A1A10",marginBottom:10}}>Build your daily rhythms</div>
+            <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif",maxWidth:280,margin:"0 auto 24px"}}>Create routines for morning, evening, workouts — anything you do daily. Track streaks. Become consistent.</div>
           </div>
         )}
 
-        {/* Routine items — visual cards with icon */}
-        {items.map((item)=>{
-          const tt=timers[item.id];
-          const running=tt?.on&&tt?.left>0;
-          const streak=getStreak(item);
-          const icon=item.icon||"⭐";
-          const m=item;
+        {routines.map(r=>{
+          const done=r.items.filter(i=>i.doneToday).length;
+          const total=r.items.length;
+          const pct=total?Math.round((done/total)*100):0;
           return(
-            <div key={item.id}
-              draggable
-              onDragStart={()=>setDragId(item.id)}
-              onDragOver={e=>{e.preventDefault();dragOver(item.id);}}
-              onDragEnd={()=>setDragId(null)}
-              style={{background:item.doneToday?"rgba(90,160,80,0.06)":"rgba(248,245,236,0.95)",borderRadius:24,padding:"0",marginBottom:12,border:`2px solid ${item.doneToday?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,boxShadow:"0 3px 16px rgba(60,60,40,0.07)",opacity:dragId===item.id?0.5:1,overflow:"hidden",transition:"all 0.15s"}}>
-
-              {/* Coloured top strip */}
-              <div style={{height:4,background:item.doneToday?"linear-gradient(90deg,#5A9848,#7AB868)":"linear-gradient(90deg,#5A7848,#7A9868)"}}/>
-
-              <div style={{padding:"16px 18px"}}>
-                {/* Main row */}
-                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:item.doneToday?0:10}}>
-                  {/* Big icon circle */}
-                  <div style={{width:52,height:52,borderRadius:18,background:item.doneToday?"rgba(90,160,80,0.12)":"rgba(90,120,72,0.10)",border:`2px solid ${item.doneToday?"rgba(90,160,80,0.25)":"rgba(90,120,72,0.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,cursor:"grab"}}>
-                    {item.doneToday?"✅":icon}
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
-                      <span style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif"}}>⏱ {item.mins}min</span>
-                      {streak>0&&<span style={{fontSize:12,color:"#E07030",fontWeight:700,fontFamily:"'Segoe UI',sans-serif"}}>🔥 {streak} day{streak!==1?"s":""}</span>}
-                    </div>
-                  </div>
-                  {/* Action buttons */}
-                  <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
-                    {item.doneToday
-                      ?<button onClick={()=>undoItem(item.id)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>↩ Undo</button>
-                      :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)",whiteSpace:"nowrap"}}>✅ Done</button>
-                    }
-                    <button onClick={()=>save(items.filter(i=>i.id!==item.id))} style={{background:"none",color:"rgba(192,57,43,0.40)",border:"none",cursor:"pointer",fontSize:12,padding:"2px 8px"}}>🗑 Remove</button>
-                  </div>
+            <div key={r.id} onClick={()=>setActiveId(r.id)}
+              style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"0",marginBottom:12,border:"1.5px solid rgba(90,120,72,0.14)",boxShadow:"0 3px 16px rgba(60,60,40,0.07)",cursor:"pointer",overflow:"hidden",transition:"transform 0.15s"}}
+              onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}
+              onMouseDown={e=>e.currentTarget.style.transform="scale(0.98)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
+              <div style={{height:5,background:pct===100?"linear-gradient(90deg,#FFD700,#5A9848)":"linear-gradient(90deg,#5A7848,#7A9868)"}}/>
+              <div style={{padding:"18px 20px",display:"flex",alignItems:"center",gap:16}}>
+                <div style={{width:56,height:56,borderRadius:20,background:"rgba(90,120,72,0.10)",border:"2px solid rgba(90,120,72,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>
+                  {pct===100?"🏆":r.icon}
                 </div>
-
-                {/* Timer row — only when not done */}
-                {!item.doneToday&&(
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1px solid rgba(90,120,72,0.10)"}}>
-                    {running?(
-                      <>
-                        <span style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:tt.left<60?"#c0392b":"#2C3820",minWidth:54}}>{fmtT(tt.left)}</span>
-                        <div style={{flex:1,height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${Math.round((tt.left/tt.total)*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
-                        </div>
-                        <button onClick={()=>stopTimer(item.id)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>⏹ Stop</button>
-                      </>
-                    ):(
-                      <>
-                        {tt?.left===0
-                          ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap ✅ Done</span>
-                          :<span style={{fontSize:13,color:"#8A8070",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>Start your {item.mins}min timer</span>
-                        }
-                        <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶ Start</button>
-                      </>
-                    )}
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>{r.name}</div>
+                  <div style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif",marginBottom:total>0?6:0}}>
+                    {total===0?"No steps yet — tap to add some":pct===100?"✅ All done today!":done>0?`${done}/${total} steps done today`:`${total} step${total!==1?"s":""}·Tap to start`}
                   </div>
-                )}
+                  {total>0&&(
+                    <div style={{height:5,background:"rgba(90,80,60,0.08)",borderRadius:100,overflow:"hidden",maxWidth:180}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#FFD700":"#5A7848",borderRadius:100,transition:"width 0.4s"}}/>
+                    </div>
+                  )}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
+                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                  <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${r.name}"?`)){saveRoutines(routines.filter(x=>x.id!==r.id));}}}
+                    style={{background:"none",color:"rgba(192,57,43,0.40)",border:"none",cursor:"pointer",fontSize:11,padding:"2px"}}>🗑</button>
+                </div>
               </div>
             </div>
           );
