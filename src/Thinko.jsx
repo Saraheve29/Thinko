@@ -7327,7 +7327,7 @@ const ROUTINE_TEMPLATES=[
 ];
 
 const ROUTINE_ICON_CATS=[
-  {label:"🏠 Home",color:"#5A7848",icons:["🧹","🪣","🧽","🫧","🧺","👕","👔","👗","👚","🗑️","🛒","🍳","🍽️","🥘","☕","🌱","🌻","🌳","🪴","💦","🪟","🛏️","🪑","🔑","🧴","🧻","🪠","🌿","🏠","🔧"]},
+  {label:"🏠 Home",color:"#5A7848",icons:["🪟","🧺","🧹","👔","🧽","🌱","🪣","🫧","🍽️"]},
   {label:"💆 Self Care",color:"#C06080",icons:["💊","🚿","🛁","🪥","💇","💄","💅","🧴","🪞","🌸","😌","🩹","🧖","❤️","🙏"]},
   {label:"💼 Work & Study",color:"#4870A0",icons:["💼","📧","📚","✍️","💡","🧠","🎯","📊","💻","📋","📞","🗓️"]},
   {label:"✨ Other",color:"#806040",icons:["🧘","🏃","💪","🌅","🌙","🔥","⭐","✨","🎵","🐾","🚗","🎨","⚡","🎯","🌈"]},
@@ -7343,6 +7343,7 @@ function Routine({routineData,setRoutineData}){
   const [creatingRoutine,setCreatingRoutine]=useState(false);
   const [newRoutineName,setNewRoutineName]=useState("");
   const [newRoutineIcon,setNewRoutineIcon]=useState("🌅");
+  const [openCat,setOpenCat]=useState(null);
   const todayStr=new Date().toISOString().slice(0,10);
 
   const ROUTINE_ICONS=["🌅","🌙","💪","🧘","💊","🧹","👔","🗑️","👗","🧺","🪥","💇","🍽️","🍳","😌","💼","📧","🪣","🌱","💄","🛁","🌻","🛒","👚","📚","🔥","🌿","❤️","⭐","✨"];
@@ -7362,6 +7363,7 @@ function Routine({routineData,setRoutineData}){
     const [confetti,setConfetti]=useState([]);
     const [showTemplates,setShowTemplates]=useState(false);
     const [dragId,setDragId]=useState(null);
+    const [openCat,setOpenCat]=useState(null);
     const timerRefs=useRef({});
 
     const ICONS=["💊","🧹","👔","🗑️","👗","🧺","🪥","💇","👕","🍽️","🍳","😌","💼","📧","🪣","🌱","💄","🛁","🌻","🛒","👚","📚","🛏️","🐾","🚿","🪞","🥗","💧","🌸","☕","🏃","📖","✍️","🎵","💡","🧠","🌅","🌙","💪","🧘","🌿","🔥","❤️","⭐","✨","🎯","⚡"];
@@ -7468,7 +7470,6 @@ function Routine({routineData,setRoutineData}){
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first step":"New step"}</div>
               <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
               {(()=>{
-                const [openCat,setOpenCat]=useState(null);
                 return(
                   <div style={{marginBottom:14}}>
                     {/* Selected icon preview */}
@@ -7608,7 +7609,6 @@ function Routine({routineData,setRoutineData}){
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>✨ New routine</div>
             <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
             {(()=>{
-              const [openCat,setOpenCat]=useState(null);
               return(
                 <div style={{marginBottom:14}}>
                   {newRoutineIcon&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"8px 12px",background:"rgba(90,120,72,0.08)",borderRadius:12}}>
