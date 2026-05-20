@@ -7364,7 +7364,18 @@ function Routine({routineData,setRoutineData,setScreen}){
     const [showTemplates,setShowTemplates]=useState(false);
     const [dragId,setDragId]=useState(null);
     const [openCat,setOpenCat]=useState(null);
+    const [colourPickerId,setColourPickerId]=useState(null);
+    const [stalePromptId,setStalePromptId]=useState(null);
     const timerRefs=useRef({});
+
+    const TASK_COLOURS=["#E07048","#E0A030","#5A9848","#4870A0","#8848A0","#C06080","#3A8878","#C06828","#2A8058","#606060"];
+    const ONE_WEEK_MS=7*24*60*60*1000;
+    const isStale=item=>{
+      const hist=item.history||[];
+      if(hist.length===0) return false;
+      const last=new Date(hist[hist.length-1]).getTime();
+      return Date.now()-last>ONE_WEEK_MS;
+    };
 
     const ICONS=["💊","🧹","👔","🗑️","👗","🧺","🪥","💇","👕","🍽️","🍳","😌","💼","📧","🪣","🌱","💄","🛁","🌻","🛒","👚","📚","🛏️","🐾","🚿","🪞","🥗","💧","🌸","☕","🏃","📖","✍️","🎵","💡","🧠","🌅","🌙","💪","🧘","🌿","🔥","❤️","⭐","✨","🎯","⚡"];
 
@@ -7541,53 +7552,111 @@ function Routine({routineData,setRoutineData,setScreen}){
 
           {items.map((item)=>{
             const tt=timers[item.id];const running=tt?.on&&tt?.left>0;const streak=getStreak(item);
+            const PALETTES=["#E07048","#5A7848","#4870A0","#A04870","#7A6030","#3A8878","#8848A0","#C06828","#2A8058","#D04848"];
+            const ic=item.icon||"⭐";
+            const autoCol=PALETTES[ic.codePointAt(0)%PALETTES.length];
+            const col=item.colour||autoCol;
+            const stale=isStale(item);
             return(
-              <div key={item.id} draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
-                style={{background:item.doneToday?"rgba(90,160,80,0.06)":"rgba(248,245,236,0.95)",borderRadius:24,padding:"0",marginBottom:12,border:`2px solid ${item.doneToday?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,boxShadow:"0 3px 16px rgba(60,60,40,0.07)",opacity:dragId===item.id?0.5:1,overflow:"hidden",transition:"all 0.15s"}}>
-                <div style={{height:4,background:item.doneToday?"linear-gradient(90deg,#5A9848,#7AB868)":`linear-gradient(90deg,${["#E07048","#5A7848","#4870A0","#A04870","#7A6030","#3A8878","#8848A0","#C06828","#2A8058","#D04848"][(item.icon||"⭐").codePointAt(0)%10]},${["#E09068","#7A9868","#6890C0","#C068A0","#9A8050","#5AA8A0","#A868C0","#E08848","#4AA878","#F06868"][(item.icon||"⭐").codePointAt(0)%10]})`}}/>
-                <div style={{padding:"16px 18px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:item.doneToday?0:10}}>
-                    {(()=>{
-                      const PALETTES=["#E07048","#5A7848","#4870A0","#A04870","#7A6030","#3A8878","#8848A0","#C06828"];
-                      const ic=item.icon||"⭐";
-                      const colIdx=ic.codePointAt(0)%PALETTES.length;
-                      const col=item.doneToday?"rgba(90,160,80,0.8)":PALETTES[colIdx];
-                      return(
-                        <div style={{width:52,height:52,borderRadius:18,background:`${col}18`,border:`2.5px solid ${col}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,cursor:"grab"}}>
-                          {item.doneToday?"✅":ic}
-                        </div>
-                      );
-                    })()}
-                    <div style={{flex:1}}>
-                      <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
-                      <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
-                        <span style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif"}}>⏱ {item.mins}min</span>
-                        {streak>0&&<span style={{fontSize:12,color:"#E07030",fontWeight:700,fontFamily:"'Segoe UI',sans-serif"}}>🔥 {streak} day{streak!==1?"s":""}</span>}
-                      </div>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
-                      {item.doneToday
-                        ?<button onClick={()=>undoItem(item.id)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>↩ Undo</button>
-                        :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>✅ Done</button>
-                      }
-                      <button onClick={()=>save(items.filter(i=>i.id!==item.id))} style={{background:"none",color:"rgba(192,57,43,0.40)",border:"none",cursor:"pointer",fontSize:11,padding:"2px 6px"}}>🗑 Remove</button>
+              <div key={item.id}>
+                {/* Stale prompt */}
+                {stale&&stalePromptId!==item.id&&(
+                  <div style={{background:"rgba(255,200,50,0.12)",borderRadius:16,padding:"10px 14px",marginBottom:6,border:"1px solid rgba(200,150,30,0.25)",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span style={{fontSize:12,color:"#7A5820",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>⚠️ <strong>{item.name}</strong> hasn't been done in over a week</span>
+                    <button onClick={()=>setStalePromptId(item.id)} style={{fontSize:11,fontWeight:700,color:"#7A5820",background:"rgba(200,150,30,0.15)",border:"1px solid rgba(200,150,30,0.25)",borderRadius:100,padding:"4px 10px",cursor:"pointer"}}>Options</button>
+                  </div>
+                )}
+                {stalePromptId===item.id&&(
+                  <div style={{background:"rgba(255,200,50,0.10)",borderRadius:18,padding:"14px 16px",marginBottom:8,border:"1.5px solid rgba(200,150,30,0.28)"}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>⚠️ "{item.name}" hasn't been done in over a week — what would you like to do?</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                      <button onClick={()=>{
+                        // Move to top of list
+                        const idx=items.findIndex(i=>i.id===item.id);
+                        const a=[...items];a.splice(idx,1);a.unshift({...item});save(a);setStalePromptId(null);
+                      }} style={{padding:"9px 14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>✅ Do today</button>
+                      <button onClick={()=>{
+                        // Open Google Calendar
+                        const now=new Date();const pad=n=>String(n).padStart(2,"0");
+                        const dt=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate()+1)}`;
+                        window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(item.name)}&dates=${dt}T090000/${dt}T100000`,"_blank");
+                        setStalePromptId(null);
+                      }} style={{padding:"9px 14px",background:"rgba(66,133,244,0.12)",color:"#4285f4",border:"1.5px solid rgba(66,133,244,0.25)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>📅 Schedule</button>
+                      <button onClick={()=>{
+                        // Send to charge - store in localStorage for charge to pick up
+                        try{const ct=JSON.parse(localStorage.getItem('thinko_charge')||'{}');const tasks=ct.targetTasks||[];if(!tasks.includes(item.name)){tasks.push(item.name);localStorage.setItem('thinko_charge',JSON.stringify({...ct,targetTasks:tasks,dailyTarget:tasks.length}));};}catch{}
+                        setStalePromptId(null);alert(`"${item.name}" sent to The Charge!`);
+                      }} style={{padding:"9px 14px",background:"rgba(255,165,0,0.12)",color:"#B86800",border:"1.5px solid rgba(255,165,0,0.25)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⚡ Send to Charge</button>
+                      <button onClick={()=>{save(items.filter(i=>i.id!==item.id));setStalePromptId(null);}} style={{padding:"9px 14px",background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1.5px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Delete</button>
+                      <button onClick={()=>setStalePromptId(null)} style={{padding:"9px 14px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontSize:13,cursor:"pointer"}}>✕ Dismiss</button>
                     </div>
                   </div>
-                  {!item.doneToday&&(
-                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1px solid rgba(90,120,72,0.10)"}}>
-                      {running?(
-                        <><span style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:tt.left<60?"#c0392b":"#2C3820",minWidth:54}}>{fmtT(tt.left)}</span>
-                        <div style={{flex:1,height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}><div style={{height:"100%",width:`${Math.round((tt.left/tt.total)*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/></div>
-                        <button onClick={()=>stopTimer(item.id)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>⏹ Stop</button></>
-                      ):(
-                        <>{tt?.left===0
-                          ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap ✅</span>
-                          :<span style={{fontSize:13,color:"#8A8070",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>Start your {item.mins}min timer</span>
+                )}
+
+                <div draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
+                  style={{background:item.doneToday?"rgba(90,160,80,0.06)":"rgba(248,245,236,0.95)",borderRadius:24,padding:"0",marginBottom:12,border:`2px solid ${item.doneToday?"rgba(90,160,80,0.30)":`${col}30`}`,boxShadow:"0 3px 16px rgba(60,60,40,0.07)",opacity:dragId===item.id?0.5:1,overflow:"hidden",transition:"all 0.15s"}}>
+                  {/* Colour top strip */}
+                  <div style={{height:5,background:item.doneToday?"linear-gradient(90deg,#5A9848,#7AB868)":`linear-gradient(90deg,${col},${col}99)`}}/>
+                  <div style={{padding:"14px 16px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:item.doneToday?0:10}}>
+                      {/* Drag handle */}
+                      <span style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:18,flexShrink:0,touchAction:"none"}}>⠿</span>
+                      {/* Icon circle */}
+                      <div style={{width:48,height:48,borderRadius:16,background:`${col}20`,border:`2.5px solid ${col}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>
+                        {item.doneToday?"✅":ic}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontFamily:"Georgia,serif",fontSize:16,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3}}>
+                          <span style={{fontSize:11,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif"}}>⏱ {item.mins}min</span>
+                          {streak>0&&<span style={{fontSize:11,color:"#E07030",fontWeight:700}}>🔥 {streak}d</span>}
+                        </div>
+                      </div>
+                      {/* Right buttons */}
+                      <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"flex-end",flexShrink:0}}>
+                        {item.doneToday
+                          ?<button onClick={()=>undoItem(item.id)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"6px 11px",fontSize:11,cursor:"pointer"}}>↩ Undo</button>
+                          :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 14px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(58,80,38,0.25)"}}>✅ Done</button>
                         }
-                        <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶ Start</button></>
-                      )}
+                        <div style={{display:"flex",gap:4}}>
+                          {/* Colour dot picker button */}
+                          <button onClick={()=>setColourPickerId(colourPickerId===item.id?null:item.id)}
+                            style={{width:24,height:24,borderRadius:"50%",background:col,border:"2px solid rgba(255,255,255,0.7)",cursor:"pointer",boxShadow:"0 1px 4px rgba(0,0,0,0.15)",flexShrink:0}}/>
+                          <button onClick={()=>save(items.filter(i=>i.id!==item.id))} style={{background:"none",color:"rgba(192,57,43,0.40)",border:"none",cursor:"pointer",fontSize:11,padding:"0 2px"}}>🗑</button>
+                        </div>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Colour picker */}
+                    {colourPickerId===item.id&&(
+                      <div style={{display:"flex",gap:8,padding:"10px 12px",background:"rgba(255,255,255,0.70)",borderRadius:14,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+                        <span style={{fontSize:11,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif",marginRight:2}}>Colour:</span>
+                        {TASK_COLOURS.map(c=>(
+                          <button key={c} onClick={()=>{save(items.map(i=>i.id===item.id?{...i,colour:c}:i));setColourPickerId(null);}}
+                            style={{width:28,height:28,borderRadius:"50%",background:c,border:`3px solid ${item.colour===c?"#1A1A10":"rgba(255,255,255,0.6)"}`,cursor:"pointer",transition:"transform 0.1s",transform:item.colour===c?"scale(1.2)":"scale(1)"}}/>
+                        ))}
+                        <button onClick={()=>{save(items.map(i=>i.id===item.id?{...i,colour:undefined}:i));setColourPickerId(null);}}
+                          style={{fontSize:10,color:"#8A8070",background:"rgba(90,80,60,0.08)",border:"none",borderRadius:100,padding:"4px 8px",cursor:"pointer"}}>Auto</button>
+                      </div>
+                    )}
+
+                    {/* Timer row */}
+                    {!item.doneToday&&(
+                      <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1px solid rgba(90,120,72,0.10)"}}>
+                        {running?(
+                          <><span style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:tt.left<60?"#c0392b":"#2C3820",minWidth:54}}>{fmtT(tt.left)}</span>
+                          <div style={{flex:1,height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}><div style={{height:"100%",width:`${Math.round((tt.left/tt.total)*100)}%`,background:tt.left<60?"#c0392b":col,borderRadius:100,transition:"width 1s linear"}}/></div>
+                          <button onClick={()=>stopTimer(item.id)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>⏹ Stop</button></>
+                        ):(
+                          <>{tt?.left===0
+                            ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap ✅</span>
+                            :<span style={{fontSize:13,color:"#8A8070",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>Start {item.mins}min timer</span>
+                          }
+                          <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:col,color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶ Start</button></>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
