@@ -4657,7 +4657,6 @@ function OrbOfLight({pct=0,size=130}){
 
 
 function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,matrixData,setMatrixData,goalsData,setGoalsData}){
-  const [aiLoading,setAiLoading]=useState(false);
   const [microLoading,setMicroLoading]=useState(null);
   const [newStepText,setNewStepText]=useState("");
   const [toast,setToast]=useState("");
@@ -5510,7 +5509,6 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
   const upd=ch=>onUpdate({...b,...ch});
   const [newExp,setNewExp]=useState({label:"",amount:"",url:""});
   const [adding,setAdding]=useState(false);
-  const [aiLoading,setAiLoading]=useState(false);
   const inputRef=useRef(null);
   useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
 
@@ -5522,173 +5520,6 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
 
   const addExp=()=>{if(!newExp.label.trim()||!newExp.amount)return;upd({expenses:[...b.expenses,{id:Date.now(),label:newExp.label.trim(),amount:newExp.amount,url:newExp.url.trim()}]});setNewExp({label:"",amount:"",url:""});setAdding(false);};
   const delExp=id=>upd({expenses:b.expenses.filter(e=>e.id!==id)});
-
-  const getAIReview=async()=>{
-    setAiLoading(true);
-    try{
-      const budgetPrompt="Budget: "+b.name+" | Period: "+b.period+" ("+b.dateFrom+" to "+b.dateTo+")\nTotal budget: £"+budgetAmt.toFixed(2)+"\nTotal expenses: £"+totalExp.toFixed(2)+"\nRemaining: £"+remaining.toFixed(2)+" ("+(inGreen?"in budget":"over budget")+")\nExpenses: "+(b.expenses.map(e=>e.label+": £"+e.amount).join(", ")||"none listed");
-      const _budgetRaw=await callAI("You are a warm friendly financial coach. Give exactly 5 short practical encouraging observations about this budget. Return ONLY a JSON array of 5 strings. No markdown.\n\n"+budgetPrompt,600);
-      upd({aiReview:JSON.parse((_budgetRaw||"[]").replace(/```json|```/g,"").trim())});
-    }catch{upd({aiReview:["Could not reach AI — please try again."]});}
-    setAiLoading(false);
-  };
-
-  return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <Header title={b.name} onBack={onBack} right={
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>upd({saved:!b.saved})} style={{background:b.saved?"rgba(39,174,96,0.35)":"rgba(255,255,255,0.18)",color:"#1A1A10",border:`1.5px solid ${b.saved?"#27ae60":"rgba(255,255,255,0.35)"}`,borderRadius:10,padding:"6px 12px",fontWeight:800,fontSize:12,cursor:"pointer"}}>{b.saved?"✅ Saved":"💾 Save"}</button>
-          <button onClick={()=>{if(window.confirm("Delete this budget?"))onDelete(b.id);}} style={{background:"rgba(192,57,43,0.3)",color:"#1A1A10",border:"1.5px solid rgba(255,100,100,0.4)",borderRadius:10,padding:"6px 10px",fontWeight:800,fontSize:13,cursor:"pointer"}}>🗑</button>
-        </div>
-      }/>
-      <div style={{padding:"16px 14px"}}>
-
-        {/* 1. BUDGET DETAILS */}
-        <SectionLabel n="1" label="Budget Details"/>
-        <GlassCard style={{marginBottom:18}}>
-          <input value={b.name} onChange={e=>upd({name:e.target.value})} placeholder="Budget name" style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:700,color:C.txt,outline:"none",marginBottom:10}}/>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {["weekly","monthly","custom"].map(p=>(
-              <button key={p} onClick={()=>upd({period:p})} style={{flex:1,padding:"8px 4px",borderRadius:10,border:`2px solid ${C.lp}`,background:b.period===p?btnGrad:"transparent",color:b.period===p?C.wh:C.mp,fontWeight:800,fontSize:12,cursor:"pointer",textTransform:"capitalize"}}>{p}</button>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:10}}>
-            <div style={{flex:1}}><div style={{fontSize:11,color:C.soft,fontWeight:700,marginBottom:4}}>From</div><input type="date" value={b.dateFrom} onChange={e=>upd({dateFrom:e.target.value})} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:13,color:C.txt,outline:"none"}}/></div>
-            <div style={{flex:1}}><div style={{fontSize:11,color:C.soft,fontWeight:700,marginBottom:4}}>To</div><input type="date" value={b.dateTo} onChange={e=>upd({dateTo:e.target.value})} style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:13,color:C.txt,outline:"none"}}/></div>
-          </div>
-        </GlassCard>
-
-        {/* 2. BUDGET AMOUNT */}
-        <SectionLabel n="2" label="Budget Amount"/>
-        <GlassCard style={{marginBottom:18}}>
-          <div style={{fontSize:13,color:C.soft,marginBottom:8}}>How much do you have to spend?</div>
-          <div style={{display:"flex",alignItems:"center",gap:10,background:C.pale,borderRadius:12,padding:"12px 16px",border:`2px solid ${C.lp}`}}>
-            <span style={{fontSize:22,fontWeight:900,color:C.mp}}>£</span>
-            <input type="number" value={b.budgetAmount} onChange={e=>upd({budgetAmount:e.target.value})} placeholder="0.00" min="0" step="0.01" style={{flex:1,border:"none",background:"transparent",fontSize:26,fontWeight:900,color:C.dp,outline:"none"}}/>
-          </div>
-        </GlassCard>
-
-        {/* 3. EXPENSES */}
-        <SectionLabel n="3" label="Expenses"/>
-        <GlassCard style={{marginBottom:18}}>
-          {b.expenses.length===0&&!adding&&<div style={{color:C.soft,fontSize:13,fontStyle:"italic",marginBottom:10}}>No expenses added yet</div>}
-          {b.expenses.map((e,i)=>(
-            <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:i<b.expenses.length-1?`1px solid ${C.ll}`:"none"}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:C.pp,flexShrink:0}}/>
-              <span style={{flex:1,fontWeight:600,fontSize:14,color:C.txt}}>{e.label}</span>
-              <span style={{fontWeight:800,fontSize:15,color:"#c0392b"}}>{fmtMoney(e.amount)}</span>
-              <button onClick={()=>delExp(e.id)} style={{background:"#fce4e4",color:"#c0392b",border:"none",borderRadius:7,width:26,height:26,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
-            </div>
-          ))}
-          {adding?(
-            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
-              <input ref={inputRef} value={newExp.label} onChange={e=>setNewExp(d=>({...d,label:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addExp()} placeholder="Expense name e.g. Rent" style={{width:"100%",boxSizing:"border-box",padding:"9px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:14,fontWeight:600,color:C.txt,outline:"none"}}/>
-              <div style={{display:"flex",alignItems:"center",gap:6,background:C.pale,borderRadius:10,padding:"9px 13px",border:`1.5px solid ${C.lp}`}}>
-                <span style={{fontWeight:800,color:C.soft,fontSize:16}}>£</span>
-                <input type="number" value={newExp.amount} onChange={e=>setNewExp(d=>({...d,amount:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&addExp()} placeholder="0.00" min="0" step="0.01" style={{flex:1,border:"none",background:"transparent",fontSize:16,fontWeight:700,color:C.txt,outline:"none"}}/>
-              </div>
-              <UrlField value={newExp.url} onChange={v=>setNewExp(d=>({...d,url:v}))} style={{marginBottom:8}}/>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>{setAdding(false);setNewExp({label:"",amount:"",url:""}); }} style={{flex:1,background:C.ll,color:C.mid,border:"none",borderRadius:10,padding:"10px",fontWeight:700,cursor:"pointer"}}>Cancel</button>
-                <button onClick={addExp} style={{flex:2,background:btnGrad,color:"#1A1A10",border:"none",borderRadius:10,padding:"10px",fontWeight:800,cursor:"pointer"}}>Add Expense</button>
-              </div>
-            </div>
-          ):(
-            <button onClick={()=>setAdding(true)} style={{marginTop:b.expenses.length>0?10:0,width:"100%",padding:"10px",background:"transparent",color:C.pp,border:`2px dashed ${C.lp}`,borderRadius:12,fontWeight:800,fontSize:14,cursor:"pointer"}}>+ Add Expense</button>
-          )}
-        </GlassCard>
-
-        {/* 4. CALCULATE */}
-        <SectionLabel n="4" label="Calculate"/>
-        <div style={{background:inGreen?"linear-gradient(135deg,#1a5276,#2980b9)":"linear-gradient(135deg,#7d1a1a,#c0392b)",borderRadius:20,padding:"20px",marginBottom:14,boxShadow:`0 6px 24px ${inGreen?"rgba(41,128,185,0.35)":"rgba(192,57,43,0.35)"}`}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:16,gap:4}}>
-            <div style={{textAlign:"center",flex:1}}><div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:700,marginBottom:4}}>BUDGET</div><div style={{color:"#1A1A10",fontWeight:900,fontSize:18}}>{fmtMoney(budgetAmt)}</div></div>
-            <div style={{color:"rgba(255,255,255,0.4)",fontSize:22,alignSelf:"center"}}>−</div>
-            <div style={{textAlign:"center",flex:1}}><div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:700,marginBottom:4}}>EXPENSES</div><div style={{color:"#1A1A10",fontWeight:900,fontSize:18}}>{fmtMoney(totalExp)}</div></div>
-            <div style={{color:"rgba(255,255,255,0.4)",fontSize:22,alignSelf:"center"}}>=</div>
-            <div style={{textAlign:"center",flex:1}}><div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:700,marginBottom:4}}>{inGreen?"LEFT":"OVER"}</div><div style={{color:"#1A1A10",fontWeight:900,fontSize:18}}>{fmtMoney(Math.abs(remaining))}</div></div>
-          </div>
-          {budgetAmt>0&&(
-            <div>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{color:"rgba(255,255,255,0.7)",fontSize:11}}>Budget used</span><span style={{color:"#1A1A10",fontWeight:800,fontSize:11}}>{pct.toFixed(0)}%</span></div>
-              <div style={{height:8,borderRadius:4,background:"rgba(255,255,255,0.2)",overflow:"hidden"}}><div style={{height:"100%",width:`${Math.min(100,pct)}%`,borderRadius:4,background:pct>90?"#FF0022":pct>70?"#FF9100":"rgba(255,255,255,0.85)",transition:"width 0.4s"}}/></div>
-            </div>
-          )}
-          <div style={{color:"rgba(255,255,255,0.85)",fontSize:14,fontWeight:700,textAlign:"center",marginTop:12}}>
-            {inGreen?`✅ £${Math.abs(remaining).toFixed(2)} within budget`:`⚠️ £${Math.abs(remaining).toFixed(2)} over budget`}
-          </div>
-        </div>
-
-        {/* 5. AI REVIEW */}
-        <SectionLabel n="5" label="AI Review"/>
-        {!b.aiReview?(
-          <button onClick={getAIReview} style={{width:"100%",padding:"14px",background:btnGrad,color:"#1A1A10",border:"none",borderRadius:16,fontWeight:800,fontSize:15,cursor:"pointer",opacity:aiLoading?0.7:1,boxShadow:"0 4px 16px rgba(45,10,94,0.3)"}}>{aiLoading?"🤖 Analysing…":"🤖 Get 5-Point AI Review"}</button>
-        ):(
-          <div>
-            {b.aiReview.map((pt,i)=>(
-              <div key={i} style={{background:"rgba(255,255,255,0.92)",borderRadius:14,padding:"13px 15px",marginBottom:10,border:`1.5px solid ${C.ll}`,display:"flex",gap:12,alignItems:"flex-start"}}>
-                <div style={{width:26,height:26,borderRadius:"50%",background:btnGrad,color:"#1A1A10",fontWeight:900,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
-                <div style={{fontSize:14,color:C.txt,lineHeight:1.6,fontWeight:600}}>{pt}</div>
-              </div>
-            ))}
-            <button onClick={()=>{upd({aiReview:null});setTimeout(getAIReview,100);}} style={{width:"100%",padding:"12px",background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",marginTop:4}}>🔄 Refresh Review</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-/* ═══════════════════════════════════════════════════════
-   SHOPPING LIST  — multiple named lists, tick off items,
-   quantities, notes, URL per item, sort by category
-═══════════════════════════════════════════════════════ */
-const SHOP_LIST_ICONS=["🛒","🎁","🍎","👗","🏠","🐾","💊","📚","🎉","✈️"];
-const SHOP_CATS=["General","Fresh Food","Frozen","Drinks","Household","Health & Beauty","Pets","Clothing","Electronics","Presents","Other"];
-const CAT_COLORS={"General":"#7c5cbf","Fresh Food":"#27ae60","Frozen":"#2980b9","Drinks":"#e67e22","Household":"#8e44ad","Health & Beauty":"#e91e8c","Pets":"#16a085","Clothing":"#c0392b","Electronics":"#1a5276","Presents":"#d4a017","Other":"#546e7a"};
-const CAT_EMOJI={"General":"🛒","Fresh Food":"🥦","Frozen":"🧊","Drinks":"🥤","Household":"🏠","Health & Beauty":"💄","Pets":"🐾","Clothing":"👗","Electronics":"📱","Presents":"🎁","Other":"📦","All":"✨"};
-
-function mkShopList(name="Groceries",icon="🛒"){
-  return {id:Date.now(),name,icon,items:[],created:Date.now()};
-}
-function mkItem(name){
-  return {id:Date.now(),name:name.trim(),qty:"1",unit:"",cat:"General",note:"",url:"",checked:false};
-}
-
-const SHOP_TEMPLATES=[
-  {id:"grocery",  icon:"🛒", name:"Weekly Food Shop",    color:"#5A7848",
-   items:["Bread","Milk","Eggs","Butter","Cheese","Yoghurt","Chicken","Mince","Salmon","Pasta","Rice","Potatoes","Onions","Garlic","Tomatoes","Spinach","Apples","Bananas","Orange juice","Coffee","Tea","Sugar","Olive oil","Tinned tomatoes","Cereal"]},
-  {id:"mostbought",icon:"⭐",name:"Most Bought Items",   color:"#7A6020",
-   items:["Bread","Milk","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Onions","Garlic","Tomatoes","Apples","Bananas","Coffee","Tea","Toilet roll","Washing powder","Bin bags","Hand soap","Shampoo","Toothpaste","Deodorant","Paracetamol","Kitchen roll","Olive oil"]},
-  {id:"christmas",icon:"🎄", name:"Christmas Presents",  color:"#7A2828",
-   items:["Wrapping paper","Sellotape","Gift bags","Gift tags","Ribbon","Tissue paper","Card for Mum","Card for Dad","Card for kids","Stocking fillers","Batteries","Chocolates"]},
-  {id:"toiletries",icon:"🧴",name:"Toiletries & Health",  color:"#486878",
-   items:["Shampoo","Conditioner","Body wash","Deodorant","Toothpaste","Toothbrush","Moisturiser","Face wash","Razor","Cotton pads","Hand soap","Paracetamol","Vitamins"]},
-  {id:"household",icon:"🏠", name:"Household Essentials", color:"#7A6038",
-   items:["Washing powder","Fabric softener","Washing up liquid","Bleach","Toilet cleaner","Bin bags","Cling film","Foil","Kitchen roll","Toilet roll","Sponges","Batteries","Lightbulbs"]},
-  {id:"baby",     icon:"🍼", name:"Baby & Kids",          color:"#486050",
-   items:["Nappies","Baby wipes","Baby milk formula","Nappy cream","Cotton wool","Baby bath wash","Baby lotion","Dummies","Bibs","Baby food pouches"]},
-  {id:"pets",     icon:"🐾", name:"Pet Supplies",         color:"#3A5060",
-   items:["Dog food","Cat food","Treats","Poo bags","Cat litter","Pet shampoo","Flea treatment","Worm treatment"]},
-  {id:"party",    icon:"🎉", name:"Party Shopping",       color:"#7A3870",
-   items:["Balloons","Paper plates","Napkins","Cups","Candles","Party bags","Streamers","Crisps","Dips","Fizzy drinks","Juice","Wine","Beer","Birthday cake","Ice cream"]},
-  {id:"blank",    icon:"📝", name:"My Own List",          color:"#5A5848",
-   items:[]},
-];
-
-
-function ShopListDetail({list,onBack,onUpdate,onDelete}){
-  const [newItemText,setNewItemText]=useState("");
-  const [pickingCat,setPickingCat]=useState(false); // show category picker after typing
-  const [pendingItem,setPendingItem]=useState(""); // item text waiting for category
-  const [editItem,setEditItem]=useState(null);
-  const [showDone,setShowDone]=useState(true);
-  const [dragItemId,setDragItemId]=useState(null);
-  const inputRef=useRef(null);
-
-  const upd=changes=>onUpdate({...list,...changes});
-  const updItems=items=>upd({items});
 
   const startAdd=()=>{
     if(!newItemText.trim())return;
@@ -10013,46 +9844,48 @@ export default function App() {
   );
 }
 function NavBar({current,setScreen}) {
+  const ALL_NAV=[
+    {id:"home",       icon:"🏠", name:"Home"},
+    {id:"charge",     icon:"⚡", name:"Charge"},
+    {id:"prioritizer",icon:"📋", name:"Tasks"},
+    {id:"notes",      icon:"📚", name:"Vault"},
+    {id:"goals",      icon:"🎯", name:"Goals"},
+    {id:"matrix",     icon:"⚖️", name:"Matrix"},
+    {id:"meals",      icon:"🍽️", name:"Meals"},
+    {id:"shopping",   icon:"🛒", name:"Shop"},
+    {id:"budget",     icon:"💰", name:"Budget"},
+    {id:"mindmap",    icon:"🧠", name:"Mind Map"},
+    {id:"tools",      icon:"🔧", name:"Tools"},
+    {id:"rest",       icon:"🌿", name:"Rest"},
+    {id:"routine",    icon:"🌀", name:"Routine"},
+  ];
+  const ALL_IDS=ALL_NAV.map(n=>n.id);
+
   const [navOrder,setNavOrder]=useState(()=>{
     try{
       const v=localStorage.getItem('thinko_nav_order');
       if(!v) return null;
       const saved=JSON.parse(v);
-      if(!saved.includes('routine')){saved.push('routine');}
-      localStorage.setItem('thinko_nav_order',JSON.stringify(saved));
+      let changed=false;
+      ALL_IDS.forEach(id=>{if(!saved.includes(id)){saved.push(id);changed=true;}});
+      if(changed) localStorage.setItem('thinko_nav_order',JSON.stringify(saved));
       return saved;
     }catch{return null;}
   });
   const [dragNav,setDragNav]=useState(null);
   const [editing,setEditing]=useState(false);
 
-  // Core nav items — always shown
-  const ALL_NAV=[
-    {id:"home",    icon:"🏠", name:"Home"},
-    {id:"charge",  icon:"⚡", name:"Charge"},
-    {id:"prioritizer",icon:"📋",name:"Tasks"},
-    {id:"notes",   icon:"📚", name:"Vault"},
-    {id:"goals",   icon:"🎯", name:"Goals"},
-    {id:"matrix",  icon:"⚖️", name:"Matrix"},
-    {id:"meals",   icon:"🍽️", name:"Meals"},
-    {id:"shopping",icon:"🛒", name:"Shop"},
-    {id:"budget",  icon:"💰", name:"Budget"},
-    {id:"mindmap", icon:"🧠", name:"Mind Map"},
-    {id:"tools",   icon:"🔧", name:"Tools"},
-    {id:"rest",    icon:"🌿", name:"Rest"},
-    {id:"routine", icon:"🌀", name:"Routine"},
-  ];
 
-  const DEFAULT_NAV=["home","charge","prioritizer","notes","goals","matrix","meals","shopping","tools","rest","routine"];
+  const DEFAULT_NAV=ALL_IDS;
 
   const [visibleIds,setVisibleIds]=useState(()=>{
     try{
       const v=localStorage.getItem('thinko_nav_visible');
       const saved=v?JSON.parse(v):DEFAULT_NAV;
-      if(!saved.includes('routine')){
-        saved.push('routine');
-        localStorage.setItem('thinko_nav_visible',JSON.stringify(saved));
-      }
+      // Migration: add any missing sections
+      let changed=false;
+      ALL_IDS.forEach(id=>{if(!saved.includes(id)){saved.push(id);changed=true;}});
+      if(changed) localStorage.setItem('thinko_nav_visible',JSON.stringify(saved));
       return saved;
     }catch{return DEFAULT_NAV;}
   });
