@@ -7337,7 +7337,7 @@ function Routine({routineData,setRoutineData,setScreen}){
   const [routines,setRoutinesRaw]=useState(()=>
     Array.isArray(routineData)&&routineData.length>0&&typeof routineData[0]==='object'&&'items' in routineData[0]
       ? routineData
-      : routineData?.length>0 ? [{id:1,name:"My Routine",icon:"🔄",items:routineData}] : []
+      : routineData?.length>0 ? [{id:1,name:"My Routine",icon:"🌀",items:routineData}] : []
   );
   const [activeId,setActiveId]=useState(null); // null = hub view
   const [creatingRoutine,setCreatingRoutine]=useState(false);
@@ -7609,7 +7609,7 @@ function Routine({routineData,setRoutineData,setScreen}){
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
           </button>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontSize:32,marginBottom:2}}>🔄</div>
+            <div style={{fontSize:40,marginBottom:2}}>🌀</div>
             <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#fff"}}>My Routines</div>
             <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",fontStyle:"italic",marginTop:2}}>"We are what we repeatedly do."</div>
           </div>
@@ -9527,7 +9527,7 @@ const MODULES=[
    summary:"Calculator · Timer · Voice to text · Translator · Currency"},
   {id:"rest",        icon:"🌿", name:"Rest Space",   color:"#3A6828",
    summary:"Guided meditation · Nature sounds · Breathing"},
-  {id:"routine",     icon:"🔄", name:"Routine",       color:"#5A4878",
+  {id:"routine",     icon:"🌀", name:"Routine",       color:"#5A4878",
    summary:"Daily habits · Timers · Streaks · Identity-based"},
   // Individual tool shortcuts — can be added to home screen
   {id:"calc",        icon:"🧮", name:"Calculator",   color:"#4A6038",
@@ -9947,7 +9947,7 @@ function NavBar({current,setScreen}) {
     {id:"mindmap", icon:"🧠", name:"Mind Map"},
     {id:"tools",   icon:"🔧", name:"Tools"},
     {id:"rest",    icon:"🌿", name:"Rest"},
-    {id:"routine", icon:"🔄", name:"Routine"},
+    {id:"routine", icon:"🌀", name:"Routine"},
   ];
 
   const DEFAULT_NAV=["home","charge","prioritizer","notes","goals","matrix","meals","shopping","tools","rest"];
