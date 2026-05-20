@@ -10036,10 +10036,16 @@ function NavBar({current,setScreen}) {
     {id:"routine", icon:"🌀", name:"Routine"},
   ];
 
-  const DEFAULT_NAV=["home","charge","prioritizer","notes","goals","matrix","meals","shopping","tools","rest"];
+  const DEFAULT_NAV=["home","charge","prioritizer","notes","goals","matrix","meals","shopping","tools","rest","routine"];
 
   const [visibleIds,setVisibleIds]=useState(()=>{
-    try{const v=localStorage.getItem('thinko_nav_visible');return v?JSON.parse(v):DEFAULT_NAV;}catch{return DEFAULT_NAV;}
+    try{
+      const v=localStorage.getItem('thinko_nav_visible');
+      const saved=v?JSON.parse(v):DEFAULT_NAV;
+      // Migration: ensure routine is included
+      if(!saved.includes('routine')){saved.push('routine');}
+      return saved;
+    }catch{return DEFAULT_NAV;}
   });
 
   const orderedNav=(navOrder||visibleIds)
