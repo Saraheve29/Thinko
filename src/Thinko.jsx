@@ -4619,9 +4619,12 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
 }
 
 /* ── Main Ideas board ──────────────────────────────── */
+
+
+/* ── Main Ideas board ──────────────────────────────── */
 function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,setMatrixData,goalsData,setGoalsData,onBack,inline=false}){
   const [detailId,setDetailId]=useState(null);
-  const [adding,setAdding]=useState(false);
+  const [adding,setAdding]=useState(true); // open add form immediately
   const [draft,setDraft]=useState({text:"",ramble:"",tag:"💡 Idea",status:"spark",collection:"",url:"",cover:null});
   const [search,setSearch]=useState("");
   const [filterTag,setFilterTag]=useState("All");
@@ -4675,7 +4678,7 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
       <div style={{padding:"10px 14px 0"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.18)",borderRadius:12,padding:"8px 14px",border:"1px solid rgba(255,255,255,0.25)"}}>
           <span style={{fontSize:16}}>🔍</span>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search goals…" style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:14,fontWeight:600}}/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search ideas…" style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:14,fontWeight:600}}/>
           {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",color:"rgba(255,255,255,0.6)",cursor:"pointer",fontSize:16,padding:0}}>✕</button>}
         </div>
       </div>
@@ -5208,245 +5211,79 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
   const addExp=()=>{if(!newExp.label.trim()||!newExp.amount)return;upd({expenses:[...b.expenses,{id:Date.now(),label:newExp.label.trim(),amount:newExp.amount,url:newExp.url.trim()}]});setNewExp({label:"",amount:"",url:""});setAdding(false);};
   const delExp=id=>upd({expenses:b.expenses.filter(e=>e.id!==id)});
 
-  const startAdd=()=>{
-    if(!newItemText.trim())return;
-    setPendingItem(newItemText.trim());
-    setNewItemText("");
-    setPickingCat(true);
-  };
-
-  const addWithCat=(cat)=>{
-    updItems([...list.items,{...mkItem(pendingItem),cat}]);
-    setPendingItem("");setPickingCat(false);
-    if(inputRef.current)inputRef.current.focus();
-  };
-
-  const toggle=id=>updItems(list.items.map(it=>it.id===id?{...it,checked:!it.checked}:it));
-  const del=id=>updItems(list.items.filter(it=>it.id!==id));
-  const saveEdit=()=>{
-    if(!editItem)return;
-    updItems(list.items.map(it=>it.id===editItem.id?editItem:it));
-    setEditItem(null);
-  };
-  const clearDone=()=>updItems(list.items.filter(it=>!it.checked));
-
-  const touchDragRef=useRef(null);
-  const touchStartY=useRef(0);
-  const touchItemId=useRef(null);
-
-  const onTouchStartItem=(e,id)=>{
-    touchItemId.current=id;
-    touchStartY.current=e.touches[0].clientY;
-    touchDragRef.current=setTimeout(()=>{
-      setDragItemId(id);
-    },200);
-  };
-  const onTouchMoveItem=(e)=>{
-    if(!dragItemId)return;
-    e.preventDefault();
-    const y=e.touches[0].clientY;
-    const els=document.elementsFromPoint(e.touches[0].clientX,y);
-    const target=els.find(el=>el.dataset&&el.dataset.itemid&&el.dataset.itemid!==dragItemId);
-    if(target){
-      const toId=parseInt(target.dataset.itemid);
-      if(toId&&toId!==dragItemId){
-        const arr=[...list.items];
-        const fi=arr.findIndex(x=>x.id===dragItemId);
-        const ti=arr.findIndex(x=>x.id===toId);
-        if(fi>=0&&ti>=0&&fi!==ti){const [m]=arr.splice(fi,1);arr.splice(ti,0,m);updItems(arr);}
-      }
-    }
-  };
-  const onTouchEndItem=()=>{
-    clearTimeout(touchDragRef.current);
-    setDragItemId(null);
-    touchItemId.current=null;
-  };
-
-  const totalDone=list.items.filter(it=>it.checked).length;
-  let visible=list.items;
-  if(!showDone) visible=visible.filter(it=>!it.checked);
-
-  // Group by category
-  const usedCats=[...new Set(visible.map(it=>it.cat).filter(Boolean))];
-  const grouped=usedCats.length>1
-    ? usedCats.map(c=>({cat:c,items:visible.filter(it=>it.cat===c)}))
-    : [{cat:null,items:visible}];
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      {/* Garden-style header — no purple */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+      {/* Header */}
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10"}}>{list.icon} {list.name}</div>
-        <button onClick={()=>{if(window.confirm("Delete this list?"))onDelete(list.id);}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,padding:"7px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>🗑</button>
+        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",textAlign:"center"}}>💰 {b.name}</div>
+        <button onClick={()=>{if(window.confirm("Delete this budget?"))onDelete(b.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:13}}>🗑</button>
       </div>
 
-      {/* Progress bar */}
-      {list.items.length>0&&(
-        <div style={{height:4,background:"rgba(90,80,60,0.08)"}}>
-          <div style={{height:"100%",width:`${Math.round((totalDone/list.items.length)*100)}%`,background:totalDone===list.items.length?"#5A9040":"#6A8858",transition:"width 0.4s"}}/>
-        </div>
-      )}
-
-      <div style={{padding:"14px 14px"}}>
-
-        {/* Add bar */}
-        <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"10px 14px",border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 2px 10px rgba(60,70,40,0.06)"}}>
-          <input ref={inputRef} value={newItemText} onChange={e=>setNewItemText(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&startAdd()}
-            placeholder="Add item… then choose category"
-            style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:500,color:"#1A1A10",background:"transparent"}}/>
-          <button onClick={startAdd} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:"50%",width:34,height:34,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 8px rgba(58,80,38,0.28)"}}>+</button>
+      <div style={{padding:"16px 16px"}}>
+        {/* Budget amount */}
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Budget amount</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:18,color:"#5A7848"}}>£</span>
+            <input value={b.budgetAmount||""} onChange={e=>upd({budgetAmount:e.target.value})} placeholder="0.00"
+              style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:16,fontWeight:700,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.9)"}}/>
+          </div>
         </div>
 
-        {/* Category picker — slides in after typing item name */}
-        {pickingCat&&(
-          <div style={{background:"rgba(248,245,236,0.96)",borderRadius:24,padding:"16px 16px 18px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.22)",boxShadow:"0 4px 20px rgba(60,70,40,0.10)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>"{pendingItem}"</div>
-                <div style={{fontSize:12,color:"#8A8070",marginTop:1}}>Choose a category</div>
-              </div>
-              <button onClick={()=>addWithCat("General")} style={{background:"rgba(90,120,72,0.10)",color:"#5A7848",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Skip →</button>
+        {/* Summary */}
+        {budgetAmt>0&&(
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+              <span style={{fontSize:13,color:"#8A8070"}}>Spent: <strong>£{totalExp.toFixed(2)}</strong></span>
+              <span style={{fontSize:13,fontWeight:700,color:inGreen?"#3A8020":"#c0392b"}}>{inGreen?"✅":"⚠️"} £{Math.abs(remaining).toFixed(2)} {inGreen?"left":"over"}</span>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-              {SHOP_CATS.filter(c=>c!=="General").map(c=>(
-                <button key={c} onClick={()=>addWithCat(c)}
-                  style={{background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:16,padding:"10px 4px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,transition:"all 0.12s",boxShadow:"0 1px 6px rgba(60,70,40,0.04)"}}>
-                  <span style={{fontSize:24}}>{CAT_EMOJI[c]}</span>
-                  <span style={{fontSize:10,fontWeight:500,color:"#3A3020",textAlign:"center",lineHeight:1.2}}>{c}</span>
-                </button>
-              ))}
+            <div style={{height:10,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,background:inGreen?"#5A7848":"#c0392b",borderRadius:100,transition:"width 0.4s"}}/>
             </div>
           </div>
         )}
 
-        {/* Slim toolbar */}
-        <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
-          <button onClick={()=>setShowDone(s=>!s)} style={{flexShrink:0,border:"1.5px solid rgba(90,80,60,0.18)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:500,cursor:"pointer",background:!showDone?"#5A7848":"rgba(248,245,236,0.85)",color:!showDone?"#fff":"#3A3020"}}>
-            {showDone?"Hide done ✓":"Show all"}
+        {/* Add expense */}
+        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Add expense</div>
+          <input value={newExp.label} onChange={e=>setNewExp(x=>({...x,label:e.target.value}))} placeholder="What did you spend on?"
+            style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.9)"}}/>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <span style={{display:"flex",alignItems:"center",padding:"0 10px",fontSize:15,color:"#5A7848"}}>£</span>
+            <input value={newExp.amount} onChange={e=>setNewExp(x=>({...x,amount:e.target.value}))} placeholder="0.00" type="number"
+              style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.9)"}}/>
+          </div>
+          <button onClick={addExp} disabled={!newExp.label.trim()||!newExp.amount}
+            style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newExp.label.trim()||!newExp.amount?0.5:1,boxShadow:"0 3px 12px rgba(58,80,38,0.25)"}}>
+            + Add expense
           </button>
-          {totalDone>0&&(
-            <button onClick={clearDone} style={{flexShrink:0,border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:500,cursor:"pointer",background:"rgba(192,57,43,0.08)",color:"#c0392b"}}>
-              🗑 Clear done ({totalDone})
-            </button>
-          )}
         </div>
 
-        {/* Item list */}
-        {visible.length===0&&(
-          <div style={{textAlign:"center",color:"#8A8070",marginTop:40,fontSize:14,fontStyle:"italic"}}>
-            {list.items.length===0?"Add your first item above":"Nothing here yet"}
-          </div>
-        )}
-
-        {grouped.map(({cat,items})=>(
-          <div key={cat||"all"}>
-            {cat&&(
-              <div style={{display:"flex",alignItems:"center",gap:8,margin:"14px 0 8px"}}>
-                <div style={{height:1,flex:1,background:"rgba(90,80,60,0.12)"}}/>
-                <span style={{fontSize:13,fontWeight:700,color:"#3A3020"}}>{CAT_EMOJI[cat]||""} {cat}</span>
-                <div style={{height:1,flex:1,background:"rgba(90,80,60,0.12)"}}/>
-              </div>
-            )}
-            {items.map(item=>(
-              <div key={item.id}
-                data-itemid={item.id}
-                draggable
-                onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragItemId(item.id);}}
-                onDragOver={e=>{e.preventDefault();if(!dragItemId||dragItemId===item.id)return;const arr=[...list.items];const fi=arr.findIndex(x=>x.id===dragItemId);const ti=arr.findIndex(x=>x.id===item.id);if(fi<0||ti<0||fi===ti)return;const[m]=arr.splice(fi,1);arr.splice(ti,0,m);updItems(arr);}}
-                onDragEnd={()=>setDragItemId(null)}
-                onTouchStart={e=>onTouchStartItem(e,item.id)}
-                onTouchMove={onTouchMoveItem}
-                onTouchEnd={onTouchEndItem}
-                style={{background:dragItemId===item.id?"rgba(160,190,140,0.45)":item.checked?"rgba(248,245,236,0.60)":"rgba(248,245,236,0.92)",borderRadius:16,padding:"12px 14px",marginBottom:8,border:`1.5px solid ${dragItemId===item.id?"#6A8858":item.checked?"rgba(90,160,80,0.20)":"rgba(90,120,72,0.15)"}`,opacity:item.checked&&dragItemId!==item.id?0.75:1,transition:"background 0.15s,box-shadow 0.15s,transform 0.15s",display:"flex",alignItems:"center",gap:10,boxShadow:dragItemId===item.id?"0 8px 24px rgba(60,80,40,0.18)":"none",transform:dragItemId===item.id?"scale(1.02)":"scale(1)",cursor:"grab",touchAction:"none"}}>
-                <div style={{color:"rgba(90,120,72,0.40)",fontSize:16,flexShrink:0,cursor:"grab",padding:"0 2px",letterSpacing:1}}>⠿</div>
-                {/* Checkbox */}
-                <button onClick={()=>toggle(item.id)} style={{width:28,height:28,borderRadius:"50%",border:`2.5px solid ${item.checked?"#5A9040":"rgba(90,120,72,0.35)"}`,background:item.checked?"#5A9040":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:14,fontWeight:900}}>
-                  {item.checked?"✓":""}
-                </button>
-                {/* Category emoji */}
-                {item.cat&&item.cat!=="General"&&<span style={{fontSize:18,flexShrink:0}}>{CAT_EMOJI[item.cat]||"🛒"}</span>}
-                {/* Content */}
-                <div style={{flex:1,minWidth:0}}>
-                  <span style={{fontWeight:600,fontSize:15,color:item.checked?"#9A9080":"#1A1A10",textDecoration:item.checked?"line-through":"none"}}>{item.name}</span>
-                  {item.qty&&item.qty!=="1"&&<span style={{marginLeft:6,background:"rgba(90,120,72,0.12)",color:"#3A6020",fontSize:11,fontWeight:700,borderRadius:100,padding:"1px 8px"}}>{item.qty}{item.unit?" "+item.unit:""}</span>}
-                  {item.note&&<div style={{fontSize:12,color:"#8A8070",marginTop:2,lineHeight:1.4}}>{item.note}</div>}
+        {/* Expense list */}
+        {b.expenses.length>0&&(
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Expenses</div>
+            {b.expenses.map(e=>(
+              <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,fontWeight:600,color:"#1A1A10"}}>{e.label}</div>
+                  {e.url&&<a href={e.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#4285f4"}}>🔗 link</a>}
                 </div>
-                {/* Edit */}
-                <button onClick={()=>setEditItem({...item})} style={{background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"none",borderRadius:"50%",width:30,height:30,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
-                {/* Delete */}
-                <button onClick={()=>del(item.id)} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:30,height:30,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#c0392b"}}>£{Number(e.amount).toFixed(2)}</div>
+                <button onClick={()=>delExp(e.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.5)",cursor:"pointer",fontSize:14}}>🗑</button>
               </div>
             ))}
           </div>
-        ))}
-        {visible.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",margin:"4px 0 8px"}}>⠿ Hold and drag items to reorder</div>}
+        )}
       </div>
-
-      {/* Edit item bottom sheet */}
-      {editItem&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(20,5,50,0.65)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:300}}>
-          <div style={{background:C.wh,borderRadius:"22px 22px 0 0",padding:"0 0 30px",width:"100%",maxWidth:480,boxShadow:"0 -8px 40px rgba(45,10,94,0.4)",maxHeight:"88vh",overflowY:"auto"}}>
-            <div style={{display:"flex",justifyContent:"center",padding:"12px 0 6px"}}><div style={{width:40,height:4,borderRadius:2,background:C.ll}}/></div>
-            <div style={{padding:"0 18px"}}>
-              <div style={{fontWeight:900,color:"#1A1A10",fontSize:15,marginBottom:14}}>✏️ Edit Item</div>
-
-              {/* Name */}
-              <div style={{fontSize:11,fontWeight:700,color:"#8A8070",textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Item name</div>
-              <input value={editItem.name} onChange={e=>setEditItem(d=>({...d,name:e.target.value}))}
-                style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:12}}/>
-
-              {/* Qty + Unit */}
-              <div style={{display:"flex",gap:10,marginBottom:12}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Quantity</div>
-                  <input value={editItem.qty} onChange={e=>setEditItem(d=>({...d,qty:e.target.value}))}
-                    placeholder="1" style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,fontWeight:600,color:"#1A1A10",outline:"none"}}/>
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Unit</div>
-                  <input value={editItem.unit} onChange={e=>setEditItem(d=>({...d,unit:e.target.value}))}
-                    placeholder="kg, pcs, ml…" style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:14,fontWeight:600,color:C.txt,outline:"none"}}/>
-                </div>
-              </div>
-
-              {/* Category — emoji tiles */}
-              <div style={{fontSize:11,fontWeight:700,color:"#8A8070",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Category</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
-                {SHOP_CATS.map(c=>(
-                  <button key={c} onClick={()=>setEditItem(d=>({...d,cat:c}))} style={{background:editItem.cat===c?"#5A7848":"rgba(248,245,236,0.88)",border:`1.5px solid ${editItem.cat===c?"#5A7848":"rgba(90,80,60,0.12)"}`,borderRadius:14,padding:"8px 4px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,transition:"all 0.15s"}}>
-                    <span style={{fontSize:20}}>{CAT_EMOJI[c]||"🛒"}</span>
-                    <span style={{fontSize:9,fontWeight:editItem.cat===c?700:500,color:editItem.cat===c?"#fff":"#3A3020",textAlign:"center",lineHeight:1.2}}>{c.split(" ")[0]}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Note */}
-              <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Note</div>
-              <textarea value={editItem.note} onChange={e=>setEditItem(d=>({...d,note:e.target.value}))}
-                placeholder="Brand, size, any detail…" rows={2}
-                style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${C.ll}`,fontSize:13,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10}}/>
-
-              {/* URL */}
-              <div style={{fontSize:11,fontWeight:700,color:C.soft,textTransform:"uppercase",letterSpacing:1,marginBottom:5}}>Website / Link</div>
-              <UrlField value={editItem.url} onChange={v=>setEditItem(d=>({...d,url:v}))} style={{marginBottom:16}}/>
-
-              {/* Buttons */}
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>setEditItem(null)} style={{flex:1,background:C.ll,color:C.mid,border:"none",borderRadius:12,padding:"12px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveEdit} style={{flex:2,background:btnGrad,color:"#1A1A10",border:"none",borderRadius:12,padding:"12px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 3px 12px rgba(45,10,94,0.3)"}}>Save</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+
 
 function ShoppingList({data,setData,setScreen}){
   const [activeId,setActiveId]=useState(null);
