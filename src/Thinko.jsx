@@ -7450,7 +7450,7 @@ function Routine({routineData,setRoutineData,setScreen}){
           </div>
           {items.length>0&&(
             <>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",textAlign:"center",marginBottom:6,fontFamily:"'Segoe UI',sans-serif"}}>{doneCount}/{items.length} steps · {pct}%</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",textAlign:"center",marginBottom:6,fontFamily:"'Segoe UI',sans-serif"}}>{doneCount}/{items.length} tasks · {pct}%</div>
               <div style={{height:8,background:"rgba(255,255,255,0.15)",borderRadius:100,overflow:"hidden",maxWidth:260,margin:"0 auto"}}>
                 <div style={{height:"100%",width:`${pct}%`,background:pct===100?"linear-gradient(90deg,#FFD700,#FFA500)":"rgba(255,255,255,0.75)",borderRadius:100,transition:"width 0.5s"}}/>
               </div>
@@ -7460,14 +7460,14 @@ function Routine({routineData,setRoutineData,setScreen}){
 
         <div style={{padding:"18px 16px"}}>
           <div style={{display:"flex",gap:10,marginBottom:16}}>
-            <button onClick={()=>{setAdding(a=>!a);setShowTemplates(false);}} style={{flex:1,padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>{adding?"✕ Cancel":"+ Add step"}</button>
+            <button onClick={()=>{setAdding(a=>!a);setShowTemplates(false);}} style={{flex:1,padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>{adding?"✕ Cancel":"+ Add task"}</button>
             <button onClick={()=>{setShowTemplates(t=>!t);setAdding(false);}} style={{flex:1,padding:"12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 Templates</button>
             {doneCount>0&&<button onClick={resetToday} style={{padding:"12px 14px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontSize:13,cursor:"pointer"}}>↺</button>}
           </div>
 
           {adding&&(
             <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first step":"New step"}</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first task":"New task"}</div>
               <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
               {(()=>{
                 return(
@@ -7505,7 +7505,7 @@ function Routine({routineData,setRoutineData,setScreen}){
               })()}
               <input value={newName} onChange={e=>setNewName(e.target.value)}
                 onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
-                placeholder="Step name…"
+                placeholder="Task name…"
                 style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.92)"}}/>
               <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:10}}>⏱ Duration</div>
               <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
@@ -7514,7 +7514,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                 ))}
               </div>
               <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
-                style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>✅ Add step</button>
+                style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>✅ Add task</button>
             </div>
           )}
 
@@ -7524,7 +7524,7 @@ function Routine({routineData,setRoutineData,setScreen}){
               {ROUTINE_TEMPLATES.map((tmpl,ti)=>(
                 <button key={ti} onClick={()=>{const newItems=tmpl.items.map((it,i)=>({id:Date.now()+i,name:it.name,mins:it.mins,icon:it.icon||"⭐",doneToday:false,history:[]}));save([...items,...newItems]);setShowTemplates(false);}}
                   style={{width:"100%",padding:"14px 16px",marginBottom:8,background:"rgba(90,120,72,0.06)",color:"#1A1A10",border:"1.5px solid rgba(90,120,72,0.15)",borderRadius:18,fontFamily:"Georgia,serif",fontWeight:600,fontSize:15,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <span>{tmpl.name}</span><span style={{opacity:0.5,fontSize:12}}>{tmpl.items.length} steps →</span>
+                  <span>{tmpl.name}</span><span style={{opacity:0.5,fontSize:12}}>{tmpl.items.length} tasks →</span>
                 </button>
               ))}
             </div>
@@ -7533,9 +7533,9 @@ function Routine({routineData,setRoutineData,setScreen}){
           {items.length===0&&!adding&&(
             <div style={{textAlign:"center",padding:"40px 20px"}}>
               <div style={{fontSize:60,marginBottom:12}}>{routine.icon}</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A1A10",marginBottom:8}}>Add your first step</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A1A10",marginBottom:8}}>Add your first task</div>
               <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif",marginBottom:20}}>Build your {routine.name} step by step.</div>
-              <button onClick={()=>setAdding(true)} style={{padding:"14px 28px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.28)"}}>+ Add first step</button>
+              <button onClick={()=>setAdding(true)} style={{padding:"14px 28px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.28)"}}>+ Add first task</button>
             </div>
           )}
 
@@ -7544,12 +7544,20 @@ function Routine({routineData,setRoutineData,setScreen}){
             return(
               <div key={item.id} draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
                 style={{background:item.doneToday?"rgba(90,160,80,0.06)":"rgba(248,245,236,0.95)",borderRadius:24,padding:"0",marginBottom:12,border:`2px solid ${item.doneToday?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,boxShadow:"0 3px 16px rgba(60,60,40,0.07)",opacity:dragId===item.id?0.5:1,overflow:"hidden",transition:"all 0.15s"}}>
-                <div style={{height:4,background:item.doneToday?"linear-gradient(90deg,#5A9848,#7AB868)":"linear-gradient(90deg,#5A7848,#7A9868)"}}/>
+                <div style={{height:4,background:item.doneToday?"linear-gradient(90deg,#5A9848,#7AB868)":`linear-gradient(90deg,${["#E07048","#5A7848","#4870A0","#A04870","#7A6030","#3A8878","#8848A0","#C06828","#2A8058","#D04848"][(item.icon||"⭐").codePointAt(0)%10]},${["#E09068","#7A9868","#6890C0","#C068A0","#9A8050","#5AA8A0","#A868C0","#E08848","#4AA878","#F06868"][(item.icon||"⭐").codePointAt(0)%10]})`}}/>
                 <div style={{padding:"16px 18px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:item.doneToday?0:10}}>
-                    <div style={{width:52,height:52,borderRadius:18,background:item.doneToday?"rgba(90,160,80,0.12)":"rgba(90,120,72,0.10)",border:`2px solid ${item.doneToday?"rgba(90,160,80,0.25)":"rgba(90,120,72,0.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,cursor:"grab"}}>
-                      {item.doneToday?"✅":item.icon||"⭐"}
-                    </div>
+                    {(()=>{
+                      const PALETTES=["#E07048","#5A7848","#4870A0","#A04870","#7A6030","#3A8878","#8848A0","#C06828"];
+                      const ic=item.icon||"⭐";
+                      const colIdx=ic.codePointAt(0)%PALETTES.length;
+                      const col=item.doneToday?"rgba(90,160,80,0.8)":PALETTES[colIdx];
+                      return(
+                        <div style={{width:52,height:52,borderRadius:18,background:`${col}18`,border:`2.5px solid ${col}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,cursor:"grab"}}>
+                          {item.doneToday?"✅":ic}
+                        </div>
+                      );
+                    })()}
                     <div style={{flex:1}}>
                       <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
                       <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
@@ -7689,7 +7697,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>{r.name}</div>
                   <div style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif",marginBottom:total>0?6:0}}>
-                    {total===0?"No steps yet — tap to add some":pct===100?"✅ All done today!":done>0?`${done}/${total} steps done today`:`${total} step${total!==1?"s":""}·Tap to start`}
+                    {total===0?"No tasks yet — tap to add some":pct===100?"✅ All done today!":done>0?`${done}/${total} tasks done today`:`${total} step${total!==1?"s":""}·Tap to start`}
                   </div>
                   {total>0&&(
                     <div style={{height:5,background:"rgba(90,80,60,0.08)",borderRadius:100,overflow:"hidden",maxWidth:180}}>
