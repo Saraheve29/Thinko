@@ -29,44 +29,10 @@ const showInstallPrompt = async () => {
 };
 
 // ── AI HELPERS ───────────────────────────────────────────
-async function callAI(prompt, maxTokens=600) {
-  try {
-    // Try Vercel proxy first (works on thinko-lemon.vercel.app)
-    try {
-      const rp = await fetch("/api/ai", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({prompt, max_tokens: maxTokens})
-      });
-      if (rp.ok) {
-        const jp = await rp.json();
-        // Handle both {text:"..."} (old) and full Anthropic response (new)
-        if (jp.text) return jp.text;
-        if (jp.content?.[0]?.text) return jp.content[0].text;
-      }
-    } catch {}
-    // Direct call (works in Claude artifact — auth injected automatically)
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: maxTokens,
-        messages: [{role: "user", content: prompt}]
-      })
-    });
-    if (!r.ok) return null;
-    const j = await r.json();
-    return j.content?.[0]?.text || null;
-  } catch(e) { return null; }
-}
+async function callAI(prompt,maxTokens=600){return "";}
+async function callAIJson(prompt,maxTokens=500){return null;}
 
-async function callAIJson(prompt, maxTokens=500) {
-  const raw = await callAI(prompt, maxTokens);
-  if (!raw) return null;
-  try { return JSON.parse(raw.replace(/```json|```/g, "").trim()); }
-  catch { return null; }
-}
+
 
 // ── PREMADE DRAWERS ──────────────────────────────────────
 const PREMADE_DRAWERS = [
@@ -2904,269 +2870,9 @@ async function aiStudy(content,title,type){
     infographic:`Create an infographic summary of this note. Return ONLY a JSON object with: "title" (string), "subtitle" (string), "keyPoints" (array of 4-6 objects with "icon" emoji and "text"), "stat" (one memorable number/fact as string), "quote" (one key sentence). No markdown.\n\nTitle: ${title}\n\n${content.slice(0,2000)}`,
     slides:`Create a 5-slide deck from this note. Return ONLY a JSON array of objects with "title", "bullets" (array of 3-4 strings), "emoji" (one relevant emoji). No markdown.\n\nTitle: ${title}\n\n${content.slice(0,2000)}`,
   };
-   const _studyRaw=await callAI(prompts[type],1200);
-   const j={content:[{text:_studyRaw||"[]"}]};
    return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 
-function StudyStudio({page,onClose}){
-  const [mode,setMode]=useState(null); // null | flashcards | quiz | infographic | slides
-  const [loading,setLoading]=useState(false);
-  const [data,setData]=useState(null);
-  const [error,setError]=useState("");
-
-  const generate=async(type)=>{
-    if(!page.content.trim()){setError("Add some content to the page first!");return;}
-    setLoading(true);setError("");setData(null);setMode(type);
-    try{const d=await aiStudy(page.content,page.title,type);setData(d);}
-    catch(e){setError("AI error — try again");setMode(null);}
-    setLoading(false);
-  };
-
-  // Flashcards
-  const [cardIdx,setCardIdx]=useState(0);
-  const [flipped,setFlipped]=useState(false);
-  const [known,setKnown]=useState(new Set());
-
-  // Quiz
-  const [qIdx,setQIdx]=useState(0);
-  const [picked,setPicked]=useState(null);
-  const [score,setScore]=useState(0);
-  const [quizDone,setQuizDone]=useState(false);
-
-  const resetFlashcards=()=>{setCardIdx(0);setFlipped(false);setKnown(new Set());};
-  const resetQuiz=()=>{setQIdx(0);setPicked(null);setScore(0);setQuizDone(false);};
-
-  const TOOLS=[
-    {id:"flashcards",icon:"🃏",label:"Flashcards",desc:"Flip Q&A cards",col:"#7c5cbf"},
-    {id:"quiz",      icon:"❓",label:"Quiz",      desc:"Test yourself",col:"#2980b9"},
-    {id:"infographic",icon:"📊",label:"Infographic",desc:"Visual summary",col:"#27ae60"},
-    {id:"slides",    icon:"📑",label:"Slide Deck", desc:"Key slides",  col:"#e67e22"},
-  ];
-
-  return(
-    <div style={{position:"fixed",inset:0,background:"rgba(10,2,30,0.92)",zIndex:500,display:"flex",flexDirection:"column",fontFamily:"'Segoe UI',sans-serif"}}>
-
-      {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#3D5A2A,#5A7848)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-        <button onClick={onClose} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"none",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer"}}>←</button>
-        <div style={{flex:1}}>
-          <div style={{color:"#1A1A10",fontWeight:900,fontSize:17}}>🎓 Study Studio</div>
-          <div style={{color:"rgba(255,255,255,0.6)",fontSize:12}}>{page.title}</div>
-        </div>
-        {mode&&<button onClick={()=>{setMode(null);setData(null);setError("");resetFlashcards();resetQuiz();}} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"none",borderRadius:10,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>← Back</button>}
-      </div>
-
-      <div style={{flex:1,overflowY:"auto",padding:"16px 14px"}}>
-
-        {/* Tool selector */}
-        {!mode&&!loading&&(
-          <>
-            <div style={{color:"rgba(255,255,255,0.7)",fontSize:13,marginBottom:14,textAlign:"center"}}>
-              Choose what to generate from your notes ✨
-            </div>
-            {TOOLS.map(t=>(
-              <button key={t.id} onClick={()=>generate(t.id)}
-                style={{display:"flex",alignItems:"center",gap:16,width:"100%",padding:"16px 18px",background:"rgba(255,255,255,0.09)",border:`1.5px solid ${t.col}`,borderRadius:18,marginBottom:12,cursor:"pointer",transition:"all 0.15s",textAlign:"left"}}
-                onMouseEnter={e=>{e.currentTarget.style.background=`${t.col}`;e.currentTarget.style.borderColor=t.col;}}
-                onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.09)";e.currentTarget.style.borderColor=`${t.col}`;}}>
-                <div style={{width:52,height:52,borderRadius:14,background:`${t.col}`,border:`2px solid ${t.col}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{t.icon}</div>
-                <div>
-                  <div style={{color:"#1A1A10",fontWeight:800,fontSize:17,marginBottom:2}}>{t.label}</div>
-                  <div style={{color:"rgba(255,255,255,0.5)",fontSize:13}}>{t.desc}</div>
-                </div>
-                <div style={{color:"rgba(255,255,255,0.3)",fontSize:20,marginLeft:"auto"}}>›</div>
-              </button>
-            ))}
-            {error&&<div style={{background:"#fce4e4",color:"#c0392b",borderRadius:10,padding:"10px 14px",fontSize:13,fontWeight:700,marginTop:8}}>{error}</div>}
-          </>
-        )}
-
-        {/* Loading */}
-        {loading&&(
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"60vh",gap:20}}>
-            <div style={{fontSize:48}}>✨</div>
-            <div style={{color:"#1A1A10",fontWeight:800,fontSize:18}}>Generating {mode}…</div>
-            <div style={{color:"rgba(255,255,255,0.5)",fontSize:14}}>Claude is studying your notes</div>
-            <div style={{display:"flex",gap:8}}>
-              {[0,1,2].map(i=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:C.pp,animation:"none",opacity:0.4+i*0.2}}/>)}
-            </div>
-          </div>
-        )}
-
-        {/* ── FLASHCARDS ── */}
-        {mode==="flashcards"&&data&&Array.isArray(data)&&(()=>{
-          const card=data[cardIdx];
-          const pct=Math.round((known.size/data.length)*100);
-          return(
-            <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                <span style={{color:"rgba(255,255,255,0.7)",fontSize:13,fontWeight:700}}>{cardIdx+1} / {data.length}</span>
-                <span style={{background:"rgba(248,245,236,0.88)",color:"#1A1A10",borderRadius:20,padding:"3px 10px",fontSize:12,fontWeight:800}}>{known.size} known</span>
-                <button onClick={resetFlashcards} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"none",borderRadius:8,padding:"5px 10px",fontSize:12,cursor:"pointer"}}>↺ Reset</button>
-              </div>
-              {/* Progress bar */}
-              <div style={{height:5,background:"rgba(255,255,255,0.1)",borderRadius:3,marginBottom:16,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${pct}%`,background:"#27ae60",borderRadius:3,transition:"width 0.4s"}}/>
-              </div>
-              {/* Card */}
-              <div onClick={()=>setFlipped(f=>!f)}
-                style={{background:flipped?"linear-gradient(135deg,#1e8449,#27ae60)":"linear-gradient(135deg,#3D5A2A,#5A7848)",borderRadius:22,padding:"32px 24px",minHeight:200,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 8px 32px rgba(45,10,94,0.4)",transition:"all 0.3s",marginBottom:16}}>
-                <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>{flipped?"ANSWER ✅":"QUESTION — tap to flip"}</div>
-                <div style={{color:"#1A1A10",fontWeight:700,fontSize:18,textAlign:"center",lineHeight:1.5}}>{flipped?card.a:card.q}</div>
-              </div>
-              {/* Action buttons */}
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{setKnown(s=>{const n=new Set(s);n.add(cardIdx);return n;});setFlipped(false);if(cardIdx<data.length-1)setCardIdx(i=>i+1);}}
-                  style={{flex:1,background:"rgba(248,245,236,0.88)",color:"#1A1A10",border:"none",borderRadius:14,padding:"14px",fontWeight:800,fontSize:15,cursor:"pointer"}}>
-                  ✅ Got it
-                </button>
-                <button onClick={()=>{setFlipped(false);if(cardIdx<data.length-1)setCardIdx(i=>i+1);}}
-                  style={{flex:1,background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"none",borderRadius:14,padding:"14px",fontWeight:800,fontSize:15,cursor:"pointer"}}>
-                  🔄 Again
-                </button>
-              </div>
-              {/* Nav dots */}
-              <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14,flexWrap:"wrap"}}>
-                {data.map((_,i)=>(
-                  <div key={i} onClick={()=>{setCardIdx(i);setFlipped(false);}}
-                    style={{width:10,height:10,borderRadius:"50%",background:known.has(i)?"#27ae60":i===cardIdx?C.pp:"rgba(255,255,255,0.2)",cursor:"pointer",transition:"all 0.2s"}}/>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* ── QUIZ ── */}
-        {mode==="quiz"&&data&&Array.isArray(data)&&(()=>{
-          if(quizDone) return(
-            <div style={{textAlign:"center",padding:"40px 20px"}}>
-              <div style={{fontSize:64,marginBottom:16}}>{score>=4?"🏆":score>=3?"🌟":"📚"}</div>
-              <div style={{color:"#1A1A10",fontWeight:900,fontSize:28,marginBottom:8}}>{score} / {data.length}</div>
-              <div style={{color:"rgba(255,255,255,0.7)",fontSize:16,marginBottom:24}}>{score===data.length?"Perfect! 🎉":score>=data.length*0.7?"Great work!":"Keep studying!"}</div>
-              <button onClick={()=>{resetQuiz();}} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:14,padding:"14px 32px",fontWeight:800,fontSize:15,cursor:"pointer"}}>Try Again</button>
-            </div>
-          );
-          const q=data[qIdx];
-          return(
-            <div>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-                <span style={{color:"rgba(255,255,255,0.7)",fontSize:13,fontWeight:700}}>Q{qIdx+1} of {data.length}</span>
-                <span style={{color:"rgba(255,255,255,0.7)",fontSize:13,fontWeight:700}}>Score: {score}</span>
-              </div>
-              <div style={{background:"rgba(255,255,255,0.10)",borderRadius:18,padding:"20px",marginBottom:16}}>
-                <div style={{color:"#1A1A10",fontWeight:700,fontSize:17,lineHeight:1.5}}>{q.question}</div>
-              </div>
-              {q.options.map((opt,i)=>{
-                const isCorrect=i===q.correct;
-                const isWrong=picked===i&&!isCorrect;
-                const showCorrect=picked!==null&&isCorrect;
-                return(
-                  <button key={i} onClick={()=>{
-                    if(picked!==null)return;
-                    setPicked(i);
-                    if(i===q.correct)setScore(s=>s+1);
-                    setTimeout(()=>{
-                      if(qIdx<data.length-1){setQIdx(qi=>qi+1);setPicked(null);}
-                      else setQuizDone(true);
-                    },1200);
-                  }}
-                  style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"14px 16px",background:showCorrect?"#27ae60":isWrong?"#e74c3c":picked===i?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.09)",border:`2px solid ${showCorrect?"#27ae60":isWrong?"#e74c3c":"rgba(255,255,255,0.15)"}`,borderRadius:14,marginBottom:10,cursor:picked===null?"pointer":"default",textAlign:"left",transition:"all 0.2s"}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,0.15)",color:"#1A1A10",fontWeight:800,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      {String.fromCharCode(65+i)}
-                    </div>
-                    <span style={{color:"#1A1A10",fontWeight:600,fontSize:14,flex:1}}>{opt}</span>
-                    {showCorrect&&<span style={{fontSize:18}}>✅</span>}
-                    {isWrong&&<span style={{fontSize:18}}>❌</span>}
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })()}
-
-        {/* ── INFOGRAPHIC ── */}
-        {mode==="infographic"&&data&&!Array.isArray(data)&&(()=>{
-          const inf=data;
-          return(
-            <div>
-              {/* Header card */}
-              <div style={{background:"linear-gradient(135deg,#1a5276,#2980b9)",borderRadius:20,padding:"22px 20px",marginBottom:12,textAlign:"center",boxShadow:"0 6px 24px rgba(41,128,185,0.4)"}}>
-                <div style={{color:"#1A1A10",fontWeight:900,fontSize:22,marginBottom:4}}>{inf.title}</div>
-                <div style={{color:"rgba(255,255,255,0.75)",fontSize:14,lineHeight:1.5}}>{inf.subtitle}</div>
-              </div>
-              {/* Key points */}
-              <div style={{background:"rgba(255,255,255,0.92)",borderRadius:18,padding:"16px",marginBottom:12}}>
-                <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>Key Points</div>
-                {(inf.keyPoints||[]).map((kp,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10,padding:"10px 12px",background:C.pale,borderRadius:12,border:`1px solid ${C.ll}`}}>
-                    <span style={{fontSize:22,flexShrink:0}}>{kp.icon}</span>
-                    <span style={{fontSize:14,fontWeight:600,color:C.txt,lineHeight:1.5}}>{kp.text}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Stat callout */}
-              {inf.stat&&(
-                <div style={{background:"linear-gradient(135deg,#8e44ad,#c2185b)",borderRadius:18,padding:"18px",marginBottom:12,textAlign:"center",boxShadow:"0 4px 18px rgba(142,68,173,0.4)"}}>
-                  <div style={{color:"rgba(255,255,255,0.7)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Key Fact</div>
-                  <div style={{color:"#1A1A10",fontWeight:900,fontSize:20,lineHeight:1.4}}>{inf.stat}</div>
-                </div>
-              )}
-              {/* Quote */}
-              {inf.quote&&(
-                <div style={{background:"rgba(255,255,255,0.92)",borderRadius:18,padding:"16px 20px",borderLeft:`5px solid ${C.pp}`}}>
-                  <div style={{fontSize:28,color:C.pp,lineHeight:1,marginBottom:4}}>"</div>
-                  <div style={{fontSize:15,fontWeight:600,color:C.txt,lineHeight:1.6,fontStyle:"italic"}}>{inf.quote}</div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* ── SLIDES ── */}
-        {mode==="slides"&&data&&Array.isArray(data)&&(()=>{
-          const slide=data[slideIdx];
-          const slideColors=["linear-gradient(135deg,#3D5A2A,#5A7848)","linear-gradient(135deg,#1a5276,#2980b9)","linear-gradient(135deg,#1e8449,#27ae60)","linear-gradient(135deg,#7d1a1a,#c0392b)","linear-gradient(135deg,#4a148c,#8e44ad)"];
-          return(
-            <div>
-              {/* Slide counter */}
-              <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:12}}>
-                {data.map((_,i)=>(
-                  <button key={i} onClick={()=>setSlideIdx(i)} style={{width:28,height:28,borderRadius:"50%",background:i===slideIdx?C.pp:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"none",cursor:"pointer",fontWeight:800,fontSize:12}}>{i+1}</button>
-                ))}
-              </div>
-              {/* Slide */}
-              <div style={{background:slideColors[slideIdx%slideColors.length],borderRadius:22,padding:"28px 22px",minHeight:260,boxShadow:"0 8px 32px rgba(45,10,94,0.4)",marginBottom:16}}>
-                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
-                  <span style={{fontSize:36}}>{slide.emoji}</span>
-                  <div style={{color:"#1A1A10",fontWeight:900,fontSize:20,lineHeight:1.3,flex:1}}>{slide.title}</div>
-                </div>
-                {(slide.bullets||[]).map((b,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:"rgba(255,255,255,0.6)",flexShrink:0,marginTop:7}}/>
-                    <span style={{color:"rgba(255,255,255,0.9)",fontSize:15,lineHeight:1.5,fontWeight:600}}>{b}</span>
-                  </div>
-                ))}
-              </div>
-              {/* Prev/Next */}
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>setSlideIdx(i=>Math.max(0,i-1))} disabled={slideIdx===0}
-                  style={{flex:1,background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"none",borderRadius:14,padding:"13px",fontWeight:800,fontSize:15,cursor:"pointer",opacity:slideIdx===0?0.4:1}}>
-                  ← Prev
-                </button>
-                <button onClick={()=>setSlideIdx(i=>Math.min(data.length-1,i+1))} disabled={slideIdx===data.length-1}
-                  style={{flex:1,background:btnGrad,color:"#1A1A10",border:"none",borderRadius:14,padding:"13px",fontWeight:800,fontSize:15,cursor:"pointer",opacity:slideIdx===data.length-1?0.4:1}}>
-                  Next →
-                </button>
-              </div>
-            </div>
-          );
-        })()}
-
-      </div>
-    </div>
-  );
-}
 
 function VoiceToText({setNotesData:setND}){
   const [listening,setListening]=useState(false);
@@ -3229,7 +2935,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [pageId,setPageId]=useState(null);
   const [sendOpen,setSendOpen]=useState(false);
   const [toast,setToast]=useState("");
-  const [studioOpen,setStudioOpen]=useState(false);
   const [notesMode,setNotesMode]=useState(initialMode||null); // null = show vault hub
   const [cabinetData,setCabinetData]=useState([]);
   const [addingSectionForm,setAddingSectionForm]=useState(false);
@@ -3318,8 +3023,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const updatePageUrl=(id,url)=>setData(ds=>ds.map(s=>s.id===sectionId?{...s,pages:s.pages.map(p=>p.id===id?{...p,url}:p)}:s));
   if(notesMode==="notes"&&page&&section) return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
-      {studioOpen&&<StudyStudio page={page} onClose={()=>setStudioOpen(false)}/>}
-      {/* Page editor nav bar */}
+            {/* Page editor nav bar */}
       <div style={{background:`linear-gradient(135deg,${C.dp},${C.mp})`,padding:"10px 12px",display:"flex",alignItems:"center",gap:8,boxShadow:"0 3px 16px rgba(90,80,60,0.35)",position:"sticky",top:0,zIndex:50,flexShrink:0}}>
         <button onClick={()=>setPageId(null)} style={{background:"rgba(255,255,255,0.2)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:10,width:40,height:40,fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900}}>←</button>
         <span style={{flex:1,color:"#1A1A10",fontWeight:800,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{page.title}</span>
@@ -4296,14 +4000,14 @@ function MountainProgress({pct=0,size=160}){
 
 /* ── AI step generator ─────────────────────────────── */
 async function aiGenerateSteps(goalText){
-  const _r4154=await callAI(`Break this goal into 4–6 clear, actionable steps. Return ONLY a JSON array of strings (step descriptions). No markdown, no extra text.\n\nGoal: "${goalText}"`,400);
+   const _r4154="[]";
   const j={content:[{text:_r4154||""}]};
   const txt=(j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim();
   return JSON.parse(txt);
 }
 
 async function aiGenerateMicroSteps(stepText){
-  const _r4167=await callAI(`Break this step into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown, no extra text.\n\nStep: "${stepText}"`,300);
+   const _r4167="[]";
   const j={content:[{text:_r4167||""}]};
   const txt=(j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim();
   return JSON.parse(txt);
@@ -4685,12 +4389,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
     const r=new FileReader();r.onload=ev=>patchStep(id,{image:ev.target.result});r.readAsDataURL(file);
   };
 
-  const generateSteps=async()=>{
-    setAiLoading(true);
-    try{const ss=await aiGenerateSteps(idea.text);updSteps([...steps,...ss.map(t=>mkStep(t))]);}
-    catch{showToast("AI error — try again");}
-    setAiLoading(false);
-  };
+  
 
   const generateMicro=async(step)=>{
     setMicroLoading(step.id);
@@ -4786,9 +4485,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
         {/* Steps header + AI */}
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
           <div style={{color:"#1A1A10",fontWeight:900,fontSize:16,flex:1}}>🏔️ Steps</div>
-          <button onClick={generateSteps} disabled={aiLoading} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:20,padding:"6px 14px",fontWeight:800,fontSize:12,cursor:"pointer",opacity:aiLoading?0.6:1}}>
-            {aiLoading?"⏳ AI thinking…":"🤖 AI generate steps"}
-          </button>
+
         </div>
 
         {/* Add step */}
@@ -5189,8 +4886,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   const [expandedTask,setExpandedTask]=useState(null);
   const [taskUrls,setTaskUrls]=useState({});
   const [aiInput,setAiInput]=useState("");
-  const [aiLoading,setAiLoading]=useState(false);
-  const [aiResult,setAiResult]=useState(null);
+  
   const [staleModal,setStaleModal]=useState(null);
   const [toast,setToast]=useState("");
   const [moveTask,setMoveTask]=useState(null);
@@ -5232,15 +4928,6 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   };
 
   /* AI */
-  const askAI=async()=>{
-    if(!aiInput.trim())return;
-    setAiLoading(true);setAiResult(null);
-    try{
-      const r=await callAIJson(`Place this task in an Eisenhower Matrix. Quadrants: "do"=Urgent+Important, "plan"=Important not urgent, "help"=Urgent not important (outsource/tool), "drop"=neither. Task: "${aiInput}". Reply ONLY JSON: {"quad":"do","reason":"one sentence"}`,200);
-      setAiResult(r||{quad:"do",reason:"Couldn't reach AI — try again."});
-    }catch{setAiResult({quad:"do",reason:"Couldn't reach AI — try again."});}
-    setAiLoading(false);
-  };
   const acceptAI=()=>{
     if(!aiResult)return;
     setData(ds=>[...ds,{id:Date.now(),text:aiInput.trim(),quad:aiResult.quad,created:Date.now(),touched:Date.now()}]);
@@ -5430,7 +5117,7 @@ const fmtDate=d=>d?new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"
 
 function mkBudget(name="My Budget"){
   const now=new Date(),end=new Date(now);end.setDate(end.getDate()+30);
-  return{id:Date.now(),name,period:"monthly",dateFrom:now.toISOString().slice(0,10),dateTo:end.toISOString().slice(0,10),budgetAmount:"",expenses:[],saved:false,aiReview:null};
+  return{id:Date.now(),name,period:"monthly",dateFrom:now.toISOString().slice(0,10),dateTo:end.toISOString().slice(0,10),budgetAmount:"",expenses:[],saved:false};
 }
 
 function BudgetPlanner({data,setData,setScreen}){
@@ -6117,7 +5804,7 @@ function Translator(){
       setLoading(true);setResult("");
       const tName=l=>({en:"English",es:"Spanish",fr:"French",de:"German",it:"Italian",pl:"Polish",ro:"Romanian",nl:"Dutch",ar:"Arabic",zh:"Chinese",ja:"Japanese",pt:"Portuguese",tr:"Turkish",ru:"Russian",hi:"Hindi",uk:"Ukrainian",sv:"Swedish",no:"Norwegian"}[l]||l);
       // Try AI first
-      const res=await callAI(`Translate this text from ${tName(srcLang)} to ${tName(tgtLang)}. Return ONLY the translated text, nothing else:\n\n${srcText.trim()}`,400);
+   const res=null; // translation via free API only
       if(res&&res.length>1&&!res.toLowerCase().includes("sorry")&&!res.toLowerCase().includes("cannot")){
         setResult(res);setLoading(false);return;
       }
@@ -6805,12 +6492,12 @@ function mkGoal(horizon){
 /* ── AI helpers ─────────────────────────────────────── */
 async function aiGoalSubtasks(goalTitle,horizon){
   const h=horizonByKey(horizon);
-  const _r6598=await callAI(`Break this ${h.label} goal into 4–6 clear actionable subtasks. Return ONLY a JSON array of strings. No markdown.\n\nGoal: "${goalTitle}"`,400);
+   const _r6598="[]";
   const j={content:[{text:_r6598||""}]};
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
 async function aiMicroSteps(subtaskText){
-  const _r6607=await callAI(`Break this into 2–4 micro-tasks. Return ONLY a JSON array of strings. No markdown.\n\nTask: "${subtaskText}"`,250);
+   const _r6607="[]";
   const j={content:[{text:_r6607||""}]};
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
@@ -6854,13 +6541,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
   const toggleSub=id=>patchSub(id,{done:!goal.subtasks.find(s=>s.id===id)?.done});
 
   /* AI subtasks */
-  const genSubtasks=async()=>{
-    if(!goal.title.trim()){showToast("Add a goal title first!");return;}
-    setAiLoading(true);
-    try{const ss=await aiGoalSubtasks(goal.title,goal.horizon);updSubs([...goal.subtasks,...ss.map(t=>mkGoalSubtask(t))]);}
-    catch{showToast("AI error — try again");}
-    setAiLoading(false);
-  };
+  
 
   /* AI micro-steps */
   const genMicro=async sub=>{
@@ -7010,11 +6691,8 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
         {/* Subtasks */}
         <div style={{marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
           <div style={{color:"#1A1A10",fontWeight:900,fontSize:16,flex:1}}>📋 Subtasks</div>
-          <button onClick={genSubtasks} disabled={aiLoading} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:20,padding:"6px 14px",fontWeight:800,fontSize:12,cursor:"pointer",opacity:aiLoading?0.6:1}}>
-            {aiLoading?"⏳ Thinking…":"🤖 AI suggest"}
-          </button>
+
         </div>
-        <div style={{fontSize:11,color:"#9A9080",marginBottom:10}}>AI suggestions are optional — add your own or mix both</div>
 
         {/* Add subtask */}
         <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:12,padding:"9px 13px",border:`1.5px solid ${C.ll}`}}>
@@ -7024,7 +6702,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
         </div>
 
         {goal.subtasks.length===0&&(
-          <div style={{textAlign:"center",color:"#9A9080",fontSize:13,fontStyle:"italic",marginBottom:12}}>No subtasks yet — add one or tap 🤖 AI suggest</div>
+          <div style={{textAlign:"center",color:"#9A9080",fontSize:13,fontStyle:"italic",marginBottom:12}}>No subtasks yet — add one above</div>
         )}
 
         {goal.subtasks.map((sub,si)=>(
@@ -7124,7 +6802,7 @@ async function aiChargePicks(tasks){
     const list=staleTasks.concat(tasks.filter(t=>!staleTasks.find(s=>s.id===t.id)))
       .slice(0,12)
       .map(t=>`id:${t.id} "${t.name||t.text}" src:${t.src||"Charge"} days_old:${Math.floor((now-(t.touched||t.created||t.id||now))/86400000)}`).join("\n");
-    const result=await callAI(`You are a gentle productivity coach. Review these tasks and find which ones the person is most likely avoiding or that have been sitting too long. Return JSON array max 4: [{task:string,reason:string,src:string,srcId:number,srcType:"pri"|"matrix"|"charge"}]. Be warm not judgmental.\n\nTasks:\n${list}`,500);
+   const result="No AI available";
     if(!result)return[];
     return JSON.parse(result.replace(/\`\`\`json|\`\`\`/g,"").trim());
   }catch{return[];}
@@ -7132,7 +6810,7 @@ async function aiChargePicks(tasks){
 
 
 async function aiAwardSuggestions(style){
-  const _r0=await callAI(`Suggest 6 warm, specific, achievable self-care rewards for someone who hit their weekly goals. Style: "${style||"restorative and nurturing"}". Return ONLY a JSON array of 6 strings. No markdown.`,250);
+   const _r0="[]";
       const j={content:[{text:_r0||""}]};
   return JSON.parse((j.content?.[0]?.text||"[]").replace(/```json|```/g,"").trim());
 }
@@ -7802,9 +7480,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
   });
   const [view,setView]=useState("today");
   const [aiSugg,setAiSugg]=useState([]);
-  const [aiLoad,setAiLoad]=useState(false);
-  const [awardIdeas,setAwardIdeas]=useState([]);
-  const [awardLoad,setAwardLoad]=useState(false);
   const [whatOff,setWhatOff]=useState("");
   const [editAward,setEditAward]=useState(false);
   const [rewardDraft,setRewardDraft]=useState({name:"",cost:"",url:"",photo:""});
@@ -7943,17 +7618,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
   };
   const delFrog=id=>updToday({frogs:frogs.filter(f=>f.id!==id)});
 
-  const getAiSugg=async()=>{
-    if(!allActive.length){showToast("Add tasks to Prioritizer or Matrix first!");return;}
-    setAiLoad(true);
-    try{setAiSugg(await aiChargePicks(allActive));}catch{showToast("AI error — try again");}
-    setAiLoad(false);
-  };
-  const getAwardIdeas=async()=>{
-    setAwardLoad(true);
-    try{setAwardIdeas(await aiAwardSuggestions(data.weeklyAward));}catch{showToast("AI error — try again");}
-    setAwardLoad(false);
-  };
+  
+  
 
   const Row=({name,src,done,onCharge,onPri,onMatrix,onDelete})=>(
     <div style={{background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 14px",marginBottom:9,border:`1.5px solid ${done?"rgba(90,160,80,0.3)":"rgba(255,255,255,0.9)"}`,backdropFilter:"blur(8px)"}}>
@@ -8328,9 +7994,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
               <span style={{fontSize:26}}>🤖</span>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",flex:1}}>AI Task Picks</div>
-              <button onClick={getAiSugg} disabled={aiLoad} style={{background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"9px 20px",fontWeight:700,fontSize:14,cursor:"pointer",opacity:aiLoad?0.6:1,boxShadow:"0 2px 10px rgba(90,120,72,0.28)"}}>
-                {aiLoad?"Thinking…":"Ask AI"}
-              </button>
+              
             </div>
             {aiSugg.length>0?aiSugg.map((s,i)=>(
               <Row key={i} name={s.task||s} src={s.src||"🤖 AI pick"} done={charged.includes(s.task||s)} onCharge={()=>chargeIt(s.task||s)}
@@ -8581,19 +8245,12 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                   <span style={{fontSize:13,color:"#5A7848",fontWeight:600}}>{rewardDraft.photo?"Change photo":"Add a photo of your reward"}</span>
                   <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setRewardDraft(d=>({...d,photo:ev.target.result}));r.readAsDataURL(f);}}/>
                 </label>
-                {/* AI suggestions */}
-                <button onClick={getAwardIdeas} disabled={awardLoad} style={{width:"100%",padding:"10px",background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:awardIdeas.length?8:12}}>
-                  {awardLoad?"🌿 Thinking…":"✨ Suggest something I've been putting off buying"}
-                </button>
-                {awardIdeas.length>0&&(
-                  <div style={{marginBottom:12,display:"flex",flexWrap:"wrap",gap:6}}>
-                    {awardIdeas.map((idea,i)=>(
-                      <button key={i} onClick={()=>{setDraftAward(idea);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-                        {idea}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Photo upload */}
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"8px 0"}}>
+                  {rewardDraft.photo?<img src={rewardDraft.photo} alt="" style={{width:44,height:44,borderRadius:10,objectFit:"cover",flexShrink:0}}/>:<span style={{fontSize:24}}>📷</span>}
+                  <span style={{fontSize:13,color:"#5A7848",fontWeight:600}}>{rewardDraft.photo?"Change photo":"Add a photo of your reward"}</span>
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setRewardDraft(d=>({...d,photo:ev.target.result}));r.readAsDataURL(f);}}/>
+                </label>}
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setEditAward(false)} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,cursor:"pointer"}}>Cancel</button>
                   <button onClick={()=>{upd({weeklyAward:rewardDraft.name,reward:rewardDraft,rewardDate:rewardDraft.date||""});setEditAward(false);showToast("🎁 Reward saved!");}} style={{flex:2,background:"#6A8858",color:"#fff",border:"none",borderRadius:100,padding:"11px",fontWeight:700,cursor:"pointer",boxShadow:"0 3px 12px rgba(90,120,72,0.28)"}}>Save Reward</button>
