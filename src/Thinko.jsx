@@ -10014,7 +10014,14 @@ export default function App() {
 }
 function NavBar({current,setScreen}) {
   const [navOrder,setNavOrder]=useState(()=>{
-    try{const v=localStorage.getItem('thinko_nav_order');return v?JSON.parse(v):null;}catch{return null;}
+    try{
+      const v=localStorage.getItem('thinko_nav_order');
+      if(!v) return null;
+      const saved=JSON.parse(v);
+      if(!saved.includes('routine')){saved.push('routine');}
+      localStorage.setItem('thinko_nav_order',JSON.stringify(saved));
+      return saved;
+    }catch{return null;}
   });
   const [dragNav,setDragNav]=useState(null);
   const [editing,setEditing]=useState(false);
@@ -10042,8 +10049,10 @@ function NavBar({current,setScreen}) {
     try{
       const v=localStorage.getItem('thinko_nav_visible');
       const saved=v?JSON.parse(v):DEFAULT_NAV;
-      // Migration: ensure routine is included
-      if(!saved.includes('routine')){saved.push('routine');}
+      if(!saved.includes('routine')){
+        saved.push('routine');
+        localStorage.setItem('thinko_nav_visible',JSON.stringify(saved));
+      }
       return saved;
     }catch{return DEFAULT_NAV;}
   });
