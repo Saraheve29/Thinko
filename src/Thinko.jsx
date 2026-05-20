@@ -7295,7 +7295,7 @@ async function aiAwardSuggestions(style){
 const ROUTINE_TEMPLATES=[
   {name:"🌅 Morning Routine",items:[
     {name:"Drink a glass of water",mins:1,icon:"💧"},{name:"Meditate",mins:10,icon:"🧘"},
-    {name:"Stretch",mins:5,icon:"💪"},{name:"Journal",mins:10,icon:"✍️"},{name:"Get dressed",mins:5,icon:"🌸"},
+    {name:"Stretch",mins:5,icon:"💪"},{name:"Journal",mins:10,icon:"✍️"},{name:"Get dressed",mins:5,icon:"👗"},
   ]},
   {name:"🌙 Evening Wind-down",items:[
     {name:"Put phone away",mins:5,icon:"🌙"},{name:"Read",mins:20,icon:"📖"},
@@ -7305,6 +7305,21 @@ const ROUTINE_TEMPLATES=[
     {name:"Warm up",mins:5,icon:"🔥"},{name:"Main workout",mins:30,icon:"💪"},
     {name:"Cool down",mins:5,icon:"🌿"},{name:"Stretch",mins:10,icon:"🧘"},{name:"Hydrate",mins:5,icon:"💧"},
   ]},
+  {name:"🧹 Cleaning",items:[
+    {name:"Hoovering",mins:15,icon:"🧹"},{name:"Surface cleaning",mins:10,icon:"🧹"},
+    {name:"Mop floors",mins:10,icon:"🪣"},{name:"Wipe down kitchen",mins:10,icon:"🍽️"},
+    {name:"Clean bathroom",mins:15,icon:"🚿"},{name:"Bins",mins:5,icon:"🗑️"},
+  ]},
+  {name:"🧺 Laundry",items:[
+    {name:"Sort laundry",mins:5,icon:"👗"},{name:"Put wash on",mins:2,icon:"🫧"},
+    {name:"Hang or dry",mins:10,icon:"👕"},{name:"Fold clothes",mins:10,icon:"👚"},
+    {name:"Put clothes away",mins:5,icon:"👚"},{name:"Iron",mins:20,icon:"👔"},
+  ]},
+  {name:"🌱 Gardening",items:[
+    {name:"Water plants",mins:5,icon:"🌻"},{name:"Weeding",mins:15,icon:"🌱"},
+    {name:"Mow lawn",mins:20,icon:"🌳"},{name:"Sweep outside",mins:10,icon:"🧹"},
+    {name:"Tidy garden",mins:15,icon:"🌿"},
+  ]},
   {name:"🧹 Self-care",items:[
     {name:"Shower",mins:10,icon:"🚿"},{name:"Skincare routine",mins:10,icon:"🌸"},
     {name:"Tidy space",mins:10,icon:"🧹"},{name:"Fresh air walk",mins:15,icon:"🌳"},
@@ -7312,12 +7327,10 @@ const ROUTINE_TEMPLATES=[
 ];
 
 const ROUTINE_ICON_CATS=[
-  {label:"Self Care",color:"#C06080",bg:"rgba(192,96,128,0.10)",icons:["🪥","🚿","🛁","💇","💄","🌸","💊","🧴","🪞","😌"]},
-  {label:"Home",color:"#7A8040",bg:"rgba(122,128,64,0.10)",icons:["🧹","🪣","🧺","👔","👗","👕","👚","🛒","🗑️","🛏️"]},
-  {label:"Food",color:"#C07830",bg:"rgba(192,120,48,0.10)",icons:["🍳","🍽️","☕","🥗","💧","🥤","🍎","🧁","🥘","🥦"]},
-  {label:"Work & Study",color:"#4870A0",bg:"rgba(72,112,160,0.10)",icons:["💼","📧","📚","✍️","💡","🧠","🎯","📊","💻","📋"]},
-  {label:"Wellbeing",color:"#5A7848",bg:"rgba(90,120,72,0.10)",icons:["🧘","🏃","💪","🌿","🌱","🌳","🌻","🌅","🌙","❤️"]},
-  {label:"Other",color:"#806040",bg:"rgba(128,96,64,0.10)",icons:["🐾","🎵","🙏","⚡","🔥","⭐","✨","🎯","🌸","🎨"]},
+  {label:"🏠 Home",color:"#5A7848",icons:["🧹","🪣","🧽","🫧","🧺","👕","👔","👗","👚","🗑️","🛒","🍳","🍽️","🥘","☕","🌱","🌻","🌳","🪴","💦","🪟","🛏️","🪑","🔑","🧴","🧻","🪠","🌿","🏠","🔧"]},
+  {label:"💆 Self Care",color:"#C06080",icons:["💊","🚿","🛁","🪥","💇","💄","💅","🧴","🪞","🌸","😌","🩹","🧖","❤️","🙏"]},
+  {label:"💼 Work & Study",color:"#4870A0",icons:["💼","📧","📚","✍️","💡","🧠","🎯","📊","💻","📋","📞","🗓️"]},
+  {label:"✨ Other",color:"#806040",icons:["🧘","🏃","💪","🌅","🌙","🔥","⭐","✨","🎵","🐾","🚗","🎨","⚡","🎯","🌈"]},
 ];
 function Routine({routineData,setRoutineData}){
   // routineData = array of routines: [{id, name, icon, items:[{id,name,mins,icon,doneToday,history}]}]
@@ -7454,21 +7467,41 @@ function Routine({routineData,setRoutineData}){
             <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first step":"New step"}</div>
               <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
-              <div style={{marginBottom:14}}>
-                {ROUTINE_ICON_CATS.map(cat=>(
-                  <div key={cat.label} style={{marginBottom:8}}>
-                    <div style={{fontSize:10,fontWeight:700,color:cat.color,letterSpacing:0.8,textTransform:"uppercase",marginBottom:5,fontFamily:"'Segoe UI',sans-serif"}}>{cat.label}</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                      {cat.icons.map(ic=>(
-                        <button key={ic} onClick={()=>setNewIcon(ic)}
-                          style={{width:38,height:38,borderRadius:10,border:`2px solid ${newIcon===ic?cat.color:"transparent"}`,background:newIcon===ic?cat.bg:"rgba(255,255,255,0.70)",fontSize:19,cursor:"pointer",transition:"all 0.12s"}}>
-                          {ic}
+              {(()=>{
+                const [openCat,setOpenCat]=useState(null);
+                return(
+                  <div style={{marginBottom:14}}>
+                    {/* Selected icon preview */}
+                    {newIcon&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"8px 12px",background:"rgba(90,120,72,0.08)",borderRadius:12}}>
+                      <span style={{fontSize:24}}>{newIcon}</span>
+                      <span style={{fontSize:12,color:"#5A7848",fontFamily:"'Segoe UI',sans-serif"}}>Selected — tap a category to change</span>
+                    </div>}
+                    {/* Category buttons */}
+                    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                      {ROUTINE_ICON_CATS.map(cat=>(
+                        <button key={cat.label} onClick={()=>setOpenCat(openCat===cat.label?null:cat.label)}
+                          style={{padding:"7px 14px",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",background:openCat===cat.label?cat.color:"rgba(255,255,255,0.85)",color:openCat===cat.label?"#fff":cat.color,border:`1.5px solid ${cat.color}50`,transition:"all 0.15s"}}>
+                          {cat.label}
                         </button>
                       ))}
                     </div>
+                    {/* Icons for open category */}
+                    {openCat&&(()=>{
+                      const cat=ROUTINE_ICON_CATS.find(c=>c.label===openCat);
+                      return cat?(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:8,padding:"12px",background:"rgba(255,255,255,0.70)",borderRadius:16,border:`1.5px solid ${cat.color}30`}}>
+                          {cat.icons.map(ic=>(
+                            <button key={ic} onClick={()=>{setNewIcon(ic);setOpenCat(null);}}
+                              style={{width:40,height:40,borderRadius:12,border:`2px solid ${newIcon===ic?cat.color:"transparent"}`,background:newIcon===ic?`${cat.color}22`:"transparent",fontSize:22,cursor:"pointer",transition:"all 0.12s"}}>
+                              {ic}
+                            </button>
+                          ))}
+                        </div>
+                      ):null;
+                    })()}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
               <input value={newName} onChange={e=>setNewName(e.target.value)}
                 onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
                 placeholder="Step name…"
@@ -7574,21 +7607,38 @@ function Routine({routineData,setRoutineData}){
           <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>✨ New routine</div>
             <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
-            <div style={{marginBottom:14}}>
-              {ROUTINE_ICON_CATS.map(cat=>(
-                <div key={cat.label} style={{marginBottom:8}}>
-                  <div style={{fontSize:10,fontWeight:700,color:cat.color,letterSpacing:0.8,textTransform:"uppercase",marginBottom:5,fontFamily:"'Segoe UI',sans-serif"}}>{cat.label}</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {cat.icons.map(ic=>(
-                      <button key={ic} onClick={()=>setNewRoutineIcon(ic)}
-                        style={{width:42,height:42,borderRadius:12,border:`2px solid ${newRoutineIcon===ic?cat.color:"transparent"}`,background:newRoutineIcon===ic?cat.bg:"rgba(255,255,255,0.70)",fontSize:20,cursor:"pointer",transition:"all 0.12s"}}>
-                        {ic}
+            {(()=>{
+              const [openCat,setOpenCat]=useState(null);
+              return(
+                <div style={{marginBottom:14}}>
+                  {newRoutineIcon&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,padding:"8px 12px",background:"rgba(90,120,72,0.08)",borderRadius:12}}>
+                    <span style={{fontSize:26}}>{newRoutineIcon}</span>
+                    <span style={{fontSize:12,color:"#5A7848",fontFamily:"'Segoe UI',sans-serif"}}>Selected — tap a category to change</span>
+                  </div>}
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+                    {ROUTINE_ICON_CATS.map(cat=>(
+                      <button key={cat.label} onClick={()=>setOpenCat(openCat===cat.label?null:cat.label)}
+                        style={{padding:"7px 14px",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",background:openCat===cat.label?cat.color:"rgba(255,255,255,0.85)",color:openCat===cat.label?"#fff":cat.color,border:`1.5px solid ${cat.color}50`,transition:"all 0.15s"}}>
+                        {cat.label}
                       </button>
                     ))}
                   </div>
+                  {openCat&&(()=>{
+                    const cat=ROUTINE_ICON_CATS.find(c=>c.label===openCat);
+                    return cat?(
+                      <div style={{display:"flex",flexWrap:"wrap",gap:8,padding:"12px",background:"rgba(255,255,255,0.70)",borderRadius:16,border:`1.5px solid ${cat.color}30`}}>
+                        {cat.icons.map(ic=>(
+                          <button key={ic} onClick={()=>{setNewRoutineIcon(ic);setOpenCat(null);}}
+                            style={{width:42,height:42,borderRadius:12,border:`2px solid ${newRoutineIcon===ic?cat.color:"transparent"}`,background:newRoutineIcon===ic?`${cat.color}22`:"transparent",fontSize:22,cursor:"pointer",transition:"all 0.12s"}}>
+                            {ic}
+                          </button>
+                        ))}
+                      </div>
+                    ):null;
+                  })()}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
             <input value={newRoutineName} onChange={e=>setNewRoutineName(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&newRoutineName.trim()){const r={id:Date.now(),name:newRoutineName.trim(),icon:newRoutineIcon,items:[]};const next=[...routines,r];saveRoutines(next);setActiveId(r.id);setNewRoutineName("");setCreatingRoutine(false);}}}
               placeholder="Routine name… e.g. Morning Routine"
