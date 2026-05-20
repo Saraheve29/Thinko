@@ -7294,28 +7294,29 @@ async function aiAwardSuggestions(style){
 ═══════════════════════════════════════════════════════ */
 const ROUTINE_TEMPLATES=[
   {name:"🌅 Morning Routine",items:[
-    {name:"Drink a glass of water",mins:1},{name:"Meditate",mins:10},
-    {name:"Stretch",mins:5},{name:"Journal",mins:10},{name:"Get dressed",mins:5},
+    {name:"Drink a glass of water",mins:1,icon:"💧"},{name:"Meditate",mins:10,icon:"🧘"},
+    {name:"Stretch",mins:5,icon:"💪"},{name:"Journal",mins:10,icon:"✍️"},{name:"Get dressed",mins:5,icon:"🌸"},
   ]},
   {name:"🌙 Evening Wind-down",items:[
-    {name:"Put phone away",mins:5},{name:"Read",mins:20},
-    {name:"Skincare",mins:5},{name:"Gratitude journal",mins:5},{name:"Breathing exercise",mins:5},
+    {name:"Put phone away",mins:5,icon:"🌙"},{name:"Read",mins:20,icon:"📖"},
+    {name:"Skincare",mins:5,icon:"🌸"},{name:"Gratitude journal",mins:5,icon:"❤️"},{name:"Breathing exercise",mins:5,icon:"🌿"},
   ]},
   {name:"💪 Workout",items:[
-    {name:"Warm up",mins:5},{name:"Main workout",mins:30},
-    {name:"Cool down",mins:5},{name:"Stretch",mins:10},{name:"Hydrate & recover",mins:5},
+    {name:"Warm up",mins:5,icon:"🔥"},{name:"Main workout",mins:30,icon:"💪"},
+    {name:"Cool down",mins:5,icon:"🌿"},{name:"Stretch",mins:10,icon:"🧘"},{name:"Hydrate",mins:5,icon:"💧"},
   ]},
   {name:"🧹 Self-care",items:[
-    {name:"Shower",mins:10},{name:"Skincare routine",mins:10},
-    {name:"Tidy space",mins:10},{name:"Fresh air walk",mins:15},
+    {name:"Shower",mins:10,icon:"🚿"},{name:"Skincare routine",mins:10,icon:"🌸"},
+    {name:"Tidy space",mins:10,icon:"🧹"},{name:"Fresh air walk",mins:15,icon:"🌳"},
   ]},
 ];
 
 function Routine({routineData,setRoutineData}){
   const [items,setItems]=useState(()=>routineData||[]);
-  const [adding,setAdding]=useState(()=>!(routineData&&routineData.length>0)); // open add form if empty
+  const [adding,setAdding]=useState(()=>!(routineData&&routineData.length>0));
   const [newName,setNewName]=useState("");
   const [newMins,setNewMins]=useState(5);
+  const [newIcon,setNewIcon]=useState("⭐");
   const [timers,setTimers]=useState({});
   const [celebration,setCelebration]=useState(null);
   const [confetti,setConfetti]=useState([]);
@@ -7324,14 +7325,14 @@ function Routine({routineData,setRoutineData}){
   const timerRefs=useRef({});
   const todayStr=new Date().toISOString().slice(0,10);
 
-  const save=it=>{setItems(it);setRoutineData(it);};
+  const ICONS=["⭐","🌅","🧘","💪","📖","🏃","🚿","🌿","☕","💊","🎵","✍️","🥗","💧","🌸","🙏","🧹","🌙","🔥","💡","🎯","🧠","❤️","🌳","⚡"];
 
+  const save=it=>{setItems(it);setRoutineData(it);};
   const getStreak=item=>{
     const hist=item.history||[];let streak=0;const d=new Date();
     while(true){const s=d.toISOString().slice(0,10);if(hist.includes(s)){streak++;d.setDate(d.getDate()-1);}else break;}
     return streak;
   };
-
   const startTimer=(id,secs)=>{
     if(timerRefs.current[id])clearInterval(timerRefs.current[id]);
     setTimers(t=>({...t,[id]:{left:secs,on:true,total:secs}}));
@@ -7343,8 +7344,8 @@ function Routine({routineData,setRoutineData}){
       });
     },1000);
   };
-  const stopTimer=id=>{clearInterval(timerRefs.current[id]);setTimers(t=>({...t,[id]:{...t[id],on:false}}));};
-  const fmtT=s=>{if(!s&&s!==0)return"";const a=Math.abs(s);return String(Math.floor(a/60)).padStart(2,"0")+":"+String(a%60).padStart(2,"0");};
+  const stopTimer=id=>{clearInterval(timerRefs.current[id]);setTimers(t=>({...t,[id]:{...t[id],on:false,left:null}}));};
+  const fmtT=s=>{if(!s&&s!==0)return"";return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
 
   const completeItem=id=>{
     const updated=items.map(it=>{
@@ -7356,7 +7357,6 @@ function Routine({routineData,setRoutineData}){
     save(updated);stopTimer(id);
     const pieces=Array.from({length:44},(_,i)=>({id:i,x:Math.random()*100,emoji:["🎊","🎉","✨","⭐","🌟","💫","🌿","🔥"][i%8],size:14+Math.random()*14,delay:Math.random()*0.5,speed:1.5+Math.random()*1.2}));
     setConfetti(pieces);setTimeout(()=>setConfetti([]),3500);
-    playAlarm("gentle");
     const allDone=updated.filter(it=>!it.doneToday).length===0;
     setCelebration({allDone,name:updated.find(it=>it.id===id)?.name||""});
     setTimeout(()=>setCelebration(null),allDone?5000:2800);
@@ -7377,14 +7377,13 @@ function Routine({routineData,setRoutineData}){
         @keyframes routineConfetti{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
         @keyframes rCelebPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
         @keyframes rBounce{0%{transform:scale(1) rotate(-5deg)}100%{transform:scale(1.15) rotate(5deg)}}
+        @keyframes rPulse{0%,100%{opacity:0.6;transform:scale(0.95)}50%{opacity:1;transform:scale(1.05)}}
       `}</style>
 
-      {/* Confetti */}
       {confetti.map(p=>(
         <div key={p.id} style={{position:"fixed",left:`${p.x}%`,top:"-5%",fontSize:p.size,animation:`routineConfetti ${p.speed}s ${p.delay}s ease-in forwards`,zIndex:800,pointerEvents:"none"}}>{p.emoji}</div>
       ))}
 
-      {/* Celebration */}
       {celebration&&(
         <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
           <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 28px",textAlign:"center",maxWidth:310,margin:"0 24px",border:`3px solid ${celebration.allDone?"rgba(255,200,50,0.6)":"rgba(90,160,80,0.35)"}`,animation:"rCelebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
@@ -7395,22 +7394,22 @@ function Routine({routineData,setRoutineData}){
             <div style={{fontSize:14,color:"#5A7060",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif"}}>
               {celebration.allDone
                 ?"You showed up for yourself today. That's who you're becoming. 🌟"
-                :`"${celebration.name}" complete · ${doneCount}/${items.length} steps done today`}
+                :`"${celebration.name}" complete · ${doneCount}/${items.length} steps done`}
             </div>
           </div>
         </div>
       )}
 
-      {/* Header — garden green gradient */}
+      {/* Header */}
       <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 26px",textAlign:"center"}}>
         <div style={{fontSize:38,marginBottom:6}}>🔄</div>
         <div style={{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,color:"#fff",marginBottom:4,letterSpacing:-0.5}}>My Routine</div>
         <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",marginBottom:items.length>0?14:0,fontStyle:"italic"}}>"We are what we repeatedly do."</div>
         {items.length>0&&(
           <>
-            <div style={{fontSize:14,color:"rgba(255,255,255,0.80)",marginBottom:8,fontFamily:"'Segoe UI',sans-serif"}}>{doneCount} of {items.length} steps done · {pct}%</div>
-            <div style={{height:8,background:"rgba(255,255,255,0.15)",borderRadius:100,overflow:"hidden",maxWidth:260,margin:"0 auto",boxShadow:"inset 0 1px 3px rgba(0,0,0,0.2)"}}>
-              <div style={{height:"100%",width:`${pct}%`,background:pct===100?"linear-gradient(90deg,#FFD700,#FFA500)":"rgba(255,255,255,0.75)",borderRadius:100,transition:"width 0.5s ease"}}/>
+            <div style={{fontSize:14,color:"rgba(255,255,255,0.80)",marginBottom:8,fontFamily:"'Segoe UI',sans-serif"}}>{doneCount} of {items.length} steps · {pct}%</div>
+            <div style={{height:8,background:"rgba(255,255,255,0.15)",borderRadius:100,overflow:"hidden",maxWidth:260,margin:"0 auto"}}>
+              <div style={{height:"100%",width:`${pct}%`,background:pct===100?"linear-gradient(90deg,#FFD700,#FFA500)":"rgba(255,255,255,0.75)",borderRadius:100,transition:"width 0.5s"}}/>
             </div>
           </>
         )}
@@ -7418,7 +7417,6 @@ function Routine({routineData,setRoutineData}){
 
       <div style={{padding:"18px 16px"}}>
 
-        {/* Action row */}
         <div style={{display:"flex",gap:10,marginBottom:16}}>
           <button onClick={()=>{setAdding(a=>!a);setShowTemplates(false);}} style={{flex:1,padding:"13px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>
             {adding?"✕ Cancel":"+ Add step"}
@@ -7429,23 +7427,28 @@ function Routine({routineData,setRoutineData}){
           {doneCount>0&&<button onClick={resetToday} style={{padding:"13px 16px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontSize:13,cursor:"pointer"}}>↺</button>}
         </div>
 
-        {/* Add form — shows first if no items */}
+        {/* Add form */}
         {adding&&(
           <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>
-              {items.length===0?"✨ Add your first step":"Add a step"}
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first step":"New step"}</div>
+            {/* Icon picker */}
+            <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+              {ICONS.map(ic=>(
+                <button key={ic} onClick={()=>setNewIcon(ic)} style={{width:40,height:40,borderRadius:12,border:`2px solid ${newIcon===ic?"#5A7848":"rgba(90,120,72,0.18)"}`,background:newIcon===ic?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.85)",fontSize:20,cursor:"pointer",transition:"all 0.12s"}}>{ic}</button>
+              ))}
             </div>
             <input value={newName} onChange={e=>setNewName(e.target.value)}
-              onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,doneToday:false,history:[]}]);setNewName("");}}}
-              placeholder="What's the step? e.g. Meditate, Stretch…"
+              onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
+              placeholder="Step name… e.g. Meditate, Stretch"
               style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.92)"}}/>
-            <div style={{fontFamily:"Georgia,serif",fontSize:14,color:"#3A6020",fontWeight:600,marginBottom:10}}>⏱ How long? (minutes)</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:10}}>⏱ Duration</div>
             <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
               {[1,2,5,10,15,20,30].map(m=>(
                 <button key={m} onClick={()=>setNewMins(m)} style={{padding:"9px 14px",borderRadius:100,fontSize:13,fontFamily:"Georgia,serif",fontWeight:600,cursor:"pointer",background:newMins===m?"#5A7848":"rgba(255,255,255,0.88)",color:newMins===m?"#fff":"#3A6020",border:`1.5px solid ${newMins===m?"#5A7848":"rgba(90,120,72,0.22)"}`,transition:"all 0.12s"}}>{m}m</button>
               ))}
             </div>
-            <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,doneToday:false,history:[]}]);setNewName("");if(items.length===0)setAdding(false);}}
+            <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
               style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>
               ✅ Add step
             </button>
@@ -7454,11 +7457,11 @@ function Routine({routineData,setRoutineData}){
 
         {/* Templates */}
         {showTemplates&&(
-          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
+          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.15)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:12}}>Choose a template</div>
             {ROUTINE_TEMPLATES.map((tmpl,ti)=>(
               <button key={ti} onClick={()=>{
-                const newItems=tmpl.items.map((it,i)=>({id:Date.now()+i,name:it.name,mins:it.mins,doneToday:false,history:[]}));
+                const newItems=tmpl.items.map((it,i)=>({id:Date.now()+i,name:it.name,mins:it.mins,icon:it.icon||"⭐",doneToday:false,history:[]}));
                 save([...items,...newItems]);setShowTemplates(false);
               }} style={{width:"100%",padding:"14px 16px",marginBottom:8,background:"rgba(90,120,72,0.06)",color:"#1A1A10",border:"1.5px solid rgba(90,120,72,0.15)",borderRadius:18,fontFamily:"Georgia,serif",fontWeight:600,fontSize:15,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <span>{tmpl.name}</span>
@@ -7473,60 +7476,76 @@ function Routine({routineData,setRoutineData}){
           <div style={{textAlign:"center",padding:"40px 20px"}}>
             <div style={{fontSize:64,marginBottom:16}}>🌱</div>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:24,color:"#1A1A10",marginBottom:10}}>Build your daily rhythm</div>
-            <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,marginBottom:24,fontFamily:"'Segoe UI',sans-serif",maxWidth:280,margin:"0 auto 24px"}}>Add the things you want to do every day. Give each step a timer. Build streaks. Become the person you want to be.</div>
+            <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,marginBottom:24,fontFamily:"'Segoe UI',sans-serif",maxWidth:280,margin:"0 auto 24px"}}>Add the things you do every day. Each step gets its own timer and streak. Show up. Become.</div>
             <button onClick={()=>setAdding(true)} style={{padding:"16px 32px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>+ Add your first step</button>
           </div>
         )}
 
-        {/* Routine items */}
+        {/* Routine items — visual cards with icon */}
         {items.map((item)=>{
           const tt=timers[item.id];
           const running=tt?.on&&tt?.left>0;
           const streak=getStreak(item);
+          const icon=item.icon||"⭐";
+          const m=item;
           return(
             <div key={item.id}
               draggable
               onDragStart={()=>setDragId(item.id)}
               onDragOver={e=>{e.preventDefault();dragOver(item.id);}}
               onDragEnd={()=>setDragId(null)}
-              style={{background:item.doneToday?"rgba(90,160,80,0.06)":"rgba(248,245,236,0.92)",borderRadius:24,padding:"16px 18px",marginBottom:12,border:`2px solid ${item.doneToday?"rgba(90,160,80,0.25)":"rgba(90,120,72,0.12)"}`,boxShadow:"0 2px 14px rgba(60,60,40,0.06)",opacity:dragId===item.id?0.5:1,transition:"all 0.15s"}}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <span style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:18,flexShrink:0}}>⠿</span>
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
-                  <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
-                    <span style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif"}}>⏱ {item.mins} min</span>
-                    {streak>0&&<span style={{fontSize:12,color:"#E87040",fontWeight:700,fontFamily:"'Segoe UI',sans-serif"}}>🔥 {streak} day streak</span>}
+              style={{background:item.doneToday?"rgba(90,160,80,0.06)":"rgba(248,245,236,0.95)",borderRadius:24,padding:"0",marginBottom:12,border:`2px solid ${item.doneToday?"rgba(90,160,80,0.30)":"rgba(90,120,72,0.12)"}`,boxShadow:"0 3px 16px rgba(60,60,40,0.07)",opacity:dragId===item.id?0.5:1,overflow:"hidden",transition:"all 0.15s"}}>
+
+              {/* Coloured top strip */}
+              <div style={{height:4,background:item.doneToday?"linear-gradient(90deg,#5A9848,#7AB868)":"linear-gradient(90deg,#5A7848,#7A9868)"}}/>
+
+              <div style={{padding:"16px 18px"}}>
+                {/* Main row */}
+                <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:item.doneToday?0:10}}>
+                  {/* Big icon circle */}
+                  <div style={{width:52,height:52,borderRadius:18,background:item.doneToday?"rgba(90,160,80,0.12)":"rgba(90,120,72,0.10)",border:`2px solid ${item.doneToday?"rgba(90,160,80,0.25)":"rgba(90,120,72,0.18)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,cursor:"grab"}}>
+                    {item.doneToday?"✅":icon}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"Georgia,serif",fontSize:17,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
+                      <span style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif"}}>⏱ {item.mins}min</span>
+                      {streak>0&&<span style={{fontSize:12,color:"#E07030",fontWeight:700,fontFamily:"'Segoe UI',sans-serif"}}>🔥 {streak} day{streak!==1?"s":""}</span>}
+                    </div>
+                  </div>
+                  {/* Action buttons */}
+                  <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
+                    {item.doneToday
+                      ?<button onClick={()=>undoItem(item.id)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"7px 12px",fontSize:12,cursor:"pointer"}}>↩ Undo</button>
+                      :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)",whiteSpace:"nowrap"}}>✅ Done</button>
+                    }
+                    <button onClick={()=>save(items.filter(i=>i.id!==item.id))} style={{background:"none",color:"rgba(192,57,43,0.40)",border:"none",cursor:"pointer",fontSize:12,padding:"2px 8px"}}>🗑 Remove</button>
                   </div>
                 </div>
-                {item.doneToday
-                  ?<button onClick={()=>undoItem(item.id)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"7px 14px",fontSize:12,fontFamily:"'Segoe UI',sans-serif",fontWeight:600,cursor:"pointer",flexShrink:0}}>↩ Undo</button>
-                  :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 18px",fontSize:14,fontFamily:"Georgia,serif",fontWeight:700,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>✅ Done</button>
-                }
-                <button onClick={()=>save(items.filter(i=>i.id!==item.id))} style={{background:"none",color:"rgba(192,57,43,0.45)",border:"none",cursor:"pointer",fontSize:14,flexShrink:0}}>🗑</button>
+
+                {/* Timer row — only when not done */}
+                {!item.doneToday&&(
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1px solid rgba(90,120,72,0.10)"}}>
+                    {running?(
+                      <>
+                        <span style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:tt.left<60?"#c0392b":"#2C3820",minWidth:54}}>{fmtT(tt.left)}</span>
+                        <div style={{flex:1,height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+                          <div style={{height:"100%",width:`${Math.round((tt.left/tt.total)*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+                        </div>
+                        <button onClick={()=>stopTimer(item.id)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>⏹ Stop</button>
+                      </>
+                    ):(
+                      <>
+                        {tt?.left===0
+                          ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap ✅ Done</span>
+                          :<span style={{fontSize:13,color:"#8A8070",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>Start your {item.mins}min timer</span>
+                        }
+                        <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶ Start</button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-              {!item.doneToday&&(
-                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:12,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1px solid rgba(90,120,72,0.10)"}}>
-                  <span style={{fontSize:16}}>⏱</span>
-                  {running?(
-                    <>
-                      <span style={{fontFamily:"monospace",fontSize:18,fontWeight:700,color:tt.left<60?"#c0392b":"#2C3820",flex:1}}>{fmtT(tt.left)}</span>
-                      <div style={{flex:2,height:5,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:`${Math.round((tt.left/tt.total)*100)}%`,background:tt.left<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
-                      </div>
-                      <button onClick={()=>stopTimer(item.id)} style={{background:"none",color:"#c0392b",border:"none",fontSize:13,cursor:"pointer",fontWeight:700}}>✕</button>
-                    </>
-                  ):(
-                    <>
-                      {tt?.left===0
-                        ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,fontFamily:"'Segoe UI',sans-serif",flex:1}}>Time's up! Tap Done ✅</span>
-                        :<span style={{fontSize:13,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif",flex:1}}>Start your {item.mins}min timer</span>
-                      }
-                      <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:13,fontFamily:"Georgia,serif",fontWeight:700,cursor:"pointer"}}>▶ Start</button>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           );
         })}
