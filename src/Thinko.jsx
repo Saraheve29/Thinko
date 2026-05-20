@@ -7324,7 +7324,7 @@ function Routine({routineData,setRoutineData}){
   const [newRoutineIcon,setNewRoutineIcon]=useState("🌅");
   const todayStr=new Date().toISOString().slice(0,10);
 
-  const ROUTINE_ICONS=["🌅","🌙","💪","🧘","🌿","🔥","📖","🧹","🏃","☕","🎯","❤️","⭐","🌸","✨"];
+  const ROUTINE_ICONS=["🌅","🌙","💪","🧘","💊","🧹","👔","🗑️","👗","🧺","🪥","💇","🍽️","🍳","😌","💼","📧","🪣","🌱","💄","🛁","🌻","🛒","👚","📚","🔥","🌿","❤️","⭐","✨"];
 
   const saveRoutines=r=>{setRoutinesRaw(r);setRoutineData(r);};
   const active=routines.find(r=>r.id===activeId);
@@ -7343,7 +7343,7 @@ function Routine({routineData,setRoutineData}){
     const [dragId,setDragId]=useState(null);
     const timerRefs=useRef({});
 
-    const ICONS=["⭐","🌅","🧘","💪","📖","🏃","🚿","🌿","☕","💊","🎵","✍️","🥗","💧","🌸","🙏","🧹","🌙","🔥","💡","🎯","🧠","❤️","🌳","⚡"];
+    const ICONS=["💊","🧹","👔","🗑️","👗","🧺","🪥","💇","👕","🍽️","🍳","😌","💼","📧","🪣","🌱","💄","🛁","🌻","🛒","👚","📚","🛏️","🐾","🚿","🪞","🥗","💧","🌸","☕","🏃","📖","✍️","🎵","💡","🧠","🌅","🌙","💪","🧘","🌿","🔥","❤️","⭐","✨","🎯","⚡"];
 
     const save=it=>{
       setItems(it);
