@@ -7327,12 +7327,12 @@ const ROUTINE_TEMPLATES=[
 ];
 
 const ROUTINE_ICON_CATS=[
-  {label:"🏠 Home",color:"#5A7848",icons:["🪟","🧺","🧹","👔","🧽","🌱","🪣","🫧","🍽️"]},
+  {label:"🏠 Home",color:"#5A7848",icons:["🪟","🧹","👔","🧽","🌱","🪣","🫧","🍽️","🗑️","🧺"]},
   {label:"💆 Self Care",color:"#C06080",icons:["💊","🚿","🛁","🪥","💇","💄","💅","🧴","🪞","🌸","😌","🩹","🧖","❤️","🙏"]},
   {label:"💼 Work & Study",color:"#4870A0",icons:["💼","📧","📚","✍️","💡","🧠","🎯","📊","💻","📋","📞","🗓️"]},
   {label:"✨ Other",color:"#806040",icons:["🧘","🏃","💪","🌅","🌙","🔥","⭐","✨","🎵","🐾","🚗","🎨","⚡","🎯","🌈"]},
 ];
-function Routine({routineData,setRoutineData}){
+function Routine({routineData,setRoutineData,setScreen}){
   // routineData = array of routines: [{id, name, icon, items:[{id,name,mins,icon,doneToday,history}]}]
   const [routines,setRoutinesRaw]=useState(()=>
     Array.isArray(routineData)&&routineData.length>0&&typeof routineData[0]==='object'&&'items' in routineData[0]
@@ -7594,11 +7594,19 @@ function Routine({routineData,setRoutineData}){
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"Georgia,serif",paddingBottom:90}}>
-      {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 28px",textAlign:"center"}}>
-        <div style={{fontSize:38,marginBottom:6}}>🔄</div>
-        <div style={{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,color:"#fff",marginBottom:4}}>My Routines</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",fontStyle:"italic"}}>"We are what we repeatedly do."</div>
+      {/* Header with back button */}
+      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 28px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+          <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          </button>
+          <div style={{flex:1,textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:2}}>🔄</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#fff"}}>My Routines</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.55)",fontStyle:"italic",marginTop:2}}>"We are what we repeatedly do."</div>
+          </div>
+          <div style={{width:38}}/>
+        </div>
       </div>
 
       <div style={{padding:"18px 16px"}}>
@@ -9699,7 +9707,7 @@ export default function App() {
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
   if(screen==="rest") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
-  if(screen==="routine") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Routine routineData={routineData} setRoutineData={setRoutineData}/><NavBar current="routine" setScreen={setScreen}/></div></>);
+  if(screen==="routine") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Routine routineData={routineData} setRoutineData={setRoutineData} setScreen={setScreen}/><NavBar current="routine" setScreen={setScreen}/></div></>);
   // Individual tool shortcuts
   if(screen==="calc") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🧮 Calculator</div></div><div style={{padding:"16px 14px"}}><Calculator/></div><NavBar current="calc" setScreen={setScreen}/></div></>);
   if(screen==="translate") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🌍 Translator</div></div><div style={{padding:"16px 14px"}}><Translator/></div><NavBar current="translate" setScreen={setScreen}/></div></>);
