@@ -1222,15 +1222,32 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
           </div>
         </div>
         <BreakTimer setScreen={setScreen}/>
-        {/* Add task input */}
-        <div style={{display:"flex",gap:10,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 14px 12px 20px",border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
-          <input value={newTask} onChange={e=>setNewTask(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTask()} placeholder="Add task..." style={{flex:1,border:"none",outline:"none",fontSize:15,fontWeight:500,color:"#1A1A10",background:"transparent"}}/>
-          <button onClick={addTask} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:38,height:38,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.3)"}}>+</button>
-        </div>
-        {/* URL input */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"rgba(255,255,255,0.75)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.12)",boxShadow:"0 1px 6px rgba(0,0,0,0.04)"}}>
-          <input value={newUrl} onChange={e=>setNewUrl(e.target.value)} placeholder="Paste website address (optional)" style={{flex:1,border:"none",outline:"none",fontSize:14,color:"#5A5040",background:"transparent"}}/>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.45}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#3A3020" strokeWidth="2" strokeLinecap="round"/></svg>
+        {/* Add task input — prominent */}
+        <div style={{marginBottom:16}}>
+          <div style={{background:"linear-gradient(135deg,#3A5828,#5A7848)",borderRadius:24,padding:"16px 18px",boxShadow:"0 4px 20px rgba(58,80,38,0.30)",border:"none"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#fff",marginBottom:10,letterSpacing:0.2}}>✏️ What needs doing?</div>
+            <div style={{display:"flex",gap:10}}>
+              <input value={newTask} onChange={e=>setNewTask(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&addTask()}
+                placeholder="Add a task…"
+                style={{flex:1,padding:"12px 18px",borderRadius:100,border:"none",fontSize:15,fontWeight:600,color:"#1A1A10",background:"rgba(255,255,255,0.95)",outline:"none",boxShadow:"inset 0 1px 3px rgba(0,0,0,0.08)"}}/>
+              <button onClick={addTask}
+                style={{background:"#FFD700",color:"#2C3820",border:"none",borderRadius:100,width:48,height:48,fontSize:26,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 3px 14px rgba(255,200,0,0.45)",transition:"transform 0.12s"}}
+                onMouseDown={e=>e.currentTarget.style.transform="scale(0.92)"}
+                onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
+                onTouchStart={e=>e.currentTarget.style.transform="scale(0.92)"}
+                onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+                +
+              </button>
+            </div>
+            {/* URL field — subtle under */}
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,background:"rgba(255,255,255,0.15)",borderRadius:100,padding:"8px 14px"}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.7}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+              <input value={newUrl} onChange={e=>setNewUrl(e.target.value)}
+                placeholder="Paste a website link (optional)"
+                style={{flex:1,border:"none",outline:"none",fontSize:12,color:"rgba(255,255,255,0.85)",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}/>
+            </div>
+          </div>
         </div>
         {active.map((task,i)=>(
           <div key={task.id}>
