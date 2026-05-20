@@ -9433,7 +9433,8 @@ export default function App() {
   const [matrixData,setMatrixData]=useState(()=>{try{const v=localStorage.getItem('thinko_matrix');return v?JSON.parse(v):[];}catch{return [];}});
   const [budgetData,setBudgetData]=useState(()=>{try{const v=localStorage.getItem('thinko_budget');return v?JSON.parse(v):[];}catch{return [];}});
   const [routineData,setRoutineDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_routine');return v?JSON.parse(v):[];}catch{return [];}});
-  const setRoutineData=d=>{const next=typeof d==="function"?d(routineData):d;setRoutineDataRaw(next);try{localStorage.setItem('thinko_routine',JSON.stringify(next));}catch{}};(()=>{try{const v=localStorage.getItem('thinko_shop');return v?JSON.parse(v):[];}catch{return [];}});
+  const setRoutineData=d=>{const next=typeof d==="function"?d(routineData):d;setRoutineDataRaw(next);try{localStorage.setItem('thinko_routine',JSON.stringify(next));}catch{}};
+  const [shopData,setShopDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_shop');return v?JSON.parse(v):[];}catch{return [];}});
   const setShopData=d=>{const next=typeof d==="function"?d(shopData):d;setShopDataRaw(next);try{localStorage.setItem('thinko_shop',JSON.stringify(next));}catch{}};
   const [goalsData,setGoalsData]=useState(()=>{try{const v=localStorage.getItem('thinko_goals');return v?JSON.parse(v):[];}catch{return [];}});
   const [chargeData,setChargeData]=useState(()=>{try{const v=localStorage.getItem('thinko_charge');return v?JSON.parse(v):{dailyTarget:3,weeklyAward:'',days:{},streak:0};}catch{return {dailyTarget:3,weeklyAward:'',days:{},streak:0};}});
