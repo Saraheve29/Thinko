@@ -7311,6 +7311,14 @@ const ROUTINE_TEMPLATES=[
   ]},
 ];
 
+const ROUTINE_ICON_CATS=[
+  {label:"Self Care",color:"#C06080",bg:"rgba(192,96,128,0.10)",icons:["🪥","🚿","🛁","💇","💄","🌸","💊","🧴","🪞","😌"]},
+  {label:"Home",color:"#7A8040",bg:"rgba(122,128,64,0.10)",icons:["🧹","🪣","🧺","👔","👗","👕","👚","🛒","🗑️","🛏️"]},
+  {label:"Food",color:"#C07830",bg:"rgba(192,120,48,0.10)",icons:["🍳","🍽️","☕","🥗","💧","🥤","🍎","🧁","🥘","🥦"]},
+  {label:"Work & Study",color:"#4870A0",bg:"rgba(72,112,160,0.10)",icons:["💼","📧","📚","✍️","💡","🧠","🎯","📊","💻","📋"]},
+  {label:"Wellbeing",color:"#5A7848",bg:"rgba(90,120,72,0.10)",icons:["🧘","🏃","💪","🌿","🌱","🌳","🌻","🌅","🌙","❤️"]},
+  {label:"Other",color:"#806040",bg:"rgba(128,96,64,0.10)",icons:["🐾","🎵","🙏","⚡","🔥","⭐","✨","🎯","🌸","🎨"]},
+];
 function Routine({routineData,setRoutineData}){
   // routineData = array of routines: [{id, name, icon, items:[{id,name,mins,icon,doneToday,history}]}]
   const [routines,setRoutinesRaw]=useState(()=>
@@ -7446,9 +7454,19 @@ function Routine({routineData,setRoutineData}){
             <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>{items.length===0?"✨ Add your first step":"New step"}</div>
               <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
-                {ICONS.map(ic=>(
-                  <button key={ic} onClick={()=>setNewIcon(ic)} style={{width:40,height:40,borderRadius:12,border:`2px solid ${newIcon===ic?"#5A7848":"rgba(90,120,72,0.18)"}`,background:newIcon===ic?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.85)",fontSize:20,cursor:"pointer"}}>{ic}</button>
+              <div style={{marginBottom:14}}>
+                {ROUTINE_ICON_CATS.map(cat=>(
+                  <div key={cat.label} style={{marginBottom:8}}>
+                    <div style={{fontSize:10,fontWeight:700,color:cat.color,letterSpacing:0.8,textTransform:"uppercase",marginBottom:5,fontFamily:"'Segoe UI',sans-serif"}}>{cat.label}</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                      {cat.icons.map(ic=>(
+                        <button key={ic} onClick={()=>setNewIcon(ic)}
+                          style={{width:38,height:38,borderRadius:10,border:`2px solid ${newIcon===ic?cat.color:"transparent"}`,background:newIcon===ic?cat.bg:"rgba(255,255,255,0.70)",fontSize:19,cursor:"pointer",transition:"all 0.12s"}}>
+                          {ic}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
               <input value={newName} onChange={e=>setNewName(e.target.value)}
@@ -7556,9 +7574,19 @@ function Routine({routineData,setRoutineData}){
           <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(60,70,40,0.08)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:14}}>✨ New routine</div>
             <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:8}}>Pick an icon</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
-              {ROUTINE_ICONS.map(ic=>(
-                <button key={ic} onClick={()=>setNewRoutineIcon(ic)} style={{width:44,height:44,borderRadius:14,border:`2px solid ${newRoutineIcon===ic?"#5A7848":"rgba(90,120,72,0.18)"}`,background:newRoutineIcon===ic?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.85)",fontSize:22,cursor:"pointer"}}>{ic}</button>
+            <div style={{marginBottom:14}}>
+              {ROUTINE_ICON_CATS.map(cat=>(
+                <div key={cat.label} style={{marginBottom:8}}>
+                  <div style={{fontSize:10,fontWeight:700,color:cat.color,letterSpacing:0.8,textTransform:"uppercase",marginBottom:5,fontFamily:"'Segoe UI',sans-serif"}}>{cat.label}</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {cat.icons.map(ic=>(
+                      <button key={ic} onClick={()=>setNewRoutineIcon(ic)}
+                        style={{width:42,height:42,borderRadius:12,border:`2px solid ${newRoutineIcon===ic?cat.color:"transparent"}`,background:newRoutineIcon===ic?cat.bg:"rgba(255,255,255,0.70)",fontSize:20,cursor:"pointer",transition:"all 0.12s"}}>
+                        {ic}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
             <input value={newRoutineName} onChange={e=>setNewRoutineName(e.target.value)}
