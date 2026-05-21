@@ -1445,6 +1445,7 @@ const NODE_COLORS=["#9b59b6","#c2185b","#e67e22","#27ae60","#2980b9","#1abc9c","
 const BRANCH_COLORS=["#c4aee8","#f48fb1","#ffcc80","#a5d6a7","#90caf9","#80cbc4","#ef9a9a","#ffe082","#ce93d8","#80deea"];
 
 function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen}) {
+  // MindMap renders with paddingBottom to avoid nav overlap
   const [mapId,setMapId]=useState(null);
   const [adding,setAdding]=useState(false);
   const [name,setName]=useState("");
@@ -1897,6 +1898,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
   const [editingId,setEditingId]=useState(null);
   const [editText,setEditText]=useState("");
   const [pan,setPan]=useState({x:0,y:0});
+  const [scale,setScale]=useState(1);
   const [panStart,setPanStart]=useState(null);
   const [sentMsg,setSentMsg]=useState("");
   const [darkBg,setDarkBg]=useState(true);
@@ -2066,12 +2068,19 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
   const root=nodes.find(n=>n.parent===null);
 
   return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column"}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",paddingBottom:70}}>
       {/* Back button — floating top left like reference */}
       <div style={{position:"absolute",top:0,left:0,zIndex:50,padding:"16px"}}>
         <button onClick={onBack} style={{width:44,height:44,borderRadius:"50%",background:"rgba(248,245,236,0.88)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
+      </div>
+
+      {/* Zoom controls — floating bottom right above nav */}
+      <div style={{position:"fixed",bottom:80,right:16,zIndex:60,display:"flex",flexDirection:"column",gap:8}}>
+        <button onClick={()=>setScale(s=>Math.min(3,s+0.2))} style={{width:44,height:44,borderRadius:"50%",background:"rgba(248,245,236,0.95)",border:"1.5px solid rgba(90,120,72,0.25)",cursor:"pointer",fontSize:22,fontWeight:700,boxShadow:"0 2px 12px rgba(0,0,0,0.15)",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+        <button onClick={()=>setScale(s=>Math.max(0.3,s-0.2))} style={{width:44,height:44,borderRadius:"50%",background:"rgba(248,245,236,0.95)",border:"1.5px solid rgba(90,120,72,0.25)",cursor:"pointer",fontSize:22,fontWeight:700,boxShadow:"0 2px 12px rgba(0,0,0,0.15)",display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+        <button onClick={()=>{setScale(1);setPan({x:0,y:0});}} style={{width:44,height:44,borderRadius:"50%",background:"rgba(90,120,72,0.15)",border:"1.5px solid rgba(90,120,72,0.30)",cursor:"pointer",fontSize:14,fontWeight:700,boxShadow:"0 2px 12px rgba(0,0,0,0.10)",display:"flex",alignItems:"center",justifyContent:"center",color:"#3A6020"}}>↺</button>
       </div>
 
       {/* Canvas — full bleed */}
@@ -2105,7 +2114,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
 
           <rect width="100%" height="100%" fill="transparent"/>
 
-          <g transform={`translate(${pan.x},${pan.y})`}>
+          <g transform={`translate(${pan.x},${pan.y}) scale(${scale})`}>
 
             {/* ── Vine Edges — organic S-curves with small leaves ── */}
             {nodes.filter(n=>n.parent).map(n=>{
@@ -4583,7 +4592,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
                   <button onClick={()=>{sendStepTo(step,"map");setSendMenuStep(null);}} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left",fontSize:13,fontWeight:600,color:C.txt}}>
                     🧠 New Mind Map
                   </button>
-                  {/* Plant as Goal */}
+                  {/* Add as Idea */}
           {["week","month1","month6","year1","year3","year5"].map(h=>{
             const labels={"week":"Next Week","month1":"1 Month","month6":"6 Months","year1":"1 Year","year3":"3 Years","year5":"5 Years"};
             const icons={"week":"📅","month1":"🗓️","month6":"🌱","year1":"⭐","year3":"🚀","year5":"🏔️"};
@@ -4617,6 +4626,12 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
     </div>
   );
 }
+
+/* ── Main Ideas board ──────────────────────────────── */
+
+
+/* ── Main Ideas board ──────────────────────────────── */
+
 
 /* ── Main Ideas board ──────────────────────────────── */
 
@@ -4700,8 +4715,8 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
         {/* Add form */}
         {adding&&(
           <GlassCard style={{marginBottom:14}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>🏔️ New Goal / Idea</div>
-            <textarea ref={textRef} value={draft.text} onChange={e=>setDraft(d=>({...d,text:e.target.value}))} placeholder="What's the goal?" rows={2} style={{width:"100%",boxSizing:"border-box",padding:"9px 13px",borderRadius:10,border:`2px solid ${C.lp}`,fontSize:14,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}/>
+            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>💡 New Idea</div>
+            <textarea ref={textRef} value={draft.text} onChange={e=>setDraft(d=>({...d,text:e.target.value}))} placeholder="What's your idea?" rows={2} style={{width:"100%",boxSizing:"border-box",padding:"9px 13px",borderRadius:10,border:`2px solid ${C.lp}`,fontSize:14,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}/>
             <textarea value={draft.ramble} onChange={e=>setDraft(d=>({...d,ramble:e.target.value}))} placeholder="More detail (optional)…" rows={2} style={{width:"100%",boxSizing:"border-box",padding:"9px 13px",borderRadius:10,border:`1.5px solid ${C.ll}`,fontSize:13,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}/>
             <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
               {IDEA_TAGS.map(t=>(
@@ -4723,14 +4738,14 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
             )}
             <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
               <button onClick={()=>{setAdding(false);setDraft({text:"",ramble:"",tag:"💡 Idea",status:"spark",collection:"",url:"",cover:null});}} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>Cancel</button>
-              <PurpleBtn onClick={submit}>Plant goal 🏔️</PurpleBtn>
+              <PurpleBtn onClick={submit}>Save idea 💡</PurpleBtn>
             </div>
           </GlassCard>
         )}
 
-        {visible.length===0&&!adding&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:60,fontSize:15,lineHeight:2}}>No goals yet — tap + to plant one 🏔️</div>}
+        {visible.length===0&&!adding&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:60,fontSize:15,lineHeight:2}}>No ideas yet — tap + to add one 💡</div>}
 
-        {/* Goal cards */}
+        {/* Idea cards */}
         {visible.map(idea=>{
           const steps=idea.steps||[];
           const doneCount=steps.filter(s=>s.done).length;
@@ -4768,10 +4783,10 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
                 </div>
                 {idea.ramble&&<div style={{fontSize:12,color:C.soft,lineHeight:1.4}}>{idea.ramble.slice(0,60)}{idea.ramble.length>60?"…":""}</div>}
                 {idea.url&&<UrlBadge url={idea.url}/>}
-                {/* Plant as Goal button */}
+                {/* Pin idea button */}
                 <button onClick={e=>{e.stopPropagation();if(setGoalsData){const due=new Date();due.setDate(due.getDate()+365);setGoalsData(gs=>[...gs,{id:Date.now(),horizon:"year1",title:idea.text,description:idea.ramble||"",dueDate:due.toISOString().slice(0,10),cover:idea.cover||null,links:[],subtasks:[],status:"active",created:Date.now()}]);showToast("🌱 Planted as 1-Year Goal!");}}}
                   style={{marginTop:6,background:"linear-gradient(135deg,#1e8449,#27ae60)",color:"#fff",border:"none",borderRadius:20,padding:"5px 13px",fontSize:11,fontWeight:800,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5}}>
-                  🌱 Plant as Goal
+                  📌 Pin idea
                 </button>
               </div>
             </div>
@@ -5284,6 +5299,66 @@ function BudgetDetail({budget,onBack,onUpdate,onDelete}){
   );
 }
 
+
+const SHOP_TEMPLATES=[
+  {id:"blank",   icon:"📝",name:"Blank list",         items:[]},
+  {id:"weekly",  icon:"🛒",name:"Weekly shop",         items:["Milk","Bread","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Vegetables","Fruit","Yoghurt","Juice"]},
+  {id:"cleaning",icon:"🧹",name:"Cleaning supplies",   items:["Washing up liquid","Bleach","Surface spray","Sponges","Bin bags","Toilet roll","Laundry tablets","Fabric softener"]},
+  {id:"toiletries",icon:"🧴",name:"Toiletries",        items:["Shampoo","Conditioner","Body wash","Toothpaste","Deodorant","Moisturiser","Razors","Cotton pads"]},
+  {id:"baby",    icon:"🍼",name:"Baby / kids",         items:["Nappies","Wipes","Baby formula","Baby food","Calpol","Snacks","Juice pouches"]},
+  {id:"party",   icon:"🎉",name:"Party",               items:["Crisps","Dips","Sausage rolls","Sandwiches","Cake","Juice","Pop","Plates","Cups","Napkins"]},
+  {id:"health",  icon:"💊",name:"Health",              items:["Vitamins","Paracetamol","Ibuprofen","Plasters","Hand sanitiser","Tissues"]},
+];
+
+function ShopListDetail({list,onBack,onUpdate,onDelete}){
+  const [newItem,setNewItem]=useState("");
+  const [dragId,setDragId]=useState(null);
+  const save=items=>onUpdate({...list,items});
+  const addItem=()=>{if(!newItem.trim())return;save([...list.items,{id:Date.now(),text:newItem.trim(),done:false}]);setNewItem("");};
+  const toggle=id=>save(list.items.map(it=>it.id===id?{...it,done:!it.done}:it));
+  const del=id=>save(list.items.filter(it=>it.id!==id));
+  const dragOver=toId=>{
+    if(!dragId||dragId===toId)return;
+    const a=[...list.items],fi=a.findIndex(i=>i.id===dragId),ti=a.findIndex(i=>i.id===toId);
+    if(fi<0||ti<0)return;a.splice(fi,1);a.splice(ti,0,list.items[fi]);save(a);
+  };
+  const done=list.items.filter(i=>i.done).length;
+  const total=list.items.length;
+  return(
+    <div style={{minHeight:"100vh",background:"transparent",paddingBottom:90}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>
+        <div style={{fontSize:24}}>{list.icon||"🛒"}</div>
+        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{list.name}</div>
+        <div style={{fontSize:12,color:"#8A8070"}}>{done}/{total}</div>
+        <button onClick={()=>{if(window.confirm(`Delete "${list.name}"?`))onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:14}}>🗑</button>
+      </div>
+      {total>0&&<div style={{height:5,background:"rgba(90,80,60,0.08)"}}><div style={{height:"100%",width:`${total?Math.round((done/total)*100):0}%`,background:"#5A7848",transition:"width 0.3s"}}/></div>}
+      <div style={{padding:"14px 16px"}}>
+        {/* Add item */}
+        <div style={{display:"flex",gap:10,marginBottom:16,background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"10px 14px 10px 18px",border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 2px 10px rgba(0,0,0,0.04)"}}>
+          <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()} placeholder="Add item…" style={{flex:1,border:"none",outline:"none",fontSize:15,color:"#1A1A10",background:"transparent",fontWeight:600}}/>
+          <button onClick={addItem} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+        </div>
+        {list.items.length===0&&<div style={{textAlign:"center",color:"#8A8070",padding:"30px 0",fontSize:14}}>No items yet — add one above</div>}
+        {list.items.map(item=>(
+          <div key={item.id} draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
+            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:8,border:"1px solid rgba(90,80,60,0.10)",opacity:dragId===item.id?0.5:1,boxShadow:"0 2px 8px rgba(60,60,40,0.05)"}}>
+            <span style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:16,flexShrink:0}}>⠿</span>
+            <button onClick={()=>toggle(item.id)} style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff"}}>
+              {item.done?"✓":""}
+            </button>
+            <span style={{flex:1,fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none"}}>{item.text}</span>
+            <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14}}>🗑</button>
+          </div>
+        ))}
+        {done>0&&<button onClick={()=>save(list.items.filter(i=>!i.done))} style={{width:"100%",padding:"10px",marginTop:8,background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Remove checked items</button>}
+      </div>
+    </div>
+  );
+}
 
 function ShoppingList({data,setData,setScreen}){
   const [activeId,setActiveId]=useState(null);
@@ -6601,7 +6676,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
               <div style={{marginTop:8,marginLeft:58,background:C.wh,borderRadius:12,border:`1.5px solid ${C.ll}`,overflow:"hidden",boxShadow:"0 4px 16px rgba(90,80,60,0.15)"}}>
                 <div style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:C.soft,borderBottom:`1px solid ${C.ll}`,textTransform:"uppercase",letterSpacing:1}}>Send subtask to…</div>
                 <button onClick={()=>sendSub(sub,"cal")} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left",fontSize:13,fontWeight:600,color:C.txt}}>📅 Google Calendar</button>
-                {/* Plant as Goal */}
+                {/* Add as Idea */}
           {["week","month1","month6","year1","year3","year5"].map(h=>{
             const labels={"week":"Next Week","month1":"1 Month","month6":"6 Months","year1":"1 Year","year3":"3 Years","year5":"5 Years"};
             const icons={"week":"📅","month1":"🗓️","month6":"🌱","year1":"⭐","year3":"🚀","year5":"🏔️"};
@@ -7533,7 +7608,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 </div>
                 <div style={{fontSize:13,color:"#7A7060"}}>
                   {hitTarget
-                    ?`${charged.length} tasks charged — light blazing ✨`
+                    ?`${charged.length} tasks wiped out — light blazing ✨`
                     :`${target-charged.length} more task${target-charged.length!==1?"s":""} to earn today's light`}
                 
                 </div>
@@ -8928,7 +9003,7 @@ const MODULES=[
    summary:"Garden growth · 5 time horizons · Future Me letters"},
   {id:"matrix",      icon:"⚖️", name:"Matrix",       color:"#7A6038",
    summary:"Eisenhower grid · Urgent vs Important · AI suggest"},
-  {id:"charge",      icon:"⚡", name:"The Charge",   color:"#6A5870",
+  {id:"charge",      icon:"⚡", name:"Whipe Out",   color:"#6A5870",
    summary:"Daily challenge · Orb of light · Reward tracking"},
   {id:"budget",      icon:"💰", name:"Budget",       color:"#5A6878",
    summary:"Income & outgoings · Expenses tracker · AI review"},
@@ -9340,7 +9415,7 @@ export default function App() {
 function NavBar({current,setScreen}) {
   const ALL_NAV=[
     {id:"home",       icon:"🏠", name:"Home"},
-    {id:"charge",     icon:"⚡", name:"Charge"},
+    {id:"charge",     icon:"⚡", name:"Whipe Out"},
     {id:"prioritizer",icon:"📋", name:"Tasks"},
     {id:"notes",      icon:"📚", name:"Vault"},
     {id:"goals",      icon:"🎯", name:"Goals"},
