@@ -9385,14 +9385,13 @@ const TESTING_MODE = true;
 
 // ── Pro limits (enforced when TESTING_MODE=false) ────
 const FREE_LIMITS = {
-  aiCallsPerDay:      3,   // AI suggestions, study studio, etc
+  // 🌿 Free tier limits (enforced when TESTING_MODE=false)
   mindMaps:           3,   // max mind maps
-  prioritizerLists:   1,   // max lists
-  matrixTasks:        10,  // max matrix tasks
-  goalsTotal:         5,   // max goals across all horizons
+  prioritizerLists:   1,   // max To Do lists  
   restSessions:       5,   // guided rest sessions per month
-  filingDrawers:      2,   // max filing cabinet drawers
+  filingDrawers:      0,   // filing cabinet (Pro only)
   noteSections:       3,   // max note sections
+  // Note: no AI limits since AI features removed from app
 };
 
 // ── Hook to check if user can do something ───────────
@@ -9420,14 +9419,11 @@ function usePro() {
 
 function ProUpgradeModal({ limitHit, onClose }) {
   const featureNames = {
-    aiCallsPerDay:    "AI suggestions",
-    mindMaps:         "Mind Maps",
-    prioritizerLists: "To Do List lists",
-    matrixTasks:      "Matrix tasks",
-    goalsTotal:       "Goals",
-    restSessions:     "Rest Space sessions",
-    filingDrawers:    "Filing Cabinet drawers",
-    noteSections:     "Note sections",
+    mindMaps:         "Mind Maps (free limit: 3)",
+    prioritizerLists: "To Do Lists (free limit: 1)",
+    restSessions:     "Rest Space sessions (free limit: 5/month)",
+    filingDrawers:    "Filing Cabinet (Pro only)",
+    noteSections:     "Note sections (free limit: 3)",
   };
 
   return (
@@ -9551,23 +9547,30 @@ function ProLoginModal({onClose,onSignIn}){
         {/* Feature highlights */}
         <div style={{background:"linear-gradient(135deg,rgba(90,120,72,0.08),rgba(60,80,40,0.04))",borderRadius:20,padding:"16px 18px",marginBottom:20,textAlign:"left",border:"1px solid rgba(90,120,72,0.12)"}}>
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:10}}>Everything included in Pro:</div>
-          {[
-            ["💥","Whipe Out — daily task challenge with monster"],
-            ["📋","To Do List — unlimited lists & tasks"],
-            ["📚","The Vault — PIN-locked notes, ideas & filing"],
-            ["🎯","Goals — 5-horizon garden growth tracker"],
-            ["🌀","Routine — daily habits with streaks & timers"],
-            ["🍽️","Meal Planner — 7-day planning"],
-            ["💰","Budget — planning, spending & ticket storage"],
-            ["🧠","Mind Maps — unlimited visual thinking"],
-            ["🌿","Rest Space — sounds, meditations & favourites"],
-            ["🛒","Shopping — multiple lists & templates"],
-          ].map(([icon,text])=>(
-            <div key={text} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",fontSize:13,color:"#3A3020"}}>
-              <span style={{fontSize:16,width:24,flexShrink:0}}>{icon}</span>
-              <span>{text}</span>
-            </div>
-          ))}
+          {/* Free vs Pro comparison */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20,textAlign:"left"}}>
+          {/* Free tier */}
+          <div style={{background:"rgba(90,80,60,0.06)",borderRadius:16,padding:"12px 12px",border:"1px solid rgba(90,80,60,0.12)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A1A10",marginBottom:8}}>🌿 Free</div>
+            {["All core features","3 mind maps","1 To Do list","Basic notes","5 rest sessions/mo","Meal & budget planner","Shopping lists"].map(t=>(
+              <div key={t} style={{fontSize:11,color:"#5A5040",padding:"2px 0",display:"flex",gap:6,alignItems:"flex-start"}}>
+                <span style={{color:"#5A7848",flexShrink:0}}>✓</span><span>{t}</span>
+              </div>
+            ))}
+          </div>
+          {/* Pro tier */}
+          <div style={{background:"linear-gradient(135deg,rgba(90,120,72,0.10),rgba(60,80,40,0.06))",borderRadius:16,padding:"12px 12px",border:"1.5px solid rgba(90,120,72,0.25)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A1A10",marginBottom:8}}>⚡ Pro</div>
+            {["Everything unlimited","Unlimited mind maps","Unlimited To Do lists","Full filing cabinet","Full Rest Space library","Ticket & document storage","Cross-device sync"].map(t=>(
+              <div key={t} style={{fontSize:11,color:"#3A6020",padding:"2px 0",display:"flex",gap:6,alignItems:"flex-start"}}>
+                <span style={{color:"#5A7848",flexShrink:0}}>⚡</span><span>{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Dummy map for syntax - empty */}
+
         </div>
 
         {/* Pricing tabs */}
