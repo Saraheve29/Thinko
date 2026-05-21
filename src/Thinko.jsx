@@ -3365,15 +3365,6 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
             </div>
           </div>
         ))}
-        {/* Ideas inline subheader */}
-        <div style={{marginTop:16,marginBottom:4}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <div style={{height:1,flex:1,background:"rgba(90,80,60,0.10)"}}/>
-            <span style={{fontSize:11,fontWeight:700,color:"#7A6038",letterSpacing:0.8,textTransform:"uppercase"}}>💡 Ideas</span>
-            <div style={{height:1,flex:1,background:"rgba(90,80,60,0.10)"}}/>
-          </div>
-          <Ideas data={ideasData} setData={setIdeasData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} inline={true}/>
-        </div>
       </div>
     </div>
   );
@@ -3401,15 +3392,33 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
 
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      {/* Header */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 16px",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:24,color:"#1A1A10",letterSpacing:-0.5}}>📚 The Vault</div>
-            <div style={{fontSize:12,color:"#8A8070",marginTop:1}}>Your space for everything</div>
+      {/* Beautiful header */}
+      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 60%,#4A6840 100%)",padding:"52px 22px 28px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+        {/* Decorative leaves */}
+        <div style={{position:"absolute",top:-10,left:-10,fontSize:60,opacity:0.08,transform:"rotate(-20deg)"}}>🌿</div>
+        <div style={{position:"absolute",top:10,right:-10,fontSize:50,opacity:0.08,transform:"rotate(15deg)"}}>🍃</div>
+        <div style={{position:"absolute",bottom:-5,left:"20%",fontSize:40,opacity:0.06}}>🌱</div>
+        <button onClick={()=>setScreen&&setScreen("home")} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>
+        <div style={{fontSize:44,marginBottom:8}}>📚</div>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#fff",marginBottom:4,letterSpacing:-0.5}}>The Vault</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.60)",fontStyle:"italic",marginBottom:16}}>"A place for every thought, document and idea"</div>
+        {/* Stats row */}
+        <div style={{display:"flex",justifyContent:"center",gap:20}}>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{totalPages}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.8}}>Pages</div>
+          </div>
+          <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{data.length}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.8}}>Sections</div>
+          </div>
+          <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{(ideasData||[]).length}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.8}}>Ideas</div>
           </div>
         </div>
       </div>
@@ -3431,11 +3440,13 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
                 if(m.id==="studio")setNotesMode("ideas");
                 else setNotesMode(m.id);
               }}
-              style={{background:`${m.grad}14`,border:`1.5px solid ${m.grad}30`,borderRadius:22,padding:"18px 16px",cursor:"pointer",boxShadow:"0 2px 12px rgba(60,70,40,0.07)",transition:"all 0.15s",transform:dragVault===m.id?"scale(1.04)":"scale(1)",position:"relative"}}>
-              <div style={{fontSize:32,marginBottom:8}}>{m.icon}</div>
+              style={{background:`${m.grad}12`,border:`1.5px solid ${m.grad}28`,borderRadius:24,padding:"20px 16px",cursor:"pointer",boxShadow:"0 3px 14px rgba(60,70,40,0.07)",transition:"all 0.15s",transform:dragVault===m.id?"scale(1.04)":"scale(1)",position:"relative",overflow:"hidden"}}>
+              {/* Colour top strip */}
+              <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:`linear-gradient(90deg,${m.grad},${m.grad}80)`}}/>
+              <div style={{fontSize:34,marginBottom:10,marginTop:2}}>{m.icon}</div>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:3}}>{m.name}</div>
-              <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5,marginBottom:8}}>{m.desc}</div>
-              <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"3px 10px",border:`1px solid ${m.grad}30`}}>{m.count}</div>
+              <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5,marginBottom:10}}>{m.desc}</div>
+              <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"4px 12px",border:`1px solid ${m.grad}28`}}>{m.count}</div>
               {/* Pin buttons for Notes and Filing */}
               {(m.id==="notes"||m.id==="filing")&&(()=>{
                 const pinId=m.id==="notes"?"noteshub":"filing";
@@ -3447,7 +3458,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
                     const next=pinned?o.filter(id=>id!==pinId):[...o,pinId];
                     try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
                     alert(pinned?`${m.name} unpinned from home`:`${m.name} pinned to home ✅`);
-                  }} style={{position:"absolute",top:10,right:10,background:pinned?"rgba(90,120,72,0.15)":"rgba(248,245,236,0.90)",border:`1px solid ${pinned?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.15)"}`,borderRadius:100,padding:"3px 8px",fontSize:10,fontWeight:700,color:pinned?"#3A6020":"#6A6050",cursor:"pointer"}}>
+                  }} style={{position:"absolute",top:12,right:12,background:pinned?"rgba(90,120,72,0.15)":"rgba(248,245,236,0.90)",border:`1px solid ${pinned?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.15)"}`,borderRadius:100,padding:"3px 8px",fontSize:10,fontWeight:700,color:pinned?"#3A6020":"#6A6050",cursor:"pointer"}}>
                     📌{pinned?" Pinned":" Pin"}
                   </button>
                 );
@@ -3455,23 +3466,23 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
             </div>
           ))}
         </div>
-        <div style={{textAlign:"center",marginBottom:12}}>
-          <span style={{fontSize:11,color:"rgba(60,56,40,0.40)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
+        <div style={{textAlign:"center",marginBottom:16}}>
+          <span style={{fontSize:11,color:"rgba(60,56,40,0.35)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
         </div>
 
         {/* Recent pages */}
         {recentPages.length>0&&(
           <div style={{marginBottom:16}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Recently edited</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:10}}>Recently edited</div>
             {recentPages.map(p=>(
               <div key={p.id} onClick={()=>setNotesMode("notes")}
-                style={{background:"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 16px",marginBottom:8,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 8px rgba(60,70,40,0.05)"}}>
-                <span style={{fontSize:22}}>📄</span>
+                style={{background:"rgba(248,245,236,0.92)",borderRadius:20,padding:"13px 16px",marginBottom:8,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 8px rgba(60,70,40,0.06)"}}>
+                <div style={{width:40,height:40,borderRadius:14,background:"rgba(90,120,72,0.10)",border:"1.5px solid rgba(90,120,72,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>📄</div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.title||"Untitled"}</div>
-                  <div style={{fontSize:11,color:"#8A8070",marginTop:1}}>{p.section} · {p.content?(p.content.slice(0,40)+"…"):"Empty"}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.title||"Untitled"}</div>
+                  <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>{p.section} · {p.updated?new Date(p.updated).toLocaleDateString("en-GB",{day:"numeric",month:"short"}):"Recently"}</div>
                 </div>
-                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.3}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
               </div>
             ))}
           </div>
@@ -3511,42 +3522,6 @@ function VaultHub({data,setData,priData,ideasData,setIdeasData,cabinetData,setNo
         (p.content||"").toLowerCase().includes(search.toLowerCase())
       ).map(p=>({label:p.title,sub:s.name,icon:"📄"})))
     :[];
-  return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:100}}>
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setScreen&&setScreen("home")} style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <div style={{fontFamily:"Georgia,serif",fontSize:24,fontWeight:700,color:"#1A1A10"}}>📚 The Vault</div>
-      </div>
-      <div style={{padding:"14px 14px 0"}}>
-        <div style={{background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"11px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)",display:"flex",alignItems:"center",gap:10}}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8A8070" strokeWidth="2"/><path d="M20 20l-3.5-3.5" stroke="#8A8070" strokeWidth="2" strokeLinecap="round"/></svg>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search notes and ideas…"
-            style={{flex:1,border:"none",outline:"none",fontSize:14,color:"#1A1A10",background:"transparent"}}/>
-          {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",cursor:"pointer",color:"#8A8070",fontSize:16}}>✕</button>}
-        </div>
-        {searchResults.slice(0,5).map((r,i)=>(
-          <div key={i} style={{background:"rgba(248,245,236,0.90)",borderRadius:18,padding:"11px 14px",marginBottom:8,border:"1px solid rgba(255,255,255,0.9)",display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:18}}>{r.icon}</span>
-            <div style={{flex:1}}><div style={{fontWeight:700,fontSize:13,color:"#1A1A10"}}>{r.label}</div><div style={{fontSize:11,color:"#8A8070"}}>{r.sub}</div></div>
-          </div>
-        ))}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {SECTIONS.map(s=>(
-            <div key={s.id} onClick={s.action} style={{background:"rgba(248,245,236,0.88)",borderRadius:22,border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer",boxShadow:"0 2px 12px rgba(0,0,0,0.05)",overflow:"hidden"}}>
-              <div style={{height:4,background:s.color}}/>
-              <div style={{padding:"14px"}}>
-                <div style={{width:44,height:44,borderRadius:14,background:s.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:8}}>{s.icon}</div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{s.name}</div>
-                <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>{s.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 
