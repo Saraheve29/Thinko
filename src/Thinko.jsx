@@ -9537,21 +9537,77 @@ const MODULES=[
 ];
 
 function ProLoginModal({onClose,onSignIn}){
+  const [tab,setTab]=useState("monthly"); // monthly | yearly
   return(
-    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(232,225,212,0.9)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{background:"rgba(252,249,242,0.97)",borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:380,textAlign:"center",boxShadow:"0 12px 48px rgba(60,50,30,0.15)",border:"1px solid rgba(255,255,255,0.9)"}}>
-        <div style={{fontSize:48,marginBottom:12}}>💎</div>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:22,marginBottom:8}}>Unlock Thinko Pro</div>
-        <div style={{color:"#6A6050",fontSize:14,lineHeight:1.6,marginBottom:20}}>Sign in with Google to unlock all features</div>
-        <div style={{background:"linear-gradient(135deg,#2C3820,#4A7038)",borderRadius:16,padding:"14px 16px",marginBottom:16,color:"#fff",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div><div style={{fontWeight:900,fontSize:22}}>£4.99<span style={{fontSize:13,fontWeight:400}}>/month</span></div><div style={{fontSize:11,opacity:0.6}}>or £39.99/year — save £20</div></div>
-          <div style={{fontSize:28}}>🌿</div>
+    <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(20,30,15,0.88)",backdropFilter:"blur(16px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+      <div style={{background:"rgba(252,249,242,0.98)",borderRadius:32,padding:"32px 24px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:"0 20px 80px rgba(30,50,20,0.35)",border:"1px solid rgba(255,255,255,0.95)"}}>
+
+        {/* Logo / header */}
+        <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:900,color:"#2C3820",letterSpacing:-1,marginBottom:2}}>
+          Think<span style={{color:"#5A7848"}}>o</span>
         </div>
-        <button onClick={onSignIn} style={{width:"100%",padding:"14px",background:"#fff",color:"#444",border:"2px solid #ddd",borderRadius:14,fontWeight:800,fontSize:15,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:12,boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
+        <div style={{fontSize:13,color:"#8A8070",marginBottom:20,fontStyle:"italic"}}>Think it. Plan it. Live it.</div>
+
+        {/* Feature highlights */}
+        <div style={{background:"linear-gradient(135deg,rgba(90,120,72,0.08),rgba(60,80,40,0.04))",borderRadius:20,padding:"16px 18px",marginBottom:20,textAlign:"left",border:"1px solid rgba(90,120,72,0.12)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:10}}>Everything included in Pro:</div>
+          {[
+            ["💥","Whipe Out — daily task challenge with monster"],
+            ["📋","To Do List — unlimited lists & tasks"],
+            ["📚","The Vault — PIN-locked notes, ideas & filing"],
+            ["🎯","Goals — 5-horizon garden growth tracker"],
+            ["🌀","Routine — daily habits with streaks & timers"],
+            ["🍽️","Meal Planner — 7-day planning"],
+            ["💰","Budget — planning, spending & ticket storage"],
+            ["🧠","Mind Maps — unlimited visual thinking"],
+            ["🌿","Rest Space — sounds, meditations & favourites"],
+            ["🛒","Shopping — multiple lists & templates"],
+          ].map(([icon,text])=>(
+            <div key={text} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",fontSize:13,color:"#3A3020"}}>
+              <span style={{fontSize:16,width:24,flexShrink:0}}>{icon}</span>
+              <span>{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Pricing tabs */}
+        <div style={{display:"flex",background:"rgba(90,80,60,0.08)",borderRadius:100,padding:4,marginBottom:14,gap:4}}>
+          {[["monthly","Monthly"],["yearly","Yearly — save 33%"]].map(([id,label])=>(
+            <button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"9px 0",borderRadius:100,border:"none",background:tab===id?"#5A7848":"transparent",color:tab===id?"#fff":"#6A6050",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.15s"}}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{background:"linear-gradient(135deg,#2C3820,#4A7038)",borderRadius:20,padding:"16px 18px",marginBottom:18,color:"#fff",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:28}}>
+              {tab==="monthly"?"£4.99":"£39.99"}
+              <span style={{fontSize:13,fontWeight:400,opacity:0.7}}>{tab==="monthly"?"/month":"/year"}</span>
+            </div>
+            <div style={{fontSize:11,opacity:0.65,marginTop:2}}>
+              {tab==="yearly"?"That's just £3.33/month — save £20":"Cancel any time"}
+            </div>
+          </div>
+          <div style={{fontSize:36}}>🌿</div>
+        </div>
+
+        {/* CTA */}
+        <button onClick={onSignIn} style={{width:"100%",padding:"15px",background:"#fff",color:"#444",border:"2px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:800,fontSize:15,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:12,boxShadow:"0 3px 18px rgba(0,0,0,0.10)"}}>
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Continue with Google
+          Sign up with Google
         </button>
-        <button onClick={onClose} style={{width:"100%",padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(160,152,140,0.3)",borderRadius:14,fontWeight:600,fontSize:14,cursor:"pointer"}}>Continue as guest</button>
+
+        <div style={{fontSize:11,color:"#8A8070",marginBottom:14}}>
+          🔐 Secure · Cancel any time · All your data stays on your device
+        </div>
+
+        <button onClick={onClose} style={{width:"100%",padding:"12px",background:"transparent",color:"#8A8070",border:"1px solid rgba(160,152,140,0.25)",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
+          Continue as guest (free features only)
+        </button>
+
+        <div style={{marginTop:14,padding:"10px 14px",background:"rgba(90,120,72,0.08)",borderRadius:14,border:"1px solid rgba(90,120,72,0.15)"}}>
+          <div style={{fontSize:11,color:"#5A7040",fontWeight:600}}>🎉 Currently in early access — all features FREE until launch!</div>
+        </div>
       </div>
     </div>
   );
@@ -9800,7 +9856,7 @@ export default function App() {
       <div style={{display:"flex",gap:8,padding:"0 24px 16px",justifyContent:"center",flexShrink:0}}>
         {TESTING_MODE&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.22)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
         <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\n📱 Android: tap ⋮ → Add to Home Screen\n🍎 iPhone: Share → Add to Home Screen");}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>📲 App</button>
-        <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>Go Pro</button>
+        <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#5A7848,#3A5830)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>💎 Go Pro</button>
         <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>⚙️ Customise</button>
       </div>
 
@@ -9920,6 +9976,7 @@ export default function App() {
 
     </div>
     <NavBar current="home" setScreen={setScreen}/>
+    {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{signIn();setShowLoginModal(false);}}/>}
     </>
   );
 }
