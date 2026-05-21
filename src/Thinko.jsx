@@ -2938,6 +2938,96 @@ function VoiceToText({setNotesData:setND}){
   );
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   🔐 VAULT PIN LOCK
+═══════════════════════════════════════════════════════ */
+function VaultPinLock({onUnlock}){
+  const [pin,setPin]=useState("");
+  const [mode,setMode]=useState(()=>localStorage.getItem('thinko_vault_pin')?'enter':'setup');
+  const [newPin,setNewPin]=useState("");
+  const [confirm,setConfirm]=useState("");
+  const [step,setStep]=useState('new'); // new | confirm
+  const [error,setError]=useState("");
+  const [shake,setShake]=useState(false);
+  const savedPin=localStorage.getItem('thinko_vault_pin');
+
+  const doShake=()=>{setShake(true);setTimeout(()=>setShake(false),500);};
+
+  const press=n=>{
+    if(mode==='enter'){
+      const next=pin+n;setPin(next);
+      if(next.length===4){
+        if(next===savedPin){onUnlock();}
+        else{doShake();setTimeout(()=>setPin(""),500);setError("Incorrect PIN");}
+      }
+    } else {
+      if(step==='new'){
+        const next=newPin+n;setNewPin(next);
+        if(next.length===4){setStep('confirm');setError("");}
+      } else {
+        const next=confirm+n;setConfirm(next);
+        if(next.length===4){
+          if(next===newPin){localStorage.setItem('thinko_vault_pin',next);onUnlock();}
+          else{doShake();setTimeout(()=>{setConfirm("");},500);setError("PINs don't match — try again");}
+        }
+      }
+    }
+  };
+
+  const del=()=>{
+    if(mode==='enter')setPin(p=>p.slice(0,-1));
+    else if(step==='new')setNewPin(p=>p.slice(0,-1));
+    else setConfirm(p=>p.slice(0,-1));
+  };
+
+  const clearPin=()=>{localStorage.removeItem('thinko_vault_pin');setMode('setup');setNewPin("");setConfirm("");setStep('new');setError("");};
+
+  const displayPin=mode==='enter'?pin:step==='new'?newPin:confirm;
+  const title=mode==='setup'?(step==='new'?"🔐 Set a Vault PIN":"🔐 Confirm your PIN"):"🔐 Enter Vault PIN";
+  const sub=mode==='setup'?(step==='new'?"Choose a 4-digit PIN to secure your Vault":"Enter the same PIN again"):"Your Vault is protected";
+
+  return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#2C3820,#3A5030,#4A6840)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px",fontFamily:"Georgia,serif"}}>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <div style={{fontSize:56,marginBottom:12}}>🔐</div>
+        <div style={{fontSize:24,fontWeight:700,color:"#fff",marginBottom:6}}>{title}</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.60)"}}>{sub}</div>
+        {error&&<div style={{marginTop:8,fontSize:13,color:"#FF8060",fontWeight:600}}>{error}</div>}
+      </div>
+
+      {/* PIN dots */}
+      <div style={{display:"flex",gap:16,marginBottom:40,animation:shake?"pinShake 0.5s":"none"}}>
+        <style>{`@keyframes pinShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}`}</style>
+        {[0,1,2,3].map(i=>(
+          <div key={i} style={{width:20,height:20,borderRadius:"50%",background:i<displayPin.length?"#FFD700":"rgba(255,255,255,0.25)",border:"2px solid rgba(255,255,255,0.40)",transition:"background 0.15s"}}/>
+        ))}
+      </div>
+
+      {/* Keypad */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,72px)",gap:14,marginBottom:24}}>
+        {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((k,i)=>(
+          k===""?<div key={i}/>:
+          <button key={i} onClick={()=>k==="⌫"?del():press(String(k))}
+            style={{width:72,height:72,borderRadius:"50%",background:k==="⌫"?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.15)",border:"1.5px solid rgba(255,255,255,0.20)",color:"#fff",fontSize:k==="⌫"?22:24,fontFamily:"Georgia,serif",fontWeight:700,cursor:"pointer",transition:"all 0.12s",backdropFilter:"blur(4px)"}}>
+            {k}
+          </button>
+        ))}
+      </div>
+
+      {/* Skip / manage */}
+      <div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+        <button onClick={onUnlock} style={{color:"rgba(255,255,255,0.50)",background:"none",border:"none",fontSize:13,cursor:"pointer",textDecoration:"underline"}}>
+          {mode==='setup'?"Skip — no PIN for now":"Forgot PIN? Reset app data"}
+        </button>
+        {mode==='enter'&&savedPin&&(
+          <button onClick={clearPin} style={{color:"rgba(255,255,255,0.35)",background:"none",border:"none",fontSize:12,cursor:"pointer"}}>Remove PIN lock</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen,initialMode=null}) {
   // ── ALL hooks at top level — never inside conditionals or IIFEs ──
   const [sectionId,setSectionId]=useState(null);
@@ -4750,11 +4840,9 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
 /* ── Main Ideas board ──────────────────────────────── */
 function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,setMatrixData,goalsData,setGoalsData,onBack,inline=false}){
   const [detailId,setDetailId]=useState(null);
-  const [adding,setAdding]=useState(true); // open add form immediately
-  const [draft,setDraft]=useState({text:"",ramble:"",tag:"💡 Idea",status:"spark",collection:"",url:"",cover:null});
+  const [adding,setAdding]=useState(true);
+  const [draft,setDraft]=useState({text:"",tag:"💡 Idea",url:"",cover:null});
   const [search,setSearch]=useState("");
-  const [filterTag,setFilterTag]=useState("All");
-  const [filterStatus,setFilterStatus]=useState("All");
   const [toast,setToast]=useState("");
   const textRef=useRef(null);
   useEffect(()=>{if(adding&&textRef.current)textRef.current.focus();},[adding]);
@@ -4764,166 +4852,123 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
   const del=id=>upd(ds=>ds.filter(d=>d.id!==id));
   const patch=(id,ch)=>upd(ds=>ds.map(d=>d.id===id?{...d,...ch}:d));
 
+  const TAGS=["💡 Idea","🎨 Creative","💼 Work","🌱 Personal","🔥 Urgent","⭐ Favourite"];
+  const TAG_COLS={"💡 Idea":"#E08020","🎨 Creative":"#A040C0","💼 Work":"#4070A0","🌱 Personal":"#5A9840","🔥 Urgent":"#C03010","⭐ Favourite":"#D0A020"};
+
   const submit=()=>{
     if(!draft.text.trim())return;
-    upd(ds=>[{id:Date.now(),text:draft.text.trim(),ramble:draft.ramble.trim(),tag:draft.tag,status:draft.status,collection:draft.collection.trim(),url:draft.url.trim(),cover:draft.cover||null,pinned:false,votes:0,links:[],steps:[],created:Date.now()},...ds]);
-    setDraft({text:"",ramble:"",tag:"💡 Idea",status:"spark",collection:"",url:"",cover:null});
+    upd(ds=>[{id:Date.now(),text:draft.text.trim(),tag:draft.tag,url:draft.url.trim(),cover:draft.cover||null,pinned:false,created:Date.now()},...ds]);
+    setDraft({text:"",tag:"💡 Idea",url:"",cover:null});
     setAdding(false);
+    showToast("💡 Idea saved!");
   };
 
-  const detail=data.find(d=>d.id===detailId);
-  if(detail) return(
-    <IdeaDetail
-      idea={detail}
-      onBack={()=>setDetailId(null)}
-      onUpdate={u=>patch(u.id,u)}
-      priData={priData} setPriData={setPriData}
-      mapData={mapData} setMapData={setMapData}
-      matrixData={matrixData} setMatrixData={setMatrixData}
-      goalsData={goalsData} setGoalsData={setGoalsData}
-    />
-  );
+  if(detailId){
+    const idea=data.find(d=>d.id===detailId);
+    if(idea) return <IdeaDetail idea={idea} onBack={()=>setDetailId(null)} onUpdate={u=>patch(u.id,u)} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData}/>;
+  }
 
-  const visible=data
-    .filter(d=>filterTag==="All"||d.tag===filterTag)
-    .filter(d=>filterStatus==="All"||d.status===filterStatus)
-    .filter(d=>!search||(d.text+d.ramble).toLowerCase().includes(search.toLowerCase()));
+  const visible=data.filter(d=>!search||d.text.toLowerCase().includes(search.toLowerCase())||d.tag.toLowerCase().includes(search.toLowerCase()));
 
   return(
-    <div style={{minHeight:inline?"auto":"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:inline?0:90}}>
-      {!inline&&<Header title="💡 Ideas" onBack={onBack||null} right={
-        <button onClick={()=>setAdding(true)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,width:42,height:42,fontSize:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
-      }/>}
-      {inline&&(
-        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-          <button onClick={()=>setAdding(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Add idea</button>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      {toast&&<div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",background:"#2C3820",color:"#fff",borderRadius:100,padding:"10px 22px",fontWeight:700,fontSize:14,zIndex:400,whiteSpace:"nowrap"}}>{toast}</div>}
+
+      {/* Header */}
+      {!inline&&(
+        <div style={{background:"linear-gradient(135deg,#7A6020,#A08030,#C0A040)",padding:"52px 22px 24px",textAlign:"center"}}>
+          <button onClick={onBack} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          </button>
+          <div style={{fontSize:40,marginBottom:6}}>💡</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#fff",marginBottom:4}}>My Ideas</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.60)",fontStyle:"italic"}}>{data.length} idea{data.length!==1?"s":""} saved</div>
         </div>
       )}
 
-      {/* Search */}
-      <div style={{padding:"10px 14px 0"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.18)",borderRadius:12,padding:"8px 14px",border:"1px solid rgba(255,255,255,0.25)"}}>
-          <span style={{fontSize:16}}>🔍</span>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search ideas…" style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:14,fontWeight:600}}/>
-          {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",color:"rgba(255,255,255,0.6)",cursor:"pointer",fontSize:16,padding:0}}>✕</button>}
-        </div>
-      </div>
+      <div style={{padding:"16px 16px"}}>
 
-      {/* Filters */}
-      <div style={{padding:"8px 14px 0",display:"flex",gap:6,overflowX:"auto",flexWrap:"nowrap"}}>
-        {["All",...IDEA_TAGS].map(t=>(
-          <button key={t} onClick={()=>setFilterTag(t)} style={{flexShrink:0,border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:20,padding:"4px 11px",fontSize:11,cursor:"pointer",fontWeight:filterTag===t?800:600,background:filterTag===t?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.15)",color:filterTag===t?C.dp:C.wh,whiteSpace:"nowrap"}}>{t}</button>
-        ))}
-      </div>
-      <div style={{padding:"6px 14px 0",display:"flex",gap:6,overflowX:"auto",flexWrap:"nowrap",marginBottom:6}}>
-        {["All",...STATUSES.map(s=>s.key)].map(k=>{
-          const st=k==="All"?null:statusByKey(k);
-          return(<button key={k} onClick={()=>setFilterStatus(k)} style={{flexShrink:0,border:`1.5px solid ${st?st.color:"rgba(255,255,255,0.3)"}`,borderRadius:20,padding:"4px 11px",fontSize:11,cursor:"pointer",fontWeight:filterStatus===k?800:600,background:filterStatus===k?(st?st.color:"rgba(255,255,255,0.9)"):"rgba(255,255,255,0.12)",color:filterStatus===k?C.wh:(st?st.color:C.wh),whiteSpace:"nowrap"}}>{st?st.label:"All stages"}</button>);
-        })}
-      </div>
-
-      <div style={{padding:"8px 14px"}}>
-        {/* Add form */}
-        {adding&&(
-          <GlassCard style={{marginBottom:14}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>💡 New Idea</div>
-            <textarea ref={textRef} value={draft.text} onChange={e=>setDraft(d=>({...d,text:e.target.value}))} placeholder="What's your idea?" rows={2} style={{width:"100%",boxSizing:"border-box",padding:"9px 13px",borderRadius:10,border:`2px solid ${C.lp}`,fontSize:14,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}/>
-            <textarea value={draft.ramble} onChange={e=>setDraft(d=>({...d,ramble:e.target.value}))} placeholder="More detail (optional)…" rows={2} style={{width:"100%",boxSizing:"border-box",padding:"9px 13px",borderRadius:10,border:`1.5px solid ${C.ll}`,fontSize:13,color:C.txt,outline:"none",resize:"none",fontFamily:"inherit",marginBottom:8}}/>
-            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
-              {IDEA_TAGS.map(t=>(
-                <button key={t} onClick={()=>setDraft(d=>({...d,tag:t}))} style={{border:`1.5px solid ${TAG_COLORS[t]}`,borderRadius:20,padding:"3px 9px",fontSize:11,cursor:"pointer",background:draft.tag===t?TAG_COLORS[t]:"transparent",color:draft.tag===t?C.wh:TAG_COLORS[t],fontWeight:700}}>{t}</button>
+        {/* Add idea form */}
+        {adding?(
+          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"18px 18px",marginBottom:14,border:"1.5px solid rgba(192,160,40,0.25)",boxShadow:"0 4px 20px rgba(60,50,10,0.08)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:12}}>💡 New Idea</div>
+            <textarea ref={textRef} value={draft.text} onChange={e=>setDraft(d=>({...d,text:e.target.value}))}
+              placeholder="What's your idea?"
+              rows={3}
+              style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:16,border:"1.5px solid rgba(192,160,40,0.25)",fontSize:15,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",marginBottom:12,background:"rgba(255,255,255,0.92)"}}/>
+            {/* Tag picker */}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+              {TAGS.map(t=>(
+                <button key={t} onClick={()=>setDraft(d=>({...d,tag:t}))}
+                  style={{border:`1.5px solid ${TAG_COLS[t]}`,borderRadius:100,padding:"5px 12px",fontSize:12,cursor:"pointer",background:draft.tag===t?TAG_COLS[t]:"transparent",color:draft.tag===t?"#fff":TAG_COLS[t],fontWeight:700,transition:"all 0.12s"}}>
+                  {t}
+                </button>
               ))}
             </div>
-            <UrlField value={draft.url} onChange={v=>setDraft(d=>({...d,url:v}))} style={{marginBottom:8}}/>
-            {/* Cover photo for new idea */}
-            {draft.cover?(
-              <div style={{position:"relative",marginBottom:10}}>
-                <img src={draft.cover} alt="" style={{width:"100%",height:100,objectFit:"cover",borderRadius:10,border:`1.5px solid ${C.ll}`}}/>
-                <button onClick={()=>setDraft(d=>({...d,cover:null}))} style={{position:"absolute",top:4,right:4,background:"#e74c3c",color:"#1A1A10",border:"none",borderRadius:"50%",width:22,height:22,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-              </div>
-            ):(
-              <label style={{display:"flex",alignItems:"center",gap:8,padding:"9px 13px",background:C.pale,border:`1.5px dashed ${C.lp}`,borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,color:C.pp,marginBottom:10}}>
-                📸 Add cover photo (optional)
-                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>setDraft(d=>({...d,cover:ev.target.result}));r.readAsDataURL(file);}}/>
-              </label>
-            )}
-            <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
-              <button onClick={()=>{setAdding(false);setDraft({text:"",ramble:"",tag:"💡 Idea",status:"spark",collection:"",url:"",cover:null});}} style={{background:"transparent",color:C.soft,border:"none",fontWeight:700,fontSize:14,cursor:"pointer"}}>Cancel</button>
-              <PurpleBtn onClick={submit}>Save idea 💡</PurpleBtn>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={submit}
+                style={{flex:1,padding:"13px",background:"#C0A030",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 12px rgba(192,160,48,0.35)"}}>
+                💡 Save idea
+              </button>
+              <button onClick={()=>setAdding(false)}
+                style={{padding:"13px 18px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
+                Cancel
+              </button>
             </div>
-          </GlassCard>
+          </div>
+        ):(
+          <button onClick={()=>setAdding(true)}
+            style={{width:"100%",padding:"14px",background:"#C0A030",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(192,160,48,0.30)",marginBottom:14}}>
+            + New Idea
+          </button>
         )}
 
-        {visible.length===0&&!adding&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:60,fontSize:15,lineHeight:2}}>No ideas yet — tap + to add one 💡</div>}
+        {/* Search */}
+        {data.length>3&&(
+          <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(248,245,236,0.88)",borderRadius:100,padding:"10px 16px",marginBottom:14,border:"1px solid rgba(192,160,40,0.15)"}}>
+            <span style={{opacity:0.5}}>🔍</span>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search ideas…"
+              style={{flex:1,background:"transparent",border:"none",outline:"none",color:"#1A1A10",fontSize:14,fontWeight:600}}/>
+            {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",color:"#8A8070",cursor:"pointer",fontSize:14}}>✕</button>}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {data.length===0&&(
+          <div style={{textAlign:"center",padding:"30px 20px",color:"#8A8070"}}>
+            <div style={{fontSize:56,marginBottom:10}}>💡</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No ideas yet</div>
+            <div style={{fontSize:14,lineHeight:1.7}}>Every big thing started as a small idea. Add your first one above.</div>
+          </div>
+        )}
 
         {/* Idea cards */}
         {visible.map(idea=>{
-          const steps=idea.steps||[];
-          const doneCount=steps.filter(s=>s.done).length;
-          const pct=steps.length>0?Math.round((doneCount/steps.length)*100):0;
-          const tc=TAG_COLORS[idea.tag]||C.pp;
-          const st=statusByKey(idea.status);
+          const col=TAG_COLS[idea.tag]||"#E08020";
           return(
-            <div key={idea.id} onClick={()=>setDetailId(idea.id)} style={{background:"rgba(255,255,255,0.92)",borderRadius:18,padding:"0",marginBottom:12,boxShadow:"0 2px 14px rgba(90,80,60,0.10)",border:`1.5px solid ${C.ll}`,overflow:"hidden",cursor:"pointer",transition:"transform 0.15s"}}
-              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-              onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-
-              {/* Cover photo if set */}
-              {idea.cover&&<img src={idea.cover} alt="" style={{width:"100%",height:80,objectFit:"cover",display:"block"}}/>}
-              {/* Mini mountain strip */}
-              <div style={{background:`linear-gradient(135deg,#0d001a,#2d0a5e)`,padding:"10px 14px",display:"flex",alignItems:"center",gap:12}}>
-                <SeedToTree pct={pct} size={52}/>
-                <div style={{flex:1}}>
-                  <div style={{color:"#1A1A10",fontWeight:900,fontSize:15,lineHeight:1.3}}>{idea.text}</div>
-                  <div style={{color:"rgba(255,255,255,0.55)",fontSize:11,marginTop:2}}>{steps.length===0?"No steps yet":pct===100?"🎉 Summit reached!": `${doneCount}/${steps.length} steps · ${pct}%`}</div>
+            <div key={idea.id} onClick={()=>setDetailId(idea.id)}
+              style={{background:"rgba(248,245,236,0.95)",borderRadius:22,padding:"0",marginBottom:10,border:`1.5px solid ${col}25`,boxShadow:"0 2px 12px rgba(60,50,10,0.06)",cursor:"pointer",overflow:"hidden",transition:"transform 0.12s"}}
+              onTouchStart={e=>e.currentTarget.style.transform="scale(0.98)"}
+              onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+              <div style={{height:4,background:`linear-gradient(90deg,${col},${col}80)`}}/>
+              <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:42,height:42,borderRadius:14,background:`${col}18`,border:`2px solid ${col}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>💡</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:4,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{idea.text}</div>
+                  <span style={{display:"inline-block",background:`${col}18`,color:col,fontSize:11,fontWeight:700,borderRadius:100,padding:"2px 10px",border:`1px solid ${col}30`}}>{idea.tag}</span>
                 </div>
-                <button onClick={e=>{e.stopPropagation();del(idea.id);}} style={{background:"rgba(255,100,100,0.2)",color:"rgba(255,180,180,0.9)",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
-              </div>
-
-              {/* Progress bar */}
-              <div style={{height:4,background:C.ll}}>
-                <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#27ae60":C.pp,transition:"width 0.4s"}}/>
-              </div>
-
-              {/* Tags + ramble */}
-              <div style={{padding:"10px 14px 12px"}}>
-                <div style={{display:"flex",gap:6,marginBottom:6,flexWrap:"wrap"}}>
-                  <span style={{background:tc,color:"#1A1A10",fontSize:10,fontWeight:800,borderRadius:20,padding:"2px 8px"}}>{idea.tag}</span>
-                  <span style={{background:st.color,color:"#1A1A10",fontSize:10,fontWeight:800,borderRadius:20,padding:"2px 8px"}}>{st.label}</span>
-                  {idea.pinned&&<span>📌</span>}
+                <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
+                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                  <button onClick={e=>{e.stopPropagation();del(idea.id);}} style={{background:"none",border:"none",color:"rgba(192,57,43,0.35)",cursor:"pointer",fontSize:13}}>🗑</button>
                 </div>
-                {idea.ramble&&<div style={{fontSize:12,color:C.soft,lineHeight:1.4}}>{idea.ramble.slice(0,60)}{idea.ramble.length>60?"…":""}</div>}
-                {idea.url&&<UrlBadge url={idea.url}/>}
-                {/* Pin idea button */}
-                <button onClick={e=>{e.stopPropagation();if(setGoalsData){const due=new Date();due.setDate(due.getDate()+365);setGoalsData(gs=>[...gs,{id:Date.now(),horizon:"year1",title:idea.text,description:idea.ramble||"",dueDate:due.toISOString().slice(0,10),cover:idea.cover||null,links:[],subtasks:[],status:"active",created:Date.now()}]);showToast("🌱 Planted as 1-Year Goal!");}}}
-                  style={{marginTop:6,background:"linear-gradient(135deg,#1e8449,#27ae60)",color:"#fff",border:"none",borderRadius:20,padding:"5px 13px",fontSize:11,fontWeight:800,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5}}>
-                  📌 Pin idea
-                </button>
               </div>
             </div>
           );
         })}
       </div>
-      {toast&&<div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:C.dp,color:"#1A1A10",borderRadius:12,padding:"10px 20px",fontWeight:700,fontSize:14,boxShadow:"0 4px 20px rgba(45,10,94,0.4)",zIndex:400,whiteSpace:"nowrap"}}>{toast}</div>}
     </div>
   );
 }
-
-
-/* ═══════════════════════════════════════════════════════
-   EISENHOWER MATRIX  — vibrant colours, type directly in
-   boxes, AI assist, calendar, mindmap & prioritizer links
-═══════════════════════════════════════════════════════ */
-const QUADS=[
-  {key:"do",   label:"Urgent & Important",     sub:"(Do First)",        bg:"#8A9E78", light:"rgba(138,158,120,0.18)", border:"rgba(138,158,120,0.35)", desc:"Act on these today"},
-  {key:"plan", label:"Important, Not Urgent",  sub:"(Schedule)",        bg:"#5A7848", light:"rgba(248,245,236,0.75)", border:"rgba(90,120,72,0.2)",    desc:"Block time for these"},
-  {key:"help", label:"Urgent, Not Important",  sub:"(Delegate)",        bg:"#8A9E78", light:"rgba(138,158,120,0.18)", border:"rgba(138,158,120,0.35)", desc:"Outsource or use a tool"},
-  {key:"drop", label:"Not Urgent & Not Important", sub:"(Delete / Later)", bg:"#5A7848", light:"rgba(248,245,236,0.75)", border:"rgba(90,120,72,0.2)", desc:"Question if this is needed"},
-];
-const quadByKey=k=>QUADS.find(q=>q.key===k)||QUADS[0];
-const STALE_MS=7*24*60*60*1000;
-
-const FOCUS_PRESETS=[5,10,15,25,30,45,60];
 
 function MatrixTimer({setScreen}) {
   const [mins,setMins]=useState(25);
@@ -9439,7 +9484,14 @@ function AuthButton({user,onSignIn,onSignOut}){
 
 
 export default function App() {
-  const [screen,setScreen]=useState("home");
+  const [screen,setScreenRaw]=useState("home");
+  const [vaultUnlocked,setVaultUnlocked]=useState(()=>!localStorage.getItem('thinko_vault_pin'));
+  const setScreen=s=>{
+    if(["notes","noteshub","filing"].includes(screen)&&!["notes","noteshub","filing"].includes(s)){
+      if(localStorage.getItem('thinko_vault_pin'))setVaultUnlocked(false);
+    }
+    setScreenRaw(s);
+  };
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
   const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
@@ -9553,6 +9605,9 @@ export default function App() {
 
   if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
+  if((screen==="notes"||screen==="noteshub"||screen==="filing")&&!vaultUnlocked)
+    return <VaultPinLock onUnlock={()=>setVaultUnlocked(true)}/>;
+
   if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div></>);
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
