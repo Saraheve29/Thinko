@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-// Thinko v2.5 — Top3 Prioritizer · MindMap Goals · SendToDropdown · Ideas fix
+// Thinko v2.5 — Top3 To Do List · MindMap Goals · SendToDropdown · Ideas fix
 
 /* ═══════════════════════════════════════════════════════
    THEME
@@ -1042,7 +1042,7 @@ function PriCompare({tasks,onDone}) {
       <div style={{width:"100%",background:"rgba(90,80,60,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
         <button onClick={()=>onDone([...pending].sort((a,b)=>(scores[b.id]||0)-(scores[a.id]||0)))}
           style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"none",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",flexShrink:0}}>←</button>
-        <div style={{flex:1,color:"#1A1A10",fontWeight:800,fontSize:16}}>Prioritizer</div>
+        <div style={{flex:1,color:"#1A1A10",fontWeight:800,fontSize:16}}>To Do List</div>
         <div style={{color:"rgba(255,255,255,0.55)",fontSize:13,fontWeight:600}}>{idx+1} / {pairs.length}</div>
       </div>
 
@@ -1143,7 +1143,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
       showSendToast(`🎯 Sent to Matrix!`);
     } else if(dest==="charge"){
       // The Whipe Out reads from priData directly so it auto-appears — just toast
-      showSendToast("⚡ The Whipe Out will pick this up from your Prioritizer!");
+      showSendToast("⚡ The Whipe Out will pick this up from your To Do List!");
     }
   };
   const onPriDone=sorted=>{
@@ -1286,7 +1286,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
     if(!dragId||dragId===id)return;
     setData(ls=>{const a=[...ls];const fi=a.findIndex(l=>l.id===dragId),ti=a.findIndex(l=>l.id===id);const [item]=a.splice(fi,1);a.splice(ti,0,item);return a;});
   };
-  // Touch drag for Prioritizer list hub
+  // Touch drag for To Do List list hub
   const priTouchRef=useRef(null);
   const priTouchStart=(e,id)=>{priTouchRef.current=setTimeout(()=>setDragId(id),200);};
   const priTouchMove=(e)=>{
@@ -1300,7 +1300,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
   const listColors=["#5A7848","#7A6038","#486878","#6A5870","#486050","#705848"];
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
-      <Header title="Prioritizer" onBack={()=>setScreen("home")} right={
+      <Header title="📋 To Do List" onBack={()=>setScreen("home")} right={
         <button onClick={()=>setAdding(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:50,width:40,height:40,fontSize:24,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 12px rgba(58,80,38,0.35)"}}>+</button>
       }/>
 
@@ -1395,7 +1395,10 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
 
         {/* LISTS — when they exist */}
         {data.length>0&&(
-          <div style={{fontSize:11,color:"rgba(60,50,30,0.45)",textAlign:"center",marginBottom:12,letterSpacing:0.5}}>⠿ Hold and drag to reorder</div>
+          <>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4,marginTop:4}}>📋 To Do List</div>
+            <div style={{fontSize:13,color:"#8A8070",marginBottom:12,fontStyle:"italic"}}>Prioritise your to do list — drag to reorder by importance</div>
+          </>
         )}
         {data.map((list,i)=>{
           const col=listColors[i%listColors.length];
@@ -1754,7 +1757,7 @@ function SendToDropdown({node,isRoot,priData,setPriData,ideasData,setIdeasData,m
   const horizonIcons={"week":"📅","month1":"🗓️","month6":"🌱","year1":"⭐","year3":"🚀","year5":"🏔️"};
   const horizonDays={"week":7,"month1":30,"month6":180,"year1":365,"year3":1095,"year5":1825};
 
-  // Root node: Goals + Calendar. Branch nodes: Prioritizer + Matrix + Calendar
+  // Root node: Goals + Calendar. Branch nodes: To Do List + Matrix + Calendar
   const OPTIONS=isRoot?[
     {id:"cal",       label:"Google Calendar",       icon:"📅", group:"📅 Calendar"},
     ...horizons.map(h=>({id:`goal_${h}`,label:`${horizonLabels[h]} Goal`,icon:horizonIcons[h],group:"🎯 Add as Goal"})),
@@ -1766,7 +1769,7 @@ function SendToDropdown({node,isRoot,priData,setPriData,ideasData,setIdeasData,m
       icon:{do:"🔴",plan:"🟠",help:"🔵",drop:"⚫"}[q],
       group:"🎯 Matrix"
     })),
-    ...(priData||[]).map(l=>({id:`pri_${l.id}`,label:l.name,icon:"📋",group:"📋 Prioritizer"})),
+    ...(priData||[]).map(l=>({id:`pri_${l.id}`,label:l.name,icon:"📋",group:"📋 To Do List"})),
   ];
 
   const groups=[...new Set(OPTIONS.map(o=>o.group))];
@@ -1791,7 +1794,7 @@ function SendToDropdown({node,isRoot,priData,setPriData,ideasData,setIdeasData,m
       else if(id.startsWith("pri_")){
         const listId=Number(id.replace("pri_",""));
         setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now()+Math.random(),name:text,done:false,color:"lilac",url:""}]}:l));
-        msgs.push("📋 Prioritizer");
+        msgs.push("📋 To Do List");
       }
       else if(id.startsWith("goal_")){
         const horizon=id.replace("goal_","");
@@ -1822,7 +1825,7 @@ function SendToDropdown({node,isRoot,priData,setPriData,ideasData,setIdeasData,m
   return(
     <div style={{marginBottom:16,position:"relative"}} ref={ref}>
       <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:8}}>
-        {isRoot?"🎯 Add to Goals or Calendar":"↗ Send to Prioritizer / Matrix / Calendar"}
+        {isRoot?"🎯 Add to Goals or Calendar":"↗ Send to To Do List / Matrix / Calendar"}
       </div>
 
       {/* Trigger button */}
@@ -2332,9 +2335,9 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
         const delImg=id=>patchNode({images:images.filter(img=>img.id!==id)});
 
         /* Send actions */
-        const sendToPrioritizer=(listId)=>{
+        const sendToTodoList=(listId)=>{
           setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:node.text,done:false,color:"lilac",url:""}]}:l));
-          setSentMsg("✅ Added to Prioritizer!");setTimeout(()=>setSentMsg(""),2000);
+          setSentMsg("✅ Added to To Do List!");setTimeout(()=>setSentMsg(""),2000);
         };
         const plantAsGoal=(horizon)=>{
     if(!setGoalsData)return;
@@ -3111,7 +3114,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const sendToPri=(listId)=>{
     if(!page)return;
     setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:page.title,done:false,color:"lilac"}]}:l));
-    showToast("📋 Sent to Prioritizer!");setSendOpen(false);
+    showToast("📋 Sent to To Do List!");setSendOpen(false);
   };
   const sendToCal=()=>{
     if(!page)return;
@@ -3221,7 +3224,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
                 <span style={{fontSize:18}}>🖼️</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Save as JPEG image</span>
               </button>
                 <button key={l.id} onClick={()=>sendToPri(l.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"none",border:"none",borderBottom:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
-                  <span style={{fontSize:18}}>📋</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>Prioritizer — {l.name}</span>
+                  <span style={{fontSize:18}}>📋</span><span style={{fontWeight:700,fontSize:14,color:C.txt}}>To Do List — {l.name}</span>
                 </button>
               ))}
               <button onClick={()=>setSendOpen(false)} style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"12px 16px",background:"none",border:"none",cursor:"pointer",width:"100%",fontWeight:700,fontSize:13,color:C.soft}}>Cancel</button>
@@ -3963,7 +3966,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
 /* ═══════════════════════════════════════════════════════
    IDEAS 2.0 — Goals with mountain climber progress,
    step breakdown, micro-steps, AI automation,
-   image/link per step, send to Calendar/Prioritizer/Matrix/MindMap
+   image/link per step, send to Calendar/To Do List/Matrix/MindMap
 ═══════════════════════════════════════════════════════ */
 const IDEA_TAGS=["💡 Idea","📱 App","🎨 Creative","💰 Business","🔮 Spiritual","✍️ Writing","🏠 Home","Other"];
 const TAG_COLORS={"💡 Idea":"#f39c12","📱 App":"#2980b9","🎨 Creative":"#9b59b6","💰 Business":"#27ae60","🔮 Spiritual":"#8e44ad","✍️ Writing":"#c2185b","🏠 Home":"#e67e22","Other":"#7f8c8d"};
@@ -4615,7 +4618,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
       window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("🏔️ "+step.text)}`,"_blank");
     } else if(dest==="pri"&&extra){
       setPriData(ls=>ls.map(l=>l.id===extra?{...l,tasks:[...l.tasks,{id:Date.now(),name:step.text,done:false,color:"lilac",url:""}]}:l));
-      showToast("✅ Added to Prioritizer!");
+      showToast("✅ Added to To Do List!");
     } else if(dest==="matrix"&&extra){
       setMatrixData(ds=>[...ds,{id:Date.now(),text:step.text,quad:extra,created:Date.now(),touched:Date.now(),url:""}]);
       showToast("🎯 Added to Matrix!");
@@ -5091,14 +5094,14 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   const touch=id=>setData(ds=>ds.map(d=>d.id===id?{...d,touched:Date.now()}:d));
 
   /* send actions */
-  const sendToPri=(task,listId)=>{setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:task.text,done:false,color:"lilac"}]}:l));showToast("✅ Sent to Prioritizer!");setSendMenu(null);};
+  const sendToPri=(task,listId)=>{setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:task.text,done:false,color:"lilac"}]}:l));showToast("✅ Sent to To Do List!");setSendMenu(null);};
   const sendToMap=task=>{const root={id:Date.now(),text:task.text,x:0,y:0,parent:null,color:"crystal"};setMapData(ms=>[...ms,{id:Date.now()+1,name:task.text,nodes:[root]}]);showToast("🧠 Mind map created!");setSendMenu(null);};
   const sendToCal=task=>{window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(task.text)}`,"_blank");setSendMenu(null);};
 
-  /* receive from Prioritizer — pull tasks into Do First */
+  /* receive from To Do List — pull tasks into Do First */
   const importFromPri=(task)=>{
     setData(ds=>[...ds,{id:Date.now(),text:task.text,quad:"do",created:Date.now(),touched:Date.now()}]);
-    showToast("📋 Imported from Prioritizer!");
+    showToast("📋 Imported from To Do List!");
   };
 
   /* AI */
@@ -5125,10 +5128,10 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
           <button onClick={()=>sendToMap(task)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",background:"none",border:"none",borderTop:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
             <span style={{fontSize:22}}>🧠</span><span style={{fontWeight:700,fontSize:15,color:C.txt}}>New Mind Map</span>
           </button>
-          {/* Prioritizer lists */}
+          {/* To Do List lists */}
           {priData.length>0&&priData.map(l=>(
             <button key={l.id} onClick={()=>sendToPri(task,l.id)} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",background:"none",border:"none",borderTop:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",textAlign:"left"}}>
-              <span style={{fontSize:22}}>📋</span><span style={{fontWeight:700,fontSize:15,color:C.txt}}>Prioritizer — {l.name}</span>
+              <span style={{fontSize:22}}>📋</span><span style={{fontWeight:700,fontSize:15,color:C.txt}}>To Do List — {l.name}</span>
             </button>
           ))}
           <button onClick={()=>setSendMenu(null)} style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"14px 20px",background:"none",border:"none",borderTop:`1px solid ${C.ll}`,cursor:"pointer",width:"100%",fontWeight:700,fontSize:14,color:C.soft}}>Cancel</button>
@@ -5232,7 +5235,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 
       {/* ── BOTTOM BUTTONS ── */}
       <div style={{padding:"10px 12px 28px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%"}}>
-        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(90,120,72,0.30)"}}>Move to Prioritizer</button>
+        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(90,120,72,0.30)"}}>Move to To Do List</button>
         <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"14px 8px",background:"transparent",color:"#3A6020",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>Weekly Insights</button>
       </div>
       {/* Send menu */}
@@ -6660,7 +6663,7 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
    SMART GOALS  — tiered by time horizon
    Next Week · 6 Months · 1 Year · 3 Years · 5 Years
    Each goal: AI suggestions, subtasks, micro-steps,
-   date, cover photo, links, send to Calendar/Prioritizer/Matrix
+   date, cover photo, links, send to Calendar/To Do List/Matrix
 ═══════════════════════════════════════════════════════ */
 
 
@@ -7927,7 +7930,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             {data.targetTask&&<div style={{fontSize:12,color:"#5A7848",marginTop:6,fontStyle:"italic"}}>🎯 Today's focus: {data.targetTask}</div>}
           </div>
 
-          {/* This or That prioritiser — full screen overlay */}
+          {/* This or That to do list — full screen overlay */}
           {comparing&&(
             <ChargeCompare
               tasks={(data.targetTasks||[]).filter(t=>t?.trim())}
@@ -8197,7 +8200,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 <span style={{background:"rgba(192,120,40,0.12)",color:"#7A5820",borderRadius:100,padding:"2px 10px",fontSize:12,fontWeight:600}}>{allStale.length}</span>
               </div>
               {allStale.map((t,i)=>(<Row key={i} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}
-                onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:t.name||t.text,done:false,color:"lilac"}]}:l));showToast("📋 Added to Prioritizer!");}else showToast("Add a Prioritizer list first");}}
+                onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:t.name||t.text,done:false,color:"lilac"}]}:l));showToast("📋 Added to To Do List!");}else showToast("Add a To Do List list first");}}
                 onMatrix={()=>{if(setMatrixData){setMatrixData(ds=>[...ds,{id:Date.now(),text:t.name||t.text,quad:"do",created:Date.now(),touched:Date.now()}]);showToast("⚖️ Added to Matrix!");}}}
                 onDelete={()=>{if(t.srcType==="pri"&&setPriData)setPriData(ls=>ls.map(l=>({...l,tasks:l.tasks.filter(task=>task.id!==t.id)})));if(t.srcType==="matrix"&&setMatrixData)setMatrixData(ds=>ds.filter(d=>d.id!==t.id));showToast("🗑 Removed");}}
               />))}
@@ -8213,7 +8216,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             </div>
             {aiSugg.length>0?aiSugg.map((s,i)=>(
               <Row key={i} name={s.task||s} src={s.src||"🤖 AI pick"} done={charged.includes(s.task||s)} onCharge={()=>chargeIt(s.task||s)}
-                onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:s.task||s,done:false,color:"lilac"}]}:l));setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("📋 Scheduled!");}else showToast("Add a Prioritizer list first");}}
+                onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:s.task||s,done:false,color:"lilac"}]}:l));setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("📋 Scheduled!");}else showToast("Add a To Do List list first");}}
                 onMatrix={()=>{if(setMatrixData){setMatrixData(ds=>[...ds,{id:Date.now(),text:s.task||s,quad:"do",created:Date.now(),touched:Date.now()}]);setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("⚖️ Added to Matrix!");}}}
                 onDelete={()=>{if(s.srcType==="pri"&&setPriData)setPriData(ls=>ls.map(l=>({...l,tasks:l.tasks.filter(t=>t.id!==s.srcId)})));if(s.srcType==="matrix"&&setMatrixData)setMatrixData(ds=>ds.filter(d=>d.id!==s.srcId));setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("🗑 Removed");}}
               />
@@ -8611,16 +8614,52 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
 
                 {/* Tasks to wipe out */}
                 <div style={{fontFamily:"Georgia,serif",fontSize:13,fontWeight:600,color:"#C03010",marginBottom:8}}>💥 Tasks to wipe out</div>
+
+                {/* Auto-populate from today + plan */}
+                {(()=>{
+                  const todayTasks=(data.targetTasks||[]).filter(t=>t?.trim());
+                  const planTasks=(data.targetTasks||[]).filter((t,i)=>t?.trim()&&plan?.assignments?.[String(i)]).filter(t=>!wipeDayData.tasks.includes(t));
+                  const allSuggested=[...new Set([...todayTasks,...planTasks])].filter(t=>!wipeDayData.tasks.includes(t));
+                  if(!allSuggested.length) return null;
+                  return(
+                    <div style={{background:"rgba(220,60,20,0.05)",borderRadius:14,padding:"10px 12px",marginBottom:12,border:"1px solid rgba(220,60,20,0.12)"}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#C03010",marginBottom:8,textTransform:"uppercase",letterSpacing:0.6}}>💡 From your tasks & plan — add to challenge?</div>
+                      {allSuggested.map((task,i)=>(
+                        <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<allSuggested.length-1?"1px solid rgba(220,60,20,0.07)":"none"}}>
+                          <span style={{flex:1,fontSize:13,color:"#1A1A10",fontWeight:500}}>{task}</span>
+                          <button onClick={()=>saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,task]})}
+                            style={{background:"rgba(220,60,20,0.12)",color:"#C03010",border:"1px solid rgba(220,60,20,0.20)",borderRadius:100,padding:"4px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                            + Add
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={()=>saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,...allSuggested]})}
+                        style={{width:"100%",marginTop:8,padding:"8px",background:"#C03010",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                        + Add all {allSuggested.length} tasks
+                      </button>
+                    </div>
+                  );
+                })()}
+
                 <div style={{marginBottom:10}}>
                   {wipeDayData.tasks.map((task,i)=>(
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(220,60,20,0.08)"}}>
-                      <span style={{fontSize:14}}>{wipeDayData.done.includes(task)?"✅":"💢"}</span>
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:4,borderRadius:12,background:wipeDayData.done.includes(task)?"rgba(90,160,80,0.08)":"rgba(255,255,255,0.70)",border:`1px solid ${wipeDayData.done.includes(task)?"rgba(90,160,80,0.20)":"rgba(220,60,20,0.10)"}`}}>
+                      {/* Mark done toggle */}
+                      <button onClick={()=>{
+                        const done=wipeDayData.done.includes(task);
+                        saveWipeDay({...wipeDayData,done:done?wipeDayData.done.filter(d=>d!==task):[...wipeDayData.done,task]});
+                      }} style={{width:26,height:26,borderRadius:"50%",border:`2px solid ${wipeDayData.done.includes(task)?"#5A9840":"rgba(220,60,20,0.35)"}`,background:wipeDayData.done.includes(task)?"#5A9840":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff"}}>
+                        {wipeDayData.done.includes(task)?"✓":""}
+                      </button>
                       <span style={{flex:1,fontSize:13,color:wipeDayData.done.includes(task)?"#8A9080":"#1A1A10",textDecoration:wipeDayData.done.includes(task)?"line-through":"none",fontWeight:600}}>{task}</span>
+                      {/* Delete */}
                       <button onClick={()=>saveWipeDay({...wipeDayData,tasks:wipeDayData.tasks.filter((_,j)=>j!==i),done:wipeDayData.done.filter(d=>d!==task)})}
-                        style={{background:"none",border:"none",color:"rgba(192,57,43,0.5)",cursor:"pointer",fontSize:13}}>✕</button>
+                        style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"4px 8px",fontSize:11,cursor:"pointer",flexShrink:0}}>
+                        🗑
+                      </button>
                     </div>
                   ))}
-                  {wipeDayData.tasks.length===0&&<div style={{fontSize:12,color:"#8A8070",fontStyle:"italic"}}>No tasks yet — add the things you've been dreading most!</div>}
+                  {wipeDayData.tasks.length===0&&<div style={{fontSize:12,color:"#8A8070",fontStyle:"italic",padding:"8px 0"}}>No tasks yet — add the things you've been putting off most!</div>}
                 </div>
 
                 {/* Add task */}
@@ -8676,7 +8715,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
           {/* ── Transfer tasks ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:6}}>↔️ Transfer Tasks</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:12,lineHeight:1.6}}>Send today's tasks to Prioritizer or Matrix, or pull tasks from Prioritizer into today.</div>
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:12,lineHeight:1.6}}>Send today's tasks to To Do List or Matrix, or pull tasks from To Do List into today.</div>
 
             {/* Today's tasks preview */}
             {(data.targetTasks||[]).filter(t=>t?.trim()).length===0?(
@@ -8692,17 +8731,17 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             )}
 
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {/* Send to Prioritizer */}
+              {/* Send to To Do List */}
               <button onClick={()=>{
                 const tasks=(data.targetTasks||[]).filter(t=>t?.trim());
                 if(!tasks.length){showToast("No tasks to send!");return;}
                 setPriData&&setPriData(ls=>{
-                  if(!ls.length){showToast("Add a Prioritizer list first!");return ls;}
+                  if(!ls.length){showToast("Add a To Do List list first!");return ls;}
                   return ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,...tasks.map(name=>({id:Date.now()+Math.random(),name,done:false,color:"sage"}))]}:l);
                 });
-                showToast("📋 Sent to Prioritizer!");
+                showToast("📋 Sent to To Do List!");
               }} style={{width:"100%",padding:"11px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                ⚡ → 📋 Send today's tasks to Prioritizer
+                ⚡ → 📋 Send today's tasks to To Do List
               </button>
 
               {/* Send to Matrix */}
@@ -8715,16 +8754,16 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 ⚡ → ⚖️ Send today's tasks to Matrix
               </button>
 
-              {/* Pull from Prioritizer */}
+              {/* Pull from To Do List */}
               <button onClick={()=>{
                 const priTasks=(priData||[]).flatMap(l=>(l.tasks||[]).filter(t=>!t.done).map(t=>t.name)).filter(Boolean);
-                if(!priTasks.length){showToast("No active tasks in Prioritizer!");return;}
+                if(!priTasks.length){showToast("No active tasks in To Do List!");return;}
                 const current=(data.targetTasks||[]).filter(t=>t?.trim());
                 const merged=[...new Set([...current,...priTasks])];
                 upd({targetTasks:merged,dailyTarget:merged.length});
-                showToast(`📋 Pulled ${priTasks.length} task${priTasks.length!==1?"s":""} from Prioritizer!`);
+                showToast(`📋 Pulled ${priTasks.length} task${priTasks.length!==1?"s":""} from To Do List!`);
               }} style={{width:"100%",padding:"11px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                📋 → ⚡ Pull tasks from Prioritizer into today
+                📋 → ⚡ Pull tasks from To Do List into today
               </button>
             </div>
           </div>
@@ -9327,7 +9366,7 @@ function ProUpgradeModal({ limitHit, onClose }) {
   const featureNames = {
     aiCallsPerDay:    "AI suggestions",
     mindMaps:         "Mind Maps",
-    prioritizerLists: "Prioritizer lists",
+    prioritizerLists: "To Do List lists",
     matrixTasks:      "Matrix tasks",
     goalsTotal:       "Goals",
     restSessions:     "Rest Space sessions",
@@ -9396,7 +9435,7 @@ function useAuth(){
 
 
 const MODULES=[
-  {id:"prioritizer", icon:"📋", name:"Prioritizer",  color:"#5A7848",
+  {id:"prioritizer", icon:"📋", name:"To Do List",  color:"#5A7848",
    summary:"Drag & rank tasks · Top 3 focus · Break timer · Send to Matrix"},
   {id:"mindmap",     icon:"🧠", name:"Mind Map",     color:"#486878",
    summary:"Visual thinking · AI branch grow · Voice notes · 8 templates"},
@@ -9832,7 +9871,7 @@ function NavBar({current,setScreen}) {
   const ALL_NAV=[
     {id:"home",       icon:"🏠", name:"Home"},
     {id:"charge",     icon:"⚡", name:"Whipe Out"},
-    {id:"prioritizer",icon:"📋", name:"Tasks"},
+    {id:"prioritizer",icon:"📋", name:"To Do"},
     {id:"notes",      icon:"📚", name:"Vault"},
     {id:"goals",      icon:"🎯", name:"Goals"},
     {id:"matrix",     icon:"⚖️", name:"Matrix"},
