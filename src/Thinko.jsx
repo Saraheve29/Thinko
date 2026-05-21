@@ -981,7 +981,7 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
             <MenuItem icon="🎯" label="Send to Matrix — Do First" onClick={()=>onSendTo&&onSendTo(task,"matrix","do")}/>
             <MenuItem icon="🟠" label="Send to Matrix — Schedule" onClick={()=>onSendTo&&onSendTo(task,"matrix","plan")}/>
             <MenuItem icon="🔵" label="Send to Matrix — Ask for Help" onClick={()=>onSendTo&&onSendTo(task,"matrix","help")}/>
-            <MenuItem icon="⚡" label="Send to The Charge" onClick={()=>onSendTo&&onSendTo(task,"charge")}/>
+            <MenuItem icon="⚡" label="Send to The Whipe Out" onClick={()=>onSendTo&&onSendTo(task,"charge")}/>
             <MenuItem icon="🗑" label="Delete task" onClick={()=>onDelete(task.id)} danger/>
             {/* Big close button at bottom for easy thumb reach */}
             <div style={{padding:"10px 16px 0"}}>
@@ -1142,8 +1142,8 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
       setMatrixData(ds=>[...ds,{id:Date.now(),text:task.name,quad:extra||"do",created:Date.now(),touched:Date.now(),url:task.url||""}]);
       showSendToast(`🎯 Sent to Matrix!`);
     } else if(dest==="charge"){
-      // The Charge reads from priData directly so it auto-appears — just toast
-      showSendToast("⚡ The Charge will pick this up from your Prioritizer!");
+      // The Whipe Out reads from priData directly so it auto-appears — just toast
+      showSendToast("⚡ The Whipe Out will pick this up from your Prioritizer!");
     }
   };
   const onPriDone=sorted=>{
@@ -4306,6 +4306,151 @@ const STALE_7=7*24*60*60*1000;
 const todayStr=()=>new Date().toISOString().slice(0,10);
 
 /* ── Orb of Light SVG ───────────────────────────────── */
+function WhipeOutMonster({pct=0,size=160,timerOn=false}){
+  // pct = 0 (full health, angry) → 100 (dead, wiped out)
+  // Monster shrinks, fades and gets more defeated as tasks are completed
+  const defeated = pct >= 100;
+  const hp = 1 - (pct/100); // 1=full health, 0=dead
+  const scale = defeated ? 0 : 0.4 + hp*0.6;
+  const opacity = defeated ? 0 : 0.3 + hp*0.7;
+  const anger = hp; // 1=angry red, 0=pale defeated
+  
+  // Colour shifts from angry red/orange → pale green as defeated
+  const bodyR = Math.round(180 + anger*60);
+  const bodyG = Math.round(140 + (1-anger)*80);
+  const bodyB = Math.round(60 + (1-anger)*100);
+  const bodyCol = `rgb(${bodyR},${bodyG},${bodyB})`;
+  const eyeCol = anger > 0.5 ? "#FF2020" : anger > 0.2 ? "#FF8040" : "#90A880";
+  const glowCol = anger > 0.5 ? "rgba(255,60,0,0.35)" : "rgba(90,160,80,0.25)";
+
+  // Wobble when timer is running
+  const wobbleStyle = timerOn && hp > 0 ? {animation:"monsterWobble 0.8s ease-in-out infinite alternate"} : {};
+  
+  const stage = pct===0?"😤 FULL POWER":pct<25?"💢 Angry":pct<50?"😠 Weakening":pct<75?"😨 Scared":pct<100?"💀 Almost done":"✨ WIPED OUT!";
+
+  return(
+    <div style={{textAlign:"center",position:"relative",width:size,margin:"0 auto"}}>
+      <style>{`
+        @keyframes monsterWobble{0%{transform:scale(${scale}) rotate(-3deg)}100%{transform:scale(${scale*1.05}) rotate(3deg)}}
+        @keyframes monsterShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+        @keyframes monsterFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        @keyframes sparkle{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0) translateY(-30px)}}
+      `}</style>
+
+      {/* Defeated sparkles */}
+      {pct>=100&&[0,60,120,180,240,300].map((deg,i)=>(
+        <div key={i} style={{position:"absolute",top:"40%",left:"50%",fontSize:16,
+          animation:`sparkle 0.8s ${i*0.1}s ease-out forwards`,
+          transform:`rotate(${deg}deg) translateY(-${30+i*5}px)`,pointerEvents:"none",zIndex:10}}>
+          {["✨","💥","⭐","🌟","💫","✨"][i]}
+        </div>
+      ))}
+
+      <svg width={size} height={size*1.1} viewBox="0 0 100 110" style={{display:"block",margin:"0 auto",overflow:"visible",opacity,transform:`scale(${scale})`,transformOrigin:"bottom center",...(timerOn&&hp>0?{}:{})}}>
+        <defs>
+          <radialGradient id="mg_body" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stopColor={bodyCol} stopOpacity="1"/>
+            <stop offset="100%" stopColor={`rgb(${Math.round(bodyR*0.6)},${Math.round(bodyG*0.6)},${Math.round(bodyB*0.6)})`} stopOpacity="1"/>
+          </radialGradient>
+          <radialGradient id="mg_glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor={glowCol}/>
+            <stop offset="100%" stopColor="rgba(0,0,0,0)"/>
+          </radialGradient>
+          <filter id="mg_shadow"><feDropShadow dx="0" dy="3" stdDeviation="3" floodColor={anger>0.5?"rgba(200,0,0,0.4)":"rgba(0,100,0,0.2)"}/></filter>
+        </defs>
+
+        {/* Glow aura */}
+        {hp>0.1&&<ellipse cx="50" cy="80" rx={35*hp} ry={20*hp} fill="url(#mg_glow)" opacity={hp*0.6}/>}
+
+        {/* Shadow under monster */}
+        <ellipse cx="50" cy="100" rx={18*scale} ry={4*scale} fill="rgba(0,0,0,0.12)"/>
+
+        {/* Body */}
+        <ellipse cx="50" cy="65" rx="22" ry="28" fill="url(#mg_body)" filter="url(#mg_shadow)"/>
+
+        {/* Belly lighter patch */}
+        <ellipse cx="50" cy="70" rx="13" ry="16" fill={`rgba(255,255,220,${0.2+hp*0.15})`}/>
+
+        {/* Arms */}
+        <path d={`M28 60 Q${18-hp*6} ${50+hp*5} ${22+hp*2} ${42+hp*4}`} stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
+        <path d={`M72 60 Q${82+hp*6} ${50+hp*5} ${78-hp*2} ${42+hp*4}`} stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
+
+        {/* Claws */}
+        {hp>0.3&&<>
+          <path d="M20 41 Q16 37 14 40" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
+          <path d="M22 39 Q20 34 22 33" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
+          <path d="M80 41 Q84 37 86 40" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
+          <path d="M78 39 Q80 34 78 33" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
+        </>}
+
+        {/* Legs */}
+        <path d="M42 90 Q38 98 35 103" stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
+        <path d="M58 90 Q62 98 65 103" stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
+
+        {/* Head */}
+        <ellipse cx="50" cy="38" rx="20" ry="18" fill="url(#mg_body)" filter="url(#mg_shadow)"/>
+
+        {/* Horns — shrink as defeated */}
+        {hp>0.15&&<>
+          <path d={`M38 24 Q${34-hp*3} ${14-hp*4} ${38-hp*2} ${20-hp*2}`} fill={bodyCol} stroke={`rgb(${Math.round(bodyR*0.7)},${Math.round(bodyG*0.5)},0)`} strokeWidth="1"/>
+          <path d={`M62 24 Q${66+hp*3} ${14-hp*4} ${62+hp*2} ${20-hp*2}`} fill={bodyCol} stroke={`rgb(${Math.round(bodyR*0.7)},${Math.round(bodyG*0.5)},0)`} strokeWidth="1"/>
+        </>}
+
+        {/* Eyes */}
+        <ellipse cx="43" cy="36" rx="5" ry={4+anger*2} fill="white"/>
+        <ellipse cx="57" cy="36" rx="5" ry={4+anger*2} fill="white"/>
+        {/* Pupils — angry pupils are narrow slits, scared are wide */}
+        <ellipse cx={43+(anger>0.5?0:-0.5)} cy="36" rx={anger>0.5?2:3} ry={anger>0.5?3.5:2.5} fill={eyeCol}/>
+        <ellipse cx={57-(anger>0.5?0:-0.5)} cy="36" rx={anger>0.5?2:3} ry={anger>0.5?3.5:2.5} fill={eyeCol}/>
+        {/* Eye shine */}
+        <circle cx="44.5" cy="34.5" r="1" fill="rgba(255,255,255,0.8)"/>
+        <circle cx="58.5" cy="34.5" r="1" fill="rgba(255,255,255,0.8)"/>
+
+        {/* Angry eyebrows — flatten when defeated */}
+        <path d={`M38 ${30-anger*4} Q43 ${27-anger*5} 48 ${30-anger*4}`} stroke={`rgb(${Math.round(bodyR*0.5)},0,0)`} strokeWidth={1.5+anger} fill="none" strokeLinecap="round"/>
+        <path d={`M52 ${30-anger*4} Q57 ${27-anger*5} 62 ${30-anger*4}`} stroke={`rgb(${Math.round(bodyR*0.5)},0,0)`} strokeWidth={1.5+anger} fill="none" strokeLinecap="round"/>
+
+        {/* Mouth — snarl when angry, sad frown when losing */}
+        {anger > 0.5
+          ? <path d={`M42 46 Q50 ${50+anger*4} 58 46`} stroke={`rgb(${Math.round(bodyR*0.5)},0,0)`} strokeWidth="2" fill="none" strokeLinecap="round"/>
+          : <path d={`M42 50 Q50 ${46-hp*3} 58 50`} stroke="#666" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        }
+
+        {/* Teeth when angry */}
+        {anger > 0.6&&<>
+          <rect x="44" y="46" width="4" height="4" rx="1" fill="white"/>
+          <rect x="49" y="46" width="4" height="4" rx="1" fill="white"/>
+          <rect x="54" y="46" width="3" height="4" rx="1" fill="white"/>
+        </>}
+
+        {/* Sweat drops when losing */}
+        {anger < 0.5 && hp > 0&&<>
+          <ellipse cx="68" cy="30" rx="2" ry="3" fill="rgba(100,180,255,0.7)" transform="rotate(20 68 30)"/>
+          <ellipse cx="70" cy="36" rx="1.5" ry="2.5" fill="rgba(100,180,255,0.5)" transform="rotate(15 70 36)"/>
+        </>}
+
+        {/* Anger sparks when at full power and timer running */}
+        {timerOn && anger > 0.8 &&<>
+          <text x="20" y="20" fontSize="10" style={{animation:"sparkle 1s 0.2s ease-out infinite"}}>💢</text>
+          <text x="70" y="15" fontSize="10" style={{animation:"sparkle 1s 0.5s ease-out infinite"}}>💢</text>
+        </>}
+      </svg>
+
+      {/* HP bar */}
+      {!defeated&&(
+        <div style={{marginTop:4,padding:"0 8px"}}>
+          <div style={{height:6,background:"rgba(90,80,60,0.15)",borderRadius:100,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${(hp*100)}%`,background:hp>0.6?"#E04040":hp>0.3?"#E08020":"#5A9840",borderRadius:100,transition:"width 0.5s ease"}}/>
+          </div>
+          <div style={{fontSize:10,color:"rgba(60,56,40,0.5)",marginTop:3,fontWeight:600}}>{stage}</div>
+        </div>
+      )}
+      {defeated&&<div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#5A9840",marginTop:4}}>✨ WIPED OUT!</div>}
+    </div>
+  );
+}
+
+// Keep OrbOfLight for week view percentage display
 function OrbOfLight({pct=0,size=130}){
   const cx=size/2,cy=size/2,maxR=size*0.36;
   const coreR=Math.max(size*0.05,maxR*(pct/100));
@@ -4318,27 +4463,17 @@ function OrbOfLight({pct=0,size=130}){
           <stop offset="0%" stopColor={full?"#fff":pct>50?"#e0d0ff":"#9060c0"}/>
           <stop offset="100%" stopColor={full?"#c4aee8":"#2C3820"}/>
         </radialGradient>
-        <radialGradient id="halo" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={pct>0?`rgba(160,190,140,0.35)*0.35})`:"rgba(0,0,0,0)"}/>
-          <stop offset="100%" stopColor="rgba(0,0,0,0)"/>
-        </radialGradient>
         <filter id="glow"><feGaussianBlur stdDeviation={pct>60?5:2.5}/></filter>
       </defs>
-      {pct>0&&<circle cx={cx} cy={cy} r={maxR*1.7} fill="url(#halo)"/>}
-      {pct>25&&Array.from({length:10}).map((_,i)=>{
-        const a=(i/10)*Math.PI*2, d=coreR+6, len=maxR*(0.25+0.6*(pct/100));
+      {pct>0&&Array.from({length:10}).map((_,i)=>{
+        const a=(i/10)*Math.PI*2,d=coreR+6,len=maxR*(0.25+0.6*(pct/100));
         return <line key={i} x1={cx+Math.cos(a)*d} y1={cy+Math.sin(a)*d} x2={cx+Math.cos(a)*(d+len)} y2={cy+Math.sin(a)*(d+len)} stroke={full?"#fff":"#c4aee8"} strokeWidth={full?2:1} strokeLinecap="round" opacity={Math.min(0.8,(pct-25)/75)*0.7}/>;
       })}
-      {pct>0&&<circle cx={cx} cy={cy} r={coreR*1.6} fill={`rgba(160,190,140,0.35)*0.25})`} filter="url(#glow)"/>}
       <circle cx={cx} cy={cy} r={Math.max(coreR,size*0.04)} fill="url(#og)"/>
-      {pct>0&&<circle cx={cx-coreR*0.28} cy={cy-coreR*0.28} r={coreR*0.22} fill="rgba(255,255,255,0.5)"/>}
       {full&&[0,60,120,180,240,300].map((d,i)=>{
         const r=d*Math.PI/180;
         return <circle key={i} cx={cx+Math.cos(r)*maxR*1.15} cy={cy+Math.sin(r)*maxR*1.15} r={3.5} fill="#FFD700"/>;
       })}
-      <text x={cx} y={size-6} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize={8} fontWeight={700}>
-        {pct===0?"unlit":pct<30?"spark":pct<60?"glowing":pct<90?"blazing":"✨ FULL LIGHT"}
-      </text>
     </svg>
   );
 }
@@ -6688,7 +6823,7 @@ async function aiChargePicks(tasks){
     const staleTasks=tasks.filter(t=>(now-(t.touched||t.created||t.id||now))>STALE);
     const list=staleTasks.concat(tasks.filter(t=>!staleTasks.find(s=>s.id===t.id)))
       .slice(0,12)
-      .map(t=>`id:${t.id} "${t.name||t.text}" src:${t.src||"Charge"} days_old:${Math.floor((now-(t.touched||t.created||t.id||now))/86400000)}`).join("\n");
+      .map(t=>`id:${t.id} "${t.name||t.text}" src:${t.src||"Whipe Out"} days_old:${Math.floor((now-(t.touched||t.created||t.id||now))/86400000)}`).join("\n");
    const result="No AI available";
     if(!result)return[];
     return JSON.parse(result.replace(/\`\`\`json|\`\`\`/g,"").trim());
@@ -6998,7 +7133,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                       <button onClick={()=>{
                         // Send to charge - store in localStorage for charge to pick up
                         try{const ct=JSON.parse(localStorage.getItem('thinko_charge')||'{}');const tasks=ct.targetTasks||[];if(!tasks.includes(item.name)){tasks.push(item.name);localStorage.setItem('thinko_charge',JSON.stringify({...ct,targetTasks:tasks,dailyTarget:tasks.length}));};}catch{}
-                        setStalePromptId(null);alert(`"${item.name}" sent to The Charge!`);
+                        setStalePromptId(null);alert(`"${item.name}" sent to The Whipe Out!`);
                       }} style={{padding:"9px 14px",background:"rgba(255,165,0,0.12)",color:"#B86800",border:"1.5px solid rgba(255,165,0,0.25)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⚡ Send to Charge</button>
                       <button onClick={()=>{save(items.filter(i=>i.id!==item.id));setStalePromptId(null);}} style={{padding:"9px 14px",background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1.5px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Delete</button>
                       <button onClick={()=>setStalePromptId(null)} style={{padding:"9px 14px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontSize:13,cursor:"pointer"}}>✕ Dismiss</button>
@@ -7537,7 +7672,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.1}}>The Charge ✨</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.1}}>The Whipe Out ✨</div>
             <div style={{fontSize:14,color:"#8A8070",marginTop:3,fontWeight:400}}>Tackle what you've been avoiding</div>
           </div>
           <button style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",color:"#5A7848",fontSize:20}}>🌿</button>
@@ -7564,39 +7699,27 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
         {/* ══ TODAY ══ */}
         {view==="today"&&<>
 
-          {/* Build the light card */}
-          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"18px 18px",marginBottom:12,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
-              {/* Purple orb */}
-              <div style={{
-                width:44,height:44,borderRadius:"50%",flexShrink:0,
-                background:hitTarget
-                  ?"radial-gradient(circle at 38% 32%,#e8d0ff,#9b59b6)"
-                  :"radial-gradient(circle at 38% 32%,rgba(180,140,240,0.7),rgba(120,60,200,0.4))",
-                boxShadow:hitTarget
-                  ?"0 0 24px rgba(155,89,182,0.7),0 0 8px rgba(155,89,182,0.4)"
-                  :"0 0 18px rgba(130,70,200,0.35),0 0 6px rgba(130,70,200,0.2)",
-              }}/>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:2}}>
-                  {hitTarget?"Light earned today! ⚡":"Build the light ⚡"}
-                </div>
-                <div style={{fontSize:13,color:"#7A7060"}}>
-                  {hitTarget
-                    ?`${charged.length} tasks wiped out — light blazing ✨`
-                    :`${target-charged.length} more task${target-charged.length!==1?"s":""} to earn today's light`}
-                
-                </div>
-              </div>
+          {/* Whipe Out Monster card */}
+          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:12,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:2}}>
+              {hitTarget?"🎉 Monster defeated!":"💥 Whipe it out!"}
             </div>
+            <div style={{fontSize:13,color:"#7A7060",marginBottom:14}}>
+              {hitTarget
+                ?`${charged.length} tasks wiped out — monster destroyed! ✨`
+                :charged.length===0
+                  ?`${target} tasks to whipe out today — the monster is watching 😤`
+                  :`${target-charged.length} more task${target-charged.length!==1?"s":""} to destroy the monster!`}
+            </div>
+            <WhipeOutMonster pct={pct} size={160} timerOn={focusOn}/>
             {/* Progress bar */}
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:14}}>
               <div style={{flex:1,height:8,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${pct}%`,background:hitTarget?"#5A7848":"#6A8858",borderRadius:100,transition:"width 0.4s"}}/>
+                <div style={{height:"100%",width:`${pct}%`,background:hitTarget?"#5A9840":pct>60?"#E07020":"#E04040",borderRadius:100,transition:"width 0.5s ease"}}/>
               </div>
-              <span style={{fontSize:13,fontWeight:600,color:"#7A7060",flexShrink:0}}>{charged.length}/{target}</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#7A7060",flexShrink:0}}>{charged.length}/{target}</span>
             </div>
-            {data.targetTask&&<div style={{fontSize:12,color:"#5A7848",marginTop:8,fontStyle:"italic"}}>🎯 Today's focus: {data.targetTask}</div>}
+            {data.targetTask&&<div style={{fontSize:12,color:"#5A7848",marginTop:6,fontStyle:"italic"}}>🎯 Today's focus: {data.targetTask}</div>}
           </div>
 
           {/* This or That prioritiser — full screen overlay */}
@@ -7655,7 +7778,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
           {/* ── Today's tasks ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16}}>⚡ Today's Tasks</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16}}>💥 Today's Whipe Out</div>
               <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️ Edit tasks</button>
             </div>
             {/* Task list */}
@@ -7677,7 +7800,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                     {!done&&<div style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:15,flexShrink:0}}>⠿</div>}
                     <div style={{flex:1,fontSize:15,fontWeight:done?400:700,color:done?"#8A9080":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</div>
                     {!done
-                      ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:13,fontWeight:800,cursor:"pointer",flexShrink:0}}>⚡ Done</button>
+                      ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:13,fontWeight:800,cursor:"pointer",flexShrink:0}}>💥 Whipe!</button>
                       :<button onClick={()=>updToday({charged:charged.filter(c=>c!==task)})} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0}}>↩ Undo</button>
                     }
                     <button onClick={()=>{const next=[...(data.targetTasks||[])];next[origIdx]="";if(done)updToday({charged:charged.filter(c=>c!==task)});upd({targetTasks:next});showToast("🗑 Deleted");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"6px 10px",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>
@@ -7917,8 +8040,8 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
           {/* Orb + summary */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"22px 20px",marginBottom:14,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
             <OrbOfLight pct={weekPcts.reduce((a,b)=>a+b,0)/7} size={140}/>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginTop:12}}>Weekly Light</div>
-            <div style={{color:"#8A8070",fontSize:13,marginTop:4}}>{daysHit}/7 days fully charged · {weekTotal} total tasks</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginTop:12}}>Weekly Whipe Out</div>
+            <div style={{color:"#8A8070",fontSize:13,marginTop:4}}>{daysHit}/7 days fully wiped out · {weekTotal} total tasks</div>
             {daysHit>=5&&data.weeklyAward&&(
               <div style={{marginTop:14,background:"rgba(90,120,72,0.10)",borderRadius:16,padding:"12px 18px"}}>
                 <div style={{fontFamily:"Georgia,serif",color:"#3A6020",fontWeight:700,fontSize:15}}>🎁 Weekly reward unlocked!</div>
@@ -8020,7 +8143,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
         {view==="settings"&&<>
           {/* ── Daily Tasks Setup ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:2}}>⚡ Today's Tasks</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:2}}>💥 Today's Whipe Out</div>
             <div style={{color:"#8A8070",fontSize:12,marginBottom:14,lineHeight:1.5}}>Add your tasks here — they appear straight on your Today page. Edit or delete anytime.</div>
             {/* Existing tasks */}
             {(data.targetTasks||[]).map((task,i)=>{
@@ -8157,7 +8280,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>🗓️ The Plan</div>
             <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Your tasks are listed below. Tap a day to assign each one — spread them across the week. Then send to your Week.</div>
             {(data.targetTasks||[]).filter(t=>t?.trim()).length===0?(
-              <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks in Today's Tasks above first</div>
+              <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks in Today's Whipe Out above first</div>
             ):(
               <>
                 {(data.targetTasks||[]).map((task,i)=>{ if(!task?.trim()) return null;
