@@ -2945,7 +2945,8 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [sendOpen,setSendOpen]=useState(false);
   const [toast,setToast]=useState("");
   const [notesMode,setNotesMode]=useState(initialMode||null); // null = show vault hub
-  const [cabinetData,setCabinetData]=useState([]);
+  const [cabinetData,setCabinetDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_cabinet');return v?JSON.parse(v):[];}catch{return [];}});
+  const setCabinetData=d=>{const next=typeof d==="function"?d(cabinetData):d;setCabinetDataRaw(next);try{localStorage.setItem('thinko_cabinet',JSON.stringify(next));}catch{}};
   const [addingSectionForm,setAddingSectionForm]=useState(false);
   const [addingPageForm,setAddingPageForm]=useState(false);
   const [newSectionName,setNewSectionName]=useState('');
@@ -5248,7 +5249,7 @@ function mkBudget(name="My Budget"){
   return{id:Date.now(),name,period:"monthly",dateFrom:now.toISOString().slice(0,10),dateTo:end.toISOString().slice(0,10),budgetAmount:"",expenses:[],saved:false};
 }
 
-function BudgetPlanner({data,setData,setScreen}){
+function BudgetPlanner({data,setData,setScreen,cabinetData,setCabinetData}){
   const [activeId,setActiveId]=useState(()=>{
     // Auto-open: if no budgets create one, if one budget open it directly
     return null;
@@ -5266,7 +5267,7 @@ function BudgetPlanner({data,setData,setScreen}){
   },[]);
 
   const active=data.find(b=>b.id===activeId);
-  if(active) return <BudgetDetail budget={active} onBack={()=>{setActiveId(null);if(data.length<=1)setScreen("home");}} onUpdate={u=>setData(ds=>ds.map(b=>b.id===u.id?u:b))} onDelete={id=>{setData(ds=>{const nd=ds.filter(b=>b.id!==id);if(nd.length===0)setScreen("home");return nd;});setActiveId(null);}}/>;
+  if(active) return <BudgetDetail budget={active} onBack={()=>{setActiveId(null);if(data.length<=1)setScreen("home");}} onUpdate={u=>setData(ds=>ds.map(b=>b.id===u.id?u:b))} onDelete={id=>{setData(ds=>{const nd=ds.filter(b=>b.id!==id);if(nd.length===0)setScreen("home");return nd;});setActiveId(null);}} cabinetData={cabinetData} setCabinetData={setCabinetData}/>;
 
   // Multi-budget list (only shown if 2+ budgets)
   return(
@@ -5319,152 +5320,268 @@ function SectionLabel({n,label}){
   </div>;
 }
 
-function BudgetDetail({budget,onBack,onUpdate,onDelete}){
+function BudgetDetail({budget,onBack,onUpdate,onDelete,cabinetData,setCabinetData}){
+  const [tab,setTab]=useState("plan"); // plan | spent | tickets
+  const [newExp,setNewExp]=useState({label:"",amount:""});
+  const [newTicket,setNewTicket]=useState({name:"",price:"",date:"",type:"✈️",file:null,fileName:""});
+  const [toast,setToast]=useState("");
+  const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
+
   const b=budget;
   const upd=ch=>onUpdate({...b,...ch});
-  const [newExp,setNewExp]=useState({label:"",amount:"",url:""});
-  const [adding,setAdding]=useState(false);
-  const inputRef=useRef(null);
-  useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
 
-  const totalExp=b.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
-  const budgetAmt=Number(b.budgetAmount||0);
-  const remaining=budgetAmt-totalExp;
+  const budgetAmt=parseFloat(b.budgetAmount)||0;
+  const planned=parseFloat(b.plannedAmount)||0;
+  const spent=(b.expenses||[]).reduce((s,e)=>s+parseFloat(e.amount||0),0);
+  const tickets=(b.tickets||[]).reduce((s,t)=>s+parseFloat(t.price||0),0);
+  const totalCommitted=spent+tickets;
+  const remaining=budgetAmt-totalCommitted;
+  const pct=budgetAmt>0?Math.min(100,Math.round((totalCommitted/budgetAmt)*100)):0;
   const inGreen=remaining>=0;
-  const pct=budgetAmt>0?Math.min(100,(totalExp/budgetAmt)*100):0;
 
-  const addExp=()=>{if(!newExp.label.trim()||!newExp.amount)return;upd({expenses:[...b.expenses,{id:Date.now(),label:newExp.label.trim(),amount:newExp.amount,url:newExp.url.trim()}]});setNewExp({label:"",amount:"",url:""});setAdding(false);};
-  const delExp=id=>upd({expenses:b.expenses.filter(e=>e.id!==id)});
+  const addExp=()=>{
+    if(!newExp.label.trim()||!newExp.amount)return;
+    upd({expenses:[...(b.expenses||[]),{id:Date.now(),label:newExp.label.trim(),amount:newExp.amount,date:new Date().toISOString().slice(0,10)}]});
+    setNewExp({label:"",amount:""});
+  };
+  const delExp=id=>upd({expenses:(b.expenses||[]).filter(e=>e.id!==id)});
 
+  const addTicket=()=>{
+    if(!newTicket.name.trim())return;
+    upd({tickets:[...(b.tickets||[]),{id:Date.now(),...newTicket}]});
+    setNewTicket({name:"",price:"",date:"",type:"✈️",file:null,fileName:""});
+    showToast("🎫 Ticket saved!");
+  };
+  const delTicket=id=>upd({tickets:(b.tickets||[]).filter(t=>t.id!==id)});
+
+  const sendToVault=(ticket)=>{
+    if(!cabinetData||!setCabinetData){showToast("Filing Cabinet not available");return;}
+    // Find or create a drawer matching the budget name
+    let drawers=[...cabinetData];
+    let drawer=drawers.find(d=>d.name.toLowerCase()===b.name.toLowerCase());
+    if(!drawer){
+      drawer={id:Date.now(),name:b.name,icon:"📁",folders:[{id:Date.now()+1,name:"Tickets & Documents",items:[]}]};
+      drawers=[...drawers,drawer];
+    }
+    const items=drawer.folders[0]?.items||[];
+    items.push({id:Date.now(),name:ticket.name+(ticket.date?` (${ticket.date})`:"")+` — £${ticket.price||"0"}`,type:"note",content:`${ticket.type} ${ticket.name}
+Date: ${ticket.date||"TBC"}
+Price: £${ticket.price||"0"}
+Budget: ${b.name}`,created:Date.now()});
+    setCabinetData(drawers.map(d=>d.id===drawer.id?{...d,folders:[{...d.folders[0],items},...d.folders.slice(1)]}:d));
+    showToast(`📁 Sent to Filing Cabinet!`);
+  };
+
+  const TICKET_TYPES=["✈️","🚂","🚌","🚗","🏨","🎟️","⛵","🏖️","🎭","🍽️","🎪","🏕️"];
+
+  const TAB_BTN=(id,label)=>(
+    <button onClick={()=>setTab(id)} style={{flex:1,padding:"10px 4px",background:"none",border:"none",borderBottom:`3px solid ${tab===id?"#5A7848":"transparent"}`,fontFamily:"Georgia,serif",fontWeight:tab===id?700:500,fontSize:14,color:tab===id?"#1A1A10":"#8A8070",cursor:"pointer",transition:"all 0.15s"}}>
+      {label}
+    </button>
+  );
 
   return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"transparent",paddingBottom:90,fontFamily:"'Segoe UI',sans-serif"}}>
+      {toast&&<div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",background:"#2C3820",color:"#fff",borderRadius:100,padding:"10px 22px",fontWeight:700,fontSize:14,zIndex:400,whiteSpace:"nowrap",boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast}</div>}
+
       {/* Header */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",textAlign:"center"}}>💰 {b.name}</div>
-        <button onClick={()=>{if(window.confirm("Delete this budget?"))onDelete(b.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:13}}>🗑</button>
+      <div style={{background:"linear-gradient(135deg,#2C3820,#4A6840)",padding:"52px 20px 20px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          </button>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{b.icon||"💰"} {b.name}</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.60)",marginTop:2}}>{b.description||"Budget planner"}</div>
+          </div>
+          <button onClick={()=>{if(window.confirm(`Delete "${b.name}"?`))onDelete(b.id);}} style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:100,padding:"6px 12px",color:"#fff",fontSize:12,cursor:"pointer"}}>🗑</button>
+        </div>
+
+        {/* Budget amount input */}
+        <div style={{background:"rgba(255,255,255,0.12)",borderRadius:18,padding:"14px 16px",marginBottom:14}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.60)",marginBottom:6,textTransform:"uppercase",letterSpacing:0.8}}>Total Budget</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:22,color:"rgba(255,255,255,0.70)"}}>£</span>
+            <input value={b.budgetAmount||""} onChange={e=>upd({budgetAmount:e.target.value})} placeholder="0.00" type="number"
+              style={{background:"none",border:"none",outline:"none",fontSize:28,fontFamily:"Georgia,serif",fontWeight:700,color:"#fff",flex:1,minWidth:0}}/>
+          </div>
+        </div>
+
+        {/* Summary bar */}
+        {budgetAmt>0&&(
+          <div style={{background:"rgba(255,255,255,0.10)",borderRadius:18,padding:"12px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#fff"}}>£{totalCommitted.toFixed(2)}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.55)"}}>Committed</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:inGreen?"#90F070":"#FF8060"}}>£{Math.abs(remaining).toFixed(2)}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.55)"}}>{inGreen?"Remaining":"Over budget"}</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#fff"}}>{pct}%</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.55)"}}>Used</div>
+              </div>
+            </div>
+            <div style={{height:6,background:"rgba(255,255,255,0.15)",borderRadius:100,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,background:inGreen?"#90F070":"#FF8060",borderRadius:100,transition:"width 0.4s"}}/>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",borderBottom:"1px solid rgba(90,80,60,0.12)",background:"rgba(248,245,236,0.96)"}}>
+        {TAB_BTN("plan","📋 Planning")}
+        {TAB_BTN("spent","💸 Spent")}
+        {TAB_BTN("tickets","🎫 Tickets")}
       </div>
 
       <div style={{padding:"16px 16px"}}>
-        {/* Budget amount */}
-        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Budget amount</div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:18,color:"#5A7848"}}>£</span>
-            <input value={b.budgetAmount||""} onChange={e=>upd({budgetAmount:e.target.value})} placeholder="0.00"
-              style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:16,fontWeight:700,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.9)"}}/>
-          </div>
-        </div>
 
-        {/* Summary */}
-        {budgetAmt>0&&(
-          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontSize:13,color:"#8A8070"}}>Spent: <strong>£{totalExp.toFixed(2)}</strong></span>
-              <span style={{fontSize:13,fontWeight:700,color:inGreen?"#3A8020":"#c0392b"}}>{inGreen?"✅":"⚠️"} £{Math.abs(remaining).toFixed(2)} {inGreen?"left":"over"}</span>
+        {/* ── PLAN TAB ── */}
+        {tab==="plan"&&(
+          <div>
+            <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:4}}>📋 What is this budget for?</div>
+              <textarea value={b.description||""} onChange={e=>upd({description:e.target.value})} placeholder="e.g. Summer holiday to Spain, July 2025 — flights, hotel, spending money…" rows={3}
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",background:"rgba(255,255,255,0.90)",fontFamily:"'Segoe UI',sans-serif"}}/>
             </div>
-            <div style={{height:10,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${pct}%`,background:inGreen?"#5A7848":"#c0392b",borderRadius:100,transition:"width 0.4s"}}/>
+
+            {/* Planned items */}
+            <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:12}}>🗒️ Planned costs</div>
+              <div style={{fontSize:12,color:"#8A8070",marginBottom:10}}>List everything you expect to spend on — before you spend it.</div>
+              {(b.plannedItems||[]).map((item,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:600,color:"#1A1A10"}}>{item.label}</div>
+                    <div style={{fontSize:11,color:"#8A8070"}}>{item.notes||""}</div>
+                  </div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#5A7848"}}>£{parseFloat(item.amount||0).toFixed(2)}</div>
+                  <button onClick={()=>upd({plannedItems:(b.plannedItems||[]).filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer"}}>✕</button>
+                </div>
+              ))}
+              {/* Add planned item */}
+              <div style={{display:"flex",gap:8,marginTop:10}}>
+                <input value={b._newPlan||""} onChange={e=>upd({_newPlan:e.target.value})} placeholder="What will you spend on?"
+                  style={{flex:2,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(255,255,255,0.90)",color:"#1A1A10"}}/>
+                <input value={b._newPlanAmt||""} onChange={e=>upd({_newPlanAmt:e.target.value})} placeholder="£" type="number"
+                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(255,255,255,0.90)",color:"#1A1A10"}}/>
+                <button onClick={()=>{if(!(b._newPlan||"").trim())return;upd({plannedItems:[...(b.plannedItems||[]),{label:b._newPlan.trim(),amount:b._newPlanAmt||0}],_newPlan:"",_newPlanAmt:""});}}
+                  style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontWeight:700,cursor:"pointer"}}>+</button>
+              </div>
+              {(b.plannedItems||[]).length>0&&(
+                <div style={{marginTop:10,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>
+                  Planned total: £{(b.plannedItems||[]).reduce((s,i)=>s+parseFloat(i.amount||0),0).toFixed(2)}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Add expense */}
-        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Add expense</div>
-          <input value={newExp.label} onChange={e=>setNewExp(x=>({...x,label:e.target.value}))} placeholder="What did you spend on?"
-            style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.9)"}}/>
-          <div style={{display:"flex",gap:8,marginBottom:8}}>
-            <span style={{display:"flex",alignItems:"center",padding:"0 10px",fontSize:15,color:"#5A7848"}}>£</span>
-            <input value={newExp.amount} onChange={e=>setNewExp(x=>({...x,amount:e.target.value}))} placeholder="0.00" type="number"
-              style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.9)"}}/>
-          </div>
-          <button onClick={addExp} disabled={!newExp.label.trim()||!newExp.amount}
-            style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newExp.label.trim()||!newExp.amount?0.5:1,boxShadow:"0 3px 12px rgba(58,80,38,0.25)"}}>
-            + Add expense
-          </button>
-        </div>
-
-        {/* Expense list */}
-        {b.expenses.length>0&&(
-          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Expenses</div>
-            {b.expenses.map(e=>(
-              <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:14,fontWeight:600,color:"#1A1A10"}}>{e.label}</div>
-                  {e.url&&<a href={e.url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#4285f4"}}>🔗 link</a>}
+        {/* ── SPENT TAB ── */}
+        {tab==="spent"&&(
+          <div>
+            <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:12}}>💸 Log actual spending</div>
+              <input value={newExp.label} onChange={e=>setNewExp(x=>({...x,label:e.target.value}))} placeholder="What did you spend on?"
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.90)"}}/>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <span style={{display:"flex",alignItems:"center",padding:"0 10px",fontSize:16,color:"#5A7848"}}>£</span>
+                <input value={newExp.amount} onChange={e=>setNewExp(x=>({...x,amount:e.target.value}))} placeholder="0.00" type="number"
+                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)"}}/>
+              </div>
+              <button onClick={addExp} disabled={!newExp.label.trim()||!newExp.amount}
+                style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newExp.label.trim()||!newExp.amount?0.5:1}}>
+                + Log expense
+              </button>
+            </div>
+            {(b.expenses||[]).length>0&&(
+              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",border:"1px solid rgba(255,255,255,0.9)"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>Expenses</div>
+                {(b.expenses||[]).map(e=>(
+                  <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:14,fontWeight:600,color:"#1A1A10"}}>{e.label}</div>
+                      {e.date&&<div style={{fontSize:11,color:"#8A8070"}}>{new Date(e.date+'T12:00:00').toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</div>}
+                    </div>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#c0392b"}}>£{parseFloat(e.amount).toFixed(2)}</div>
+                    <button onClick={()=>delExp(e.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer"}}>🗑</button>
+                  </div>
+                ))}
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginTop:10,paddingTop:10,borderTop:"1px solid rgba(90,80,60,0.10)"}}>
+                  Total spent: £{spent.toFixed(2)}
                 </div>
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#c0392b"}}>£{Number(e.amount).toFixed(2)}</div>
-                <button onClick={()=>delExp(e.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.5)",cursor:"pointer",fontSize:14}}>🗑</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TICKETS TAB ── */}
+        {tab==="tickets"&&(
+          <div>
+            <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:12}}>🎫 Save tickets & bookings</div>
+              {/* Type selector */}
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                {TICKET_TYPES.map(t=>(
+                  <button key={t} onClick={()=>setNewTicket(x=>({...x,type:t}))}
+                    style={{width:40,height:40,borderRadius:12,border:`2px solid ${newTicket.type===t?"#5A7848":"rgba(90,120,72,0.18)"}`,background:newTicket.type===t?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.85)",fontSize:20,cursor:"pointer"}}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <input value={newTicket.name} onChange={e=>setNewTicket(x=>({...x,name:e.target.value}))} placeholder="e.g. London to Paris Eurostar, Hotel Ibis…"
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.90)"}}/>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <input value={newTicket.price} onChange={e=>setNewTicket(x=>({...x,price:e.target.value}))} placeholder="£ Price" type="number"
+                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)"}}/>
+                <input value={newTicket.date} onChange={e=>setNewTicket(x=>({...x,date:e.target.value}))} type="date"
+                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)"}}/>
+              </div>
+              <button onClick={addTicket} disabled={!newTicket.name.trim()}
+                style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newTicket.name.trim()?0.5:1}}>
+                🎫 Save ticket
+              </button>
+            </div>
+
+            {(b.tickets||[]).length===0&&(
+              <div style={{textAlign:"center",padding:"30px 20px",color:"#8A8070"}}>
+                <div style={{fontSize:48,marginBottom:8}}>🎫</div>
+                <div style={{fontFamily:"Georgia,serif",fontSize:16,fontWeight:600,marginBottom:4}}>No tickets saved yet</div>
+                <div style={{fontSize:13,lineHeight:1.6}}>Save flights, trains, hotels and event tickets here to keep track of all your bookings in one place.</div>
+              </div>
+            )}
+
+            {(b.tickets||[]).map(ticket=>(
+              <div key={ticket.id} style={{background:"rgba(248,245,236,0.92)",borderRadius:20,padding:"14px 16px",marginBottom:10,border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 10px rgba(60,60,40,0.06)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:44,height:44,borderRadius:14,background:"rgba(90,120,72,0.10)",border:"1.5px solid rgba(90,120,72,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                    {ticket.type}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ticket.name}</div>
+                    <div style={{fontSize:11,color:"#8A8070",marginTop:2}}>
+                      {ticket.date&&`${new Date(ticket.date+'T12:00:00').toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}`}
+                      {ticket.price&&` · £${parseFloat(ticket.price).toFixed(2)}`}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={()=>sendToVault(ticket)} style={{background:"rgba(72,104,120,0.10)",color:"#486878",border:"1px solid rgba(72,104,120,0.20)",borderRadius:100,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>📁 Vault</button>
+                    <button onClick={()=>delTicket(ticket.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14}}>🗑</button>
+                  </div>
+                </div>
               </div>
             ))}
+            {(b.tickets||[]).length>0&&(
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",padding:"10px 4px"}}>
+                Tickets total: £{tickets.toFixed(2)}
+              </div>
+            )}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-
-const SHOP_TEMPLATES=[
-  {id:"blank",   icon:"📝",name:"Blank list",         items:[]},
-  {id:"weekly",  icon:"🛒",name:"Weekly shop",         items:["Milk","Bread","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Vegetables","Fruit","Yoghurt","Juice"]},
-  {id:"cleaning",icon:"🧹",name:"Cleaning supplies",   items:["Washing up liquid","Bleach","Surface spray","Sponges","Bin bags","Toilet roll","Laundry tablets","Fabric softener"]},
-  {id:"toiletries",icon:"🧴",name:"Toiletries",        items:["Shampoo","Conditioner","Body wash","Toothpaste","Deodorant","Moisturiser","Razors","Cotton pads"]},
-  {id:"baby",    icon:"🍼",name:"Baby / kids",         items:["Nappies","Wipes","Baby formula","Baby food","Calpol","Snacks","Juice pouches"]},
-  {id:"party",   icon:"🎉",name:"Party",               items:["Crisps","Dips","Sausage rolls","Sandwiches","Cake","Juice","Pop","Plates","Cups","Napkins"]},
-  {id:"health",  icon:"💊",name:"Health",              items:["Vitamins","Paracetamol","Ibuprofen","Plasters","Hand sanitiser","Tissues"]},
-];
-
-function ShopListDetail({list,onBack,onUpdate,onDelete}){
-  const [newItem,setNewItem]=useState("");
-  const [dragId,setDragId]=useState(null);
-  const save=items=>onUpdate({...list,items});
-  const addItem=()=>{if(!newItem.trim())return;save([...list.items,{id:Date.now(),text:newItem.trim(),done:false}]);setNewItem("");};
-  const toggle=id=>save(list.items.map(it=>it.id===id?{...it,done:!it.done}:it));
-  const del=id=>save(list.items.filter(it=>it.id!==id));
-  const dragOver=toId=>{
-    if(!dragId||dragId===toId)return;
-    const a=[...list.items],fi=a.findIndex(i=>i.id===dragId),ti=a.findIndex(i=>i.id===toId);
-    if(fi<0||ti<0)return;a.splice(fi,1);a.splice(ti,0,list.items[fi]);save(a);
-  };
-  const done=list.items.filter(i=>i.done).length;
-  const total=list.items.length;
-  return(
-    <div style={{minHeight:"100vh",background:"transparent",paddingBottom:90}}>
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round"/></svg>
-        </button>
-        <div style={{fontSize:24}}>{list.icon||"🛒"}</div>
-        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{list.name}</div>
-        <div style={{fontSize:12,color:"#8A8070"}}>{done}/{total}</div>
-        <button onClick={()=>{if(window.confirm(`Delete "${list.name}"?`))onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:14}}>🗑</button>
-      </div>
-      {total>0&&<div style={{height:5,background:"rgba(90,80,60,0.08)"}}><div style={{height:"100%",width:`${total?Math.round((done/total)*100):0}%`,background:"#5A7848",transition:"width 0.3s"}}/></div>}
-      <div style={{padding:"14px 16px"}}>
-        {/* Add item */}
-        <div style={{display:"flex",gap:10,marginBottom:16,background:"rgba(248,245,236,0.92)",borderRadius:100,padding:"10px 14px 10px 18px",border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 2px 10px rgba(0,0,0,0.04)"}}>
-          <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()} placeholder="Add item…" style={{flex:1,border:"none",outline:"none",fontSize:15,color:"#1A1A10",background:"transparent",fontWeight:600}}/>
-          <button onClick={addItem} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
-        </div>
-        {list.items.length===0&&<div style={{textAlign:"center",color:"#8A8070",padding:"30px 0",fontSize:14}}>No items yet — add one above</div>}
-        {list.items.map(item=>(
-          <div key={item.id} draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
-            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:8,border:"1px solid rgba(90,80,60,0.10)",opacity:dragId===item.id?0.5:1,boxShadow:"0 2px 8px rgba(60,60,40,0.05)"}}>
-            <span style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:16,flexShrink:0}}>⠿</span>
-            <button onClick={()=>toggle(item.id)} style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff"}}>
-              {item.done?"✓":""}
-            </button>
-            <span style={{flex:1,fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none"}}>{item.text}</span>
-            <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14}}>🗑</button>
-          </div>
-        ))}
-        {done>0&&<button onClick={()=>save(list.items.filter(i=>!i.done))} style={{width:"100%",padding:"10px",marginTop:8,background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Remove checked items</button>}
       </div>
     </div>
   );
@@ -9441,7 +9558,7 @@ export default function App() {
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
   if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
   if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
-  if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen}/><NavBar current="budget" setScreen={setScreen}/></div></>);
+  if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen} cabinetData={cabinetData} setCabinetData={setCabinetData}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
   if(screen==="rest") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
