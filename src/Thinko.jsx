@@ -8785,6 +8785,13 @@ const NATURE_SOUNDS=WN_PRESETS; // reuse the existing audio engine
 
 function RestSpace({setScreen}){
   const [tab,setTab]=useState("meditate");
+  const [favourites,setFavouritesRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_rest_favs')||'[]');}catch{return [];}});
+  const saveFavs=f=>{setFavouritesRaw(f);try{localStorage.setItem('thinko_rest_favs',JSON.stringify(f));}catch{}};
+  const toggleFav=(id,type,label)=>{
+    const exists=favourites.some(f=>f.id===id);
+    saveFavs(exists?favourites.filter(f=>f.id!==id):[...favourites,{id,type,label}]);
+  };
+  const isFav=id=>favourites.some(f=>f.id===id);
   const [forestWalkPlaying,setForestWalkPlaying]=useState(false);
   const [cscmPlaying,setCscmPlaying]=useState(false);
   const [stressPlaying,setStressPlaying]=useState(false);
@@ -8913,6 +8920,7 @@ function RestSpace({setScreen}){
           {TAB_BTN("meditate","🧘 Guided Rest")}
           {TAB_BTN("sounds","🎵 Sounds")}
           {TAB_BTN("timer","⏱ Break Timer")}
+          {TAB_BTN("favs",`⭐ Saved${favourites.length>0?` (${favourites.length})`:""}`)}
         </div>
       </div>
 
@@ -9001,6 +9009,7 @@ function RestSpace({setScreen}){
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Forest Walk Meditation</div>
                     <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>A gentle 6-minute guided walk through a peaceful forest 🌿</div>
                   </div>
+                  <button onClick={()=>toggleFav("forest_walk","meditate","🌲 Forest Walk Meditation")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",flexShrink:0,opacity:isFav("forest_walk")?1:0.35}} title={isFav("forest_walk")?"Remove from saved":"Save to favourites"}>⭐</button>
                   <button onClick={()=>setForestWalkPlaying(true)} style={{background:"#3A6028",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(40,70,30,0.28)"}}>▶ Play</button>
                 </div>
               </div>
@@ -9030,6 +9039,7 @@ function RestSpace({setScreen}){
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Clear Space Clear Mind</div>
                     <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>Guided meditation to clear your mind and find inner calm 🌙</div>
                   </div>
+                  <button onClick={()=>toggleFav("cscm","meditate","🧘 Clear Space Clear Mind")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",flexShrink:0,opacity:isFav("cscm")?1:0.35}}>⭐</button>
                   <button onClick={()=>setCscmPlaying(true)} style={{background:"#2A3848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(30,50,70,0.28)"}}>▶ Play</button>
                 </div>
               </div>
@@ -9060,6 +9070,7 @@ function RestSpace({setScreen}){
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Stress Relief Meditation</div>
                     <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>Release tension and let stress melt away 🌸</div>
                   </div>
+                  <button onClick={()=>toggleFav("stress","meditate","💜 Stress Relief Meditation")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",flexShrink:0,opacity:isFav("stress")?1:0.35}}>⭐</button>
                   <button onClick={()=>setStressPlaying(true)} style={{background:"#3A2848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(50,30,70,0.28)"}}>▶ Play</button>
                 </div>
               </div>
@@ -9114,6 +9125,7 @@ function RestSpace({setScreen}){
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>{p.name}</div>
                     <div style={{fontSize:11,color:"#8A8070"}}>{isPlaying?"▶ Playing — loops continuously":"Tap to play"}</div>
                   </div>
+                  <button onClick={()=>toggleFav(p.id,"sound",p.icon+" "+p.name)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",flexShrink:0,opacity:isFav(p.id)?1:0.35}}>⭐</button>
                   <button onClick={()=>isPlaying?(stopSnd()):(playSnd(p.id))}
                     style={{background:isPlaying?"rgba(192,57,43,0.10)":"#5A7848",color:isPlaying?"#c0392b":"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:isPlaying?"none":"0 2px 10px rgba(58,80,38,0.25)"}}>
                     {isPlaying?"⏹ Stop":"▶ Play"}
@@ -9151,6 +9163,7 @@ function RestSpace({setScreen}){
                       <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Ocean Waves</div>
                       <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
                     </div>
+                    <button onClick={()=>toggleFav("ocean_yt","sound","🌊 Ocean Waves")} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",flexShrink:0,opacity:isFav("ocean_yt")?1:0.35}}>⭐</button>
                     <button onClick={()=>setActiveSnd("ocean_yt")}
                       style={{background:"#486878",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,60,80,0.25)"}}>
                       ▶ Play
@@ -9190,6 +9203,7 @@ function RestSpace({setScreen}){
                       <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Campfire</div>
                       <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
                     </div>
+                    <button onClick={()=>toggleFav("campfire_yt","sound","🔥 Campfire")} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",flexShrink:0,opacity:isFav("campfire_yt")?1:0.35}}>⭐</button>
                     <button onClick={()=>setActiveSnd("campfire_yt")}
                       style={{background:"#8A5028",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(100,50,20,0.25)"}}>
                       ▶ Play
@@ -9228,6 +9242,7 @@ function RestSpace({setScreen}){
                       <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Jungle</div>
                       <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
                     </div>
+                    <button onClick={()=>toggleFav("jungle_yt","sound","🌴 Jungle")} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",flexShrink:0,opacity:isFav("jungle_yt")?1:0.35}}>⭐</button>
                     <button onClick={()=>setActiveSnd("jungle_yt")}
                       style={{background:"#3A6838",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,90,40,0.25)"}}>
                       ▶ Play
@@ -9266,6 +9281,7 @@ function RestSpace({setScreen}){
                       <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>Rain</div>
                       <div style={{fontSize:11,color:"#8A8070"}}>Tap to play</div>
                     </div>
+                    <button onClick={()=>toggleFav("rain_yt","sound","🌧️ Rain")} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",flexShrink:0,opacity:isFav("rain_yt")?1:0.35}}>⭐</button>
                     <button onClick={()=>setActiveSnd("rain_yt")}
                       style={{background:"#3C5078",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(40,50,90,0.25)"}}>
                       ▶ Play
@@ -9311,6 +9327,46 @@ function RestSpace({setScreen}){
             </div>
           </div>
         </div>
+
+        {/* ── FAVOURITES TAB ── */}
+        <div style={{display:tab==="favs"?"block":"none"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:4}}>⭐ Saved</div>
+          <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Tap ⭐ on any sound or meditation to save it here for quick access.</div>
+          {favourites.length===0?(
+            <div style={{textAlign:"center",padding:"30px 20px",color:"#8A8070"}}>
+              <div style={{fontSize:48,marginBottom:8}}>⭐</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:600,fontSize:16,color:"#1A1A10",marginBottom:6}}>Nothing saved yet</div>
+              <div style={{fontSize:13,lineHeight:1.6}}>Tap the ⭐ icon on any sound or meditation to save it here.</div>
+            </div>
+          ):(
+            <div>
+              {favourites.map(fav=>(
+                <div key={fav.id} style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,padding:"14px 16px",border:"1.5px solid rgba(192,160,40,0.20)",display:"flex",alignItems:"center",gap:12,boxShadow:"0 2px 10px rgba(60,50,10,0.06)"}}>
+                  <div style={{width:42,height:42,borderRadius:14,background:"rgba(192,160,40,0.12)",border:"1.5px solid rgba(192,160,40,0.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>
+                    {fav.type==="sound"?"🎵":"🧘"}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{fav.label}</div>
+                    <div style={{fontSize:11,color:"#8A8070"}}>{fav.type==="sound"?"Sound":"Meditation"}</div>
+                  </div>
+                  <button onClick={()=>{
+                    if(fav.type==="sound"){
+                      if(fav.id==="ocean_yt"||fav.id==="campfire_yt"||fav.id==="jungle_yt"||fav.id==="rain_yt"){setActiveSnd(fav.id);setTab("sounds");}
+                      else{playSnd(fav.id);setTab("sounds");}
+                    } else {
+                      if(fav.id==="forest_walk")setForestWalkPlaying(true);
+                      else if(fav.id==="cscm")setCscmPlaying(true);
+                      else if(fav.id==="stress")setStressPlaying(true);
+                      setTab("meditate");
+                    }
+                  }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0}}>▶ Play</button>
+                  <button onClick={()=>toggleFav(fav.id,fav.type,fav.label)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",flexShrink:0,color:"#D0A020"}} title="Remove from saved">⭐</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
 
       </div>
     </div>
