@@ -7521,6 +7521,13 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
   const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
   const DAY_EMOJI=["🌱","🔥","💪","⚡","🌟","🌿","☀️"];
   const [planTaskInput,setPlanTaskInput]=useState("");
+  // Wipe Out Day
+  const [wipeDayData,setWipeDayData]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_wipeday')||'null')||{date:"",tasks:[],done:[]};}catch{return {date:"",tasks:[],done:[]};}});
+  const saveWipeDay=d=>{setWipeDayData(d);try{localStorage.setItem('thinko_wipeday',JSON.stringify(d));}catch{}};
+  const [newWipeTask,setNewWipeTask]=useState("");
+  const [wipeExpanded,setWipeExpanded]=useState(false);
+  const isWipeDay=wipeDayData.date===new Date().toISOString().slice(0,10)&&wipeDayData.tasks.length>0;
+  const wipePct=wipeDayData.tasks.length?Math.round((wipeDayData.done.length/wipeDayData.tasks.length)*100):0;
 
   const upd=ch=>{const nd={...data,...ch};setData(nd);try{localStorage.setItem('thinko_charge',JSON.stringify(nd));}catch{}};
   const today=todayStr();
@@ -7622,6 +7629,10 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
     if(charged.includes(name))return;
     const nc=[...charged,name];
     updToday({charged:nc});
+    // Also mark in wipe out day if task matches
+    if(isWipeDay&&wipeDayData.tasks.includes(name)&&!wipeDayData.done.includes(name)){
+      saveWipeDay({...wipeDayData,done:[...wipeDayData.done,name]});
+    }
     const hitNow=nc.length>=target;
     const rewardNow=hitNow&&rewardUnlocked;
     setCelebration({name,isTarget:hitNow,isReward:rewardNow});
@@ -7698,6 +7709,38 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
 
         {/* ══ TODAY ══ */}
         {view==="today"&&<>
+
+          {/* 💥 Wipe Out Day banner — shows when today is the chosen day */}
+          {isWipeDay&&wipePct<100&&(
+            <div style={{background:"linear-gradient(135deg,#C03010,#E06020)",borderRadius:20,padding:"14px 18px",marginBottom:12,boxShadow:"0 4px 20px rgba(192,48,16,0.35)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                <span style={{fontSize:28}}>💥</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#fff"}}>TODAY IS WIPE OUT DAY!</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.80)"}}>You have {wipeDayData.tasks.length-wipeDayData.done.length} tasks to destroy — you've got this! 🔥</div>
+                </div>
+              </div>
+              <div style={{height:6,background:"rgba(255,255,255,0.20)",borderRadius:100,overflow:"hidden",marginBottom:8}}>
+                <div style={{height:"100%",width:`${wipePct}%`,background:"rgba(255,255,255,0.85)",borderRadius:100,transition:"width 0.4s"}}/>
+              </div>
+              <button onClick={()=>{
+                const merged=[...new Set([...(data.targetTasks||[]).filter(t=>t?.trim()),...wipeDayData.tasks.filter(t=>!wipeDayData.done.includes(t))])];
+                upd({targetTasks:merged,dailyTarget:merged.length});
+                showToast("💥 Wipe Out tasks loaded!");
+              }} style={{width:"100%",padding:"10px",background:"rgba(255,255,255,0.18)",color:"#fff",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                💥 Load remaining tasks into today
+              </button>
+            </div>
+          )}
+
+          {/* 🏆 Wipe Out Day complete banner */}
+          {isWipeDay&&wipePct===100&&(
+            <div style={{background:"linear-gradient(135deg,#2A7010,#4A9030)",borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:"0 4px 20px rgba(42,112,16,0.35)",textAlign:"center"}}>
+              <div style={{fontSize:40,marginBottom:4}}>🏆</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#fff",marginBottom:4}}>WIPE OUT DAY COMPLETE!</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.85)"}}>You wiped out every single task. LEGENDARY! 🌟</div>
+            </div>
+          )}
 
           {/* Whipe Out Monster card */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:12,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
@@ -8363,6 +8406,108 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          {/* ── 💥 Wipe Out Day Challenge ── */}
+          <div style={{background:"linear-gradient(135deg,rgba(220,60,20,0.08),rgba(240,120,20,0.06))",borderRadius:24,padding:"18px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"2px solid rgba(220,60,20,0.18)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <span style={{fontSize:28}}>💥</span>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17}}>Wipe Out Day Challenge</div>
+                <div style={{fontSize:12,color:"#8A8070"}}>Pick a day to smash everything you've been putting off</div>
+              </div>
+              <button onClick={()=>setWipeExpanded(e=>!e)} style={{background:"rgba(220,60,20,0.10)",color:"#C03010",border:"1.5px solid rgba(220,60,20,0.20)",borderRadius:100,padding:"6px 14px",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                {wipeExpanded?"▲ Less":"▼ Set up"}
+              </button>
+            </div>
+
+            {/* Show active wipe out day summary */}
+            {wipeDayData.date&&!wipeExpanded&&(
+              <div style={{marginTop:8,padding:"8px 12px",background:"rgba(220,60,20,0.06)",borderRadius:14,border:"1px solid rgba(220,60,20,0.12)"}}>
+                <div style={{fontSize:12,color:"#C03010",fontWeight:600}}>
+                  📅 {new Date(wipeDayData.date+'T12:00:00').toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}
+                  {isWipeDay&&<span style={{marginLeft:8,background:"#E04010",color:"#fff",borderRadius:100,padding:"1px 8px",fontSize:10}}>TODAY!</span>}
+                </div>
+                <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>{wipeDayData.tasks.length} tasks · {wipeDayData.done.length} wiped out</div>
+                {wipeDayData.tasks.length>0&&(
+                  <div style={{height:4,background:"rgba(220,60,20,0.10)",borderRadius:100,overflow:"hidden",marginTop:6}}>
+                    <div style={{height:"100%",width:`${wipePct}%`,background:wipePct===100?"#5A9840":"#E04010",borderRadius:100,transition:"width 0.4s"}}/>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {wipeExpanded&&(
+              <div style={{marginTop:12}}>
+                {/* Date picker */}
+                <div style={{fontFamily:"Georgia,serif",fontSize:13,fontWeight:600,color:"#C03010",marginBottom:6}}>📅 Choose your Wipe Out Day</div>
+                <input type="date" value={wipeDayData.date}
+                  min={new Date().toISOString().slice(0,10)}
+                  onChange={e=>saveWipeDay({...wipeDayData,date:e.target.value})}
+                  style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:12,background:"rgba(255,255,255,0.92)"}}/>
+
+                {/* Tasks to wipe out */}
+                <div style={{fontFamily:"Georgia,serif",fontSize:13,fontWeight:600,color:"#C03010",marginBottom:8}}>💥 Tasks to wipe out</div>
+                <div style={{marginBottom:10}}>
+                  {wipeDayData.tasks.map((task,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(220,60,20,0.08)"}}>
+                      <span style={{fontSize:14}}>{wipeDayData.done.includes(task)?"✅":"💢"}</span>
+                      <span style={{flex:1,fontSize:13,color:wipeDayData.done.includes(task)?"#8A9080":"#1A1A10",textDecoration:wipeDayData.done.includes(task)?"line-through":"none",fontWeight:600}}>{task}</span>
+                      <button onClick={()=>saveWipeDay({...wipeDayData,tasks:wipeDayData.tasks.filter((_,j)=>j!==i),done:wipeDayData.done.filter(d=>d!==task)})}
+                        style={{background:"none",border:"none",color:"rgba(192,57,43,0.5)",cursor:"pointer",fontSize:13}}>✕</button>
+                    </div>
+                  ))}
+                  {wipeDayData.tasks.length===0&&<div style={{fontSize:12,color:"#8A8070",fontStyle:"italic"}}>No tasks yet — add the things you've been dreading most!</div>}
+                </div>
+
+                {/* Add task */}
+                <div style={{display:"flex",gap:8,marginBottom:14}}>
+                  <input value={newWipeTask} onChange={e=>setNewWipeTask(e.target.value)}
+                    onKeyDown={e=>{if(e.key==="Enter"&&newWipeTask.trim()){saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,newWipeTask.trim()]});setNewWipeTask("");}}}
+                    placeholder="Add a task you've been putting off…"
+                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.22)",fontSize:13,outline:"none",background:"rgba(255,255,255,0.92)",color:"#1A1A10"}}/>
+                  <button onClick={()=>{if(!newWipeTask.trim())return;saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,newWipeTask.trim()]});setNewWipeTask("");}}
+                    style={{background:"#C03010",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontWeight:700,fontSize:14,cursor:"pointer"}}>+ Add</button>
+                </div>
+
+                {/* Action buttons */}
+                {wipeDayData.tasks.length>0&&wipeDayData.date&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {/* Send to Weekly */}
+                    <button onClick={()=>{
+                      const dayName=new Date(wipeDayData.date+'T12:00:00').toLocaleDateString("en-GB",{weekday:"long"});
+                      const weekTasks=DAYS.map(day=>({day,tasks:day===dayName?wipeDayData.tasks:[]}));
+                      try{localStorage.setItem('thinko_week_plan',JSON.stringify(weekTasks));}catch{}
+                      showToast("💥 Wipe Out Day sent to your Week!");
+                    }} style={{width:"100%",padding:"12px",background:"#C03010",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(192,48,16,0.30)"}}>
+                      📅 Send to My Week
+                    </button>
+                    {/* Save to Google Calendar */}
+                    <button onClick={()=>{
+                      const d=wipeDayData.date.replace(/-/g,"");
+                      const details=`💥 WIPE OUT DAY!\n\nTasks to destroy:\n${wipeDayData.tasks.map(t=>`• ${t}`).join("\n")}`;
+                      const url=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("💥 Wipe Out Day Challenge")}&dates=${d}T090000/${d}T200000&details=${encodeURIComponent(details)}`;
+                      window.open(url,"_blank");
+                      showToast("📅 Opening Google Calendar!");
+                    }} style={{width:"100%",padding:"12px",background:"rgba(66,133,244,0.10)",color:"#4285f4",border:"1.5px solid rgba(66,133,244,0.22)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                      📅 Save to Google Calendar
+                    </button>
+                    {/* Load into today if wipe day is today */}
+                    {isWipeDay&&(
+                      <button onClick={()=>{
+                        const merged=[...new Set([...(data.targetTasks||[]).filter(t=>t?.trim()),...wipeDayData.tasks])];
+                        upd({targetTasks:merged,dailyTarget:merged.length});
+                        showToast("💥 Wipe Out tasks loaded into today!");
+                      }} style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,#C03010,#E06020)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 14px rgba(192,48,16,0.35)"}}>
+                        💥 Load into Today — LET'S GO!
+                      </button>
+                    )}
+                    {/* Clear */}
+                    <button onClick={()=>{saveWipeDay({date:"",tasks:[],done:[]});setWipeExpanded(false);}} style={{width:"100%",padding:"8px",background:"transparent",color:"#8A8070",border:"none",fontSize:12,cursor:"pointer"}}>🗑 Clear Wipe Out Day</button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -9181,6 +9326,7 @@ export default function App() {
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
   const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
+  useEffect(()=>{try{localStorage.setItem('thinko_pri',JSON.stringify(priData));}catch{}},[priData]);
   const [mapData,setMapData]=useState(()=>{try{const v=localStorage.getItem('thinko_map');return v?JSON.parse(v):[];}catch{return [];}});
   const [notesData,setNotesData]=useState(()=>{try{const v=localStorage.getItem('thinko_notes');return v?JSON.parse(v):[];}catch{return [];}});
   const [mealData,setMealData]=useState(()=>{try{const v=localStorage.getItem('thinko_meal');return v?JSON.parse(v):{};}catch{return {};}});
