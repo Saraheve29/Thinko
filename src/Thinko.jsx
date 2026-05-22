@@ -29,8 +29,6 @@ const showInstallPrompt = async () => {
 };
 
 // ── AI HELPERS ───────────────────────────────────────────
-async function callAI(prompt,maxTokens=600){return "";}
-async function callAIJson(prompt,maxTokens=500){return null;}
 
 
 
@@ -981,7 +979,7 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
             <MenuItem icon="🎯" label="Send to Matrix — Do First" onClick={()=>onSendTo&&onSendTo(task,"matrix","do")}/>
             <MenuItem icon="🟠" label="Send to Matrix — Schedule" onClick={()=>onSendTo&&onSendTo(task,"matrix","plan")}/>
             <MenuItem icon="🔵" label="Send to Matrix — Ask for Help" onClick={()=>onSendTo&&onSendTo(task,"matrix","help")}/>
-            <MenuItem icon="⚡" label="Send to The Whipe Out" onClick={()=>onSendTo&&onSendTo(task,"charge")}/>
+            <MenuItem icon="⚡" label="Send to The Wipe Out" onClick={()=>onSendTo&&onSendTo(task,"charge")}/>
             <MenuItem icon="🗑" label="Delete task" onClick={()=>onDelete(task.id)} danger/>
             {/* Big close button at bottom for easy thumb reach */}
             <div style={{padding:"10px 16px 0"}}>
@@ -1109,7 +1107,31 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
     setNewTask("");setPrioritized(false);
   };
   const deleteTask=id=>{onUpdate({...list,tasks:list.tasks.filter(t=>t.id!==id)});setPrioritized(false);};
-  const completeTask=id=>onUpdate({...list,tasks:list.tasks.map(t=>t.id===id?{...t,done:!t.done}:t)});
+  const [taskCelebration,setTaskCelebration]=useState(null);
+  const [taskConfetti,setTaskConfetti]=useState([]);
+
+  const launchTaskConfetti=allDone=>{
+    const emojis=allDone?["🏆","⭐","🌟","💫","✨","🎊","🎉","💥"]:["🎉","✨","⭐","💫","🌿","🎊"];
+    const pieces=Array.from({length:allDone?80:40},(_,i)=>({
+      id:i,x:Math.random()*100,emoji:emojis[i%emojis.length],
+      size:allDone?(16+Math.random()*14):(12+Math.random()*10),
+      delay:Math.random()*0.6,speed:1.4+Math.random()*1.2,rotation:Math.random()*360,
+    }));
+    setTaskConfetti(pieces);
+    setTimeout(()=>setTaskConfetti([]),3500);
+  };
+
+  const completeTask=id=>{
+    const updated=list.tasks.map(t=>t.id===id?{...t,done:!t.done}:t);
+    onUpdate({...list,tasks:updated});
+    const task=list.tasks.find(t=>t.id===id);
+    if(!task.done){ // marking as done (not undoing)
+      const allDone=updated.filter(t=>!t.done).length===0;
+      setTaskCelebration({name:task.name,allDone,total:list.tasks.length});
+      launchTaskConfetti(allDone);
+      setTimeout(()=>setTaskCelebration(null),allDone?6000:2800);
+    }
+  };
   const colorTask=(id,color)=>onUpdate({...list,tasks:list.tasks.map(t=>t.id===id?{...t,color}:t)});
   const [dragTaskId,setDragTaskId]=useState(null);
   const priTaskTouchRef=useRef(null);
@@ -1142,8 +1164,8 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
       setMatrixData(ds=>[...ds,{id:Date.now(),text:task.name,quad:extra||"do",created:Date.now(),touched:Date.now(),url:task.url||""}]);
       showSendToast(`🎯 Sent to Matrix!`);
     } else if(dest==="charge"){
-      // The Whipe Out reads from priData directly so it auto-appears — just toast
-      showSendToast("⚡ The Whipe Out will pick this up from your To Do List!");
+      // The Wipe Out reads from priData directly so it auto-appears — just toast
+      showSendToast("⚡ The Wipe Out will pick this up from your To Do List!");
     }
   };
   const onPriDone=sorted=>{
@@ -1159,6 +1181,62 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
   const done=list.tasks.filter(t=>t.done);
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
+      <style>{`
+        @keyframes taskConfettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+        @keyframes taskCelebIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+        @keyframes taskCelebBob{0%{transform:scale(1) rotate(-4deg)}100%{transform:scale(1.18) rotate(4deg)}}
+        @keyframes taskDotPulse{0%{transform:scale(0.7);opacity:0.4}100%{transform:scale(1.3);opacity:1}}
+      `}</style>
+
+      {/* Task celebration overlay */}
+      {taskCelebration&&(
+        <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",
+          background:taskCelebration.allDone?"radial-gradient(ellipse at center,rgba(15,50,10,0.96),rgba(5,15,5,0.98))":"rgba(10,10,10,0.80)",
+          backdropFilter:"blur(5px)"}}
+          onClick={()=>setTaskCelebration(null)}>
+          {taskConfetti.map(p=>(
+            <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:"-5%",fontSize:p.size,
+              animation:`taskConfettiFall ${p.speed}s ${p.delay}s ease-in forwards`,
+              transform:`rotate(${p.rotation}deg)`,pointerEvents:"none",zIndex:1}}>{p.emoji}</div>
+          ))}
+          {taskCelebration.allDone?(
+            <div style={{textAlign:"center",zIndex:2,padding:"0 28px",width:"100%",maxWidth:380}}>
+              <div style={{fontSize:96,lineHeight:1,marginBottom:14,animation:"taskCelebBob 0.5s ease-in-out infinite alternate",filter:"drop-shadow(0 0 28px rgba(255,215,0,0.8))"}}>🏆</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:32,color:"#FFD700",lineHeight:1.1,marginBottom:12,textShadow:"0 0 28px rgba(255,215,0,0.6)",animation:"taskCelebIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+                {["ALL DONE!\nLIST CRUSHED! 💥","EVERY TASK\nWIPED OUT! 🔥","INCREDIBLE!\nCOMPLETE! 🌟","CHAMPION!\nEVERY TASK DONE! 👑"][Math.floor(Date.now()/1000)%4].split('\n').map((l,i)=><div key={i}>{l}</div>)}
+              </div>
+              <div style={{fontSize:16,color:"rgba(255,255,255,0.88)",lineHeight:1.7,marginBottom:20}}>
+                You can <strong style={{color:"#FFD700"}}>achieve anything</strong> you put your mind to ✨<br/>
+                <strong style={{color:"#90FF90"}}>{list.name}</strong> — completely finished!
+              </div>
+              <div style={{display:"flex",justifyContent:"center",gap:10,marginBottom:16}}>
+                {Array.from({length:Math.min(list.tasks.length,10)}).map((_,i)=>(
+                  <div key={i} style={{width:16,height:16,borderRadius:"50%",background:"#FFD700",boxShadow:"0 0 10px rgba(255,215,0,0.8)",animation:`taskDotPulse ${0.2+i*0.07}s ease-in-out infinite alternate`}}/>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.30)"}}>Tap anywhere to continue</div>
+            </div>
+          ):(
+            <div style={{background:"rgba(255,253,240,0.97)",borderRadius:28,padding:"28px 24px",textAlign:"center",maxWidth:290,margin:"0 24px",zIndex:2,border:"2.5px solid rgba(90,160,80,0.35)",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",animation:"taskCelebIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+              <div style={{fontSize:64,lineHeight:1,marginBottom:8,animation:"taskCelebBob 0.5s ease-in-out infinite alternate"}}>🎉</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:22,color:"#1A1A10",marginBottom:8,lineHeight:1.2}}>
+                {["TASK DONE! 💪","YES! ONE DOWN! ⚡","NAILED IT! 💥","KEEP GOING! 🔥"][done.length%4]}
+              </div>
+              <div style={{fontSize:13,color:"#5A7060",lineHeight:1.7,marginBottom:12}}>
+                "{taskCelebration.name}" — crossed off! 🌿<br/>
+                <span style={{fontSize:12,color:"#8A8070"}}>{done.length+1}/{taskCelebration.total} tasks complete</span>
+              </div>
+              <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:10}}>
+                {Array.from({length:taskCelebration.total}).map((_,i)=>(
+                  <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<done.length+1?"#5A7848":"rgba(90,80,60,0.12)",transition:"background 0.3s"}}/>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:"#C0B090"}}>Tap to continue</div>
+            </div>
+          )}
+        </div>
+      )}
+
       <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.25)",color:"#1A1A10",border:"1px solid rgba(90,120,72,0.25)",borderRadius:10,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
       <div style={{padding:"18px 16px"}}>
         {/* Focus Timer — above break timer */}
@@ -1297,111 +1375,94 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
   const priTouchEnd=()=>{clearTimeout(priTouchRef.current);setDragId(null);};
 
   if(active) return <PriList list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ls=>ls.map(l=>l.id===u.id?u:l))} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer}/>;
-  const listColors=["#5A7848","#7A6038","#486878","#6A5870","#486050","#705848"];
-  return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
-      <Header title="📋 To Do List" onBack={()=>setScreen("home")} right={
-        <button onClick={()=>setAdding(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:50,width:40,height:40,fontSize:24,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 12px rgba(58,80,38,0.35)"}}>+</button>
-      }/>
+  const listColors=[
+    {bg:"#E05840",dark:"#B03020",light:"rgba(224,88,64,0.12)",emoji:"🔥"},
+    {bg:"#5A7848",dark:"#3A5828",light:"rgba(90,120,72,0.12)",emoji:"🌿"},
+    {bg:"#4870A0",dark:"#2A5080",light:"rgba(72,112,160,0.12)",emoji:"💧"},
+    {bg:"#A04870",dark:"#803050",light:"rgba(160,72,112,0.12)",emoji:"🌸"},
+    {bg:"#C08830",dark:"#905808",light:"rgba(192,136,48,0.12)",emoji:"⭐"},
+    {bg:"#3A8878",dark:"#206858",light:"rgba(58,136,120,0.12)",emoji:"🌊"},
+  ];
 
-      <div style={{padding:"20px 16px"}}>
+  return (
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <style>{`
+        @keyframes listCardIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes taskCelebPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
+        @keyframes taskCelebBounce{0%{transform:scale(1) rotate(-4deg)}100%{transform:scale(1.15) rotate(4deg)}}
+      `}</style>
+
+      {/* Beautiful gradient header */}
+      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#4A6040 40%,#3A5848 100%)",padding:"52px 22px 24px",position:"relative",overflow:"hidden"}}>
+        {/* Decorative shapes */}
+        <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,0.04)"}}/>
+        <div style={{position:"absolute",bottom:-10,left:10,width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,0.03)"}}/>
+        <div style={{position:"absolute",top:20,left:"40%",fontSize:60,opacity:0.06}}>📋</div>
+
+        <button onClick={()=>setScreen("home")} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>
+        <button onClick={()=>setAdding(true)} style={{position:"absolute",top:16,right:16,background:"#FFD700",color:"#2C3820",border:"none",borderRadius:100,width:42,height:42,fontSize:26,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 14px rgba(255,215,0,0.40)"}}>+</button>
+
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:42,marginBottom:6}}>📋</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#fff",marginBottom:4,letterSpacing:-0.5}}>To Do List</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.60)",fontStyle:"italic"}}>Prioritise your to do list — drag to reorder by importance</div>
+        </div>
+
+        {/* Stats row */}
+        {data.length>0&&(
+          <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:14}}>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#FFD700"}}>{data.length}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.50)",textTransform:"uppercase",letterSpacing:0.8}}>Lists</div>
+            </div>
+            <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#FFD700"}}>{data.reduce((s,l)=>s+l.tasks.length,0)}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.50)",textTransform:"uppercase",letterSpacing:0.8}}>Tasks</div>
+            </div>
+            <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#FFD700"}}>{data.reduce((s,l)=>s+l.tasks.filter(t=>t.done).length,0)}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.50)",textTransform:"uppercase",letterSpacing:0.8}}>Done</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{padding:"18px 16px"}}>
         {/* New list form */}
         {adding&&(
-          <div style={{background:"rgba(248,245,236,0.95)",borderRadius:24,padding:"20px 18px",marginBottom:18,boxShadow:"0 4px 24px rgba(0,0,0,0.1)",border:"1px solid rgba(90,120,72,0.2)"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#5A7848",textTransform:"uppercase",letterSpacing:1.4,marginBottom:12}}>New list</div>
-            <input ref={inputRef} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submit();if(e.key==="Escape"){setAdding(false);setName("");}}} placeholder="List name..." style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.3)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.9)"}}/>
-            <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
-              <button onClick={()=>{setAdding(false);setName("");}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,fontSize:14,cursor:"pointer",padding:"8px 16px"}}>Cancel</button>
-              <button onClick={submit} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 24px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.3)"}}>Create</button>
+          <div style={{background:"rgba(248,245,236,0.97)",borderRadius:24,padding:"20px 18px",marginBottom:16,boxShadow:"0 6px 28px rgba(0,0,0,0.12)",border:"1.5px solid rgba(90,120,72,0.20)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:12}}>✏️ New list</div>
+            <input ref={inputRef} value={name} onChange={e=>setName(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter")submit();if(e.key==="Escape"){setAdding(false);setName("");}}}
+              placeholder="List name e.g. Work, Home, Today..."
+              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.95)"}}/>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={submit} style={{flex:1,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"12px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.30)"}}>✅ Create list</button>
+              <button onClick={()=>{setAdding(false);setName("");}} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"12px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Cancel</button>
             </div>
           </div>
         )}
 
-        {/* EMPTY STATE — beautiful garden landing */}
+        {/* Empty state */}
         {data.length===0&&!adding&&(
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 0"}}>
-            {/* Decorative vine illustration */}
-            <svg width="220" height="160" viewBox="0 0 220 160" fill="none" style={{marginBottom:8,overflow:"visible"}}>
-              <defs>
-                <linearGradient id="eg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C8EC98"/><stop offset="100%" stopColor="#5A8830"/></linearGradient>
-                <linearGradient id="eg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#A8D870"/><stop offset="100%" stopColor="#4A7820"/></linearGradient>
-                <linearGradient id="eg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#D8F0A8"/><stop offset="100%" stopColor="#78B040"/></linearGradient>
-                <filter id="esh"><feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#1A3A08" floodOpacity="0.28"/></filter>
-              </defs>
-              {/* Main stems */}
-              <path d="M30 160 Q25 120 35 88 Q42 62 28 32 Q22 16 35 5" stroke="#7A6030" strokeWidth="4" fill="none" strokeLinecap="round"/>
-              <path d="M190 160 Q195 120 185 88 Q178 62 192 32 Q198 16 185 5" stroke="#7A6030" strokeWidth="4" fill="none" strokeLinecap="round"/>
-              <path d="M30 60 Q70 40 110 45 Q150 50 190 60" stroke="#8A7040" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.7"/>
-              {/* Left big leaves */}
-              <g filter="url(#esh)"><path d="M28 24 Q8 8 -5 18 Q-8 32 8 38 Q22 40 28 24Z" fill="url(#eg1)"/><line x1="28" y1="24" x2="8" y2="38" stroke="#3A6820" strokeWidth="0.8" opacity="0.18"/><line x1="18" y1="31" x2="12" y2="38" stroke="#3A6820" strokeWidth="0.5" opacity="0.14"/><line x1="18" y1="31" x2="22" y2="37" stroke="#3A6820" strokeWidth="0.5" opacity="0.14"/></g>
-              <g filter="url(#esh)"><path d="M32 46 Q12 34 0 44 Q-3 58 14 62 Q28 63 32 46Z" fill="url(#eg2)"/><line x1="32" y1="46" x2="14" y2="62" stroke="#3A6820" strokeWidth="0.8" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M30 74 Q10 62 -2 72 Q-5 86 12 90 Q26 91 30 74Z" fill="url(#eg3)"/><line x1="30" y1="74" x2="12" y2="90" stroke="#3A6820" strokeWidth="0.75" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M34 100 Q14 88 2 98 Q-1 112 16 116 Q30 117 34 100Z" fill="url(#eg1)"/><line x1="34" y1="100" x2="16" y2="116" stroke="#3A6820" strokeWidth="0.75" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M32 128 Q12 116 0 126 Q-3 140 14 144 Q28 145 32 128Z" fill="url(#eg2)"/></g>
-              {/* Right big leaves */}
-              <g filter="url(#esh)"><path d="M192 24 Q212 8 225 18 Q228 32 212 38 Q198 40 192 24Z" fill="url(#eg1)"/><line x1="192" y1="24" x2="212" y2="38" stroke="#3A6820" strokeWidth="0.8" opacity="0.18"/><line x1="202" y1="31" x2="208" y2="38" stroke="#3A6820" strokeWidth="0.5" opacity="0.14"/><line x1="202" y1="31" x2="198" y2="37" stroke="#3A6820" strokeWidth="0.5" opacity="0.14"/></g>
-              <g filter="url(#esh)"><path d="M188 46 Q208 34 220 44 Q223 58 206 62 Q192 63 188 46Z" fill="url(#eg2)"/><line x1="188" y1="46" x2="206" y2="62" stroke="#3A6820" strokeWidth="0.8" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M190 74 Q210 62 222 72 Q225 86 208 90 Q194 91 190 74Z" fill="url(#eg3)"/><line x1="190" y1="74" x2="208" y2="90" stroke="#3A6820" strokeWidth="0.75" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M186 100 Q206 88 218 98 Q221 112 204 116 Q190 117 186 100Z" fill="url(#eg1)"/><line x1="186" y1="100" x2="204" y2="116" stroke="#3A6820" strokeWidth="0.75" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M188 128 Q208 116 220 126 Q223 140 206 144 Q192 145 188 128Z" fill="url(#eg2)"/></g>
-              {/* Top arch leaves */}
-              <g filter="url(#esh)"><path d="M55 52 Q48 32 60 22 Q72 15 80 28 Q84 40 72 48 Q60 52 55 52Z" fill="url(#eg3)"/><line x1="55" y1="52" x2="72" y2="48" stroke="#3A6820" strokeWidth="0.7" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M85 48 Q80 28 92 18 Q104 11 112 24 Q116 36 104 44 Q92 48 85 48Z" fill="url(#eg1)"/><line x1="85" y1="48" x2="104" y2="44" stroke="#3A6820" strokeWidth="0.7" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M118 48 Q115 28 128 18 Q140 12 148 25 Q151 37 140 45 Q128 49 118 48Z" fill="url(#eg2)"/><line x1="118" y1="48" x2="140" y2="45" stroke="#3A6820" strokeWidth="0.7" opacity="0.18"/></g>
-              <g filter="url(#esh)"><path d="M150 52 Q148 32 160 22 Q172 15 178 28 Q180 42 168 50 Q156 54 150 52Z" fill="url(#eg3)"/><line x1="150" y1="52" x2="168" y2="50" stroke="#3A6820" strokeWidth="0.7" opacity="0.18"/></g>
-              {/* Centre clipboard icon */}
-              <rect x="88" y="62" width="44" height="52" rx="6" fill="rgba(248,245,236,0.92)" stroke="rgba(90,120,72,0.3)" strokeWidth="1.5"/>
-              <rect x="98" y="58" width="24" height="10" rx="5" fill="rgba(90,120,72,0.4)"/>
-              <path d="M96 80h28M96 90h20M96 100h24" stroke="rgba(90,120,72,0.6)" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-
-            {/* Headline */}
-            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#1A1A10",textAlign:"center",marginBottom:10,letterSpacing:-0.4,lineHeight:1.25}}>
-              Your calm task sanctuary
-            </div>
-
-            {/* Description */}
-            <div style={{fontSize:15,color:"#6A6050",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:280,fontWeight:400}}>
-              Create multiple lists — one for work, one for home, one just for today. Keep everything beautifully organised and calm.
-            </div>
-
-            {/* CTA button */}
-            <button onClick={()=>setAdding(true)} style={{
-              background:"#5A7848",
-              color:"#fff",
-              border:"none",
-              borderRadius:100,
-              padding:"17px 40px",
-              fontSize:17,
-              fontWeight:700,
-              cursor:"pointer",
-              boxShadow:"0 6px 24px rgba(58,80,38,0.38)",
-              display:"flex",alignItems:"center",gap:12,
-              letterSpacing:0.2,
-              marginBottom:16,
-            }}>
-              <span style={{fontSize:20}}>+</span>
-              Create your first list
-            </button>
-
-            {/* Hint */}
-            <div style={{fontSize:12,color:"rgba(90,80,60,0.55)",textAlign:"center",display:"flex",alignItems:"center",gap:6}}>
-              <span>🌿</span>
-              <span>You can create as many lists as you like</span>
-              <span>🌿</span>
-            </div>
+          <div style={{textAlign:"center",padding:"40px 20px"}}>
+            <div style={{fontSize:72,marginBottom:16}}>📋</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:24,color:"#1A1A10",marginBottom:8}}>Start your first list</div>
+            <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,maxWidth:280,margin:"0 auto 24px"}}>Create separate lists for work, home, today — whatever keeps you organised.</div>
+            <button onClick={()=>setAdding(true)} style={{padding:"14px 32px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>+ Create first list</button>
           </div>
         )}
 
-        {/* LISTS — when they exist */}
-        {data.length>0&&(
-          <>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4,marginTop:4}}>📋 To Do List</div>
-            <div style={{fontSize:13,color:"#8A8070",marginBottom:12,fontStyle:"italic"}}>Prioritise your to do list — drag to reorder by importance</div>
-          </>
-        )}
+        {/* List cards — colourful */}
         {data.map((list,i)=>{
-          const col=listColors[i%listColors.length];
+          const c=listColors[i%listColors.length];
+          const done=list.tasks.filter(t=>t.done).length;
+          const total=list.tasks.length;
+          const pct=total?Math.round((done/total)*100):0;
           return(
             <div key={list.id}
               data-prilistid={list.id}
@@ -1414,28 +1475,49 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
               onTouchEnd={priTouchEnd}
               onClick={()=>setActiveId(list.id)}
               style={{
-                display:"flex",alignItems:"center",gap:14,
-                background:dragId===list.id?"rgba(255,255,255,0.95)":"rgba(248,245,236,0.88)",
-                backdropFilter:"blur(12px)",
-                borderRadius:22,
-                padding:"16px 18px",
-                marginBottom:12,
-                border:"1px solid rgba(255,255,255,0.9)",
-                cursor:"pointer",
-                transition:"all 0.15s",
-                boxShadow:dragId===list.id?"0 8px 28px rgba(0,0,0,0.12)":"0 2px 14px rgba(0,0,0,0.06)",
+                background:"rgba(248,245,236,0.95)",borderRadius:24,padding:0,marginBottom:14,
+                border:`1.5px solid ${c.bg}22`,cursor:"pointer",overflow:"hidden",
+                boxShadow:`0 4px 20px ${c.bg}18`,
                 transform:dragId===list.id?"scale(1.02)":"scale(1)",
+                opacity:dragId===list.id?0.85:1,
+                transition:"all 0.15s",
+                animation:`listCardIn 0.3s ${i*0.06}s both`,
               }}>
-              <div style={{color:"rgba(60,50,30,0.3)",fontSize:14,flexShrink:0}}>⠿</div>
-              <div style={{width:44,height:44,borderRadius:14,flexShrink:0,background:col,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 2px 10px ${col}55`}}>📋</div>
-              <div style={{flex:1}}>
-                <div style={{color:"#1A1A10",fontWeight:700,fontSize:17,marginBottom:2}}>{list.name}</div>
-                <div style={{color:"#8A8070",fontSize:12}}>{list.tasks.length} task{list.tasks.length!==1?"s":""}</div>
+              {/* Coloured top strip */}
+              <div style={{height:5,background:`linear-gradient(90deg,${c.bg},${c.dark})`}}/>
+              <div style={{padding:"16px 18px",display:"flex",alignItems:"center",gap:14}}>
+                <span style={{cursor:"grab",color:"rgba(90,80,60,0.25)",fontSize:16,flexShrink:0}}>⠿</span>
+                {/* Colour icon circle */}
+                <div style={{width:52,height:52,borderRadius:18,background:c.light,border:`2.5px solid ${c.bg}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0,boxShadow:`0 2px 10px ${c.bg}22`}}>
+                  {c.emoji}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{list.name}</div>
+                  <div style={{fontSize:12,color:"#8A8070",marginBottom:total>0?6:0}}>
+                    {total===0?"Empty — tap to add tasks":pct===100?"✅ All done!":done>0?`${done}/${total} done`:`${total} task${total!==1?"s":""}`}
+                  </div>
+                  {total>0&&(
+                    <div style={{height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",maxWidth:160}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:pct===100?c.bg:`${c.bg}`,borderRadius:100,transition:"width 0.4s"}}/>
+                    </div>
+                  )}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",flexShrink:0}}>
+                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                  <button onClick={e=>{e.stopPropagation();setData(ls=>ls.filter(l=>l.id!==list.id));}}
+                    style={{background:"rgba(90,80,60,0.06)",color:"#8A8070",border:"none",borderRadius:100,padding:"4px 8px",cursor:"pointer",fontSize:11}}>🗑</button>
+                </div>
               </div>
-              <button onClick={e=>{e.stopPropagation();setData(ls=>ls.filter(l=>l.id!==list.id));}} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
             </div>
           );
         })}
+
+        {data.length>0&&(
+          <button onClick={()=>setAdding(true)} style={{width:"100%",padding:"13px",background:"rgba(90,120,72,0.08)",color:"#5A7848",border:"1.5px dashed rgba(90,120,72,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginTop:4}}>+ New list</button>
+        )}
+        <div style={{textAlign:"center",marginTop:10}}>
+          <span style={{fontSize:11,color:"rgba(60,56,40,0.35)",letterSpacing:0.5}}>⠿ Hold and drag to reorder by priority</span>
+        </div>
       </div>
     </div>
   );
@@ -2697,6 +2779,13 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title="🗄️ Filing Cabinet" onBack={onBack} right={
         <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>{
+            const hasPin=localStorage.getItem('thinko_vault_pin');
+            if(hasPin){if(window.confirm("Remove vault PIN lock?"))localStorage.removeItem('thinko_vault_pin');alert("PIN removed.");}
+            else{alert("Go to Vault home screen to set up a 4-digit PIN lock.");}
+          }} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}} title={localStorage.getItem('thinko_vault_pin')?"PIN lock active — tap to remove":"No PIN — tap to set one"}>
+            {localStorage.getItem('thinko_vault_pin')?"🔒":"🔓"}
+          </button>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
           <button onClick={()=>setAddingDrawer(true)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>+ Drawer</button>
           <button onClick={()=>setShowTemplates(t=>!t)} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:100,padding:"8px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>📋 <span>+ Templates</span></button>
@@ -2945,6 +3034,275 @@ function VoiceToText({setNotesData:setND}){
 /* ═══════════════════════════════════════════════════════
    🔐 VAULT PIN LOCK
 ═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   🌿 ONBOARDING WALKTHROUGH
+═══════════════════════════════════════════════════════ */
+function Onboarding({onComplete}){
+  const [slide,setSlide]=useState(0);
+  const [exiting,setExiting]=useState(false);
+
+  const SLIDES=[
+    {
+      id:"welcome",
+      bg:"linear-gradient(160deg,#1A2810 0%,#2C4020 50%,#1A3818 100%)",
+      emoji:"🌿",
+      title:"Welcome to Thinko",
+      tagline:"Think it. Plan it. Live it.",
+      body:"Your personal space for everything — tasks, goals, notes, habits, budget and more. Let's take a quick tour so you know where everything lives.",
+      accent:"#7AB868",
+      cta:"Let's go →",
+    },
+    {
+      id:"charge",
+      bg:"linear-gradient(160deg,#1A0A08 0%,#3A1808 50%,#280C04 100%)",
+      emoji:"💥",
+      title:"Wipe Out",
+      tagline:"Slay your tasks — defeat the monster",
+      body:"Set how many tasks you want to crush today. Each one you complete weakens the monster. Finish them all and it gets wiped out entirely. Set a reward for yourself and collect it when you're done.",
+      accent:"#FF6030",
+      cta:"Next →",
+      features:["Set a daily target","Watch the monster weaken","Earn your reward","Wipe Out Day challenge"],
+    },
+    {
+      id:"todo",
+      bg:"linear-gradient(160deg,#0A1808 0%,#1A3020 50%,#0C2818 100%)",
+      emoji:"📋",
+      title:"To Do List",
+      tagline:"Prioritise and get it done",
+      body:"Create separate lists for work, home, today — whatever you need. Drag tasks to reorder by priority. Tick them off and get a confetti celebration every time. 🎉",
+      accent:"#7AB868",
+      cta:"Next →",
+      features:["Multiple lists","Drag to prioritise","Celebration on completion","Focus timer built in"],
+    },
+    {
+      id:"vault",
+      bg:"linear-gradient(160deg,#0A1020 0%,#182840 50%,#0A2030 100%)",
+      emoji:"📚",
+      title:"The Vault",
+      tagline:"Your private space for everything important",
+      body:"Notes, ideas, mind maps, filing cabinet — all in one secure place. Optional 4-digit PIN lock keeps it private. The filing cabinet stores documents, tickets and important files.",
+      accent:"#6898C8",
+      cta:"Next →",
+      features:["Notes & pages","💡 Ideas board","🗄️ Filing Cabinet","Optional PIN lock 🔐"],
+    },
+    {
+      id:"goals",
+      bg:"linear-gradient(160deg,#100A20 0%,#281840 50%,#180A30 100%)",
+      emoji:"🎯",
+      title:"Goals",
+      tagline:"Plant seeds for every horizon",
+      body:"Set goals across 5 time horizons — 90 days, 1 year, 3 years, 5 years, and your life vision. Watch your garden grow as you make progress. Break goals into subtasks and track milestones.",
+      accent:"#A868D8",
+      cta:"Next →",
+      features:["5 time horizons","Garden grows with progress","Break into subtasks","Send to To Do List"],
+    },
+    {
+      id:"routine",
+      bg:"linear-gradient(160deg,#0A1808 0%,#182C10 50%,#0C2010 100%)",
+      emoji:"🌀",
+      title:"Routines",
+      tagline:"Build habits that stick",
+      body:"Create multiple routines for morning, evening, cleaning, laundry — anything you repeat. Add tasks with timers, track streaks, and get prompted if you haven't done something in a week.",
+      accent:"#68A858",
+      cta:"Next →",
+      features:["Multiple routines","Built-in timers","Streak tracking","Stale task reminders"],
+    },
+    {
+      id:"budget",
+      bg:"linear-gradient(160deg,#100A00 0%,#281800 50%,#1A1008 100%)",
+      emoji:"💰",
+      title:"Budget",
+      tagline:"Plan ahead and stay on track",
+      body:"Plan budgets for holidays, events, big purchases. Add planned costs before you spend, log actual expenses, and save tickets and bookings. Send tickets straight to your Filing Cabinet.",
+      accent:"#C8A030",
+      cta:"Next →",
+      features:["Plan future events","Log actual spending","Save tickets & bookings","Send to Filing Cabinet"],
+    },
+    {
+      id:"rest",
+      bg:"linear-gradient(160deg,#08100A 0%,#102018 50%,#081410 100%)",
+      emoji:"🌿",
+      title:"Rest Space",
+      tagline:"Recharge your mind and body",
+      body:"Guided meditations, nature sounds, a focus timer and break timer. Save your favourites to come back to quickly. Everything you need to breathe, reset and refocus.",
+      accent:"#58A878",
+      cta:"Next →",
+      features:["Guided meditations","Nature sounds","Focus & break timers","Save favourites ⭐"],
+    },
+    {
+      id:"tools",
+      bg:"linear-gradient(160deg,#080A10 0%,#101828 50%,#080C18 100%)",
+      emoji:"🔧",
+      title:"Tools",
+      tagline:"Everything else you need",
+      body:"Calculator, stopwatch, countdown timer, alarm, language translator, currency converter and world time. All the little utilities that make your day easier.",
+      accent:"#7888C8",
+      cta:"Next →",
+      features:["Calculator & timers","Alarm clock","Translator & currency","🌐 World time — 35+ cities"],
+    },
+    {
+      id:"ready",
+      bg:"linear-gradient(160deg,#0C1A08 0%,#1A3010 50%,#102808 100%)",
+      emoji:"🚀",
+      title:"You're all set!",
+      tagline:"Everything you need to thrive",
+      body:"You can always come back to this tour from the settings menu. Now go explore — start with something that excites you most, whether that's setting a goal, building a routine, or crushing today's tasks.",
+      accent:"#FFD700",
+      cta:"🌿 Start using Thinko",
+      isLast:true,
+    },
+  ];
+
+  const current=SLIDES[slide];
+  const progress=(slide/(SLIDES.length-1))*100;
+
+  const next=()=>{
+    if(slide>=SLIDES.length-1){onComplete();return;}
+    setExiting(true);
+    setTimeout(()=>{setSlide(s=>s+1);setExiting(false);},200);
+  };
+  const prev=()=>{if(slide>0){setExiting(true);setTimeout(()=>{setSlide(s=>s-1);setExiting(false);},200);}};
+  const skip=()=>onComplete();
+
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:9999,fontFamily:"Georgia,serif",overflow:"hidden"}}>
+      <style>{`
+        @keyframes slideIn{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes slideOut{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-16px)}}
+        @keyframes featurePop{0%{opacity:0;transform:translateX(-12px)}100%{opacity:1;transform:translateX(0)}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px rgba(255,255,255,0.08)}50%{box-shadow:0 0 40px rgba(255,255,255,0.18)}}
+        @keyframes floatEmoji{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+      `}</style>
+
+      {/* Full background */}
+      <div style={{position:"absolute",inset:0,background:current.bg,transition:"background 0.6s ease"}}/>
+
+      {/* Subtle grain overlay */}
+      <div style={{position:"absolute",inset:0,backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",opacity:0.4,pointerEvents:"none"}}/>
+
+      {/* Decorative blobs */}
+      <div style={{position:"absolute",top:"-10%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:`${current.accent}`,opacity:0.04,transition:"background 0.6s",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:"-5%",left:"-5%",width:"35vw",height:"35vw",borderRadius:"50%",background:`${current.accent}`,opacity:0.06,transition:"background 0.6s",pointerEvents:"none"}}/>
+
+      {/* Skip button */}
+      {!current.isLast&&(
+        <button onClick={skip} style={{position:"absolute",top:20,right:20,background:"rgba(255,255,255,0.10)",color:"rgba(255,255,255,0.50)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",zIndex:10,fontFamily:"'Segoe UI',sans-serif"}}>
+          Skip tour
+        </button>
+      )}
+
+      {/* Progress dots */}
+      <div style={{position:"absolute",top:24,left:0,right:0,display:"flex",justifyContent:"center",gap:6,zIndex:10}}>
+        {SLIDES.map((_,i)=>(
+          <div key={i} onClick={()=>{setExiting(true);setTimeout(()=>{setSlide(i);setExiting(false);},150);}}
+            style={{width:i===slide?24:7,height:7,borderRadius:100,cursor:"pointer",
+              background:i===slide?current.accent:"rgba(255,255,255,0.20)",
+              transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+              boxShadow:i===slide?`0 0 8px ${current.accent}80`:""}}/>
+        ))}
+      </div>
+
+      {/* Main content */}
+      <div style={{
+        position:"absolute",inset:0,display:"flex",flexDirection:"column",
+        alignItems:"center",justifyContent:"center",
+        padding:"80px 28px 100px",
+        animation:exiting?"slideOut 0.18s ease-in forwards":"slideIn 0.35s cubic-bezier(0.34,1.2,0.64,1) forwards",
+      }}>
+        {/* Big emoji */}
+        <div style={{
+          fontSize:slide===0?88:76,lineHeight:1,marginBottom:20,
+          animation:"floatEmoji 3s ease-in-out infinite",
+          filter:`drop-shadow(0 0 24px ${current.accent}60)`,
+        }}>
+          {current.emoji}
+        </div>
+
+        {/* Title */}
+        <div style={{
+          fontWeight:700,fontSize:slide===0?36:30,color:"#fff",
+          textAlign:"center",marginBottom:8,letterSpacing:-0.5,lineHeight:1.1,
+          textShadow:`0 0 30px ${current.accent}50`,
+        }}>
+          {current.title}
+        </div>
+
+        {/* Tagline */}
+        <div style={{
+          fontSize:13,fontWeight:600,color:current.accent,
+          textAlign:"center",marginBottom:20,letterSpacing:0.5,
+          fontFamily:"'Segoe UI',sans-serif",textTransform:"uppercase",
+        }}>
+          {current.tagline}
+        </div>
+
+        {/* Body */}
+        <div style={{
+          fontSize:16,color:"rgba(255,255,255,0.78)",textAlign:"center",
+          lineHeight:1.75,maxWidth:340,marginBottom:current.features?20:32,
+          fontFamily:"'Segoe UI',sans-serif",fontWeight:400,
+        }}>
+          {current.body}
+        </div>
+
+        {/* Feature pills */}
+        {current.features&&(
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",maxWidth:360,marginBottom:32}}>
+            {current.features.map((f,i)=>(
+              <div key={f} style={{
+                background:`${current.accent}18`,
+                border:`1px solid ${current.accent}40`,
+                color:"rgba(255,255,255,0.85)",
+                borderRadius:100,padding:"6px 14px",
+                fontSize:12,fontWeight:600,fontFamily:"'Segoe UI',sans-serif",
+                animation:`featurePop 0.3s ${0.1+i*0.07}s both`,
+              }}>
+                {f}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom navigation */}
+      <div style={{
+        position:"absolute",bottom:0,left:0,right:0,
+        padding:"20px 28px 36px",
+        background:"linear-gradient(to top,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0) 100%)",
+      }}>
+        <div style={{display:"flex",gap:12,maxWidth:400,margin:"0 auto"}}>
+          {slide>0&&(
+            <button onClick={prev} style={{
+              flex:1,padding:"15px",
+              background:"rgba(255,255,255,0.08)",
+              color:"rgba(255,255,255,0.65)",
+              border:"1px solid rgba(255,255,255,0.12)",
+              borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",
+            }}>← Back</button>
+          )}
+          <button onClick={next} style={{
+            flex:3,padding:"16px",
+            background:current.isLast?`linear-gradient(135deg,${current.accent},#90C070)`:current.accent,
+            color:current.isLast?"#1A2810":"#fff",
+            border:"none",borderRadius:100,
+            fontFamily:"Georgia,serif",fontWeight:700,fontSize:current.isLast?17:15,cursor:"pointer",
+            boxShadow:`0 6px 24px ${current.accent}60`,
+            animation:current.isLast?"pulseGlow 2s ease-in-out infinite":"none",
+            letterSpacing:current.isLast?0.2:0,
+          }}>
+            {current.cta}
+          </button>
+        </div>
+
+        {/* Slide counter */}
+        <div style={{textAlign:"center",marginTop:12,fontSize:11,color:"rgba(255,255,255,0.25)",fontFamily:"'Segoe UI',sans-serif"}}>
+          {slide+1} of {SLIDES.length}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VaultPinLock({onUnlock}){
   const [pin,setPin]=useState("");
   const [mode,setMode]=useState(()=>localStorage.getItem('thinko_vault_pin')?'enter':'setup');
@@ -4400,146 +4758,204 @@ const STALE_7=7*24*60*60*1000;
 const todayStr=()=>new Date().toISOString().slice(0,10);
 
 /* ── Orb of Light SVG ───────────────────────────────── */
-function WhipeOutMonster({pct=0,size=160,timerOn=false}){
-  // pct = 0 (full health, angry) → 100 (dead, wiped out)
-  // Monster shrinks, fades and gets more defeated as tasks are completed
-  const defeated = pct >= 100;
-  const hp = 1 - (pct/100); // 1=full health, 0=dead
-  const scale = defeated ? 0 : 0.4 + hp*0.6;
-  const opacity = defeated ? 0 : 0.3 + hp*0.7;
-  const anger = hp; // 1=angry red, 0=pale defeated
-  
-  // Colour shifts from angry red/orange → pale green as defeated
-  const bodyR = Math.round(180 + anger*60);
-  const bodyG = Math.round(140 + (1-anger)*80);
-  const bodyB = Math.round(60 + (1-anger)*100);
-  const bodyCol = `rgb(${bodyR},${bodyG},${bodyB})`;
-  const eyeCol = anger > 0.5 ? "#FF2020" : anger > 0.2 ? "#FF8040" : "#90A880";
-  const glowCol = anger > 0.5 ? "rgba(255,60,0,0.35)" : "rgba(90,160,80,0.25)";
+function WipeOutMonster({pct=0,size=160,timerOn=false}){
+  const defeated=pct>=100;
+  const hp=1-(pct/100); // 1=full, 0=dead
+  const anger=hp;
 
-  // Wobble when timer is running
-  const wobbleStyle = timerOn && hp > 0 ? {animation:"monsterWobble 0.8s ease-in-out infinite alternate"} : {};
-  
-  const stage = pct===0?"😤 FULL POWER":pct<25?"💢 Angry":pct<50?"😠 Weakening":pct<75?"😨 Scared":pct<100?"💀 Almost done":"✨ WIPED OUT!";
+  // Body colour: angry red-orange → pale blue-green as defeated
+  const r=Math.round(220-anger*30+hp*20);
+  const g=Math.round(80+hp*20+(1-anger)*60);
+  const b=Math.round(40+(1-anger)*120);
+  const bodyCol=`rgb(${r},${g},${b})`;
+  const darkCol=`rgb(${Math.round(r*0.65)},${Math.round(g*0.65)},${Math.round(b*0.65)})`;
+  const eyeGlow=anger>0.5?"#FF2200":anger>0.2?"#FF8800":"#88BB66";
+  const brow=anger>0.5?"#660000":anger>0.2?"#994400":"#336622";
+
+  const stage=pct===0?"😤 FULL POWER":pct<25?"💢 RAGING":pct<50?"😠 WEAKENING":pct<75?"😨 SCARED":"💀 NEARLY DONE";
 
   return(
     <div style={{textAlign:"center",position:"relative",width:size,margin:"0 auto"}}>
       <style>{`
-        @keyframes monsterWobble{0%{transform:scale(${scale}) rotate(-3deg)}100%{transform:scale(${scale*1.05}) rotate(3deg)}}
-        @keyframes monsterShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-        @keyframes monsterFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-        @keyframes sparkle{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0) translateY(-30px)}}
+        @keyframes monsterBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        @keyframes monsterRage{0%,100%{transform:rotate(-2deg) scale(1)}50%{transform:rotate(2deg) scale(1.04)}}
+        @keyframes eyePulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        @keyframes sparkFloat{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+        @keyframes wipeOut{0%{transform:scale(1);opacity:1}100%{transform:scale(0);opacity:0}}
       `}</style>
 
-      {/* Defeated sparkles */}
-      {pct>=100&&[0,60,120,180,240,300].map((deg,i)=>(
-        <div key={i} style={{position:"absolute",top:"40%",left:"50%",fontSize:16,
-          animation:`sparkle 0.8s ${i*0.1}s ease-out forwards`,
-          transform:`rotate(${deg}deg) translateY(-${30+i*5}px)`,pointerEvents:"none",zIndex:10}}>
-          {["✨","💥","⭐","🌟","💫","✨"][i]}
+      {/* Defeated burst */}
+      {defeated&&["✨","💥","⭐","🌟","💫","✨"].map((e,i)=>(
+        <div key={i} style={{position:"absolute",top:"30%",left:"50%",fontSize:18,
+          "--dx":`${(i%2===0?1:-1)*(20+i*12)}px`,
+          "--dy":`${-30-i*10}px`,
+          animation:"sparkFloat 0.8s ease-out forwards",
+          animationDelay:`${i*0.08}s`,
+          pointerEvents:"none",zIndex:10}}>
+          {e}
         </div>
       ))}
 
-      <svg width={size} height={size*1.1} viewBox="0 0 100 110" style={{display:"block",margin:"0 auto",overflow:"visible",opacity,transform:`scale(${scale})`,transformOrigin:"bottom center",...(timerOn&&hp>0?{}:{})}}>
+      <svg
+        width={size} height={size*1.2}
+        viewBox="0 0 120 140"
+        style={{
+          display:"block",margin:"0 auto",overflow:"visible",
+          opacity:defeated?0:0.35+hp*0.65,
+          animation:defeated?"wipeOut 0.6s ease-out forwards":
+            timerOn&&hp>0.3?"monsterRage 0.7s ease-in-out infinite":
+            hp>0.1?"monsterBob 2.5s ease-in-out infinite":"none",
+        }}>
         <defs>
-          <radialGradient id="mg_body" cx="40%" cy="35%" r="65%">
-            <stop offset="0%" stopColor={bodyCol} stopOpacity="1"/>
-            <stop offset="100%" stopColor={`rgb(${Math.round(bodyR*0.6)},${Math.round(bodyG*0.6)},${Math.round(bodyB*0.6)})`} stopOpacity="1"/>
+          <radialGradient id="mBody" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor={`rgb(${Math.min(255,r+40)},${Math.min(255,g+30)},${Math.min(255,b+20)})`}/>
+            <stop offset="100%" stopColor={darkCol}/>
           </radialGradient>
-          <radialGradient id="mg_glow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={glowCol}/>
-            <stop offset="100%" stopColor="rgba(0,0,0,0)"/>
+          <radialGradient id="mBelly" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="rgba(255,240,220,0.45)"/>
+            <stop offset="100%" stopColor="rgba(255,220,180,0.10)"/>
           </radialGradient>
-          <filter id="mg_shadow"><feDropShadow dx="0" dy="3" stdDeviation="3" floodColor={anger>0.5?"rgba(200,0,0,0.4)":"rgba(0,100,0,0.2)"}/></filter>
+          <radialGradient id="mEye" cx="30%" cy="25%" r="70%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.9)"/>
+            <stop offset="100%" stopColor="rgba(200,200,200,0.6)"/>
+          </radialGradient>
+          <filter id="mGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation={anger>0.6?3:1.5} result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="mShadow">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor={anger>0.5?"rgba(180,0,0,0.4)":"rgba(0,80,40,0.2)"}/>
+          </filter>
         </defs>
 
-        {/* Glow aura */}
-        {hp>0.1&&<ellipse cx="50" cy="80" rx={35*hp} ry={20*hp} fill="url(#mg_glow)" opacity={hp*0.6}/>}
-
-        {/* Shadow under monster */}
-        <ellipse cx="50" cy="100" rx={18*scale} ry={4*scale} fill="rgba(0,0,0,0.12)"/>
+        {/* Ground shadow */}
+        <ellipse cx="60" cy="132" rx={20*hp+8} ry={5*hp+2} fill="rgba(0,0,0,0.12)"/>
 
         {/* Body */}
-        <ellipse cx="50" cy="65" rx="22" ry="28" fill="url(#mg_body)" filter="url(#mg_shadow)"/>
-
-        {/* Belly lighter patch */}
-        <ellipse cx="50" cy="70" rx="13" ry="16" fill={`rgba(255,255,220,${0.2+hp*0.15})`}/>
-
-        {/* Arms */}
-        <path d={`M28 60 Q${18-hp*6} ${50+hp*5} ${22+hp*2} ${42+hp*4}`} stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
-        <path d={`M72 60 Q${82+hp*6} ${50+hp*5} ${78-hp*2} ${42+hp*4}`} stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
-
-        {/* Claws */}
-        {hp>0.3&&<>
-          <path d="M20 41 Q16 37 14 40" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
-          <path d="M22 39 Q20 34 22 33" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
-          <path d="M80 41 Q84 37 86 40" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
-          <path d="M78 39 Q80 34 78 33" stroke={bodyCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
-        </>}
+        <ellipse cx="60" cy="90" rx="28" ry="34" fill="url(#mBody)" filter="url(#mShadow)"/>
+        {/* Belly patch */}
+        <ellipse cx="60" cy="96" rx="16" ry="20" fill="url(#mBelly)"/>
 
         {/* Legs */}
-        <path d="M42 90 Q38 98 35 103" stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
-        <path d="M58 90 Q62 98 65 103" stroke={bodyCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
+        <ellipse cx="46" cy="120" rx="9" ry="8" fill={darkCol}/>
+        <ellipse cx="74" cy="120" rx="9" ry="8" fill={darkCol}/>
+        {/* Feet */}
+        <ellipse cx="44" cy="126" rx="11" ry="6" fill={bodyCol}/>
+        <ellipse cx="76" cy="126" rx="11" ry="6" fill={bodyCol}/>
+        {/* Toe bumps */}
+        <circle cx="37" cy="127" r="3.5" fill={darkCol}/>
+        <circle cx="44" cy="130" r="3.5" fill={darkCol}/>
+        <circle cx="51" cy="128" r="3" fill={darkCol}/>
+        <circle cx="69" cy="127" r="3.5" fill={darkCol}/>
+        <circle cx="76" cy="130" r="3.5" fill={darkCol}/>
+        <circle cx="83" cy="128" r="3" fill={darkCol}/>
 
-        {/* Head */}
-        <ellipse cx="50" cy="38" rx="20" ry="18" fill="url(#mg_body)" filter="url(#mg_shadow)"/>
-
-        {/* Horns — shrink as defeated */}
-        {hp>0.15&&<>
-          <path d={`M38 24 Q${34-hp*3} ${14-hp*4} ${38-hp*2} ${20-hp*2}`} fill={bodyCol} stroke={`rgb(${Math.round(bodyR*0.7)},${Math.round(bodyG*0.5)},0)`} strokeWidth="1"/>
-          <path d={`M62 24 Q${66+hp*3} ${14-hp*4} ${62+hp*2} ${20-hp*2}`} fill={bodyCol} stroke={`rgb(${Math.round(bodyR*0.7)},${Math.round(bodyG*0.5)},0)`} strokeWidth="1"/>
+        {/* Arms */}
+        <path d={`M34 82 Q${18-anger*6} ${70+anger*6} ${26+anger*2} ${62-anger*4}`} stroke={bodyCol} strokeWidth="11" strokeLinecap="round" fill="none"/>
+        <path d={`M86 82 Q${102+anger*6} ${70+anger*6} ${94-anger*2} ${62-anger*4}`} stroke={bodyCol} strokeWidth="11" strokeLinecap="round" fill="none"/>
+        {/* Claws */}
+        {hp>0.25&&<>
+          <path d={`M24 61 Q18 54 16 58`} stroke={darkCol} strokeWidth="3.5" strokeLinecap="round" fill="none"/>
+          <path d={`M26 58 Q22 50 24 47`} stroke={darkCol} strokeWidth="3.5" strokeLinecap="round" fill="none"/>
+          <path d={`M30 56 Q28 48 31 46`} stroke={darkCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
+          <path d={`M96 61 Q102 54 104 58`} stroke={darkCol} strokeWidth="3.5" strokeLinecap="round" fill="none"/>
+          <path d={`M94 58 Q98 50 96 47`} stroke={darkCol} strokeWidth="3.5" strokeLinecap="round" fill="none"/>
+          <path d={`M90 56 Q92 48 89 46`} stroke={darkCol} strokeWidth="3" strokeLinecap="round" fill="none"/>
         </>}
 
-        {/* Eyes */}
-        <ellipse cx="43" cy="36" rx="5" ry={4+anger*2} fill="white"/>
-        <ellipse cx="57" cy="36" rx="5" ry={4+anger*2} fill="white"/>
-        {/* Pupils — angry pupils are narrow slits, scared are wide */}
-        <ellipse cx={43+(anger>0.5?0:-0.5)} cy="36" rx={anger>0.5?2:3} ry={anger>0.5?3.5:2.5} fill={eyeCol}/>
-        <ellipse cx={57-(anger>0.5?0:-0.5)} cy="36" rx={anger>0.5?2:3} ry={anger>0.5?3.5:2.5} fill={eyeCol}/>
+        {/* ═══ HEAD ═══ */}
+        <ellipse cx="60" cy="52" rx="26" ry="24" fill="url(#mBody)" filter="url(#mShadow)"/>
+
+        {/* ═══ HORNS ═══ — always present, twisted and impressive */}
+        {/* Left horn - twisted */}
+        <path d={`M42 33 Q${32-hp*4} ${16-hp*8} ${38-hp*2} ${26-hp*3}`}
+          stroke={darkCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
+        <path d={`M42 33 Q${30-hp*6} ${12-hp*10} ${36-hp*3} ${22-hp*4}`}
+          stroke={bodyCol} strokeWidth="4" strokeLinecap="round" fill="none"/>
+        {/* Horn tip glow when angry */}
+        {anger>0.4&&<circle cx={34-anger*3} cy={14-anger*6} r="3" fill="#FF4400" opacity={anger*0.8} style={{animation:"eyePulse 1s ease-in-out infinite"}}/>}
+
+        {/* Right horn */}
+        <path d={`M78 33 Q${88+hp*4} ${16-hp*8} ${82+hp*2} ${26-hp*3}`}
+          stroke={darkCol} strokeWidth="7" strokeLinecap="round" fill="none"/>
+        <path d={`M78 33 Q${90+hp*6} ${12-hp*10} ${84+hp*3} ${22-hp*4}`}
+          stroke={bodyCol} strokeWidth="4" strokeLinecap="round" fill="none"/>
+        {anger>0.4&&<circle cx={86+anger*3} cy={14-anger*6} r="3" fill="#FF4400" opacity={anger*0.8} style={{animation:"eyePulse 1s ease-in-out infinite"}}/>}
+
+        {/* ═══ EYES ═══ */}
+        {/* Eye whites */}
+        <ellipse cx="48" cy="50" rx="7" ry={5+anger*3} fill="url(#mEye)"/>
+        <ellipse cx="72" cy="50" rx="7" ry={5+anger*3} fill="url(#mEye)"/>
+        {/* Pupils — vertical slit when angry, round when scared */}
+        <ellipse cx="48" cy="50" rx={anger>0.5?2.5:4} ry={anger>0.5?4.5:3.5} fill={eyeGlow} filter="url(#mGlow)"/>
+        <ellipse cx="72" cy="50" rx={anger>0.5?2.5:4} ry={anger>0.5?4.5:3.5} fill={eyeGlow} filter="url(#mGlow)"/>
         {/* Eye shine */}
-        <circle cx="44.5" cy="34.5" r="1" fill="rgba(255,255,255,0.8)"/>
-        <circle cx="58.5" cy="34.5" r="1" fill="rgba(255,255,255,0.8)"/>
+        <circle cx="45.5" cy="47.5" r="1.5" fill="rgba(255,255,255,0.9)"/>
+        <circle cx="69.5" cy="47.5" r="1.5" fill="rgba(255,255,255,0.9)"/>
+        {/* Angry glow ring around eyes */}
+        {anger>0.6&&<>
+          <ellipse cx="48" cy="50" rx="8.5" ry="7" fill="none" stroke={eyeGlow} strokeWidth="1" opacity="0.4" style={{animation:"eyePulse 0.8s ease-in-out infinite"}}/>
+          <ellipse cx="72" cy="50" rx="8.5" ry="7" fill="none" stroke={eyeGlow} strokeWidth="1" opacity="0.4" style={{animation:"eyePulse 0.8s ease-in-out infinite"}}/>
+        </>}
 
-        {/* Angry eyebrows — flatten when defeated */}
-        <path d={`M38 ${30-anger*4} Q43 ${27-anger*5} 48 ${30-anger*4}`} stroke={`rgb(${Math.round(bodyR*0.5)},0,0)`} strokeWidth={1.5+anger} fill="none" strokeLinecap="round"/>
-        <path d={`M52 ${30-anger*4} Q57 ${27-anger*5} 62 ${30-anger*4}`} stroke={`rgb(${Math.round(bodyR*0.5)},0,0)`} strokeWidth={1.5+anger} fill="none" strokeLinecap="round"/>
+        {/* ═══ BROWS ═══ — thick angry V-shape */}
+        <path d={`M40 ${41-anger*5} Q48 ${37-anger*6} 56 ${41-anger*4}`}
+          stroke={brow} strokeWidth={3+anger*2} fill="none" strokeLinecap="round"/>
+        <path d={`M64 ${41-anger*4} Q72 ${37-anger*6} 80 ${41-anger*5}`}
+          stroke={brow} strokeWidth={3+anger*2} fill="none" strokeLinecap="round"/>
+        {/* Inner brow crease */}
+        {anger>0.4&&<>
+          <path d="M54 41 Q60 38 66 41" stroke={brow} strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.6"/>
+        </>}
 
-        {/* Mouth — snarl when angry, sad frown when losing */}
-        {anger > 0.5
-          ? <path d={`M42 46 Q50 ${50+anger*4} 58 46`} stroke={`rgb(${Math.round(bodyR*0.5)},0,0)`} strokeWidth="2" fill="none" strokeLinecap="round"/>
-          : <path d={`M42 50 Q50 ${46-hp*3} 58 50`} stroke="#666" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        {/* ═══ NOSE ═══ */}
+        <ellipse cx="60" cy="56" rx="5" ry="3.5" fill={darkCol}/>
+        <circle cx="57.5" cy="55" r="1.5" fill="rgba(0,0,0,0.3)"/>
+        <circle cx="62.5" cy="55" r="1.5" fill="rgba(0,0,0,0.3)"/>
+
+        {/* ═══ MOUTH ═══ — no teeth, just expression */}
+        {anger>0.6
+          // Wide angry snarl
+          ?<path d={`M44 65 Q60 ${72+anger*4} 76 65`} stroke={darkCol} strokeWidth="3" fill={darkCol} strokeLinecap="round"/>
+          :anger>0.3
+          // Nervous grimace
+          ?<path d={`M47 66 Q60 ${63-hp*3} 73 66`} stroke={darkCol} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          // Sad defeated droop
+          :<path d={`M48 68 Q60 ${63} 72 68`} stroke={darkCol} strokeWidth="2" fill="none" strokeLinecap="round"/>
         }
 
-        {/* Teeth when angry */}
-        {anger > 0.6&&<>
-          <rect x="44" y="46" width="4" height="4" rx="1" fill="white"/>
-          <rect x="49" y="46" width="4" height="4" rx="1" fill="white"/>
-          <rect x="54" y="46" width="3" height="4" rx="1" fill="white"/>
+        {/* ═══ EARS ═══ */}
+        <ellipse cx="34" cy="52" rx="6" ry="9" fill={bodyCol}/>
+        <ellipse cx="34" cy="52" rx="3" ry="5.5" fill={darkCol} opacity="0.4"/>
+        <ellipse cx="86" cy="52" rx="6" ry="9" fill={bodyCol}/>
+        <ellipse cx="86" cy="52" rx="3" ry="5.5" fill={darkCol} opacity="0.4"/>
+
+        {/* Anger sparks */}
+        {timerOn&&anger>0.7&&<>
+          <text x="12" y="28" fontSize="14" style={{animation:"sparkFloat 1.2s 0.1s ease-out infinite",["--dx"]:"8px",["--dy"]:"-15px"}}>💢</text>
+          <text x="95" y="22" fontSize="12" style={{animation:"sparkFloat 1.2s 0.4s ease-out infinite",["--dx"]:"-8px",["--dy"]:"-12px"}}>💢</text>
         </>}
 
-        {/* Sweat drops when losing */}
-        {anger < 0.5 && hp > 0&&<>
-          <ellipse cx="68" cy="30" rx="2" ry="3" fill="rgba(100,180,255,0.7)" transform="rotate(20 68 30)"/>
-          <ellipse cx="70" cy="36" rx="1.5" ry="2.5" fill="rgba(100,180,255,0.5)" transform="rotate(15 70 36)"/>
-        </>}
-
-        {/* Anger sparks when at full power and timer running */}
-        {timerOn && anger > 0.8 &&<>
-          <text x="20" y="20" fontSize="10" style={{animation:"sparkle 1s 0.2s ease-out infinite"}}>💢</text>
-          <text x="70" y="15" fontSize="10" style={{animation:"sparkle 1s 0.5s ease-out infinite"}}>💢</text>
+        {/* Sweat drops when scared */}
+        {anger<0.4&&hp>0&&<>
+          <ellipse cx="86" cy="36" rx="2.5" ry="4" fill="rgba(120,200,255,0.75)" transform="rotate(15 86 36)"/>
+          <ellipse cx="89" cy="44" rx="2" ry="3.5" fill="rgba(120,200,255,0.55)" transform="rotate(10 89 44)"/>
         </>}
       </svg>
 
       {/* HP bar */}
       {!defeated&&(
-        <div style={{marginTop:4,padding:"0 8px"}}>
-          <div style={{height:6,background:"rgba(90,80,60,0.15)",borderRadius:100,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${(hp*100)}%`,background:hp>0.6?"#E04040":hp>0.3?"#E08020":"#5A9840",borderRadius:100,transition:"width 0.5s ease"}}/>
+        <div style={{marginTop:4,padding:"0 10px"}}>
+          <div style={{height:7,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden",marginBottom:4}}>
+            <div style={{height:"100%",width:`${hp*100}%`,
+              background:hp>0.6?`linear-gradient(90deg,#FF4400,#FF8800)`:hp>0.3?"linear-gradient(90deg,#FF8800,#FFCC00)":"linear-gradient(90deg,#44AA44,#88DD44)",
+              borderRadius:100,transition:"width 0.6s ease",
+              boxShadow:hp>0.6?"0 0 8px rgba(255,80,0,0.5)":"0 0 6px rgba(80,200,80,0.4)"}}/>
           </div>
-          <div style={{fontSize:10,color:"rgba(60,56,40,0.5)",marginTop:3,fontWeight:600}}>{stage}</div>
+          <div style={{fontSize:10,color:"rgba(60,56,40,0.55)",fontWeight:700,letterSpacing:0.5}}>{stage}</div>
         </div>
       )}
-      {defeated&&<div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#5A9840",marginTop:4}}>✨ WIPED OUT!</div>}
+      {defeated&&<div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:15,color:"#5A9840",marginTop:6,animation:"none"}}>✨ WIPED OUT!</div>}
     </div>
   );
 }
@@ -4712,7 +5128,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
 
         {steps.length===0&&(
           <div style={{textAlign:"center",color:"rgba(255,255,255,0.45)",fontSize:13,fontStyle:"italic",marginBottom:12}}>
-            No steps yet — add one above or let AI generate them 🤖
+            No steps yet — add one above
           </div>
         )}
 
@@ -5062,8 +5478,6 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   const [inlineUrls,setInlineUrls]=useState({do:"",plan:"",help:"",drop:""});
   const [expandedTask,setExpandedTask]=useState(null);
   const [taskUrls,setTaskUrls]=useState({});
-  const [aiInput,setAiInput]=useState("");
-  
   const [staleModal,setStaleModal]=useState(null);
   const [toast,setToast]=useState("");
   const [moveTask,setMoveTask]=useState(null);
@@ -5104,12 +5518,6 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
     showToast("📋 Imported from To Do List!");
   };
 
-  /* AI */
-  const acceptAI=()=>{
-    if(!aiResult)return;
-    setData(ds=>[...ds,{id:Date.now(),text:aiInput.trim(),quad:aiResult.quad,created:Date.now(),touched:Date.now()}]);
-    setAiInput("");setAiResult(null);showToast("✅ Task placed by AI!");
-  };
 
   const staleTasks=data.filter(d=>now-d.touched>STALE_MS);
 
@@ -5629,6 +6037,89 @@ Budget: ${b.name}`,created:Date.now()});
               </div>
             )}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const SHOP_TEMPLATES=[
+  {id:"blank",   icon:"📝",name:"Blank list",         items:[]},
+  {id:"weekly",  icon:"🛒",name:"Weekly shop",         items:["Milk","Bread","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Vegetables","Fruit","Yoghurt","Juice"]},
+  {id:"cleaning",icon:"🧹",name:"Cleaning supplies",   items:["Washing up liquid","Bleach","Surface spray","Sponges","Bin bags","Toilet roll","Laundry tablets","Fabric softener"]},
+  {id:"toiletries",icon:"🧴",name:"Toiletries",        items:["Shampoo","Conditioner","Body wash","Toothpaste","Deodorant","Moisturiser","Razors","Cotton pads"]},
+  {id:"baby",    icon:"🍼",name:"Baby & kids",         items:["Nappies","Wipes","Baby formula","Baby food","Calpol","Snacks","Juice pouches"]},
+  {id:"party",   icon:"🎉",name:"Party",               items:["Crisps","Dips","Sausage rolls","Sandwiches","Cake","Juice","Pop","Plates","Cups","Napkins"]},
+  {id:"health",  icon:"💊",name:"Health",              items:["Vitamins","Paracetamol","Ibuprofen","Plasters","Hand sanitiser","Tissues"]},
+];
+
+const SHOP_LIST_ICONS=["🛒","🎁","🍎","👗","🏠","🐾","💊","📚","🎉","✈️"];
+
+function ShopListDetail({list,onBack,onUpdate,onDelete}){
+  const [newItem,setNewItem]=useState("");
+  const [dragId,setDragId]=useState(null);
+
+  const save=items=>onUpdate({...list,items});
+  const addItem=()=>{if(!newItem.trim())return;save([...list.items,{id:Date.now(),text:newItem.trim(),done:false}]);setNewItem("");};
+  const toggle=id=>save(list.items.map(it=>it.id===id?{...it,done:!it.done}:it));
+  const del=id=>save(list.items.filter(it=>it.id!==id));
+  const dragOver=toId=>{
+    if(!dragId||dragId===toId)return;
+    const a=[...list.items],fi=a.findIndex(i=>i.id===dragId),ti=a.findIndex(i=>i.id===toId);
+    if(fi<0||ti<0)return;a.splice(fi,1);a.splice(ti,0,list.items[fi]);save(a);
+  };
+  const done=list.items.filter(i=>i.done).length;
+  const total=list.items.length;
+
+  return(
+    <div style={{minHeight:"100vh",background:"transparent",paddingBottom:90,fontFamily:"'Segoe UI',sans-serif"}}>
+      {/* Header */}
+      <div style={{background:"rgba(248,245,236,0.94)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>
+        <div style={{fontSize:24}}>{list.icon||"🛒"}</div>
+        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{list.name}</div>
+        <div style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{done}/{total}</div>
+        <button onClick={()=>{if(window.confirm(`Delete "${list.name}"?`))onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:16}}>🗑</button>
+      </div>
+
+      {/* Progress bar */}
+      {total>0&&<div style={{height:4,background:"rgba(90,80,60,0.08)"}}><div style={{height:"100%",width:`${total?Math.round((done/total)*100):0}%`,background:"#5A7848",transition:"width 0.3s"}}/></div>}
+
+      <div style={{padding:"14px 16px"}}>
+        {/* Add item */}
+        <div style={{display:"flex",gap:10,marginBottom:14,background:"rgba(248,245,236,0.94)",borderRadius:100,padding:"10px 14px 10px 18px",border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 2px 10px rgba(0,0,0,0.04)"}}>
+          <input value={newItem} onChange={e=>setNewItem(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&addItem()}
+            placeholder="Add item…"
+            style={{flex:1,border:"none",outline:"none",fontSize:15,color:"#1A1A10",background:"transparent",fontWeight:600}}/>
+          <button onClick={addItem} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.3)"}}>+</button>
+        </div>
+
+        {list.items.length===0&&(
+          <div style={{textAlign:"center",color:"#8A8070",padding:"30px 0",fontSize:14}}>No items yet — add one above</div>
+        )}
+
+        {list.items.map(item=>(
+          <div key={item.id}
+            draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
+            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"rgba(248,245,236,0.94)",borderRadius:18,marginBottom:8,border:"1px solid rgba(90,80,60,0.10)",opacity:dragId===item.id?0.5:1,boxShadow:"0 2px 8px rgba(60,60,40,0.05)"}}>
+            <span style={{cursor:"grab",color:"rgba(90,80,60,0.25)",fontSize:14,flexShrink:0}}>⠿</span>
+            <button onClick={()=>toggle(item.id)}
+              style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff"}}>
+              {item.done?"✓":""}
+            </button>
+            <span style={{flex:1,fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none"}}>{item.text}</span>
+            <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14}}>🗑</button>
+          </div>
+        ))}
+
+        {done>0&&(
+          <button onClick={()=>save(list.items.filter(i=>!i.done))}
+            style={{width:"100%",padding:"10px",marginTop:8,background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+            🗑 Remove checked items
+          </button>
         )}
       </div>
     </div>
@@ -6547,6 +7038,138 @@ const TOOLS=[
   {id:"noise", name:"Sounds",     icon:"🎵"},
 ];
 
+function WorldTime(){
+  const [now,setNow]=useState(new Date());
+  const [search,setSearch]=useState("");
+  const [pinned,setPinnedRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_worldtime')||'null')||["Europe/London","America/New_York","Asia/Tokyo","Australia/Sydney"];}catch{return ["Europe/London","America/New_York","Asia/Tokyo","Australia/Sydney"];}});
+  const savePinned=p=>{setPinnedRaw(p);try{localStorage.setItem('thinko_worldtime',JSON.stringify(p));}catch{}};
+
+  useEffect(()=>{const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t);},[]);
+
+  const ALL_ZONES=[
+    {tz:"Europe/London",        city:"London",          flag:"🇬🇧", region:"Europe"},
+    {tz:"Europe/Paris",         city:"Paris",           flag:"🇫🇷", region:"Europe"},
+    {tz:"Europe/Berlin",        city:"Berlin",          flag:"🇩🇪", region:"Europe"},
+    {tz:"Europe/Rome",          city:"Rome",            flag:"🇮🇹", region:"Europe"},
+    {tz:"Europe/Madrid",        city:"Madrid",          flag:"🇪🇸", region:"Europe"},
+    {tz:"Europe/Amsterdam",     city:"Amsterdam",       flag:"🇳🇱", region:"Europe"},
+    {tz:"Europe/Stockholm",     city:"Stockholm",       flag:"🇸🇪", region:"Europe"},
+    {tz:"Europe/Warsaw",        city:"Warsaw",          flag:"🇵🇱", region:"Europe"},
+    {tz:"Europe/Moscow",        city:"Moscow",          flag:"🇷🇺", region:"Europe"},
+    {tz:"America/New_York",     city:"New York",        flag:"🇺🇸", region:"Americas"},
+    {tz:"America/Chicago",      city:"Chicago",         flag:"🇺🇸", region:"Americas"},
+    {tz:"America/Denver",       city:"Denver",          flag:"🇺🇸", region:"Americas"},
+    {tz:"America/Los_Angeles",  city:"Los Angeles",     flag:"🇺🇸", region:"Americas"},
+    {tz:"America/Toronto",      city:"Toronto",         flag:"🇨🇦", region:"Americas"},
+    {tz:"America/Vancouver",    city:"Vancouver",       flag:"🇨🇦", region:"Americas"},
+    {tz:"America/Sao_Paulo",    city:"São Paulo",       flag:"🇧🇷", region:"Americas"},
+    {tz:"America/Mexico_City",  city:"Mexico City",     flag:"🇲🇽", region:"Americas"},
+    {tz:"America/Buenos_Aires", city:"Buenos Aires",    flag:"🇦🇷", region:"Americas"},
+    {tz:"Asia/Dubai",           city:"Dubai",           flag:"🇦🇪", region:"Asia"},
+    {tz:"Asia/Kolkata",         city:"Mumbai",          flag:"🇮🇳", region:"Asia"},
+    {tz:"Asia/Bangkok",         city:"Bangkok",         flag:"🇹🇭", region:"Asia"},
+    {tz:"Asia/Singapore",       city:"Singapore",       flag:"🇸🇬", region:"Asia"},
+    {tz:"Asia/Shanghai",        city:"Shanghai",        flag:"🇨🇳", region:"Asia"},
+    {tz:"Asia/Tokyo",           city:"Tokyo",           flag:"🇯🇵", region:"Asia"},
+    {tz:"Asia/Seoul",           city:"Seoul",           flag:"🇰🇷", region:"Asia"},
+    {tz:"Asia/Jakarta",         city:"Jakarta",         flag:"🇮🇩", region:"Asia"},
+    {tz:"Asia/Karachi",         city:"Karachi",         flag:"🇵🇰", region:"Asia"},
+    {tz:"Asia/Dhaka",           city:"Dhaka",           flag:"🇧🇩", region:"Asia"},
+    {tz:"Africa/Cairo",         city:"Cairo",           flag:"🇪🇬", region:"Africa"},
+    {tz:"Africa/Lagos",         city:"Lagos",           flag:"🇳🇬", region:"Africa"},
+    {tz:"Africa/Nairobi",       city:"Nairobi",         flag:"🇰🇪", region:"Africa"},
+    {tz:"Africa/Johannesburg",  city:"Johannesburg",    flag:"🇿🇦", region:"Africa"},
+    {tz:"Africa/Casablanca",    city:"Casablanca",      flag:"🇲🇦", region:"Africa"},
+    {tz:"Pacific/Auckland",     city:"Auckland",        flag:"🇳🇿", region:"Pacific"},
+    {tz:"Australia/Sydney",     city:"Sydney",          flag:"🇦🇺", region:"Pacific"},
+    {tz:"Pacific/Honolulu",     city:"Honolulu",        flag:"🇺🇸", region:"Pacific"},
+  ];
+
+  const getTime=tz=>{
+    try{return now.toLocaleTimeString("en-GB",{timeZone:tz,hour:"2-digit",minute:"2-digit",second:"2-digit"});}
+    catch{return "--:--:--";}
+  };
+  const getDate=tz=>{
+    try{return now.toLocaleDateString("en-GB",{timeZone:tz,weekday:"short",day:"numeric",month:"short"});}
+    catch{return "";}
+  };
+  const getHour=tz=>{
+    try{return parseInt(now.toLocaleString("en-GB",{timeZone:tz,hour:"2-digit",hour12:false}));}
+    catch{return 12;}
+  };
+  const isDaytime=tz=>{const h=getHour(tz);return h>=6&&h<20;};
+
+  const filtered=search.trim()
+    ?ALL_ZONES.filter(z=>z.city.toLowerCase().includes(search.toLowerCase())||z.region.toLowerCase().includes(search.toLowerCase()))
+    :[];
+
+  return(
+    <div>
+      {/* Pinned clocks */}
+      <div style={{marginBottom:20}}>
+        {pinned.map(tz=>{
+          const zone=ALL_ZONES.find(z=>z.tz===tz);
+          if(!zone)return null;
+          const day=isDaytime(tz);
+          return(
+            <div key={tz} style={{background:day?"rgba(255,240,200,0.70)":"rgba(30,40,80,0.08)",borderRadius:20,padding:"14px 18px",marginBottom:10,border:`1.5px solid ${day?"rgba(200,160,40,0.20)":"rgba(60,80,140,0.15)"}`,display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(60,60,40,0.06)"}}>
+              <div style={{fontSize:32,flexShrink:0}}>{zone.flag}</div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>{zone.city}</div>
+                <div style={{fontSize:11,color:"#8A8070"}}>{zone.region} · {getDate(tz)} · {day?"☀️ Day":"🌙 Night"}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontFamily:"monospace",fontWeight:700,fontSize:22,color:"#1A1A10",letterSpacing:1}}>{getTime(tz)}</div>
+              </div>
+              <button onClick={()=>savePinned(pinned.filter(p=>p!==tz))} style={{background:"none",border:"none",color:"rgba(192,57,43,0.40)",cursor:"pointer",fontSize:14,flexShrink:0}}>✕</button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Pin to home button */}
+      <div style={{marginBottom:12,display:"flex",justifyContent:"flex-end"}}>
+        <button onClick={()=>{
+          try{
+            let order=JSON.parse(localStorage.getItem('thinko_nav_visible')||'[]');
+            const already=order.includes('tools');
+            if(!already){order=[...order,'tools'];localStorage.setItem('thinko_nav_visible',JSON.stringify(order));}
+            let homeOrder=JSON.parse(localStorage.getItem('thinko_order')||'[]');
+            const homeHas=homeOrder.includes('tools');
+            if(!homeHas){homeOrder=[...homeOrder,'tools'];localStorage.setItem('thinko_order',JSON.stringify(homeOrder));}
+            alert("📌 World Time / Tools pinned to your home screen! Tap home to see it.");
+          }catch(e){alert("Couldn't pin — try again");}
+        }} style={{background:"rgba(42,88,120,0.12)",color:"#2A5878",border:"1.5px solid rgba(42,88,120,0.22)",borderRadius:100,padding:"8px 18px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",display:"flex",alignItems:"center",gap:6}}>
+          📌 Pin to home screen
+        </button>
+      </div>
+
+      {/* Search to add */}
+      <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",border:"1px solid rgba(255,255,255,0.9)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>🔍 Add a city</div>
+        <input value={search} onChange={e=>setSearch(e.target.value)}
+          placeholder="Search city or region…"
+          style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.92)",marginBottom:10}}/>
+        {filtered.map(zone=>(
+          <div key={zone.tz} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
+            <span style={{fontSize:22,flexShrink:0}}>{zone.flag}</span>
+            <div style={{flex:1}}>
+              <span style={{fontSize:14,fontWeight:600,color:"#1A1A10"}}>{zone.city}</span>
+              <span style={{fontSize:11,color:"#8A8070",marginLeft:6}}>{zone.region}</span>
+            </div>
+            <div style={{fontFamily:"monospace",fontSize:14,color:"#5A7040",fontWeight:600,marginRight:6}}>{getTime(zone.tz)}</div>
+            {pinned.includes(zone.tz)
+              ?<button onClick={()=>savePinned(pinned.filter(p=>p!==zone.tz))} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✓ Added</button>
+              :<button onClick={()=>{savePinned([...pinned,zone.tz]);setSearch("");}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Add</button>
+            }
+          </div>
+        ))}
+        {!search&&<div style={{fontSize:12,color:"#8A8070",fontStyle:"italic"}}>Type a city name to search 35+ cities worldwide</div>}
+      </div>
+    </div>
+  );
+}
+
 function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}) {
   const [active, setActive] = useState(null);
 
@@ -6571,8 +7194,9 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
     {id:"sw",       emoji:"🕐", label:"Stopwatch",         color:"#486070"},
     {id:"timer",    emoji:"⏳", label:"Timer",              color:"#7A6038"},
     {id:"alarm",    emoji:"⏰", label:"Alarm",              color:"#7A4040"},
-    {id:"translate",emoji:"🌍", label:"Translator",         color:"#3A6848", badge:"NEW"},
-    {id:"currency", emoji:"💱", label:"Currency\nConverter",color:"#486050", badge:"NEW"},
+    {id:"translate",emoji:"🌍", label:"Translator",         color:"#3A6848"},
+    {id:"currency", emoji:"💱", label:"Currency\nConverter",color:"#486050"},
+    {id:"worldtime",emoji:"🌐", label:"World Time",         color:"#2A5878"},
   ];
 
   if(active&&active!=="home"){
@@ -6594,6 +7218,7 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
           {active==="sw"       &&<Stopwatch/>}
           {active==="timer"    &&<CountdownTool/>}
           {active==="alarm"    &&<AlarmTool/>}
+          {active==="worldtime"&&<WorldTime/>}
         </div>
       </div>
     );
@@ -6662,7 +7287,7 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
 /* ═══════════════════════════════════════════════════════
    SMART GOALS  — tiered by time horizon
    Next Week · 6 Months · 1 Year · 3 Years · 5 Years
-   Each goal: AI suggestions, subtasks, micro-steps,
+   Each goal: subtasks, micro-steps,
    date, cover photo, links, send to Calendar/To Do List/Matrix
 ═══════════════════════════════════════════════════════ */
 
@@ -6692,7 +7317,6 @@ async function aiMicroSteps(subtaskText){
 /* ── Goal detail / editor ───────────────────────────── */
 function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData,setMatrixData}){
   const h=horizonByKey(goal.horizon);
-  const [aiLoading,setAiLoading]=useState(false);
   const [microLoading,setMicroLoading]=useState(null);
   const [newLink,setNewLink]=useState({label:"",url:""});
   const [addingLink,setAddingLink]=useState(false);
@@ -6988,7 +7612,7 @@ async function aiChargePicks(tasks){
     const staleTasks=tasks.filter(t=>(now-(t.touched||t.created||t.id||now))>STALE);
     const list=staleTasks.concat(tasks.filter(t=>!staleTasks.find(s=>s.id===t.id)))
       .slice(0,12)
-      .map(t=>`id:${t.id} "${t.name||t.text}" src:${t.src||"Whipe Out"} days_old:${Math.floor((now-(t.touched||t.created||t.id||now))/86400000)}`).join("\n");
+      .map(t=>`id:${t.id} "${t.name||t.text}" src:${t.src||"Wipe Out"} days_old:${Math.floor((now-(t.touched||t.created||t.id||now))/86400000)}`).join("\n");
    const result="No AI available";
     if(!result)return[];
     return JSON.parse(result.replace(/\`\`\`json|\`\`\`/g,"").trim());
@@ -7298,7 +7922,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                       <button onClick={()=>{
                         // Send to charge - store in localStorage for charge to pick up
                         try{const ct=JSON.parse(localStorage.getItem('thinko_charge')||'{}');const tasks=ct.targetTasks||[];if(!tasks.includes(item.name)){tasks.push(item.name);localStorage.setItem('thinko_charge',JSON.stringify({...ct,targetTasks:tasks,dailyTarget:tasks.length}));};}catch{}
-                        setStalePromptId(null);alert(`"${item.name}" sent to The Whipe Out!`);
+                        setStalePromptId(null);alert(`"${item.name}" sent to The Wipe Out!`);
                       }} style={{padding:"9px 14px",background:"rgba(255,165,0,0.12)",color:"#B86800",border:"1.5px solid rgba(255,165,0,0.25)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⚡ Send to Charge</button>
                       <button onClick={()=>{save(items.filter(i=>i.id!==item.id));setStalePromptId(null);}} style={{padding:"9px 14px",background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1.5px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Delete</button>
                       <button onClick={()=>setStalePromptId(null)} style={{padding:"9px 14px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontSize:13,cursor:"pointer"}}>✕ Dismiss</button>
@@ -7666,7 +8290,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
     catch{return {dailyTarget:3,weeklyAward:"",rewardType:"weekly",rewardFreq:5,reward:{name:"",cost:"",url:"",photo:""},days:{},streak:0};}
   });
   const [view,setView]=useState("today");
-  const [aiSugg,setAiSugg]=useState([]);
   const [whatOff,setWhatOff]=useState("");
   const [editAward,setEditAward]=useState(false);
   const [rewardDraft,setRewardDraft]=useState({name:"",cost:"",url:"",photo:""});
@@ -7848,7 +8471,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.1}}>The Whipe Out ✨</div>
+            <div style={{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.1}}>The Wipe Out ✨</div>
             <div style={{fontSize:14,color:"#8A8070",marginTop:3,fontWeight:400}}>Tackle what you've been avoiding</div>
           </div>
           <button style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",color:"#5A7848",fontSize:20}}>🌿</button>
@@ -7907,19 +8530,19 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             </div>
           )}
 
-          {/* Whipe Out Monster card */}
+          {/* Wipe Out Monster card */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:12,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:2}}>
-              {hitTarget?"🎉 Monster defeated!":"💥 Whipe it out!"}
+              {hitTarget?"🎉 Monster defeated!":"💥 Wipe it out!"}
             </div>
             <div style={{fontSize:13,color:"#7A7060",marginBottom:14}}>
               {hitTarget
                 ?`${charged.length} tasks wiped out — monster destroyed! ✨`
                 :charged.length===0
-                  ?`${target} tasks to whipe out today — the monster is watching 😤`
+                  ?`${target} tasks to wipe out today — the monster is watching 😤`
                   :`${target-charged.length} more task${target-charged.length!==1?"s":""} to destroy the monster!`}
             </div>
-            <WhipeOutMonster pct={pct} size={160} timerOn={focusOn}/>
+            <WipeOutMonster pct={pct} size={160} timerOn={focusOn}/>
             {/* Progress bar */}
             <div style={{display:"flex",alignItems:"center",gap:10,marginTop:14}}>
               <div style={{flex:1,height:8,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden"}}>
@@ -7986,7 +8609,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
           {/* ── Today's tasks ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16}}>💥 Today's Whipe Out</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16}}>💥 Today's Wipe Out</div>
               <button onClick={()=>setView("settings")} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.2)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️ Edit tasks</button>
             </div>
             {/* Task list */}
@@ -8008,7 +8631,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                     {!done&&<div style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:15,flexShrink:0}}>⠿</div>}
                     <div style={{flex:1,fontSize:15,fontWeight:done?400:700,color:done?"#8A9080":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</div>
                     {!done
-                      ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:13,fontWeight:800,cursor:"pointer",flexShrink:0}}>💥 Whipe!</button>
+                      ?<button onClick={()=>chargeIt(task)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"7px 16px",fontSize:13,fontWeight:800,cursor:"pointer",flexShrink:0}}>💥 Wipe!</button>
                       :<button onClick={()=>updToday({charged:charged.filter(c=>c!==task)})} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0}}>↩ Undo</button>
                     }
                     <button onClick={()=>{const next=[...(data.targetTasks||[])];next[origIdx]="";if(done)updToday({charged:charged.filter(c=>c!==task)});upd({targetTasks:next});showToast("🗑 Deleted");}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"6px 10px",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>
@@ -8039,61 +8662,125 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
 
           {/* ── Celebration overlay ── */}
           {celebration&&(
-            <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",background:celebration.isTarget?"rgba(20,40,20,0.85)":"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
-              {/* Emoji confetti rain */}
+            <div style={{position:"fixed",inset:0,zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",
+              background:celebration.isTarget
+                ?"radial-gradient(ellipse at center, rgba(20,60,10,0.95) 0%, rgba(5,20,5,0.98) 100%)"
+                :"rgba(10,10,10,0.82)",
+              backdropFilter:"blur(6px)"}}
+              onClick={()=>setCelebration(null)}>
+
+              {/* Confetti rain — everywhere */}
               {confettiPieces.map(p=>(
-                <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:`${p.y}%`,fontSize:p.size,animation:`confettiFall ${p.speed}s ${p.delay}s ease-in forwards`,transform:`rotate(${p.rotation}deg)`,pointerEvents:"none",zIndex:1}}>
+                <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:"-5%",fontSize:p.size,
+                  animation:`confettiFall ${p.speed}s ${p.delay}s ease-in forwards`,
+                  transform:`rotate(${p.rotation}deg)`,pointerEvents:"none",zIndex:1}}>
                   {p.emoji}
                 </div>
               ))}
-              {/* Message card */}
-              <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 32px",textAlign:"center",boxShadow:"0 20px 80px rgba(0,0,0,0.5)",maxWidth:320,margin:"0 24px",zIndex:2,border:`3px solid ${celebration.isTarget?"rgba(255,200,50,0.6)":"rgba(90,160,80,0.35)"}`,animation:"celebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
-                {/* Big animated emoji */}
-                <div style={{fontSize:celebration.isTarget?80:64,marginBottom:8,animation:"celebBounce 0.6s ease-in-out infinite alternate",display:"block",lineHeight:1}}>
-                  {celebration.isTarget?"🏆":celebration.isReward?"🎁":"🎉"}
-                </div>
-                {/* Headline */}
-                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:celebration.isTarget?26:22,color:"#1A1A10",marginBottom:10,lineHeight:1.2}}>
-                  {celebration.isTarget
-                    ?["YOU ARE UNSTOPPABLE! 🔥","ALL DONE — LEGENDARY! 🌟","ABSOLUTELY CRUSHED IT! 💥","CHAMPION ENERGY! 👑"][Math.floor(Date.now()/1000)%4]
-                    :["TASK CRUSHED! 💪","YES! KEEP GOING! ⚡","THAT'S WHAT I'M TALKING ABOUT! 🔥","BOOM! ONE DOWN! 💥"][charged.length%4]
-                  }
-                </div>
-                {/* Sub message */}
-                <div style={{fontSize:15,color:"#5A7060",lineHeight:1.7,marginBottom:celebration.isTarget?20:14}}>
-                  {celebration.isTarget
-                    ?`All ${target} tasks complete today! Your brain is BUZZING with achievement 🧠✨`
-                    :celebration.isReward
-                    ?`You've earned "${rewardName}" — go enjoy every second of it! 🌿`
-                    :[
-                        `"${celebration.name}" — DONE! You're building momentum! 🚀`,
-                        `Every task completed is a reward for your brain! Keep it up 💫`,
-                        `"${celebration.name}" complete! You're proving something to yourself 🌱`,
-                        `Look at you go! One step closer to your goal 🎯`,
-                      ][charged.length%4]
-                  }
-                </div>
-                {/* Progress for target celebration */}
-                {celebration.isTarget&&(
-                  <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16}}>
-                    {Array.from({length:target}).map((_,i)=>(
-                      <div key={i} style={{width:16,height:16,borderRadius:"50%",background:"#5A7848",boxShadow:"0 0 8px rgba(90,120,72,0.6)",animation:`celebPulse ${0.3+i*0.1}s ease-in-out infinite alternate`}}/>
+
+              {/* ══ ALL TASKS DONE — FULL PAGE MEGA CELEBRATION ══ */}
+              {celebration.isTarget?(
+                <div style={{textAlign:"center",zIndex:2,padding:"0 24px",width:"100%",maxWidth:400,margin:"0 auto"}}>
+                  {/* Massive pulsing trophy */}
+                  <div style={{fontSize:100,lineHeight:1,marginBottom:16,
+                    animation:"celebBounce 0.5s ease-in-out infinite alternate",
+                    filter:"drop-shadow(0 0 30px rgba(255,215,0,0.8)) drop-shadow(0 0 60px rgba(255,160,0,0.5))"}}>
+                    🏆
+                  </div>
+
+                  {/* Main headline — huge */}
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:34,color:"#FFD700",
+                    lineHeight:1.1,marginBottom:12,letterSpacing:-0.5,
+                    textShadow:"0 0 30px rgba(255,215,0,0.6), 0 2px 0 rgba(0,0,0,0.4)",
+                    animation:"celebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+                    {["YOU ARE\nABSOLUTELY\nUNSTOPPABLE!","LEGENDARY!\nFULL POWER\nACHIEVED!","CHAMPION!\nEVERY TASK\nDESTROYED!","MONSTER\nWIPED OUT\nCOMPLETELY!"][Math.floor(Date.now()/1000)%4].split('\n').map((line,i)=>(
+                      <div key={i}>{line}</div>
                     ))}
                   </div>
-                )}
-                <div style={{fontSize:12,color:"#A0907A",marginBottom:12}}>
-                  {celebration.isTarget?`🎊 Full charge achieved!`:`${charged.length+1} / ${target} tasks today`}
+
+                  {/* Dopamine science message */}
+                  <div style={{fontSize:16,color:"rgba(255,255,255,0.90)",lineHeight:1.7,marginBottom:20,
+                    fontFamily:"'Segoe UI',sans-serif",fontWeight:500}}>
+                    You can <strong style={{color:"#FFD700"}}>achieve anything</strong> you put your mind to ✨<br/>
+                    You did every single thing you set out to do today.<br/>
+                    <strong style={{color:"#90FF90"}}>That's who you are.</strong>
+                  </div>
+
+                  {/* Progress dots */}
+                  <div style={{display:"flex",justifyContent:"center",gap:10,marginBottom:24}}>
+                    {Array.from({length:Math.min(target,10)}).map((_,i)=>(
+                      <div key={i} style={{width:18,height:18,borderRadius:"50%",
+                        background:"#FFD700",
+                        boxShadow:"0 0 12px rgba(255,215,0,0.8), 0 0 24px rgba(255,215,0,0.4)",
+                        animation:`celebPulse ${0.2+i*0.08}s ease-in-out infinite alternate`}}/>
+                    ))}
+                  </div>
+
+                  {/* REWARD REMINDER — if reward is set */}
+                  {rewardName&&(
+                    <div style={{background:"linear-gradient(135deg,rgba(255,215,0,0.20),rgba(255,160,0,0.15))",
+                      border:"2.5px solid rgba(255,215,0,0.50)",borderRadius:24,
+                      padding:"20px 22px",marginBottom:20,
+                      boxShadow:"0 0 30px rgba(255,215,0,0.20), inset 0 1px 0 rgba(255,255,255,0.10)"}}>
+                      <div style={{fontSize:44,marginBottom:8}}>🎁</div>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:20,color:"#FFD700",marginBottom:6}}>
+                        YOUR REWARD IS WAITING!
+                      </div>
+                      <div style={{fontSize:15,color:"rgba(255,255,255,0.90)",lineHeight:1.6}}>
+                        You earned: <strong style={{color:"#FFD700",fontSize:17}}>"{rewardName}"</strong>
+                      </div>
+                      <div style={{fontSize:13,color:"rgba(255,215,0,0.70)",marginTop:6,fontStyle:"italic"}}>
+                        Go enjoy every second of it — you deserve it 🌿
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{fontSize:12,color:"rgba(255,255,255,0.35)",marginTop:4}}>Tap anywhere to continue</div>
                 </div>
-                <div style={{fontSize:11,color:"#C0B090"}}>Tap anywhere to continue</div>
-              </div>
+              ):(
+                /* ══ SINGLE TASK DONE — punchy hit ══ */
+                <div style={{background:"rgba(255,253,240,0.97)",borderRadius:28,padding:"32px 28px",
+                  textAlign:"center",boxShadow:"0 20px 80px rgba(0,0,0,0.5)",
+                  maxWidth:300,margin:"0 24px",zIndex:2,
+                  border:"2.5px solid rgba(90,160,80,0.35)",
+                  animation:"celebPop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+                  <div style={{fontSize:70,marginBottom:8,
+                    animation:"celebBounce 0.5s ease-in-out infinite alternate",lineHeight:1}}>
+                    🎉
+                  </div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:24,color:"#1A1A10",marginBottom:8,lineHeight:1.2}}>
+                    {["TASK CRUSHED! 💪","YES! ONE DOWN! ⚡","BOOM! WIPED OUT! 💥","KEEP GOING! 🔥"][charged.length%4]}
+                  </div>
+                  <div style={{fontSize:14,color:"#5A7060",lineHeight:1.7,marginBottom:12}}>
+                    {celebration.isReward
+                      ?<><strong style={{color:"#C0A020",fontSize:16}}>🎁 Reward unlocked!</strong><br/>"{rewardName}"<br/>Go enjoy it — you earned it! 🌿</>
+                      :[
+                        `"${celebration.name}" — DONE! Momentum building 🚀`,
+                        `Every task = dopamine hit. Keep going! 💫`,
+                        `"${celebration.name}" wiped out! You're proving something 🌱`,
+                        `The monster is weakening! ${target-charged.length-1} tasks left! 👊`,
+                      ][charged.length%4]
+                    }
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
+                    {Array.from({length:target}).map((_,i)=>(
+                      <div key={i} style={{width:10,height:10,borderRadius:"50%",
+                        background:i<charged.length?"#5A7848":"rgba(90,80,60,0.15)",
+                        transition:"background 0.3s",
+                        boxShadow:i<charged.length?"0 0 6px rgba(90,120,72,0.5)":"none"}}/>
+                    ))}
+                  </div>
+                  <div style={{fontSize:11,color:"#C0B090"}}>Tap anywhere to continue</div>
+                </div>
+              )}
             </div>
           )}
           {/* Celebration animations */}
           <style>{`
             @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) translateX(var(--drift,0px)) rotate(720deg);opacity:0}}
-            @keyframes celebPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
-            @keyframes celebBounce{0%{transform:scale(1) rotate(-5deg)}100%{transform:scale(1.15) rotate(5deg)}}
-            @keyframes celebPulse{0%{transform:scale(0.8);opacity:0.6}100%{transform:scale(1.2);opacity:1}}
+            @keyframes celebPop{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+            @keyframes celebBounce{0%{transform:scale(1) rotate(-4deg)}100%{transform:scale(1.18) rotate(4deg)}}
+            @keyframes celebPulse{0%{transform:scale(0.7);opacity:0.5}100%{transform:scale(1.3);opacity:1}}
           `}</style>
 
           {/* Reward card — show setup prompt if no reward, full card if set */}
@@ -8207,26 +8894,6 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             </div>
           )}
 
-          {/* AI Task Picks */}
-          <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"16px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
-              <span style={{fontSize:26}}>🤖</span>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",flex:1}}>AI Task Picks</div>
-              
-            </div>
-            {aiSugg.length>0?aiSugg.map((s,i)=>(
-              <Row key={i} name={s.task||s} src={s.src||"🤖 AI pick"} done={charged.includes(s.task||s)} onCharge={()=>chargeIt(s.task||s)}
-                onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:s.task||s,done:false,color:"lilac"}]}:l));setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("📋 Scheduled!");}else showToast("Add a To Do List list first");}}
-                onMatrix={()=>{if(setMatrixData){setMatrixData(ds=>[...ds,{id:Date.now(),text:s.task||s,quad:"do",created:Date.now(),touched:Date.now()}]);setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("⚖️ Added to Matrix!");}}}
-                onDelete={()=>{if(s.srcType==="pri"&&setPriData)setPriData(ls=>ls.map(l=>({...l,tasks:l.tasks.filter(t=>t.id!==s.srcId)})));if(s.srcType==="matrix"&&setMatrixData)setMatrixData(ds=>ds.filter(d=>d.id!==s.srcId));setAiSugg(sg=>sg.filter((_,j)=>j!==i));showToast("🗑 Removed");}}
-              />
-            )):(
-              <div style={{color:"#8A8070",fontSize:13,lineHeight:1.6}}>
-                Tap "Ask AI" — it'll study your tasks and pick the ones you're most likely avoiding.
-              </div>
-            )}
-          </div>
-
           {/* Charged today summary */}
           {charged.length>0&&(
             <div style={{background:"rgba(90,160,80,0.08)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(90,160,80,0.2)"}}>
@@ -8248,7 +8915,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
           {/* Orb + summary */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"22px 20px",marginBottom:14,boxShadow:"0 2px 16px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)",textAlign:"center"}}>
             <OrbOfLight pct={weekPcts.reduce((a,b)=>a+b,0)/7} size={140}/>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginTop:12}}>Weekly Whipe Out</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:20,marginTop:12}}>Weekly Wipe Out</div>
             <div style={{color:"#8A8070",fontSize:13,marginTop:4}}>{daysHit}/7 days fully wiped out · {weekTotal} total tasks</div>
             {daysHit>=5&&data.weeklyAward&&(
               <div style={{marginTop:14,background:"rgba(90,120,72,0.10)",borderRadius:16,padding:"12px 18px"}}>
@@ -8351,7 +9018,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
         {view==="settings"&&<>
           {/* ── Daily Tasks Setup ── */}
           <div style={{background:"rgba(248,245,236,0.90)",borderRadius:24,padding:"20px 18px",marginBottom:14,boxShadow:"0 2px 14px rgba(0,0,0,0.05)",border:"1px solid rgba(255,255,255,0.9)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:2}}>💥 Today's Whipe Out</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:16,marginBottom:2}}>💥 Today's Wipe Out</div>
             <div style={{color:"#8A8070",fontSize:12,marginBottom:14,lineHeight:1.5}}>Add your tasks here — they appear straight on your Today page. Edit or delete anytime.</div>
             {/* Existing tasks */}
             {(data.targetTasks||[]).map((task,i)=>{
@@ -8488,7 +9155,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:17,marginBottom:4}}>🗓️ The Plan</div>
             <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Your tasks are listed below. Tap a day to assign each one — spread them across the week. Then send to your Week.</div>
             {(data.targetTasks||[]).filter(t=>t?.trim()).length===0?(
-              <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks in Today's Whipe Out above first</div>
+              <div style={{textAlign:"center",padding:"14px 0",color:"#8A8070",fontSize:13,fontStyle:"italic"}}>Add tasks in Today's Wipe Out above first</div>
             ):(
               <>
                 {(data.targetTasks||[]).map((task,i)=>{ if(!task?.trim()) return null;
@@ -9498,8 +10165,8 @@ const MODULES=[
   {id:"goals",       icon:"🎯", name:"Goals",        color:"#3A6848",
    summary:"Garden growth · 5 time horizons · Future Me letters"},
   {id:"matrix",      icon:"⚖️", name:"Matrix",       color:"#7A6038",
-   summary:"Eisenhower grid · Urgent vs Important · AI suggest"},
-  {id:"charge",      icon:"⚡", name:"Whipe Out",   color:"#6A5870",
+   summary:"Eisenhower grid · Urgent vs Important"},
+  {id:"charge",      icon:"⚡", name:"Wipe Out",   color:"#6A5870",
    summary:"Daily challenge · Orb of light · Reward tracking"},
   {id:"budget",      icon:"💰", name:"Budget",       color:"#5A6878",
    summary:"Income & outgoings · Expenses tracker · AI review"},
@@ -9639,6 +10306,7 @@ function AuthButton({user,onSignIn,onSignOut}){
 
 export default function App() {
   const [screen,setScreenRaw]=useState("home");
+  const [showOnboarding,setShowOnboarding]=useState(()=>!localStorage.getItem('thinko_onboarded'));
   const [vaultUnlocked,setVaultUnlocked]=useState(()=>!localStorage.getItem('thinko_vault_pin'));
   const setScreen=s=>{
     if(["notes","noteshub","filing"].includes(screen)&&!["notes","noteshub","filing"].includes(s)){
@@ -9757,6 +10425,7 @@ export default function App() {
   };
   const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}};
 
+  if(showOnboarding) return <Onboarding onComplete={()=>{localStorage.setItem('thinko_onboarded','1');setShowOnboarding(false);}}/>;
   if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
   if((screen==="notes"||screen==="noteshub"||screen==="filing")&&!vaultUnlocked)
@@ -9986,7 +10655,7 @@ export default function App() {
 function NavBar({current,setScreen}) {
   const ALL_NAV=[
     {id:"home",       icon:"🏠", name:"Home"},
-    {id:"charge",     icon:"⚡", name:"Whipe Out"},
+    {id:"charge",     icon:"⚡", name:"Wipe Out"},
     {id:"prioritizer",icon:"📋", name:"To Do"},
     {id:"notes",      icon:"📚", name:"Vault"},
     {id:"goals",      icon:"🎯", name:"Goals"},
