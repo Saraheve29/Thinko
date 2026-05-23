@@ -593,7 +593,7 @@ function Header({ title, onBack, right }) {
 
 function GlassCard({ children, style={} }) {
   return (
-    <div style={{ background:"rgba(255,255,255,0.90)", borderRadius:16, padding:"14px", boxShadow:"0 2px 12px rgba(90,80,60,0.09)", border:`1.5px solid ${C.ll}`, ...style }}>
+    <div style={{ background:"rgba(242,248,240,0.94)", borderRadius:16, padding:"14px", boxShadow:"0 2px 12px rgba(90,80,60,0.09)", border:`1.5px solid ${C.ll}`, ...style }}>
       {children}
     </div>
   );
@@ -823,10 +823,18 @@ function ColourPicker({current,onChange,onClose}) {
     return()=>document.removeEventListener("mousedown",h);
   },[onClose]);
   return (
-    <div ref={ref} style={{position:"absolute",zIndex:200,top:22,left:-4,background:C.wh,borderRadius:16,padding:"10px 8px",boxShadow:"0 8px 32px rgba(90,80,60,0.28)",border:`1.5px solid ${C.ll}`,display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
-      {SWATCHES.map(s=>(
-        <button key={s.id} onClick={()=>{onChange(s.id);onClose();}} style={{width:32,height:32,borderRadius:8,cursor:"pointer",background:s.fill,border:current===s.id?`3px solid ${C.dp}`:`2px solid ${s.border}`,boxShadow:current===s.id?`0 0 0 2px ${C.pp}`:"none",transition:"all 0.12s"}} title={s.id}/>
-      ))}
+    <div ref={ref} style={{position:"absolute",zIndex:200,top:28,left:-8,background:"rgba(252,250,244,0.99)",borderRadius:18,padding:"10px 10px 8px",boxShadow:"0 8px 32px rgba(60,50,30,0.22)",border:"1.5px solid rgba(90,80,60,0.12)",minWidth:180}}>
+      <div style={{fontSize:10,fontWeight:700,color:"rgba(60,50,30,0.45)",letterSpacing:0.8,marginBottom:7,textTransform:"uppercase"}}>Colour label</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
+        {SWATCHES.map(s=>(
+          <button key={s.id} onClick={()=>{onChange(s.id);onClose();}}
+            style={{width:30,height:30,borderRadius:8,cursor:"pointer",background:s.fill,
+              border:current===s.id?`3px solid rgba(30,30,20,0.6)`:`2px solid ${s.border}`,
+              boxShadow:current===s.id?"0 0 0 2px rgba(255,255,255,0.8), 0 2px 8px rgba(0,0,0,0.15)":"0 1px 3px rgba(0,0,0,0.08)",
+              transform:current===s.id?"scale(1.15)":"scale(1)",
+              transition:"all 0.12s"}} title={s.id}/>
+        ))}
+      </div>
     </div>
   );
 }
@@ -879,9 +887,15 @@ function PriTaskRow({task,index,onDelete,onComplete,onColorChange,onAddSub,onMov
         <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"grab",color:"rgba(90,120,72,0.35)",fontSize:16,lineHeight:1,padding:"0 2px",letterSpacing:1}}>⠿</div>
         </div>
-        {/* Colour picker dot */}
-        <div style={{position:"relative",flexShrink:0,marginTop:7}}>
-          <button onClick={()=>setPickerOpen(p=>!p)} style={{width:18,height:18,borderRadius:"50%",cursor:"pointer",padding:0,background:task.done?C.done:sw.fill,border:`2.5px solid ${task.done?C.done:sw.border}`,boxShadow:pickerOpen?`0 0 0 3px ${C.lp}`:"none",transition:"box-shadow 0.15s"}}/>
+        {/* Colour picker dot — prominent */}
+        <div style={{position:"relative",flexShrink:0,marginTop:5}}>
+          <button onClick={()=>setPickerOpen(p=>!p)}
+            title="Change colour"
+            style={{width:24,height:24,borderRadius:"50%",cursor:"pointer",padding:0,
+              background:task.done?C.done:sw.fill,
+              border:`3px solid ${task.done?C.done:sw.border}`,
+              boxShadow:pickerOpen?`0 0 0 3px ${C.lp},0 2px 8px rgba(0,0,0,0.15)`:"0 1px 4px rgba(0,0,0,0.12)",
+              transition:"all 0.15s",display:"flex",alignItems:"center",justifyContent:"center"}}/>
           {pickerOpen&&<ColourPicker current={task.color} onChange={id=>onColorChange(task.id,id)} onClose={()=>setPickerOpen(false)}/>}
         </div>
         {/* Task name */}
@@ -1023,7 +1037,7 @@ function PriCompare({tasks,onDone}) {
     const sw=swatchById(task.color);
     return(
       <button onClick={onPick}
-        style={{flex:1,padding:"22px 16px 20px",borderRadius:20,background:"rgba(255,255,255,0.92)",border:`3px solid ${sw.fill}`,color:C.txt,fontWeight:800,fontSize:16,cursor:"pointer",boxShadow:`0 6px 24px ${sw.fill}`,display:"flex",flexDirection:"column",alignItems:"center",gap:14,transition:"all 0.15s",minHeight:160,textAlign:"center",lineHeight:1.4}}
+        style={{flex:1,padding:"22px 16px 20px",borderRadius:20,background:"rgba(242,248,240,0.96)",border:`3px solid ${sw.fill}`,color:C.txt,fontWeight:800,fontSize:16,cursor:"pointer",boxShadow:`0 6px 24px ${sw.fill}`,display:"flex",flexDirection:"column",alignItems:"center",gap:14,transition:"all 0.15s",minHeight:160,textAlign:"center",lineHeight:1.4}}
         onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.04)";}}
         onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}>
         {/* Colour circle — explicitly forced round */}
@@ -1099,6 +1113,8 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
   const [newUrl,setNewUrl]=useState("");
   const [prioritized,setPrioritized]=useState(false);
   const [comparing,setComparing]=useState(false);
+  const [taskCelebration,setTaskCelebration]=useState(null);
+  const [taskConfetti,setTaskConfetti]=useState([]);
   const addTask=()=>{
     if(!newTask.trim())return;
     const currentActive=list.tasks.filter(t=>!t.done);
@@ -1107,8 +1123,6 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
     setNewTask("");setPrioritized(false);
   };
   const deleteTask=id=>{onUpdate({...list,tasks:list.tasks.filter(t=>t.id!==id)});setPrioritized(false);};
-  const [taskCelebration,setTaskCelebration]=useState(null);
-  const [taskConfetti,setTaskConfetti]=useState([]);
 
   const launchTaskConfetti=allDone=>{
     const emojis=allDone?["🏆","⭐","🌟","💫","✨","🎊","🎉","💥"]:["🎉","✨","⭐","💫","🌿","🎊"];
@@ -1180,7 +1194,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
   const active=list.tasks.filter(t=>!t.done);
   const done=list.tasks.filter(t=>t.done);
   return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#F8F4EC",fontFamily:"'Segoe UI',sans-serif",position:"relative",overflow:"hidden"}}>
       <style>{`
         @keyframes taskConfettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
         @keyframes taskCelebIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
@@ -1223,7 +1237,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
                 {["TASK DONE! 💪","YES! ONE DOWN! ⚡","NAILED IT! 💥","KEEP GOING! 🔥"][done.length%4]}
               </div>
               <div style={{fontSize:13,color:"#5A7060",lineHeight:1.7,marginBottom:12}}>
-                "{taskCelebration.name}" — crossed off! 🌿<br/>
+                &quot;{taskCelebration.name}&quot; crossed off! &#127807;<br/>
                 <span style={{fontSize:12,color:"#8A8070"}}>{done.length+1}/{taskCelebration.total} tasks complete</span>
               </div>
               <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:10}}>
@@ -1237,61 +1251,109 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
         </div>
       )}
 
-      <Header title={list.name} onBack={onBack} right={<button onClick={()=>onBack&&setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.25)",color:"#1A1A10",border:"1px solid rgba(90,120,72,0.25)",borderRadius:10,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>🏠 Home</button>}/>
-      <div style={{padding:"18px 16px"}}>
-        {/* Focus Timer — above break timer */}
-        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:18,padding:"14px 16px",marginBottom:12,border:"1px solid rgba(255,255,255,0.9)"}}>
+
+      {/* Same vine background as main page */}
+      <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
+        <svg width="100%" height="100%" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="lg1" cx="40%" cy="35%" r="60%"><stop offset="0%" stopColor="#7AB848"/><stop offset="60%" stopColor="#4A8828"/><stop offset="100%" stopColor="#2A5818"/></radialGradient>
+            <radialGradient id="lg2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#90C858"/><stop offset="55%" stopColor="#5A9838"/><stop offset="100%" stopColor="#305820"/></radialGradient>
+            <filter id="ls"><feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="rgba(20,60,10,0.20)"/></filter>
+          </defs>
+          <ellipse cx="200" cy="-20" rx="280" ry="180" fill="rgba(255,210,120,0.10)"/>
+          <path d="M-10 0 C20 80 -5 160 15 240 C35 320 10 400 25 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
+          <ellipse cx="28" cy="60" rx="38" ry="22" fill="url(#lg1)" filter="url(#ls)" transform="rotate(-30 28 60)" opacity="0.85"/>
+          <ellipse cx="35" cy="140" rx="44" ry="25" fill="url(#lg2)" filter="url(#ls)" transform="rotate(-20 35 140)" opacity="0.80"/>
+          <ellipse cx="22" cy="230" rx="40" ry="24" fill="url(#lg1)" transform="rotate(-35 22 230)" opacity="0.70"/>
+          <path d="M410 0 C380 80 405 160 385 240 C365 320 390 400 375 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
+          <ellipse cx="372" cy="55" rx="42" ry="24" fill="url(#lg2)" filter="url(#ls)" transform="rotate(28 372 55)" opacity="0.85"/>
+          <ellipse cx="365" cy="145" rx="46" ry="26" fill="url(#lg1)" filter="url(#ls)" transform="rotate(22 365 145)" opacity="0.80"/>
+          <ellipse cx="378" cy="235" rx="42" ry="24" fill="url(#lg2)" transform="rotate(32 378 235)" opacity="0.70"/>
+          <ellipse cx="100" cy="15" rx="50" ry="28" fill="url(#lg1)" filter="url(#ls)" transform="rotate(-10 100 15)" opacity="0.75"/>
+          <ellipse cx="200" cy="5" rx="55" ry="30" fill="url(#lg2)" filter="url(#ls)" transform="rotate(5 200 5)" opacity="0.70"/>
+          <ellipse cx="305" cy="18" rx="48" ry="27" fill="url(#lg1)" transform="rotate(12 305 18)" opacity="0.75"/>
+        </svg>
+      </div>
+
+      {/* Garden-style header matching main page */}
+      <div style={{position:"relative",zIndex:1,padding:"52px 22px 16px",textAlign:"center"}}>
+        <button onClick={onBack} style={{position:"absolute",top:16,left:16,background:"rgba(238,244,235,0.70)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",backdropFilter:"blur(8px)"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2C3820" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>
+        <button onClick={()=>setScreen&&setScreen("home")} style={{position:"absolute",top:16,right:16,background:"rgba(238,244,235,0.70)",border:"none",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:700,color:"#2C3820",cursor:"pointer",backdropFilter:"blur(8px)"}}>🏠</button>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#1A2810",marginBottom:2,letterSpacing:-0.5}}>{list.name} 🌿</div>
+        <div style={{fontSize:12,color:"rgba(42,60,28,0.50)",fontStyle:"italic"}}>
+          {active.length===0&&done.length>0?" All done! Well done you!":
+           active.length>0?`${done.length} done · ${active.length} to go`:"Add your first task below"}
+        </div>
+        {/* Progress bar */}
+        {list.tasks.length>0&&(
+          <div style={{marginTop:10,maxWidth:260,margin:"10px auto 0"}}>
+            <div style={{height:5,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${Math.round((done.length/list.tasks.length)*100)}%`,background:"#4A7838",borderRadius:100,transition:"width 0.4s"}}/>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{position:"relative",zIndex:1,padding:"0 14px"}}>
+        {/* Focus Timer — garden glass style */}
+        <div style={{background:"rgba(238,244,235,0.82)",backdropFilter:"blur(16px)",borderRadius:22,padding:"14px 16px",marginBottom:10,border:"1.5px solid rgba(90,120,72,0.18)",boxShadow:"0 4px 20px rgba(42,80,28,0.08)"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-            <span style={{fontFamily:"Georgia,serif",fontSize:15,fontWeight:700,color:"#1A1A10",flex:1}}>⏱ Focus Timer</span>
-            {focusLeft!==null&&<span style={{fontFamily:"monospace",fontSize:18,fontWeight:700,color:focusLeft<0?"#c0392b":focusLeft<60?"#E08020":"#2C3820"}}>{fmtTimer?fmtTimer(focusLeft):""}</span>}
-            {focusLeft!==null&&focusLeft<0&&<span style={{fontSize:10,color:"#c0392b",fontWeight:700}}>overtime</span>}
+            <span style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:700,color:"#1A2810",flex:1}}>🎯 Focus Timer</span>
+            {focusLeft!==null&&<span style={{fontFamily:"monospace",fontSize:18,fontWeight:700,color:focusLeft<60?"#c0392b":"#2C3820"}}>{fmtTimer?fmtTimer(focusLeft):""}</span>}
           </div>
           {focusLeft!==null&&focusLeft>=0&&(
             <div style={{height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",marginBottom:8}}>
-              <div style={{height:"100%",width:`${Math.round((focusLeft/((focusMins||25)*60))*100)}%`,background:focusLeft<60?"#c0392b":"#5A7848",borderRadius:100,transition:"width 1s linear"}}/>
+              <div style={{height:"100%",width:`${Math.round((focusLeft/((focusMins||25)*60))*100)}%`,background:focusLeft<60?"#c0392b":"#4A7838",borderRadius:100,transition:"width 1s linear"}}/>
             </div>
           )}
           {focusLeft===null&&(
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              {[10,20,30,50].map(m=>(
-                <button key={m} onClick={()=>setFocusMins&&setFocusMins(m)} style={{flex:1,padding:"6px 0",fontSize:12,fontWeight:600,cursor:"pointer",background:(focusMins||25)===m?"#5A7848":"rgba(255,255,255,0.75)",color:(focusMins||25)===m?"#fff":"#3A3020",border:`1.5px solid ${(focusMins||25)===m?"transparent":"rgba(90,120,72,0.25)"}`,borderRadius:100}}>{m}m</button>
+            <div style={{display:"flex",gap:5,marginBottom:8}}>
+              {[10,20,30,60].map(m=>(
+                <button key={m} onClick={()=>setFocusMins&&setFocusMins(m)}
+                  style={{flex:1,padding:"6px 0",fontSize:11,fontWeight:700,cursor:"pointer",
+                    background:(focusMins||25)===m?"#4A7838":"rgba(90,120,72,0.10)",
+                    color:(focusMins||25)===m?"#fff":"#3A6020",
+                    border:`1px solid ${(focusMins||25)===m?"#4A7838":"rgba(90,120,72,0.20)"}`,
+                    borderRadius:100,transition:"all 0.15s"}}>
+                  {m===60?"1hr":`${m}m`}
+                </button>
               ))}
             </div>
           )}
           <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>{if(focusLeft===null){setFocusLeft&&setFocusLeft((focusMins||25)*60);setFocusOn&&setFocusOn(true);setFocusAlerted&&setFocusAlerted(false);}else setFocusOn&&setFocusOn(o=>!o);}} style={{flex:1,padding:"9px",background:focusOn?"rgba(192,57,43,0.10)":"#5A7848",color:focusOn?"#c0392b":"#fff",border:`1.5px solid ${focusOn?"rgba(192,57,43,0.25)":"#5A7848"}`,borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
-              {focusLeft===null?`▶ Start ${focusMins||25}m`:focusOn?"⏸ Pause":"▶ Resume"}
+            <button onClick={()=>{if(focusLeft===null){setFocusLeft&&setFocusLeft((focusMins||25)*60);setFocusOn&&setFocusOn(true);setFocusAlerted&&setFocusAlerted(false);}else setFocusOn&&setFocusOn(o=>!o);}}
+              style={{flex:1,padding:"10px",background:focusOn?"rgba(192,57,43,0.10)":"linear-gradient(135deg,#4A7838,#3A6028)",color:focusOn?"#c0392b":"#fff",border:`1px solid ${focusOn?"rgba(192,57,43,0.25)":"transparent"}`,borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:focusOn?"none":"0 3px 12px rgba(58,80,38,0.25)"}}>
+              {focusLeft===null?"▶ Start":focusOn?"⏸ Pause":"▶ Resume"}
             </button>
-            {focusLeft!==null&&<button onClick={()=>{setFocusLeft&&setFocusLeft(null);setFocusOn&&setFocusOn(false);setFocusAlerted&&setFocusAlerted(false);}} style={{flex:1,padding:"9px",background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>}
+            {focusLeft!==null&&<button onClick={()=>{setFocusLeft&&setFocusLeft(null);setFocusOn&&setFocusOn(false);setFocusAlerted&&setFocusAlerted(false);}} style={{flex:1,padding:"10px",background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>}
           </div>
         </div>
         <BreakTimer setScreen={setScreen}/>
-        {/* Add task input — prominent */}
-        <div style={{marginBottom:16}}>
-          <div style={{background:"linear-gradient(135deg,#3A5828,#5A7848)",borderRadius:24,padding:"16px 18px",boxShadow:"0 4px 20px rgba(58,80,38,0.30)",border:"none"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#fff",marginBottom:10,letterSpacing:0.2}}>✏️ What needs doing?</div>
-            <div style={{display:"flex",gap:10}}>
-              <input value={newTask} onChange={e=>setNewTask(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&addTask()}
-                placeholder="Add a task…"
-                style={{flex:1,padding:"12px 18px",borderRadius:100,border:"none",fontSize:15,fontWeight:600,color:"#1A1A10",background:"rgba(255,255,255,0.95)",outline:"none",boxShadow:"inset 0 1px 3px rgba(0,0,0,0.08)"}}/>
-              <button onClick={addTask}
-                style={{background:"#FFD700",color:"#2C3820",border:"none",borderRadius:100,width:48,height:48,fontSize:26,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 3px 14px rgba(255,200,0,0.45)",transition:"transform 0.12s"}}
-                onMouseDown={e=>e.currentTarget.style.transform="scale(0.92)"}
-                onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
-                onTouchStart={e=>e.currentTarget.style.transform="scale(0.92)"}
-                onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-                +
-              </button>
-            </div>
-            {/* URL field — subtle under */}
-            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,background:"rgba(255,255,255,0.15)",borderRadius:100,padding:"8px 14px"}}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.7}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-              <input value={newUrl} onChange={e=>setNewUrl(e.target.value)}
-                placeholder="Paste a website link (optional)"
-                style={{flex:1,border:"none",outline:"none",fontSize:12,color:"rgba(255,255,255,0.85)",background:"transparent",fontFamily:"'Segoe UI',sans-serif"}}/>
-            </div>
+        {/* Add task — garden glass style matching main page */}
+        <div style={{background:"rgba(238,244,235,0.85)",backdropFilter:"blur(16px)",borderRadius:22,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 4px 20px rgba(42,80,28,0.07)"}}>
+          <div style={{fontSize:12,fontWeight:600,color:"rgba(42,60,28,0.50)",marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
+            <span>✏️</span> What needs doing?
           </div>
+          <div style={{display:"flex",gap:10}}>
+            <input value={newTask} onChange={e=>setNewTask(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&addTask()}
+              placeholder="Add a task…"
+              style={{flex:1,padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:15,fontWeight:600,color:"#1A2810",background:"rgba(242,248,240,0.96)",outline:"none"}}/>
+            <button onClick={addTask}
+              style={{width:46,height:46,borderRadius:"50%",background:"#FFD700",color:"#2C3820",border:"none",fontSize:24,fontWeight:900,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 12px rgba(255,200,0,0.40)"}}>
+              +
+            </button>
+          </div>
+          {newUrl!==undefined&&(
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,background:"rgba(90,120,72,0.06)",borderRadius:100,padding:"6px 12px"}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{flexShrink:0,opacity:0.5}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#3A6020" strokeWidth="2" strokeLinecap="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#3A6020" strokeWidth="2" strokeLinecap="round"/></svg>
+              <input value={newUrl} onChange={e=>setNewUrl(e.target.value)}
+                placeholder="Paste a link (optional)"
+                style={{flex:1,border:"none",outline:"none",fontSize:12,color:"rgba(42,60,28,0.70)",background:"transparent"}}/>
+            </div>
+          )}
         </div>
         {active.map((task,i)=>(
           <div key={task.id}>
@@ -1329,7 +1391,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
             <button onClick={()=>setComparing(true)}
               style={{width:"100%",padding:"17px",background:btnGrad,color:"#1A1A10",border:"none",borderRadius:18,fontWeight:900,fontSize:17,cursor:"pointer",boxShadow:"0 6px 22px rgba(45,10,94,0.5)",pointerEvents:"auto",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
               <span style={{fontSize:22}}>⬆</span>
-              <span>{prioritized?"✓ Re-Prioritize — sort again":"Prioritize — what's more important?"}</span>
+              <span>{prioritized?"Reprioritize - sort again":"Prioritize - what is most important?"}</span>
             </button>
           </div>
         )}
@@ -1338,191 +1400,596 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
   );
 }
 
-function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,setFocusMins,focusLeft,setFocusLeft,focusOn,setFocusOn,setFocusAlerted,fmtTimer}) {
-  const [activeId,setActiveId]=useState(null);
-  const [adding,setAdding]=useState(false);
-  const [name,setName]=useState("");
-  const [dragId,setDragId]=useState(null);
-  const inputRef=useRef(null);
-  useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
-  // Auto-open: if 1 list open it, if empty create default
+/* ── MiniTimer: blank personal timer for any page ── */
+function MiniTimer(){
+  const [mins,setMins]=useState("");
+  const [left,setLeft]=useState(null);
+  const [running,setRunning]=useState(false);
+  const [done,setDone]=useState(false);
+  const intervalRef=useRef(null);
+
   useEffect(()=>{
-    if(!activeId){
-      if(data&&data.length===1){setActiveId(data[0].id);}
-      else if(!data||data.length===0){
-        const newList={id:Date.now(),name:"My Tasks",tasks:[]};
-        setData(ls=>[...ls,newList]);
-        setActiveId(newList.id);
-      }
+    if(running&&left>0){
+      intervalRef.current=setInterval(()=>setLeft(s=>{
+        if(s<=1){clearInterval(intervalRef.current);setRunning(false);setDone(true);return 0;}
+        return s-1;
+      }),1000);
     }
-  },[]);
-  const active=data.find(l=>l.id===activeId);
-  const submit=()=>{if(name.trim()){setData(ls=>[...ls,{id:Date.now(),name:name.trim(),tasks:[]}]);setName("");setAdding(false);}};
+    return()=>clearInterval(intervalRef.current);
+  },[running]);
 
-  const dragOver=(e,id)=>{
-    e.preventDefault();
-    if(!dragId||dragId===id)return;
-    setData(ls=>{const a=[...ls];const fi=a.findIndex(l=>l.id===dragId),ti=a.findIndex(l=>l.id===id);const [item]=a.splice(fi,1);a.splice(ti,0,item);return a;});
-  };
-  // Touch drag for To Do List list hub
-  const priTouchRef=useRef(null);
-  const priTouchStart=(e,id)=>{priTouchRef.current=setTimeout(()=>setDragId(id),200);};
-  const priTouchMove=(e)=>{
-    if(!dragId)return;e.preventDefault();
-    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
-    const tid=el?.dataset?.prilistid;if(tid&&Number(tid)!==dragId)setData(ls=>{const a=[...ls];const fi=a.findIndex(l=>l.id===dragId),ti=a.findIndex(l=>String(l.id)===tid);if(fi<0||ti<0||fi===ti)return ls;const[m]=a.splice(fi,1);a.splice(ti,0,m);return a;});
-  };
-  const priTouchEnd=()=>{clearTimeout(priTouchRef.current);setDragId(null);};
+  const fmt=s=>{const m=Math.floor(s/60);const sec=s%60;return `${m}:${sec.toString().padStart(2,"0")}`;};
 
-  if(active) return <PriList list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ls=>ls.map(l=>l.id===u.id?u:l))} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer}/>;
-  const listColors=[
-    {bg:"#E05840",dark:"#B03020",light:"rgba(224,88,64,0.12)",emoji:"🔥"},
-    {bg:"#5A7848",dark:"#3A5828",light:"rgba(90,120,72,0.12)",emoji:"🌿"},
-    {bg:"#4870A0",dark:"#2A5080",light:"rgba(72,112,160,0.12)",emoji:"💧"},
-    {bg:"#A04870",dark:"#803050",light:"rgba(160,72,112,0.12)",emoji:"🌸"},
-    {bg:"#C08830",dark:"#905808",light:"rgba(192,136,48,0.12)",emoji:"⭐"},
-    {bg:"#3A8878",dark:"#206858",light:"rgba(58,136,120,0.12)",emoji:"🌊"},
+  const start=()=>{
+    const v=parseInt(mins);
+    if(!v||v<1)return;
+    setLeft(v*60);setRunning(true);setDone(false);
+  };
+  const stop=()=>{clearInterval(intervalRef.current);setRunning(false);setLeft(null);setMins("");setDone(false);};
+
+  return(
+    <div style={{background:"rgba(238,244,235,0.78)",backdropFilter:"blur(12px)",borderRadius:18,padding:"11px 14px",marginBottom:14,border:"1px solid rgba(90,120,72,0.14)",display:"flex",alignItems:"center",gap:10}}>
+      <span style={{fontSize:14}}>⏱</span>
+      {left===null?(
+        <>
+          <input type="number" min="1" max="240" value={mins} onChange={e=>setMins(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&start()}
+            placeholder="mins"
+            style={{width:64,padding:"6px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:13,fontWeight:600,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.94)",textAlign:"center"}}/>
+          <button onClick={start} style={{padding:"7px 18px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>Start</button>
+        </>
+      ):(
+        <>
+          <span style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:left<60?"#c0392b":done?"#5A7848":"#1A2810",flex:1}}>{done===true?"All done!":fmt(left)}</span>
+          <button onClick={stop} style={{padding:"7px 16px",background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>Stop</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── SimpleTimer: blank timer for top of page ── */
+function SimpleTimer(){
+  const [mins,setMins]=useState("");
+  const [left,setLeft]=useState(null);
+  const [running,setRunning]=useState(false);
+  const intervalRef=useRef(null);
+
+  useEffect(()=>{
+    if(running&&left>0){
+      intervalRef.current=setInterval(()=>setLeft(s=>{
+        if(s<=1){setRunning(false);clearInterval(intervalRef.current);return 0;}
+        return s-1;
+      }),1000);
+    }
+    return()=>clearInterval(intervalRef.current);
+  },[running]);
+
+  const start=()=>{
+    const m=parseInt(mins);
+    if(!m||m<=0)return;
+    setLeft(m*60);setRunning(true);
+  };
+  const stop=()=>{setRunning(false);setLeft(null);setMins("");};
+  const fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+  return(
+    <div style={{background:"rgba(238,244,235,0.78)",backdropFilter:"blur(12px)",borderRadius:22,padding:"12px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.14)",boxShadow:"0 3px 16px rgba(42,80,28,0.07)",display:"flex",alignItems:"center",gap:10}}>
+      <span style={{fontSize:16}}>⏱</span>
+      {left===null?(
+        <>
+          <input type="number" min="1" max="300" value={mins} onChange={e=>setMins(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&start()}
+            placeholder="mins"
+            style={{width:64,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,fontWeight:600,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.96)",textAlign:"center"}}/>
+          <button onClick={start}
+            style={{padding:"8px 20px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
+            ▶ Start
+          </button>
+        </>
+      ):(
+        <>
+          <div style={{fontFamily:"monospace",fontSize:24,fontWeight:700,color:left<60?"#c0392b":"#1A2810",flex:1}}>{fmt(left)}</div>
+          {!running&&left>0&&<button onClick={()=>setRunning(true)} style={{padding:"7px 14px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>▶</button>}
+          {running&&<button onClick={()=>setRunning(false)} style={{padding:"7px 14px",background:"rgba(192,136,32,0.12)",color:"#C08820",border:"1px solid rgba(192,136,32,0.25)",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>⏸</button>}
+          <button onClick={stop} style={{padding:"7px 14px",background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── ListPage: individual list view ── */
+function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
+  const [newTask,setNewTask]=useState("");
+  const [taskCelebration,setTaskCelebration]=useState(null);
+  const [taskConfetti,setTaskConfetti]=useState([]);
+  const inputRef=useRef(null);
+
+  const COLOURS=[
+    {id:"red",    fill:"#E05840",label:"Red"},
+    {id:"yellow", fill:"#F0B429",label:"Yellow"},
+    {id:"green",  fill:"#5A9840",label:"Green"},
+    {id:"purple", fill:"#8B5CF6",label:"Purple"},
+    {id:"blue",   fill:"#4870A0",label:"Blue"},
+    {id:"pink",   fill:"#D96BA0",label:"Pink"},
   ];
+  const getCol=id=>COLOURS.find(c=>c.id===id)||COLOURS[0];
 
-  return (
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+  const launchConfetti=allDone=>{
+    const e=allDone?["🏆","⭐","🌟","💫","✨","🎊"]:["🎉","✨","🌿","💫"];
+    setTaskConfetti(Array.from({length:allDone?60:30},(_,i)=>({id:i,x:Math.random()*100,emoji:e[i%e.length],size:allDone?14+Math.random()*10:10+Math.random()*8,delay:Math.random()*0.5,speed:1.4+Math.random()*1.0,rotation:Math.random()*360})));
+    setTimeout(()=>setTaskConfetti([]),3000);
+  };
+
+  const addTask=()=>{
+    if(!newTask.trim())return;
+    const t={id:Date.now(),name:newTask.trim(),done:false,color:"green",url:""};
+    onUpdate({...list,tasks:[...list.tasks,t]});
+    setNewTask("");
+    if(inputRef.current)inputRef.current.focus();
+  };
+
+  const completeTask=id=>{
+    const updated=list.tasks.map(t=>t.id===id?{...t,done:!t.done}:t);
+    onUpdate({...list,tasks:updated});
+    const task=list.tasks.find(t=>t.id===id);
+    if(task&&!task.done){
+      const allDone=updated.filter(t=>!t.done).length===0;
+      setTaskCelebration({name:task.name,allDone});
+      launchConfetti(allDone);
+      setTimeout(()=>setTaskCelebration(null),allDone?5000:2500);
+    }
+  };
+
+  const deleteTask=id=>onUpdate({...list,tasks:list.tasks.filter(t=>t.id!==id)});
+  const colorTask=(id,color)=>onUpdate({...list,tasks:list.tasks.map(t=>t.id===id?{...t,color}:t)});
+
+  const active=list.tasks.filter(t=>!t.done);
+  const done=list.tasks.filter(t=>t.done);
+  const pct=list.tasks.length?Math.round((done.length/list.tasks.length)*100):0;
+
+  const listAccentColors=["#E05840","#5A7848","#4870A0","#A04870","#C08830","#3A8878"];
+
+  return(
+    <div style={{minHeight:"100vh",background:"#F8F4EC",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",overflow:"hidden"}}>
       <style>{`
-        @keyframes listCardIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
-        @keyframes taskCelebPop{0%{transform:scale(0.3);opacity:0}100%{transform:scale(1);opacity:1}}
-        @keyframes taskCelebBounce{0%{transform:scale(1) rotate(-4deg)}100%{transform:scale(1.15) rotate(4deg)}}
+        @keyframes lpConfetti{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+        @keyframes lpCelebIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+        @keyframes lpBob{0%{transform:scale(1) rotate(-4deg)}100%{transform:scale(1.18) rotate(4deg)}}
       `}</style>
+      {/* Vine background */}
+      <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
+        <svg width="100%" height="100%" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="vg1" cx="40%" cy="35%" r="60%"><stop offset="0%" stopColor="#7AB848"/><stop offset="60%" stopColor="#4A8828"/><stop offset="100%" stopColor="#2A5818"/></radialGradient>
+            <radialGradient id="vg2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#90C858"/><stop offset="55%" stopColor="#5A9838"/><stop offset="100%" stopColor="#305820"/></radialGradient>
+            <filter id="vs"><feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="rgba(20,60,10,0.20)"/></filter>
+          </defs>
+          <ellipse cx="200" cy="-20" rx="280" ry="180" fill="rgba(255,210,120,0.10)"/>
+          <path d="M-10 0 C20 80 -5 160 15 240 C35 320 10 400 25 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
+          <ellipse cx="28" cy="60" rx="38" ry="22" fill="url(#vg1)" filter="url(#vs)" transform="rotate(-30 28 60)" opacity="0.85"/>
+          <ellipse cx="35" cy="140" rx="44" ry="25" fill="url(#vg2)" filter="url(#vs)" transform="rotate(-20 35 140)" opacity="0.80"/>
+          <ellipse cx="22" cy="230" rx="40" ry="24" fill="url(#vg1)" transform="rotate(-35 22 230)" opacity="0.65"/>
+          <ellipse cx="18" cy="340" rx="38" ry="22" fill="url(#vg2)" transform="rotate(-25 18 340)" opacity="0.55"/>
+          <path d="M410 0 C380 80 405 160 385 240 C365 320 390 400 375 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
+          <ellipse cx="372" cy="55" rx="42" ry="24" fill="url(#vg2)" filter="url(#vs)" transform="rotate(28 372 55)" opacity="0.85"/>
+          <ellipse cx="365" cy="145" rx="46" ry="26" fill="url(#vg1)" filter="url(#vs)" transform="rotate(22 365 145)" opacity="0.80"/>
+          <ellipse cx="378" cy="235" rx="42" ry="24" fill="url(#vg2)" transform="rotate(32 378 235)" opacity="0.65"/>
+          <ellipse cx="382" cy="350" rx="38" ry="22" fill="url(#vg1)" transform="rotate(25 382 350)" opacity="0.55"/>
+          <ellipse cx="100" cy="15" rx="50" ry="28" fill="url(#vg1)" filter="url(#vs)" transform="rotate(-10 100 15)" opacity="0.75"/>
+          <ellipse cx="200" cy="5" rx="55" ry="30" fill="url(#vg2)" filter="url(#vs)" transform="rotate(5 200 5)" opacity="0.70"/>
+          <ellipse cx="305" cy="18" rx="48" ry="27" fill="url(#vg1)" transform="rotate(12 305 18)" opacity="0.75"/>
+        </svg>
+      </div>
 
-      {/* Beautiful gradient header */}
-      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#4A6040 40%,#3A5848 100%)",padding:"52px 22px 24px",position:"relative",overflow:"hidden"}}>
-        {/* Decorative shapes */}
-        <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,0.04)"}}/>
-        <div style={{position:"absolute",bottom:-10,left:10,width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,0.03)"}}/>
-        <div style={{position:"absolute",top:20,left:"40%",fontSize:60,opacity:0.06}}>📋</div>
-
-        <button onClick={()=>setScreen("home")} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
-        </button>
-        <button onClick={()=>setAdding(true)} style={{position:"absolute",top:16,right:16,background:"#FFD700",color:"#2C3820",border:"none",borderRadius:100,width:42,height:42,fontSize:26,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 14px rgba(255,215,0,0.40)"}}>+</button>
-
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:42,marginBottom:6}}>📋</div>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#fff",marginBottom:4,letterSpacing:-0.5}}>To Do List</div>
-          <div style={{fontSize:13,color:"rgba(255,255,255,0.60)",fontStyle:"italic"}}>Prioritise your to do list — drag to reorder by importance</div>
+      {/* Celebration */}
+      {taskCelebration&&(
+        <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",
+          background:taskCelebration.allDone?"radial-gradient(ellipse at center,rgba(15,50,10,0.96),rgba(5,15,5,0.98))":"rgba(10,10,10,0.80)",
+          backdropFilter:"blur(5px)"}}
+          onClick={()=>setTaskCelebration(null)}>
+          {taskConfetti.map(p=>(
+            <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:"-5%",fontSize:p.size,animation:`lpConfetti ${p.speed}s ${p.delay}s ease-in forwards`,transform:`rotate(${p.rotation}deg)`,pointerEvents:"none",zIndex:1}}>{p.emoji}</div>
+          ))}
+          {taskCelebration.allDone?(
+            <div style={{textAlign:"center",zIndex:2,padding:"0 28px"}}>
+              <div style={{fontSize:88,lineHeight:1,marginBottom:12,animation:"lpBob 0.5s ease-in-out infinite alternate",filter:"drop-shadow(0 0 28px rgba(255,215,0,0.8))"}}>🏆</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:28,color:"#FFD700",marginBottom:10}}>LIST COMPLETE!</div>
+              <div style={{fontSize:15,color:"rgba(255,255,255,0.88)"}}>You can achieve anything you put your mind to ✨</div>
+            </div>
+          ):(
+            <div style={{background:"rgba(255,253,240,0.97)",borderRadius:28,padding:"28px 24px",textAlign:"center",maxWidth:290,margin:"0 24px",zIndex:2,border:"2.5px solid rgba(90,160,80,0.35)",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",animation:"lpCelebIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+              <div style={{fontSize:60,lineHeight:1,marginBottom:8,animation:"lpBob 0.5s ease-in-out infinite alternate"}}>🎉</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:21,color:"#1A1A10",marginBottom:6}}>{["Done! 💪","Yes! ⚡","Nailed it! 💥","Keep going! 🔥"][done.length%4]}</div>
+              <div style={{fontSize:13,color:"#5A7060"}}>{taskCelebration.name} - crossed off!</div>
+            </div>
+          )}
         </div>
+      )}
 
-        {/* Stats row */}
-        {data.length>0&&(
-          <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:14}}>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#FFD700"}}>{data.length}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.50)",textTransform:"uppercase",letterSpacing:0.8}}>Lists</div>
-            </div>
-            <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#FFD700"}}>{data.reduce((s,l)=>s+l.tasks.length,0)}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.50)",textTransform:"uppercase",letterSpacing:0.8}}>Tasks</div>
-            </div>
-            <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#FFD700"}}>{data.reduce((s,l)=>s+l.tasks.filter(t=>t.done).length,0)}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.50)",textTransform:"uppercase",letterSpacing:0.8}}>Done</div>
+      {/* Header */}
+      <div style={{position:"relative",zIndex:1,padding:"52px 22px 16px",textAlign:"center"}}>
+        <button onClick={onBack} style={{position:"absolute",top:16,left:16,background:"rgba(238,244,235,0.70)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",backdropFilter:"blur(8px)"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2C3820" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#1A2810",marginBottom:2}}>{list.name}</div>
+        <div style={{fontSize:13,color:"rgba(42,60,28,0.55)",fontStyle:"italic",marginBottom:2,fontFamily:"Georgia,serif"}}>Time to focus 🌿</div>
+        <div style={{fontSize:12,color:"rgba(42,60,28,0.45)",marginBottom:8}}>
+          {active.length===0&&done.length>0?"All done! Well done you! ✅":active.length>0?`${done.length} done · ${active.length} to go`:"Add your first task below"}
+        </div>
+        {list.tasks.length>0&&(
+          <div style={{maxWidth:240,margin:"0 auto"}}>
+            <div style={{height:5,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,background:"#4A7838",borderRadius:100,transition:"width 0.4s"}}/>
             </div>
           </div>
         )}
       </div>
 
-      <div style={{padding:"18px 16px"}}>
-        {/* New list form */}
-        {adding&&(
-          <div style={{background:"rgba(248,245,236,0.97)",borderRadius:24,padding:"20px 18px",marginBottom:16,boxShadow:"0 6px 28px rgba(0,0,0,0.12)",border:"1.5px solid rgba(90,120,72,0.20)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:12}}>✏️ New list</div>
-            <input ref={inputRef} value={name} onChange={e=>setName(e.target.value)}
-              onKeyDown={e=>{if(e.key==="Enter")submit();if(e.key==="Escape"){setAdding(false);setName("");}}}
+      <div style={{position:"relative",zIndex:1,padding:"0 14px"}}>
+
+        {/* Personal timer */}
+        <MiniTimer/>
+
+        {/* Add task */}
+        <div style={{background:"rgba(238,244,235,0.85)",backdropFilter:"blur(16px)",borderRadius:22,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 4px 20px rgba(42,80,28,0.07)"}}>
+          <div style={{fontSize:12,fontWeight:600,color:"rgba(42,60,28,0.50)",marginBottom:8}}>✏️ What needs doing?</div>
+          <div style={{display:"flex",gap:10}}>
+            <input ref={inputRef} value={newTask} onChange={e=>setNewTask(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&addTask()}
+              placeholder="Add a task..."
+              style={{flex:1,padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:15,fontWeight:600,color:"#1A2810",background:"rgba(242,248,240,0.96)",outline:"none"}}/>
+            <button onClick={addTask} style={{width:46,height:46,borderRadius:"50%",background:"#FFD700",color:"#2C3820",border:"none",fontSize:24,fontWeight:900,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 12px rgba(255,200,0,0.40)"}}>+</button>
+          </div>
+        </div>
+
+        {/* Active tasks */}
+        {active.length===0&&done.length===0&&(
+          <div style={{textAlign:"center",padding:"30px 20px"}}>
+            <div style={{fontSize:52,marginBottom:10}}>📋</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A2810",marginBottom:6}}>No tasks yet</div>
+            <div style={{fontSize:14,color:"rgba(42,60,28,0.50)"}}>Add your first task above.</div>
+          </div>
+        )}
+
+        {active.map((task,i)=>(
+          <ListTaskRow key={task.id} task={task} num={i+1} col={getCol(task.color)} COLOURS={COLOURS}
+            onComplete={()=>completeTask(task.id)}
+            onDelete={()=>deleteTask(task.id)}
+            onColour={color=>colorTask(task.id,color)}/>
+        ))}
+
+        {/* Done tasks */}
+        {done.length>0&&(
+          <div style={{marginTop:8}}>
+            <div style={{fontSize:10,fontWeight:700,color:"rgba(42,60,28,0.35)",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Done</div>
+            {done.map(task=>(
+              <div key={task.id} style={{background:"rgba(235,242,232,0.65)",borderRadius:14,marginBottom:6,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,border:"1px solid rgba(90,80,60,0.08)",opacity:0.65}}>
+                <button onClick={()=>completeTask(task.id)} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>↩</button>
+                <span style={{flex:1,fontSize:14,color:"#8A9080",textDecoration:"line-through"}}>{task.name}</span>
+                <button onClick={()=>deleteTask(task.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── ListTaskRow: task row for ListPage with working colour picker ── */
+function ListTaskRow({task,num,col,COLOURS,onComplete,onDelete,onColour}){
+  const [showColours,setShowColours]=useState(false);
+  const [above,setAbove]=useState(false);
+  const dotRef=useRef(null);
+
+  const togglePicker=e=>{
+    e.stopPropagation();
+    if(dotRef.current){
+      const r=dotRef.current.getBoundingClientRect();
+      setAbove(window.innerHeight-r.bottom<200);
+    }
+    setShowColours(s=>!s);
+  };
+
+  useEffect(()=>{
+    if(!showColours)return;
+    const h=e=>{if(dotRef.current&&!dotRef.current.closest('[data-picker]')?.contains(e.target))setShowColours(false);};
+    setTimeout(()=>document.addEventListener("click",h),50);
+    return()=>document.removeEventListener("click",h);
+  },[showColours]);
+
+  return(
+    <div data-picker="1" style={{background:"rgba(235,242,232,0.88)",backdropFilter:"blur(12px)",borderRadius:18,marginBottom:8,borderLeft:`4px solid ${col.fill}`,border:`1.5px solid ${col.fill}30`,boxShadow:"0 2px 12px rgba(42,60,28,0.06)",position:"relative"}}>
+      <div style={{padding:"11px 12px",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:22,height:22,borderRadius:"50%",background:num<=3?"linear-gradient(135deg,#4A7838,#3A6028)":"rgba(90,80,60,0.10)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:num<=3?"#fff":"#5A6848",flexShrink:0}}>{num}</div>
+        {/* Colour dot */}
+        <div style={{position:"relative",flexShrink:0}} data-picker="1">
+          <button ref={dotRef} onClick={togglePicker}
+            style={{width:24,height:24,borderRadius:"50%",background:col.fill,border:"2.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0,display:"block",boxShadow:`0 1px 6px ${col.fill}80`}}/>
+          {showColours&&(
+            <div onClick={e=>e.stopPropagation()} style={{
+              position:"absolute",
+              [above?"bottom":"top"]:above?"calc(100% + 8px)":"calc(100% + 8px)",
+              left:"50%",
+              transform:"translateX(-50%)",
+              zIndex:9999,
+              background:"#FFFCF4",
+              borderRadius:18,
+              padding:"12px 14px",
+              boxShadow:"0 16px 48px rgba(0,0,0,0.30)",
+              border:"1.5px solid rgba(90,80,60,0.14)",
+              minWidth:196,
+            }}>
+              <div style={{fontSize:10,fontWeight:700,color:"rgba(60,50,30,0.50)",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Colour label</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                {COLOURS.map(c=>(
+                  <button key={c.id} onClick={e=>{e.stopPropagation();onColour(c.id);setShowColours(false);}}
+                    style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"transparent",border:"none",cursor:"pointer",padding:"3px"}}>
+                    <div style={{
+                      width:38,height:38,borderRadius:10,background:c.fill,
+                      border:task.color===c.id?"3.5px solid rgba(0,0,0,0.55)":"2px solid rgba(0,0,0,0.10)",
+                      transform:task.color===c.id?"scale(1.15)":"scale(1)",
+                      transition:"all 0.12s",
+                      boxShadow:task.color===c.id?`0 0 0 3px #fff,0 3px 10px ${c.fill}90`:"0 1px 4px rgba(0,0,0,0.10)"
+                    }}/>
+                    <span style={{fontSize:10,color:"rgba(40,30,10,0.65)",fontWeight:600}}>{c.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <span style={{flex:1,fontSize:14,fontWeight:600,color:"#1A2810",lineHeight:1.35}}>{task.name}</span>
+        <button onClick={onComplete} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✓</button>
+        <button onClick={onDelete} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+      </div>
+    </div>
+  );
+}
+
+function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,setFocusMins,focusLeft,setFocusLeft,focusOn,setFocusOn,setFocusAlerted,fmtTimer,breakMins,setBreakMins,breakLeft,setBreakLeft,breakOn,setBreakOn,setBreakAlerted}) {
+  const [activeListId,setActiveListId]=useState(null);
+  const [newTask,setNewTask]=useState("");
+  const [taskCelebration,setTaskCelebration]=useState(null);
+  const [taskConfetti,setTaskConfetti]=useState([]);
+  const [addingList,setAddingList]=useState(false);
+  const [listName,setListName]=useState("");
+  const [showLists,setShowLists]=useState(false);
+  const [pickerEmoji,setPickerEmoji]=useState(null); // list id being emoji-picked
+  const [tempEmoji,setTempEmoji]=useState("");
+  const listInputRef=useRef(null);
+
+  useEffect(()=>{
+    if(data.length===0) setData([{id:Date.now(),name:"My Tasks",tasks:[]}]);
+  },[]);
+  useEffect(()=>{if(addingList&&listInputRef.current)listInputRef.current.focus();},[addingList]);
+
+  // Route to list page — AFTER all hooks
+  if(activeListId!==null){
+    const list=data.find(l=>l.id===activeListId);
+    if(list) return <ListPage list={list} onBack={()=>setActiveListId(null)} setScreen={setScreen}
+      onUpdate={updated=>setData(ls=>ls.map(l=>l.id===updated.id?updated:l))}
+      matrixData={matrixData} setMatrixData={setMatrixData}/>;
+  }
+
+  const launchConfetti=allDone=>{
+    const e=allDone?["🏆","⭐","🌟","💫","✨","🎊"]:["🎉","✨","🌿","💫"];
+    setTaskConfetti(Array.from({length:allDone?60:30},(_,i)=>({id:i,x:Math.random()*100,emoji:e[i%e.length],size:allDone?14+Math.random()*10:10+Math.random()*8,delay:Math.random()*0.5,speed:1.4+Math.random()*1.0,rotation:Math.random()*360})));
+    setTimeout(()=>setTaskConfetti([]),3000);
+  };
+
+  const quickAdd=()=>{
+    if(!newTask.trim())return;
+    const task={id:Date.now(),name:newTask.trim(),done:false,color:"green",url:""};
+    setData(ls=>ls.map((l,i)=>i===0?{...l,tasks:[...l.tasks,task]}:l));
+    setNewTask("");
+  };
+
+  const createList=()=>{
+    if(!listName.trim())return;
+    setData(ls=>[...ls,{id:Date.now(),name:listName.trim(),emoji:tempEmoji||null,tasks:[]}]);
+    setListName("");setTempEmoji("");setAddingList(false);
+  };
+
+  const FOCUS_OPTS=[10,20,30,60];
+  const BREAK_OPTS=[10,20,30,60];
+
+  const COLOURS=[
+    {id:"red",    fill:"#E05840",label:"Red"},
+    {id:"yellow", fill:"#F0B429",label:"Yellow"},
+    {id:"green",  fill:"#5A9840",label:"Green"},
+    {id:"purple", fill:"#8B5CF6",label:"Purple"},
+    {id:"blue",   fill:"#4870A0",label:"Blue"},
+    {id:"pink",   fill:"#D96BA0",label:"Pink"},
+  ];
+  const getCol=id=>COLOURS.find(c=>c.id===id)||COLOURS[0];
+
+  const allActive=data.flatMap(l=>l.tasks.filter(t=>!t.done));
+  const allDone=data.flatMap(l=>l.tasks.filter(t=>t.done));
+  const top3=allActive.slice(0,3);
+
+  const LIST_COLOURS=["#E05840","#5A7848","#4870A0","#A04870","#C08830","#3A8878"];
+  const LIST_EMOJIS=["🔥","🌿","💧","🌸","⭐","🌊"];
+
+  return(
+    <div style={{minHeight:"100vh",background:"#F8F4EC",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",overflow:"hidden"}}>
+      <style>{`
+        @keyframes priConf{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+        @keyframes priCIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+        @keyframes priBob{0%{transform:scale(1) rotate(-4deg)}100%{transform:scale(1.18) rotate(4deg)}}
+        @keyframes listCardIn{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+      `}</style>
+      {/* Vine background */}
+      <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
+        <svg width="100%" height="100%" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="vg1" cx="40%" cy="35%" r="60%"><stop offset="0%" stopColor="#7AB848"/><stop offset="60%" stopColor="#4A8828"/><stop offset="100%" stopColor="#2A5818"/></radialGradient>
+            <radialGradient id="vg2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#90C858"/><stop offset="55%" stopColor="#5A9838"/><stop offset="100%" stopColor="#305820"/></radialGradient>
+            <filter id="vs"><feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="rgba(20,60,10,0.20)"/></filter>
+          </defs>
+          <ellipse cx="200" cy="-20" rx="280" ry="180" fill="rgba(255,210,120,0.10)"/>
+          <path d="M-10 0 C20 80 -5 160 15 240 C35 320 10 400 25 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
+          <ellipse cx="28" cy="60" rx="38" ry="22" fill="url(#vg1)" filter="url(#vs)" transform="rotate(-30 28 60)" opacity="0.85"/>
+          <ellipse cx="35" cy="140" rx="44" ry="25" fill="url(#vg2)" filter="url(#vs)" transform="rotate(-20 35 140)" opacity="0.80"/>
+          <ellipse cx="22" cy="230" rx="40" ry="24" fill="url(#vg1)" transform="rotate(-35 22 230)" opacity="0.65"/>
+          <ellipse cx="18" cy="340" rx="38" ry="22" fill="url(#vg2)" transform="rotate(-25 18 340)" opacity="0.55"/>
+          <path d="M410 0 C380 80 405 160 385 240 C365 320 390 400 375 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
+          <ellipse cx="372" cy="55" rx="42" ry="24" fill="url(#vg2)" filter="url(#vs)" transform="rotate(28 372 55)" opacity="0.85"/>
+          <ellipse cx="365" cy="145" rx="46" ry="26" fill="url(#vg1)" filter="url(#vs)" transform="rotate(22 365 145)" opacity="0.80"/>
+          <ellipse cx="378" cy="235" rx="42" ry="24" fill="url(#vg2)" transform="rotate(32 378 235)" opacity="0.65"/>
+          <ellipse cx="382" cy="350" rx="38" ry="22" fill="url(#vg1)" transform="rotate(25 382 350)" opacity="0.55"/>
+          <ellipse cx="100" cy="15" rx="50" ry="28" fill="url(#vg1)" filter="url(#vs)" transform="rotate(-10 100 15)" opacity="0.75"/>
+          <ellipse cx="200" cy="5" rx="55" ry="30" fill="url(#vg2)" filter="url(#vs)" transform="rotate(5 200 5)" opacity="0.70"/>
+          <ellipse cx="305" cy="18" rx="48" ry="27" fill="url(#vg1)" transform="rotate(12 305 18)" opacity="0.75"/>
+        </svg>
+      </div>
+
+      {/* Celebration */}
+      {taskCelebration&&(
+        <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,10,10,0.80)",backdropFilter:"blur(5px)"}} onClick={()=>setTaskCelebration(null)}>
+          {taskConfetti.map(p=>(<div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:"-5%",fontSize:p.size,animation:`priConf ${p.speed}s ${p.delay}s ease-in forwards`,transform:`rotate(${p.rotation}deg)`,pointerEvents:"none",zIndex:1}}>{p.emoji}</div>))}
+          <div style={{background:"rgba(255,253,240,0.97)",borderRadius:28,padding:"28px 24px",textAlign:"center",maxWidth:290,margin:"0 24px",zIndex:2,border:"2.5px solid rgba(90,160,80,0.35)",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",animation:"priCIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+            <div style={{fontSize:60,lineHeight:1,marginBottom:8,animation:"priBob 0.5s ease-in-out infinite alternate"}}>🎉</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:21,color:"#1A1A10",marginBottom:6}}>{taskCelebration.name}</div>
+            <div style={{fontSize:13,color:"#5A7060"}}>Crossed off! Keep going 🌿</div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{position:"relative",zIndex:1,padding:"52px 22px 16px",textAlign:"center"}}>
+        <button onClick={()=>setScreen("home")} style={{position:"absolute",top:16,left:16,background:"rgba(238,244,235,0.70)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",backdropFilter:"blur(8px)"}}>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2C3820" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:30,color:"#1A2810",marginBottom:2,letterSpacing:-0.5}}>To Do List 📋</div>
+        <div style={{fontSize:13,color:"rgba(42,60,28,0.50)",fontStyle:"italic"}}>Prioritise your to do list</div>
+        {(allActive.length>0||allDone.length>0)&&(
+          <div style={{display:"inline-flex",gap:14,marginTop:8,background:"rgba(235,242,232,0.65)",backdropFilter:"blur(8px)",borderRadius:100,padding:"5px 16px",border:"1px solid rgba(255,255,255,0.70)"}}>
+            <span style={{fontSize:12,fontWeight:700,color:"#2A4820"}}>{allActive.length} to do</span>
+            <span style={{fontSize:12,color:"rgba(42,60,28,0.35)"}}>·</span>
+            <span style={{fontSize:12,fontWeight:700,color:"#5A7848"}}>{allDone.length} done</span>
+          </div>
+        )}
+      </div>
+
+      <div style={{position:"relative",zIndex:1,padding:"0 14px"}}>
+
+        <SimpleTimer/>
+
+        {/* ── ADD / CREATE LIST ── */}
+        {addingList?(
+          <div style={{background:"rgba(242,248,240,0.92)",backdropFilter:"blur(18px)",borderRadius:24,padding:"18px",marginBottom:16,border:"1.5px solid rgba(90,120,72,0.22)",boxShadow:"0 6px 28px rgba(42,80,28,0.12)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A2810",marginBottom:14}}>✨ New list</div>
+            {/* Emoji row */}
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:600,color:"rgba(42,60,28,0.45)",marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>Choose an emoji</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {["📋","🔥","🌿","💧","🌸","⭐","🌊","💼","🏠","🎯","💪","📚","🎨","🛒","🧘","🎉","💡","🐾","🌱","🌻"].map(e=>(
+                  <button key={e} onClick={()=>setTempEmoji(e)}
+                    style={{width:36,height:36,borderRadius:10,fontSize:18,cursor:"pointer",
+                      background:tempEmoji===e?"rgba(74,120,56,0.15)":"rgba(255,255,255,0.80)",
+                      border:tempEmoji===e?"2px solid #4A7838":"1.5px solid rgba(90,80,60,0.12)",
+                      transition:"all 0.12s",
+                      boxShadow:tempEmoji===e?"0 0 0 2px rgba(74,120,56,0.25)":"none"}}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Name input */}
+            <input ref={listInputRef} value={listName} onChange={e=>setListName(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter")createList();if(e.key==="Escape"){setListName("");setTempEmoji("");setAddingList(false);}}}
               placeholder="List name e.g. Work, Home, Today..."
-              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.95)"}}/>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={submit} style={{flex:1,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"12px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.30)"}}>✅ Create list</button>
-              <button onClick={()=>{setAdding(false);setName("");}} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"12px",fontWeight:600,fontSize:14,cursor:"pointer"}}>Cancel</button>
+              style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A2810",outline:"none",marginBottom:12,background:"rgba(242,248,240,0.98)"}}/>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={createList} style={{flex:1,padding:"12px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>✅ Create list</button>
+              <button onClick={()=>{setListName("");setTempEmoji("");setAddingList(false);}} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Cancel</button>
             </div>
           </div>
+        ):(
+          <button onClick={()=>setAddingList(true)}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"15px 20px",
+              background:"rgba(238,244,235,0.82)",backdropFilter:"blur(16px)",
+              borderRadius:22,border:"1.5px dashed rgba(90,120,72,0.30)",
+              cursor:"pointer",marginBottom:16,
+              boxShadow:"0 3px 16px rgba(42,80,28,0.06)",transition:"all 0.15s"}}>
+            <div style={{width:40,height:40,borderRadius:14,background:"rgba(90,120,72,0.12)",border:"1.5px dashed rgba(90,120,72,0.30)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>+</div>
+            <div style={{textAlign:"left"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#3A6020"}}>Create a new list</div>
+              <div style={{fontSize:11,color:"rgba(42,60,28,0.45)",marginTop:1}}>Work, home, errands, today...</div>
+            </div>
+          </button>
         )}
 
-        {/* Empty state */}
-        {data.length===0&&!adding&&(
-          <div style={{textAlign:"center",padding:"40px 20px"}}>
-            <div style={{fontSize:72,marginBottom:16}}>📋</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:24,color:"#1A1A10",marginBottom:8}}>Start your first list</div>
-            <div style={{fontSize:15,color:"#8A8070",lineHeight:1.8,maxWidth:280,margin:"0 auto 24px"}}>Create separate lists for work, home, today — whatever keeps you organised.</div>
-            <button onClick={()=>setAdding(true)} style={{padding:"14px 32px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>+ Create first list</button>
-          </div>
-        )}
+        {/* ── MY LISTS ── */}
+        <div style={{marginBottom:16}}>
+          {/* Section header button */}
+          <button onClick={()=>setShowLists(s=>!s)}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"16px 20px",
+              background:"linear-gradient(135deg,rgba(255,255,255,0.82),rgba(255,255,255,0.65))",
+              backdropFilter:"blur(18px)",
+              borderRadius:24,border:"1.5px solid rgba(90,120,72,0.18)",
+              cursor:"pointer",marginBottom:showLists?10:0,
+              boxShadow:"0 4px 22px rgba(42,80,28,0.10)"}}>
+            <div style={{width:40,height:40,borderRadius:14,background:"linear-gradient(135deg,#4A7838,#3A6028)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,boxShadow:"0 3px 12px rgba(58,80,38,0.35)"}}>📋</div>
+            <div style={{flex:1,textAlign:"left"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A2810",lineHeight:1.2}}>My Lists</div>
+              <div style={{fontSize:11,color:"rgba(42,60,28,0.50)",marginTop:1}}>
+                {data.reduce((s,l)=>s+l.tasks.filter(t=>!t.done).length,0)} tasks to do across {data.length} list{data.length!==1?"s":""}
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {data.slice(0,3).map((l,i)=>{
+                const lc=LIST_COLOURS[i%LIST_COLOURS.length];
+                return <div key={l.id} style={{width:8,height:8,borderRadius:"50%",background:lc}}/>;
+              })}
+              <svg width="12" height="8" viewBox="0 0 12 8" fill="none" style={{transform:showLists?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.25s ease",marginLeft:4}}>
+                <path d="M1 1l5 5 5-5" stroke="#5A7848" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </button>
 
-        {/* List cards — colourful */}
+          {showLists&&(
+            <div>
+
         {data.map((list,i)=>{
-          const c=listColors[i%listColors.length];
           const done=list.tasks.filter(t=>t.done).length;
           const total=list.tasks.length;
           const pct=total?Math.round((done/total)*100):0;
+          const lc=LIST_COLOURS[i%LIST_COLOURS.length];
+          const le=list.emoji||LIST_EMOJIS[i%LIST_EMOJIS.length];
+          const activeCount=total-done;
           return(
-            <div key={list.id}
-              data-prilistid={list.id}
-              draggable
-              onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragId(list.id);}}
-              onDragOver={e=>dragOver(e,list.id)}
-              onDragEnd={()=>setDragId(null)}
-              onTouchStart={e=>priTouchStart(e,list.id)}
-              onTouchMove={priTouchMove}
-              onTouchEnd={priTouchEnd}
-              onClick={()=>setActiveId(list.id)}
-              style={{
-                background:"rgba(248,245,236,0.95)",borderRadius:24,padding:0,marginBottom:14,
-                border:`1.5px solid ${c.bg}22`,cursor:"pointer",overflow:"hidden",
-                boxShadow:`0 4px 20px ${c.bg}18`,
-                transform:dragId===list.id?"scale(1.02)":"scale(1)",
-                opacity:dragId===list.id?0.85:1,
-                transition:"all 0.15s",
-                animation:`listCardIn 0.3s ${i*0.06}s both`,
-              }}>
-              {/* Coloured top strip */}
-              <div style={{height:5,background:`linear-gradient(90deg,${c.bg},${c.dark})`}}/>
-              <div style={{padding:"16px 18px",display:"flex",alignItems:"center",gap:14}}>
-                <span style={{cursor:"grab",color:"rgba(90,80,60,0.25)",fontSize:16,flexShrink:0}}>⠿</span>
-                {/* Colour icon circle */}
-                <div style={{width:52,height:52,borderRadius:18,background:c.light,border:`2.5px solid ${c.bg}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0,boxShadow:`0 2px 10px ${c.bg}22`}}>
-                  {c.emoji}
-                </div>
+            <div key={list.id} onClick={()=>setActiveListId(list.id)}
+              style={{background:"rgba(235,242,232,0.90)",backdropFilter:"blur(16px)",borderRadius:22,marginBottom:10,overflow:"hidden",cursor:"pointer",borderLeft:"4px solid "+lc,boxShadow:"0 4px 18px rgba(42,60,28,0.08)",animation:"listCardIn 0.3s "+(i*0.07)+"s both"}}>
+              <div style={{padding:"13px 14px",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:46,height:46,borderRadius:16,background:"rgba(238,244,235,0.75)",border:"2px solid "+lc+"40",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{le}</div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{list.name}</div>
-                  <div style={{fontSize:12,color:"#8A8070",marginBottom:total>0?6:0}}>
-                    {total===0?"Empty — tap to add tasks":pct===100?"✅ All done!":done>0?`${done}/${total} done`:`${total} task${total!==1?"s":""}`}
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A2810",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{list.name}</div>
+                  <div style={{fontSize:11,color:pct===100?"#4A7838":"rgba(42,60,28,0.50)",marginBottom:total>0?5:0}}>
+                    {total===0?"Empty":pct===100?"All done!":activeCount+" task"+(activeCount!==1?"s":"")+" remaining"}
                   </div>
-                  {total>0&&(
-                    <div style={{height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden",maxWidth:160}}>
-                      <div style={{height:"100%",width:`${pct}%`,background:pct===100?c.bg:`${c.bg}`,borderRadius:100,transition:"width 0.4s"}}/>
-                    </div>
-                  )}
+                  {total>0&&<div style={{height:3,background:"rgba(90,80,60,0.08)",borderRadius:100,overflow:"hidden",maxWidth:140}}><div style={{height:"100%",width:pct+"%",background:lc,borderRadius:100}}/></div>}
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",flexShrink:0}}>
-                  <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                  <button onClick={e=>{e.stopPropagation();setData(ls=>ls.filter(l=>l.id!==list.id));}}
-                    style={{background:"rgba(90,80,60,0.06)",color:"#8A8070",border:"none",borderRadius:100,padding:"4px 8px",cursor:"pointer",fontSize:11}}>🗑</button>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,flexShrink:0}}>
+                  <svg width="6" height="11" viewBox="0 0 6 11" fill="none"><path d="M1 1l4 4.5-4 4.5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                  <button onClick={e=>{e.stopPropagation();if(window.confirm("Delete "+list.name+"?"))setData(ls=>ls.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.06)",color:"rgba(192,57,43,0.45)",border:"none",borderRadius:100,padding:"3px 7px",cursor:"pointer",fontSize:11}}>X</button>
                 </div>
               </div>
             </div>
           );
         })}
 
-        {data.length>0&&(
-          <button onClick={()=>setAdding(true)} style={{width:"100%",padding:"13px",background:"rgba(90,120,72,0.08)",color:"#5A7848",border:"1.5px dashed rgba(90,120,72,0.25)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginTop:4}}>+ New list</button>
-        )}
-        <div style={{textAlign:"center",marginTop:10}}>
-          <span style={{fontSize:11,color:"rgba(60,56,40,0.35)",letterSpacing:0.5}}>⠿ Hold and drag to reorder by priority</span>
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );
 }
-
 /* ═══════════════════════════════════════════════════════
    MIND MAP
 ═══════════════════════════════════════════════════════ */
@@ -1899,7 +2366,7 @@ function SendToDropdown({node,isRoot,priData,setPriData,ideasData,setIdeasData,m
       }
     });
 
-    setSentMsg("✅ Sent to: "+[...new Set(msgs)].join(", "));
+    setSentMsg(" Sent to: "+[...new Set(msgs)].join(", "));
     setTimeout(()=>setSentMsg(""),3000);
     setSelected(new Set());setOpen(false);
   };
@@ -1965,14 +2432,14 @@ function SendToDropdown({node,isRoot,priData,setPriData,ideasData,setIdeasData,m
 function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen}) {
   const svgRef=useRef(null);
   const BRANCH_TEMPLATES=[
-    {id:"project",  icon:"🏗️", name:"Project Plan",  branches:["🎯 Goals","📋 Tasks","⚠️ Risks","📅 Timeline","👥 Team","✅ Done"]},
+    {id:"project",  icon:"🏗️", name:"Project Plan",  branches:["🎯 Goals","📋 Tasks","⚠️ Risks","📅 Timeline","👥 Team"," Done"]},
     {id:"brainstorm",icon:"⚡", name:"Brainstorm",     branches:["💡 Ideas","🌀 Wild Cards","🔗 Connections","❓ Questions","🎯 Best Picks","🗑️ Parking"]},
-    {id:"problem",  icon:"🔍", name:"Problem Solve",  branches:["❌ The Problem","🔎 Root Causes","💡 Solutions","✅ Best Fix","📋 Actions","📊 Measure"]},
+    {id:"problem",  icon:"🔍", name:"Problem Solve",  branches:["❌ The Problem","🔎 Root Causes","💡 Solutions"," Best Fix","📋 Actions","📊 Measure"]},
     {id:"weekly",   icon:"📅", name:"Weekly Review",  branches:["🏆 Wins","📚 Lessons","😓 Challenges","🎯 Next Week","💚 Grateful","🌱 Growing"]},
-    {id:"decision", icon:"⚖️", name:"Decision Map",   branches:["🤔 Decision","Option A","Option B","Option C","⚖️ Criteria","✅ My Choice"]},
+    {id:"decision", icon:"⚖️", name:"Decision Map",   branches:["🤔 Decision","Option A","Option B","Option C","⚖️ Criteria"," My Choice"]},
     {id:"goal",     icon:"🌱", name:"Goal Garden",    branches:["🎯 My Goal","🌿 Why It Matters","📋 Steps","🚧 Obstacles","💪 Support","🌸 Reward"]},
-    {id:"meeting",  icon:"👥", name:"Meeting Notes",  branches:["📋 Agenda","🗣️ Discussion","💡 Ideas","✅ Decisions","📌 Actions","📅 Follow Up"]},
-    {id:"learning", icon:"📚", name:"Learning Plan",  branches:["📖 What","🎯 Why","📚 Resources","🛠️ Practice","📅 Schedule","✅ Milestones"]},
+    {id:"meeting",  icon:"👥", name:"Meeting Notes",  branches:["📋 Agenda","🗣️ Discussion","💡 Ideas"," Decisions","📌 Actions","📅 Follow Up"]},
+    {id:"learning", icon:"📚", name:"Learning Plan",  branches:["📖 What","🎯 Why","📚 Resources","🛠️ Practice","📅 Schedule"," Milestones"]},
   ];
 
   const [nodes,setNodes]=useState(map.nodes);
@@ -2419,7 +2886,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
         /* Send actions */
         const sendToTodoList=(listId)=>{
           setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:node.text,done:false,color:"lilac",url:""}]}:l));
-          setSentMsg("✅ Added to To Do List!");setTimeout(()=>setSentMsg(""),2000);
+          setSentMsg(" Added to To Do List!");setTimeout(()=>setSentMsg(""),2000);
         };
         const plantAsGoal=(horizon)=>{
     if(!setGoalsData)return;
@@ -2431,7 +2898,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
   };
   const sendToIdeas=()=>{
           setIdeasData(ds=>[{id:Date.now(),text:node.text,ramble:node.note||"",tag:"💡 Idea",status:"spark",collection:"",url:"",pinned:false,votes:0,links:[],steps:[],created:Date.now()},...ds]);
-          setSentMsg("✅ Sent to Ideas!");setTimeout(()=>setSentMsg(""),2000);
+          setSentMsg(" Sent to Ideas!");setTimeout(()=>setSentMsg(""),2000);
         };
         const addToCalendar=()=>window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(node.text)}`,"_blank");
 
@@ -2641,7 +3108,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
     r.onload=ev=>{
       const nf=mkFile(file.name,isPDF?"pdf":"image",ev.target.result);
       upd(ds=>ds.map(d=>d.id===activeDrawerId?{...d,subCats:d.subCats.map(s=>s.id===activeSubId?{...s,files:[...s.files,nf]}:s)}:d));
-      showToast("✅ File saved!");
+      showToast(" File saved!");
     };
     r.readAsDataURL(file);
   };
@@ -2700,7 +3167,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
         ):(
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {sub.files.map(f=>(
-              <div key={f.id} style={{background:"rgba(255,255,255,0.92)",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(45,10,94,0.1)",border:`1.5px solid ${C.ll}`}}>
+              <div key={f.id} style={{background:"rgba(242,248,240,0.96)",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(45,10,94,0.1)",border:`1.5px solid ${C.ll}`}}>
                 <div onClick={()=>setPreviewFile(f)} style={{height:100,background:f.type==="image"?"#000":"#f0ebff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden"}}>
                   {f.type==="image"
                     ?<img src={f.data} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
@@ -2756,7 +3223,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
           const totalFiles=s.files.length;
           return(
             <div key={s.id} onClick={()=>setActiveSubId(s.id)}
-              style={{display:"flex",alignItems:"center",gap:12,background:"rgba(255,255,255,0.92)",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 10px rgba(90,80,60,0.08)",border:`1.5px solid ${C.ll}`,cursor:"pointer",transition:"transform 0.15s"}}
+              style={{display:"flex",alignItems:"center",gap:12,background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 10px rgba(90,80,60,0.08)",border:`1.5px solid ${C.ll}`,cursor:"pointer",transition:"transform 0.15s"}}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
               <div style={{width:42,height:42,borderRadius:10,background:`linear-gradient(135deg,${drawer.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>📂</div>
@@ -2945,7 +3412,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{pd.name}</div>
                     <div style={{fontSize:11,color:"#8A8070",lineHeight:1.55}}>{pd.subs.join(" · ")}</div>
                     {already
-                      ?<div style={{fontSize:10,color:"#5A7848",fontWeight:700,marginTop:6}}>✅ Already added</div>
+                      ?<div style={{fontSize:10,color:"#5A7848",fontWeight:700,marginTop:6}}> Already added</div>
                       :<div style={{fontSize:10,color:"#5A7848",fontWeight:700,marginTop:6}}>Tap to add →</div>
                     }
                   </div>
@@ -3012,7 +3479,7 @@ function VoiceToText({setNotesData:setND}){
     <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
       <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>🎙️ Voice to Text</div>
       <div style={{fontSize:12,color:"#8A8070",marginBottom:14}}>Speak — words appear as you talk. Needs Chrome (Android) or Safari (iPhone).</div>
-      <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:13,color:"#1A1A10",outline:"none",marginBottom:14}}>
+      <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(242,248,240,0.92)",fontSize:13,color:"#1A1A10",outline:"none",marginBottom:14}}>
         {VLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
       </select>
       <div style={{textAlign:"center",marginBottom:14}}>
@@ -3020,10 +3487,10 @@ function VoiceToText({setNotesData:setND}){
         <div style={{marginTop:10,fontSize:13,fontWeight:700,color:listening?"#c0392b":"#5A7848"}}>{listening?"● Recording — tap to stop":"Tap to start"}</div>
       </div>
       <textarea value={transcript} onChange={e=>setTranscript(e.target.value)} placeholder="Your words appear here as you speak…" rows={5}
-        style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.7,marginBottom:10}}/>
+        style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(240,247,238,0.92)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.7,marginBottom:10}}/>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>{copied?"✅ Copied":"📋 Copy"}</button>
-        <button onClick={()=>moveToNotes()} disabled={!transcript.trim()} style={{flex:1,padding:"12px",background:saved?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",opacity:!transcript.trim()?0.5:1}}>{saved?"✅ Saved!":"📓 → Notes"}</button>
+        <button onClick={()=>{navigator.clipboard?.writeText(transcript);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flex:1,padding:"12px",background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>{copied?" Copied":"📋 Copy"}</button>
+        <button onClick={()=>moveToNotes()} disabled={!transcript.trim()} style={{flex:1,padding:"12px",background:saved?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",opacity:!transcript.trim()?0.5:1}}>{saved?" Saved!":"📓 → Notes"}</button>
         <button onClick={()=>setTranscript("")} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Clear</button>
       </div>
     </div>
@@ -3454,7 +3921,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
           value={page.content}
           onChange={e=>updatePage(page.id,e.target.value)}
           placeholder="Start writing..."
-          style={{flex:1,minHeight:"55vh",padding:"16px",borderRadius:16,border:`1.5px solid ${C.ll}`,fontSize:15,lineHeight:1.8,color:C.txt,fontFamily:"'Segoe UI',sans-serif",resize:"none",outline:"none",background:"rgba(255,255,255,0.92)",boxShadow:"0 2px 12px rgba(90,80,60,0.09)"}}
+          style={{flex:1,minHeight:"55vh",padding:"16px",borderRadius:16,border:`1.5px solid ${C.ll}`,fontSize:15,lineHeight:1.8,color:C.txt,fontFamily:"'Segoe UI',sans-serif",resize:"none",outline:"none",background:"rgba(242,248,240,0.96)",boxShadow:"0 2px 12px rgba(90,80,60,0.09)"}}
         />
         <UrlField value={page.url||""} onChange={v=>updatePageUrl(page.id,v)} style={{marginTop:8,marginBottom:4}}/>
         <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:2,marginBottom:8,textAlign:"right"}}>{page.content.length} chars · auto-saved</div>
@@ -3549,7 +4016,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       </div>
       <div style={{padding:"20px 16px"}}>
         {addingPageForm&&(
-          <div style={{background:"rgba(255,255,255,0.92)",borderRadius:16,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${C.lp}`}}>
+          <div style={{background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${C.lp}`}}>
             <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>New page</div>
             <input autoFocus value={newPageName} onChange={e=>setNewPageName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitPage();if(e.key==="Escape")setAddingPageForm(false);}}
               placeholder="Page title..." style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:10}}/>
@@ -3631,7 +4098,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
           <div style={{background:"rgba(248,245,236,0.92)",borderRadius:20,padding:"16px 18px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.22)",boxShadow:"0 2px 14px rgba(60,70,40,0.08)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>New section</div>
             <input autoFocus value={newSectionName} onChange={e=>setNewSectionName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitSection();if(e.key==="Escape")setAddingSectionForm(false);}}
-              placeholder="Section name..." style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.88)"}}/>
+              placeholder="Section name..." style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(242,248,240,0.92)"}}/>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
               <button onClick={()=>{setAddingSectionForm(false);setNewSectionName('');}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,cursor:"pointer",fontSize:14,padding:"8px 14px"}}>Cancel</button>
               <button onClick={submitSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>Create</button>
@@ -3766,7 +4233,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
                     let o=[]; try{o=JSON.parse(localStorage.getItem('thinko_order')||'[]');}catch{}
                     const next=pinned?o.filter(id=>id!==pinId):[...o,pinId];
                     try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
-                    alert(pinned?`${m.name} unpinned from home`:`${m.name} pinned to home ✅`);
+                    alert(pinned?`${m.name} unpinned from home`:`${m.name} pinned to home `);
                   }} style={{position:"absolute",top:12,right:12,background:pinned?"rgba(90,120,72,0.15)":"rgba(248,245,236,0.90)",border:`1px solid ${pinned?"rgba(90,120,72,0.30)":"rgba(90,80,60,0.15)"}`,borderRadius:100,padding:"3px 8px",fontSize:10,fontWeight:700,color:pinned?"#3A6020":"#6A6050",cursor:"pointer"}}>
                     📌{pinned?" Pinned":" Pin"}
                   </button>
@@ -4010,9 +4477,9 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
                 <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setRecipeDraft(d=>({...d,photo:ev.target.result}));r.readAsDataURL(f);}}/>
               </label>
               <UrlField value={recipeDraft.url} onChange={v=>setRecipeDraft(d=>({...d,url:v}))} style={{marginBottom:10}}/>
-              <textarea value={recipeDraft.ingredients} onChange={e=>setRecipeDraft(d=>({...d,ingredients:e.target.value}))} placeholder="Ingredients (one per line)..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
-              <textarea value={recipeDraft.method} onChange={e=>setRecipeDraft(d=>({...d,method:e.target.value}))} placeholder="Method / steps..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(255,255,255,0.85)"}}/>
-              <textarea value={recipeDraft.description} onChange={e=>setRecipeDraft(d=>({...d,description:e.target.value}))} placeholder="Notes (optional)..." rows={2} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:14,background:"rgba(255,255,255,0.85)"}}/>
+              <textarea value={recipeDraft.ingredients} onChange={e=>setRecipeDraft(d=>({...d,ingredients:e.target.value}))} placeholder="Ingredients (one per line)..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(240,247,238,0.92)"}}/>
+              <textarea value={recipeDraft.method} onChange={e=>setRecipeDraft(d=>({...d,method:e.target.value}))} placeholder="Method / steps..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(240,247,238,0.92)"}}/>
+              <textarea value={recipeDraft.description} onChange={e=>setRecipeDraft(d=>({...d,description:e.target.value}))} placeholder="Notes (optional)..." rows={2} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:14,background:"rgba(240,247,238,0.92)"}}/>
               <div style={{display:"flex",gap:10}}>
                 <button onClick={()=>{setAddingRecipe(false);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:"",photo:""});}} style={{flex:1,background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"11px",fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
                 <button onClick={()=>{if(!recipeDraft.name.trim())return;setRecipes(rs=>[...rs,{id:Date.now(),...recipeDraft}]);setRecipeDraft({name:"",description:"",ingredients:"",method:"",url:"",photo:""});setAddingRecipe(false);}} style={{flex:2,background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"11px 24px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 12px rgba(58,80,38,0.28)"}}>Save Recipe</button>
@@ -4087,7 +4554,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
                   {/* Large + button matching reference */}
                   <button onClick={()=>openAddMeal(dayIdx)} style={{
                     width:44,height:44,borderRadius:"50%",
-                    background:"rgba(255,255,255,0.85)",
+                    background:"rgba(240,247,238,0.92)",
                     border:`1.5px solid ${border}`,
                     color:textCol,
                     fontSize:24,fontWeight:300,
@@ -4189,7 +4656,7 @@ const STATUSES=[
   {key:"spark",   label:"✨ Spark",      color:"#f39c12"},
   {key:"develop", label:"🔧 Developing", color:"#2980b9"},
   {key:"ready",   label:"🚀 Ready",      color:"#27ae60"},
-  {key:"done",    label:"✅ Done",       color:"#7f8c8d"},
+  {key:"done",    label:" Done",       color:"#7f8c8d"},
 ];
 const statusByKey=k=>STATUSES.find(s=>s.key===k)||STATUSES[0];
 
@@ -4891,7 +5358,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
       window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("🏔️ "+step.text)}`,"_blank");
     } else if(dest==="pri"&&extra){
       setPriData(ls=>ls.map(l=>l.id===extra?{...l,tasks:[...l.tasks,{id:Date.now(),name:step.text,done:false,color:"lilac",url:""}]}:l));
-      showToast("✅ Added to To Do List!");
+      showToast(" Added to To Do List!");
     } else if(dest==="matrix"&&extra){
       setMatrixData(ds=>[...ds,{id:Date.now(),text:step.text,quad:extra,created:Date.now(),touched:Date.now(),url:""}]);
       showToast("🎯 Added to Matrix!");
@@ -4914,7 +5381,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
         <button onClick={onBack} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",flexShrink:0}}>←</button>
         <span style={{color:"#1A1A10",fontWeight:900,fontSize:17,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{idea.text.slice(0,30)+(idea.text.length>30?"…":"")}</span>
         <button onClick={()=>upd({status:idea.status==="done"?"spark":"done"})} style={{background:idea.status==="done"?"rgba(39,174,96,0.5)":"rgba(255,255,255,0.18)",color:"#1A1A10",border:`1.5px solid ${idea.status==="done"?"#27ae60":"rgba(255,255,255,0.3)"}`,borderRadius:20,padding:"6px 12px",fontWeight:800,fontSize:12,cursor:"pointer",flexShrink:0}}>
-          {idea.status==="done"?"✅ Done":"Mark done"}
+          {idea.status==="done"?" Done":"Mark done"}
         </button>
       </div>
 
@@ -4975,7 +5442,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
         </div>
 
         {/* Add step */}
-        <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:12,padding:"9px 13px",border:`1.5px solid ${C.ll}`}}>
+        <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(242,248,240,0.92)",borderRadius:12,padding:"9px 13px",border:`1.5px solid ${C.ll}`}}>
           <input value={newStepText} onChange={e=>setNewStepText(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&addStep()}
             placeholder="Add a step…"
@@ -4993,7 +5460,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
         {steps.map((step,si)=>{
           const microDone=(step.microSteps||[]).filter(m=>m.done).length;
           return(
-            <div key={step.id} style={{background:"rgba(255,255,255,0.92)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${step.done?"#a5d6a7":C.ll}`,boxShadow:"0 2px 10px rgba(90,80,60,0.07)",opacity:step.done?0.75:1}}>
+            <div key={step.id} style={{background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${step.done?"#a5d6a7":C.ll}`,boxShadow:"0 2px 10px rgba(90,80,60,0.07)",opacity:step.done?0.75:1}}>
 
               {/* Step row */}
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
@@ -5171,7 +5638,7 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
             <textarea ref={textRef} value={draft.text} onChange={e=>setDraft(d=>({...d,text:e.target.value}))}
               placeholder="What's your idea?"
               rows={3}
-              style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:16,border:"1.5px solid rgba(192,160,40,0.25)",fontSize:15,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",marginBottom:12,background:"rgba(255,255,255,0.92)"}}/>
+              style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:16,border:"1.5px solid rgba(192,160,40,0.25)",fontSize:15,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",marginBottom:12,background:"rgba(242,248,240,0.96)"}}/>
             {/* Tag picker */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
               {TAGS.map(t=>(
@@ -5374,7 +5841,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   const touch=id=>setData(ds=>ds.map(d=>d.id===id?{...d,touched:Date.now()}:d));
 
   /* send actions */
-  const sendToPri=(task,listId)=>{setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:task.text,done:false,color:"lilac"}]}:l));showToast("✅ Sent to To Do List!");setSendMenu(null);};
+  const sendToPri=(task,listId)=>{setPriData(ls=>ls.map(l=>l.id===listId?{...l,tasks:[...l.tasks,{id:Date.now(),name:task.text,done:false,color:"lilac"}]}:l));showToast(" Sent to To Do List!");setSendMenu(null);};
   const sendToMap=task=>{const root={id:Date.now(),text:task.text,x:0,y:0,parent:null,color:"crystal"};setMapData(ms=>[...ms,{id:Date.now()+1,name:task.text,nodes:[root]}]);showToast("🧠 Mind map created!");setSendMenu(null);};
   const sendToCal=task=>{window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(task.text)}`,"_blank");setSendMenu(null);};
 
@@ -5482,7 +5949,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                   {tasks.map(t=>{
                     const expanded=expandedTask===t.id;
                     return(
-                      <div key={t.id} style={{background:"rgba(255,255,255,0.78)",borderRadius:10,padding:"7px 8px",marginBottom:5,border:"1px solid rgba(255,255,255,0.9)"}}>
+                      <div key={t.id} style={{background:"rgba(235,242,232,0.85)",borderRadius:10,padding:"7px 8px",marginBottom:5,border:"1px solid rgba(255,255,255,0.9)"}}>
                         <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{fontFamily:"Georgia,serif",fontSize:12,fontWeight:600,color:"#1A1A10",lineHeight:1.35,cursor:"pointer",wordBreak:"break-word"}}>{t.text}</div>
                         {expanded&&(
                           <div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:5}}>
@@ -5506,7 +5973,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                     onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
                     onKeyDown={e=>e.key==="Enter"&&addInline(q.key)}
                     placeholder="Add task…"
-                    style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(255,255,255,0.85)",fontSize:12,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}
+                    style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(240,247,238,0.92)",fontSize:12,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}
                   />
                   <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:30,height:30,fontSize:20,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
@@ -5555,7 +6022,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
               <div style={{color:"#8A8070",fontSize:13,marginBottom:10}}>Untouched for over a week:</div>
               <div style={{background:"rgba(160,120,40,0.06)",borderRadius:16,padding:"13px 16px",fontWeight:600,fontSize:14,color:"#1A1A10",marginBottom:16,border:"1px solid rgba(160,110,40,0.2)"}}>{staleModal.text}</div>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                <button onClick={()=>{touch(staleModal.id);setStaleModal(null);showToast("👍 Kept!");}} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"1.5px solid rgba(90,160,80,0.3)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ Still doing it — keep it</button>
+                <button onClick={()=>{touch(staleModal.id);setStaleModal(null);showToast("👍 Kept!");}} style={{background:"rgba(90,160,80,0.12)",color:"#2A7020",border:"1.5px solid rgba(90,160,80,0.3)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}> Still doing it — keep it</button>
                 <button onClick={()=>{setMoveTask(staleModal);setStaleModal(null);}} style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>↔ Move to different quadrant</button>
                 <button onClick={()=>{del(staleModal.id);setStaleModal(null);showToast("Removed.");}} style={{background:"rgba(90,80,60,0.08)",color:"#7A7060",border:"1.5px solid rgba(90,80,60,0.2)",borderRadius:100,padding:"14px",fontWeight:700,fontSize:14,cursor:"pointer"}}>🗑 Remove this task</button>
               </div>
@@ -5776,7 +6243,7 @@ Budget: ${b.name}`,created:Date.now()});
             <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:4}}>📋 What is this budget for?</div>
               <textarea value={b.description||""} onChange={e=>upd({description:e.target.value})} placeholder="e.g. Summer holiday to Spain, July 2025 — flights, hotel, spending money…" rows={3}
-                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",background:"rgba(255,255,255,0.90)",fontFamily:"'Segoe UI',sans-serif"}}/>
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",background:"rgba(242,248,240,0.94)",fontFamily:"'Segoe UI',sans-serif"}}/>
             </div>
 
             {/* Planned items */}
@@ -5796,9 +6263,9 @@ Budget: ${b.name}`,created:Date.now()});
               {/* Add planned item */}
               <div style={{display:"flex",gap:8,marginTop:10}}>
                 <input value={b._newPlan||""} onChange={e=>upd({_newPlan:e.target.value})} placeholder="What will you spend on?"
-                  style={{flex:2,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(255,255,255,0.90)",color:"#1A1A10"}}/>
+                  style={{flex:2,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.94)",color:"#1A1A10"}}/>
                 <input value={b._newPlanAmt||""} onChange={e=>upd({_newPlanAmt:e.target.value})} placeholder="£" type="number"
-                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(255,255,255,0.90)",color:"#1A1A10"}}/>
+                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.94)",color:"#1A1A10"}}/>
                 <button onClick={()=>{if(!(b._newPlan||"").trim())return;upd({plannedItems:[...(b.plannedItems||[]),{label:b._newPlan.trim(),amount:b._newPlanAmt||0}],_newPlan:"",_newPlanAmt:""});}}
                   style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontWeight:700,cursor:"pointer"}}>+</button>
               </div>
@@ -5817,11 +6284,11 @@ Budget: ${b.name}`,created:Date.now()});
             <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:12}}>💸 Log actual spending</div>
               <input value={newExp.label} onChange={e=>setNewExp(x=>({...x,label:e.target.value}))} placeholder="What did you spend on?"
-                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.90)"}}/>
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(242,248,240,0.94)"}}/>
               <div style={{display:"flex",gap:8,marginBottom:10}}>
                 <span style={{display:"flex",alignItems:"center",padding:"0 10px",fontSize:16,color:"#5A7848"}}>£</span>
                 <input value={newExp.amount} onChange={e=>setNewExp(x=>({...x,amount:e.target.value}))} placeholder="0.00" type="number"
-                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)"}}/>
+                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.94)"}}/>
               </div>
               <button onClick={addExp} disabled={!newExp.label.trim()||!newExp.amount}
                 style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newExp.label.trim()||!newExp.amount?0.5:1}}>
@@ -5864,12 +6331,12 @@ Budget: ${b.name}`,created:Date.now()});
                 ))}
               </div>
               <input value={newTicket.name} onChange={e=>setNewTicket(x=>({...x,name:e.target.value}))} placeholder="e.g. London to Paris Eurostar, Hotel Ibis…"
-                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.90)"}}/>
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(242,248,240,0.94)"}}/>
               <div style={{display:"flex",gap:8,marginBottom:8}}>
                 <input value={newTicket.price} onChange={e=>setNewTicket(x=>({...x,price:e.target.value}))} placeholder="£ Price" type="number"
-                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)"}}/>
+                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.94)"}}/>
                 <input value={newTicket.date} onChange={e=>setNewTicket(x=>({...x,date:e.target.value}))} type="date"
-                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)"}}/>
+                  style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.94)"}}/>
               </div>
               <button onClick={addTicket} disabled={!newTicket.name.trim()}
                 style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newTicket.name.trim()?0.5:1}}>
@@ -6118,7 +6585,7 @@ function ShoppingList({data,setData,setScreen}){
             <div style={{display:"flex",gap:8,marginTop:12,paddingTop:12,borderTop:"1px solid rgba(90,80,60,0.07)"}}>
               <input
                 placeholder="Add your own item…"
-                style={{flex:1,padding:"9px 13px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.85)"}}
+                style={{flex:1,padding:"9px 13px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(240,247,238,0.92)"}}
                 onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){setCustomItems(ci=>[...ci,{name:e.target.value.trim(),on:true}]);e.target.value="";}}}
               />
               <span style={{fontSize:11,color:"#8A8070",alignSelf:"center",flexShrink:0}}>Enter to add</span>
@@ -6280,7 +6747,7 @@ function ShoppingList({data,setData,setScreen}){
                   <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10"}}>{list.name}</div>
                   <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>
                     {total===0?"Empty — tap to add items":`${done}/${total} done`}
-                    {pct===100&&total>0&&<span style={{color:"#5A9040",fontWeight:700}}> ✅</span>}
+                    {pct===100&&total>0&&<span style={{color:"#5A9040",fontWeight:700}}> </span>}
                     {isMostBought&&total>0&&<span style={{marginLeft:6,fontSize:11}}>· Your everyday essentials</span>}
                   </div>
                   {/* Item preview inline for wide card */}
@@ -6375,23 +6842,23 @@ function Translator(){
       <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>🌍 Translator</div>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-          <select value={srcLang} onChange={e=>setSrcLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+          <select value={srcLang} onChange={e=>setSrcLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(242,248,240,0.92)",fontSize:12,color:"#1A1A10",outline:"none"}}>
             {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
           <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
-          <select value={tgtLang} onChange={e=>setTgtLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+          <select value={tgtLang} onChange={e=>setTgtLang(e.target.value)} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(242,248,240,0.92)",fontSize:12,color:"#1A1A10",outline:"none"}}>
             {TLANGS.map(l=><option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
         </div>
         <textarea value={srcText} onChange={e=>setSrcText(e.target.value)} placeholder="Type or paste text to translate…" rows={4}
-          style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(255,255,255,0.85)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.65,marginBottom:10}}/>
+          style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(240,247,238,0.92)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.65,marginBottom:10}}/>
         <button onClick={translate} disabled={loading||!srcText.trim()} style={{width:"100%",padding:"13px",background:loading||!srcText.trim()?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading||!srcText.trim()?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:12}}>
           {loading?"🌿 Translating…":"🌍 Translate"}
         </button>
         {result&&(
           <div style={{background:"rgba(90,120,72,0.06)",borderRadius:18,padding:"14px 16px",border:"1px solid rgba(90,120,72,0.12)"}}>
             <div style={{fontSize:14,color:"#1A2810",lineHeight:1.7,marginBottom:10}}>{result}</div>
-            <button onClick={()=>{navigator.clipboard?.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{copied?"✅ Copied":"📋 Copy"}</button>
+            <button onClick={()=>{navigator.clipboard?.writeText(result);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{background:copied?"rgba(90,160,80,0.15)":"rgba(90,120,72,0.10)",color:"#3A6020",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{copied?" Copied":"📋 Copy"}</button>
           </div>
         )}
       </div>
@@ -6436,17 +6903,17 @@ function CurrencyConverter(){
     return(
       <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,padding:"20px 18px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:14}}>💱 Currency Converter</div>
-        <div style={{background:"rgba(255,255,255,0.88)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.20)",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+        <div style={{background:"rgba(242,248,240,0.92)",borderRadius:100,padding:"12px 18px",border:"1.5px solid rgba(90,120,72,0.20)",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:20}}>{flagOf(from)}</span>
           <input value={amount} onChange={e=>setAmount(e.target.value)} onKeyDown={e=>e.key==="Enter"&&convert()} type="number" placeholder="Amount"
             style={{flex:1,border:"none",outline:"none",fontSize:22,fontWeight:700,color:"#1A1A10",background:"transparent"}}/>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-          <select value={from} onChange={e=>{setFrom(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+          <select value={from} onChange={e=>{setFrom(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(242,248,240,0.92)",fontSize:12,color:"#1A1A10",outline:"none"}}>
             {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
           </select>
           <button onClick={swap} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:"50%",width:36,height:36,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>⇄</button>
-          <select value={to} onChange={e=>{setTo(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(255,255,255,0.88)",fontSize:12,color:"#1A1A10",outline:"none"}}>
+          <select value={to} onChange={e=>{setTo(e.target.value);setResult(null);}} style={{flex:1,padding:"10px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",background:"rgba(242,248,240,0.92)",fontSize:12,color:"#1A1A10",outline:"none"}}>
             {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
           </select>
         </div>
@@ -7023,7 +7490,7 @@ function WorldTime(){
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>🔍 Add a city</div>
         <input value={search} onChange={e=>setSearch(e.target.value)}
           placeholder="Search city or region…"
-          style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.92)",marginBottom:10}}/>
+          style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.96)",marginBottom:10}}/>
         {filtered.map(zone=>(
           <div key={zone.tz} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
             <span style={{fontSize:22,flexShrink:0}}>{zone.flag}</span>
@@ -7247,7 +7714,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
     if(dest==="cal") window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(sub.text)}&details=${encodeURIComponent(goal.title)}`,"_blank");
     else if(dest==="pri"&&extra) setPriData(ls=>ls.map(l=>l.id===extra?{...l,tasks:[...l.tasks,{id:Date.now(),name:sub.text,done:false,color:"lilac",url:""}]}:l));
     else if(dest==="matrix"&&extra) setMatrixData(ds=>[...ds,{id:Date.now(),text:sub.text,quad:extra,created:Date.now(),touched:Date.now(),url:""}]);
-    showToast("✅ Sent!");setSendMenu(null);
+    showToast(" Sent!");setSendMenu(null);
   };
 
   const accentCol=h.color;
@@ -7275,7 +7742,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
           border:`1.5px solid ${goal.status==="done"?"rgba(90,120,72,0.4)":"rgba(90,80,60,0.2)"}`,
           borderRadius:100,padding:"7px 14px",fontWeight:700,fontSize:13,cursor:"pointer",
         }}>
-          {goal.status==="done"?"✅ Done":"Mark done"}
+          {goal.status==="done"?" Done":"Mark done"}
         </button>
         <button onClick={()=>{if(window.confirm("Delete this goal?"))onDelete(goal.id);}} style={{background:"rgba(192,57,43,0.1)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.2)",borderRadius:10,width:36,height:36,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
       </div>
@@ -7380,7 +7847,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
         </div>
 
         {/* Add subtask */}
-        <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(255,255,255,0.88)",borderRadius:12,padding:"9px 13px",border:`1.5px solid ${C.ll}`}}>
+        <div style={{display:"flex",gap:8,marginBottom:12,background:"rgba(242,248,240,0.92)",borderRadius:12,padding:"9px 13px",border:`1.5px solid ${C.ll}`}}>
           <input value={newSub} onChange={e=>setNewSub(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addSub()} placeholder="Add a subtask…"
             style={{flex:1,border:"none",outline:"none",fontSize:14,fontWeight:600,color:C.txt,background:"transparent"}}/>
           <button onClick={addSub} style={{background:btnGrad,color:"#1A1A10",border:"none",borderRadius:9,width:32,height:32,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>+</button>
@@ -7391,7 +7858,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
         )}
 
         {goal.subtasks.map((sub,si)=>(
-          <div key={sub.id} style={{background:"rgba(255,255,255,0.92)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${sub.done?"#a5d6a7":C.ll}`,opacity:sub.done?0.75:1}}>
+          <div key={sub.id} style={{background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${sub.done?"#a5d6a7":C.ll}`,opacity:sub.done?0.75:1}}>
 
             {/* Subtask row */}
             <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}}>
@@ -7651,7 +8118,7 @@ function Routine({routineData,setRoutineData,setScreen}){
         {celebration&&(
           <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
             <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 28px",textAlign:"center",maxWidth:310,margin:"0 24px",border:`3px solid ${celebration.allDone?"rgba(255,200,50,0.6)":"rgba(90,160,80,0.35)"}`,animation:"rCelebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
-              <div style={{fontSize:celebration.allDone?80:60,marginBottom:8,animation:"rBounce 0.6s ease-in-out infinite alternate"}}>{celebration.allDone?"🏆":"✅"}</div>
+              <div style={{fontSize:celebration.allDone?80:60,marginBottom:8,animation:"rBounce 0.6s ease-in-out infinite alternate"}}>{celebration.allDone?"🏆":""}</div>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:celebration.allDone?24:20,color:"#1A1A10",marginBottom:10}}>{celebration.allDone?"FULL ROUTINE COMPLETE! 🔥":"Step done! Keep it up 💪"}</div>
               <div style={{fontSize:14,color:"#5A7060",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif"}}>{celebration.allDone?"You showed up for yourself today. 🌟":`"${celebration.name}" · ${doneCount}/${items.length} done`}</div>
             </div>
@@ -7728,7 +8195,7 @@ function Routine({routineData,setRoutineData,setScreen}){
               <input value={newName} onChange={e=>setNewName(e.target.value)}
                 onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
                 placeholder="Task name…"
-                style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.92)"}}/>
+                style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(242,248,240,0.96)"}}/>
               <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:10}}>⏱ Duration</div>
               <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
                 {[1,2,5,10,15,20,30].map(m=>(
@@ -7736,7 +8203,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                 ))}
               </div>
               <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
-                style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>✅ Add task</button>
+                style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}> Add task</button>
             </div>
           )}
 
@@ -7785,7 +8252,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                         // Move to top of list
                         const idx=items.findIndex(i=>i.id===item.id);
                         const a=[...items];a.splice(idx,1);a.unshift({...item});save(a);setStalePromptId(null);
-                      }} style={{padding:"9px 14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>✅ Do today</button>
+                      }} style={{padding:"9px 14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}> Do today</button>
                       <button onClick={()=>{
                         // Open Google Calendar
                         const now=new Date();const pad=n=>String(n).padStart(2,"0");
@@ -7814,7 +8281,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                       <span style={{cursor:"grab",color:"rgba(90,120,72,0.30)",fontSize:18,flexShrink:0,touchAction:"none"}}>⠿</span>
                       {/* Icon circle */}
                       <div style={{width:48,height:48,borderRadius:16,background:`${col}20`,border:`2.5px solid ${col}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>
-                        {item.doneToday?"✅":ic}
+                        {item.doneToday?"":ic}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontFamily:"Georgia,serif",fontSize:16,fontWeight:item.doneToday?400:700,color:item.doneToday?"#8A9080":"#1A1A10",textDecoration:item.doneToday?"line-through":"none",lineHeight:1.3}}>{item.name}</div>
@@ -7827,7 +8294,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                       <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"flex-end",flexShrink:0}}>
                         {item.doneToday
                           ?<button onClick={()=>undoItem(item.id)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"6px 11px",fontSize:11,cursor:"pointer"}}>↩ Undo</button>
-                          :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 14px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(58,80,38,0.25)"}}>✅ Done</button>
+                          :<button onClick={()=>completeItem(item.id)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"8px 14px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(58,80,38,0.25)"}}> Done</button>
                         }
                         <div style={{display:"flex",gap:4}}>
                           {/* Colour dot picker button */}
@@ -7860,7 +8327,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                           <button onClick={()=>stopTimer(item.id)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>⏹ Stop</button></>
                         ):(
                           <>{tt?.left===0
-                            ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap ✅</span>
+                            ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap </span>
                             :<span style={{fontSize:13,color:"#8A8070",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>Start {item.mins}min timer</span>
                           }
                           <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:col,color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶ Start</button></>
@@ -7938,7 +8405,7 @@ function Routine({routineData,setRoutineData,setScreen}){
             <input value={newRoutineName} onChange={e=>setNewRoutineName(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&newRoutineName.trim()){const r={id:Date.now(),name:newRoutineName.trim(),icon:newRoutineIcon,items:[]};const next=[...routines,r];saveRoutines(next);setActiveId(r.id);setNewRoutineName("");setCreatingRoutine(false);}}}
               placeholder="Routine name… e.g. Morning Routine"
-              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(255,255,255,0.92)"}}/>
+              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(242,248,240,0.96)"}}/>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>{if(!newRoutineName.trim())return;const r={id:Date.now(),name:newRoutineName.trim(),icon:newRoutineIcon,items:[]};const next=[...routines,r];saveRoutines(next);setActiveId(r.id);setNewRoutineName("");setCreatingRoutine(false);}}
                 style={{flex:1,padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>Create routine</button>
@@ -7977,7 +8444,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>{r.name}</div>
                   <div style={{fontSize:12,color:"#8A8070",fontFamily:"'Segoe UI',sans-serif",marginBottom:total>0?6:0}}>
-                    {total===0?"No tasks yet — tap to add some":pct===100?"✅ All done today!":done>0?`${done}/${total} tasks done today`:`${total} step${total!==1?"s":""}·Tap to start`}
+                    {total===0?"No tasks yet — tap to add some":pct===100?" All done today!":done>0?`${done}/${total} tasks done today`:`${total} step${total!==1?"s":""}·Tap to start`}
                   </div>
                   {total>0&&(
                     <div style={{height:5,background:"rgba(90,80,60,0.08)",borderRadius:100,overflow:"hidden",maxWidth:180}}>
@@ -8062,7 +8529,7 @@ function TaskReschedule({task,i,data,upd,priData,setPriData,charged}){
                   localStorage.setItem('thinko_week_plan',JSON.stringify(updated));
                 }catch{}
                 setOpen(false);
-                alert(`"${task}" added to ${day}'s plan ✅`);
+                alert(`"${task}" added to ${day}'s plan `);
               }} style={{padding:"6px 12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>
                 {day.slice(0,3)}
               </button>
@@ -8088,7 +8555,7 @@ function TaskReschedule({task,i,data,upd,priData,setPriData,charged}){
             <input value={newStep} onChange={e=>setNewStep(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&newStep.trim()){setBreakdownItems(bi=>[...bi,newStep.trim()]);setNewStep("");}}}
               placeholder="Add a step…"
-              style={{flex:1,padding:"8px 12px",borderRadius:100,border:"1.5px solid rgba(192,136,32,0.22)",fontSize:12,outline:"none",background:"rgba(255,255,255,0.90)",color:"#1A1A10"}}/>
+              style={{flex:1,padding:"8px 12px",borderRadius:100,border:"1.5px solid rgba(192,136,32,0.22)",fontSize:12,outline:"none",background:"rgba(242,248,240,0.94)",color:"#1A1A10"}}/>
             <button onClick={()=>{if(!newStep.trim())return;setBreakdownItems(bi=>[...bi,newStep.trim()]);setNewStep("");}} style={{background:"#C08820",color:"#fff",border:"none",borderRadius:100,padding:"8px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>+</button>
           </div>
           {breakdownItems.length>0&&(
@@ -8103,7 +8570,7 @@ function TaskReschedule({task,i,data,upd,priData,setPriData,charged}){
                 // Add to first To Do list
                 if(setPriData&&priData&&priData.length>0){
                   setPriData(ls=>ls.map((l,li)=>li===0?{...l,tasks:[...l.tasks,...breakdownItems.map(s=>({id:Date.now()+Math.random(),name:s,done:false,color:"lilac"}))]}:l));
-                  setOpen(false);alert("Steps added to To Do List ✅");
+                  setOpen(false);alert("Steps added to To Do List ");
                 } else alert("Add a To Do List first");
               }} style={{padding:"7px 12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Send to To Do List</button>
               <button onClick={()=>{
@@ -8111,7 +8578,7 @@ function TaskReschedule({task,i,data,upd,priData,setPriData,charged}){
                 const DAYS2=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
                 const day=DAYS2[new Date().getDay()===0?6:new Date().getDay()-1];
                 try{const wp=JSON.parse(localStorage.getItem('thinko_week_plan')||'[]');const updated=DAYS2.map(d=>{const found=wp.find(w=>w.day===d)||{day:d,tasks:[]};return d===day?{...found,tasks:[...(found.tasks||[]),...breakdownItems]}:found;});localStorage.setItem('thinko_week_plan',JSON.stringify(updated));}catch{}
-                setOpen(false);alert(`Steps added to this week's plan ✅`);
+                setOpen(false);alert(`Steps added to this week's plan `);
               }} style={{padding:"7px 12px",background:"rgba(66,133,244,0.10)",color:"#4285f4",border:"1px solid rgba(66,133,244,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>📆 Add to Week Plan</button>
             </div>
           )}
@@ -8168,7 +8635,7 @@ function ChargeCompare({tasks, onDone}) {
         <div style={{display:"flex",flexDirection:"column",gap:12,width:"100%",maxWidth:420}}>
           {[a,b].map((task,ti)=>(
             <button key={ti} onClick={()=>choose(task)}
-              style={{width:"100%",padding:"20px 22px",borderRadius:22,background:"rgba(255,255,255,0.92)",border:"1.5px solid rgba(90,120,72,0.20)",cursor:"pointer",display:"flex",alignItems:"center",gap:16,boxShadow:"0 3px 16px rgba(60,70,40,0.08)",transition:"all 0.15s",textAlign:"left"}}
+              style={{width:"100%",padding:"20px 22px",borderRadius:22,background:"rgba(242,248,240,0.96)",border:"1.5px solid rgba(90,120,72,0.20)",cursor:"pointer",display:"flex",alignItems:"center",gap:16,boxShadow:"0 3px 16px rgba(60,70,40,0.08)",transition:"all 0.15s",textAlign:"left"}}
               onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.02)";e.currentTarget.style.boxShadow="0 6px 24px rgba(60,70,40,0.14)";e.currentTarget.style.borderColor="rgba(90,120,72,0.45)";}}
               onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.boxShadow="0 3px 16px rgba(60,70,40,0.08)";e.currentTarget.style.borderColor="rgba(90,120,72,0.20)";}}
               onTouchStart={e=>{e.currentTarget.style.transform="scale(1.02)";e.currentTarget.style.borderColor="rgba(90,120,72,0.45)";}}
@@ -8242,7 +8709,7 @@ function WeekPlan({targetTasks,plan,charged,days,today,DAY_EMOJI,DAYS}){
               <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>{day}</span>
               {isToday&&<span style={{background:"#5A7848",color:"#fff",fontSize:10,fontWeight:700,borderRadius:100,padding:"2px 10px"}}>Today</span>}
               {isFuture&&<span style={{fontSize:11,color:"#8A8070",fontStyle:"italic"}}>Upcoming</span>}
-              {allDone&&<span style={{fontSize:22}}>✅</span>}
+              {allDone&&<span style={{fontSize:22}}></span>}
             </div>
 
             {/* Celebration */}
@@ -8262,7 +8729,7 @@ function WeekPlan({targetTasks,plan,charged,days,today,DAY_EMOJI,DAYS}){
                 return(
                   <div key={ti} style={{marginBottom:isMissed?8:2}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:ti<tasksForDay.length-1?"1px solid rgba(90,80,60,0.07)":"none"}}>
-                      <span style={{fontSize:16,flexShrink:0}}>{done?"✅":isMissed?"⚠️":"◦"}</span>
+                      <span style={{fontSize:16,flexShrink:0}}>{done?"":isMissed?"⚠️":"◦"}</span>
                       <span style={{flex:1,fontSize:14,fontWeight:600,color:done?"#8A9080":isMissed?"#7A5020":"#1A1A10",textDecoration:done?"line-through":"none"}}>{task}</span>
                     </div>
                     {isMissed&&(
@@ -8506,7 +8973,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 </div>
               </div>
               <div style={{height:6,background:"rgba(255,255,255,0.20)",borderRadius:100,overflow:"hidden",marginBottom:8}}>
-                <div style={{height:"100%",width:`${wipePct}%`,background:"rgba(255,255,255,0.85)",borderRadius:100,transition:"width 0.4s"}}/>
+                <div style={{height:"100%",width:`${wipePct}%`,background:"rgba(240,247,238,0.92)",borderRadius:100,transition:"width 0.4s"}}/>
               </div>
               <button onClick={()=>{
                 const merged=[...new Set([...(data.targetTasks||[]).filter(t=>t?.trim()),...wipeDayData.tasks.filter(t=>!wipeDayData.done.includes(t))])];
@@ -8557,7 +9024,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
               onDone={ranked=>{
                 upd({targetTasks:ranked});
                 setComparing(false);
-                showToast("✅ Tasks prioritised!");
+                showToast(" Tasks prioritised!");
               }}
             />
           )}
@@ -8640,7 +9107,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             <div style={{display:"flex",gap:8,marginTop:4}}>
               <input ref={chargeAddRef}
                 placeholder="Add a task and press +"
-                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.92)"}}
                 onKeyDown={e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;const next=[...(data.targetTasks||[]),v];upd({targetTasks:next,dailyTarget:Math.max(target,next.filter(t=>t?.trim()).length)});e.target.value="";}}}/>
               <button onClick={()=>{const inp=chargeAddRef.current;if(!inp||!inp.value.trim())return;const next=[...(data.targetTasks||[]),inp.value.trim()];upd({targetTasks:next,dailyTarget:Math.max(target,next.filter(t=>t?.trim()).length)});inp.value="";inp.focus();}} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:40,height:40,fontSize:22,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
             </div>
@@ -8894,7 +9361,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
           {/* Charged today summary */}
           {charged.length>0&&(
             <div style={{background:"rgba(90,160,80,0.08)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(90,160,80,0.2)"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A6020",fontSize:15,marginBottom:10}}>✅ Charged today ({charged.length})</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#3A6020",fontSize:15,marginBottom:10}}> Charged today ({charged.length})</div>
               {charged.map((n,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<charged.length-1?"1px solid rgba(90,120,72,0.12)":"none"}}>
                   <span style={{fontSize:14}}>⚡</span>
@@ -9028,7 +9495,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                     <input
                       value={task}
                       onChange={e=>{const next=[...(data.targetTasks||[])];next[i]=e.target.value;upd({targetTasks:next});}}
-                      style={{flex:1,padding:"10px 14px",borderRadius:100,border:`1.5px solid ${isIncomplete?"rgba(192,57,43,0.22)":"rgba(90,120,72,0.18)"}`,fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}/>
+                      style={{flex:1,padding:"10px 14px",borderRadius:100,border:`1.5px solid ${isIncomplete?"rgba(192,57,43,0.22)":"rgba(90,120,72,0.18)"}`,fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.92)"}}/>
                     <button onClick={()=>{const next=(data.targetTasks||[]).filter((_,j)=>j!==i);upd({targetTasks:next,dailyTarget:next.filter(t=>t?.trim()).length||1});}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:"50%",width:30,height:30,fontSize:14,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
                   </div>
                   {/* Options for incomplete tasks */}
@@ -9042,7 +9509,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             <div style={{display:"flex",gap:8,marginTop:4}}>
               <input ref={setupAddRef}
                 placeholder="Type a task and tap Add…"
-                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
+                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.92)"}}
                 onKeyDown={e=>{
                   if(e.key==="Enter"&&e.target.value.trim()){
                     const next=[...(data.targetTasks||[]).filter(t=>t?.trim()),e.target.value.trim()];
@@ -9059,7 +9526,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
               }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontSize:14,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Add</button>
             </div>
             {(data.targetTasks||[]).filter(t=>t?.trim()).length>0&&(
-              <div style={{marginTop:10,fontSize:11,color:"#5A7040",fontWeight:600,textAlign:"center"}}>✅ {(data.targetTasks||[]).filter(t=>t?.trim()).length} task{(data.targetTasks||[]).filter(t=>t?.trim()).length!==1?"s":""} ready on your Today page</div>
+              <div style={{marginTop:10,fontSize:11,color:"#5A7040",fontWeight:600,textAlign:"center"}}> {(data.targetTasks||[]).filter(t=>t?.trim()).length} task{(data.targetTasks||[]).filter(t=>t?.trim()).length!==1?"s":""} ready on your Today page</div>
             )}
           </div>
 
@@ -9102,15 +9569,15 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
               <>
                 <input value={rewardDraft.name||""} onChange={e=>setRewardDraft(d=>({...d,name:e.target.value}))}
                   placeholder="e.g. New book, massage, takeaway…"
-                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(255,255,255,0.88)"}}/>
+                  style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(242,248,240,0.92)"}}/>
                 {/* Cost — optional, links to budget */}
                 <div style={{display:"flex",gap:8,marginBottom:8}}>
                   <input value={rewardDraft.cost||""} onChange={e=>setRewardDraft(d=>({...d,cost:e.target.value}))}
                     placeholder="💰 Cost (optional)"
-                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(235,242,232,0.88)"}}/>
                   <input value={rewardDraft.url||""} onChange={e=>setRewardDraft(d=>({...d,url:e.target.value}))}
                     placeholder="🔗 Link (optional)"
-                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+                    style={{flex:1,padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.15)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(235,242,232,0.88)"}}/>
                 </div>
                 {/* Optional target date */}
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"10px 14px",background:"rgba(90,120,72,0.05)",borderRadius:16,border:"1px solid rgba(90,120,72,0.12)"}}>
@@ -9159,7 +9626,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                   const steps=plan.steps?.[String(i)]||[];
                   const showSteps=plan.expandedSteps?.[String(i)];
                   return(
-                    <div key={i} style={{background:"rgba(255,255,255,0.80)",borderRadius:16,padding:"11px 14px",marginBottom:10,border:"1px solid rgba(90,120,72,0.12)"}}>
+                    <div key={i} style={{background:"rgba(235,242,232,0.88)",borderRadius:16,padding:"11px 14px",marginBottom:10,border:"1px solid rgba(90,120,72,0.12)"}}>
                       <div style={{fontSize:14,fontWeight:700,color:"#1A1A10",marginBottom:8}}>{task}</div>
                       {/* Day picker */}
                       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
@@ -9192,7 +9659,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                           ))}
                           <div style={{display:"flex",gap:6,marginTop:4}}>
                             <input placeholder="Add a step…"
-                              style={{flex:1,padding:"6px 10px",borderRadius:100,border:"1px solid rgba(90,120,72,0.20)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.85)"}}
+                              style={{flex:1,padding:"6px 10px",borderRadius:100,border:"1px solid rgba(90,120,72,0.20)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(240,247,238,0.92)"}}
                               onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){savePlan({...plan,steps:{...(plan.steps||{}),[String(i)]:[...steps,e.target.value.trim()]}});e.target.value="";}}}/>
                             <span style={{fontSize:10,color:"#8A8070",alignSelf:"center",flexShrink:0}}>↵</span>
                           </div>
@@ -9273,7 +9740,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 <input type="date" value={wipeDayData.date}
                   min={new Date().toISOString().slice(0,10)}
                   onChange={e=>saveWipeDay({...wipeDayData,date:e.target.value})}
-                  style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:12,background:"rgba(255,255,255,0.92)"}}/>
+                  style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:12,background:"rgba(242,248,240,0.96)"}}/>
 
                 {/* Tasks to wipe out */}
                 <div style={{fontFamily:"Georgia,serif",fontSize:13,fontWeight:600,color:"#C03010",marginBottom:8}}>💥 Tasks to wipe out</div>
@@ -9330,7 +9797,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                   <input value={newWipeTask} onChange={e=>setNewWipeTask(e.target.value)}
                     onKeyDown={e=>{if(e.key==="Enter"&&newWipeTask.trim()){saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,newWipeTask.trim()]});setNewWipeTask("");}}}
                     placeholder="Add a task you've been putting off…"
-                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.22)",fontSize:13,outline:"none",background:"rgba(255,255,255,0.92)",color:"#1A1A10"}}/>
+                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.22)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.96)",color:"#1A1A10"}}/>
                   <button onClick={()=>{if(!newWipeTask.trim())return;saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,newWipeTask.trim()]});setNewWipeTask("");}}
                     style={{background:"#C03010",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontWeight:700,fontSize:14,cursor:"pointer"}}>+ Add</button>
                 </div>
@@ -10422,7 +10889,7 @@ export default function App() {
   const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}};
 
   if(showOnboarding) return <Onboarding onComplete={()=>{localStorage.setItem('thinko_onboarded','1');setShowOnboarding(false);}}/>;
-  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
+  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
   if((screen==="notes"||screen==="noteshub"||screen==="filing")&&!vaultUnlocked)
     return <VaultPinLock onUnlock={()=>setVaultUnlocked(true)}/>;
