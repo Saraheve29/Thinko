@@ -10838,6 +10838,129 @@ const MODULES=[
    summary:"Set alarms · Sound alert",            optional:true},
 ];
 
+function PromoPopup({onClose,onUpgrade}){
+  const [visible,setVisible]=useState(false);
+  useEffect(()=>{
+    // Slide up after mount
+    const t=setTimeout(()=>setVisible(true),50);
+    return()=>clearTimeout(t);
+  },[]);
+
+  const FEATURES=[
+    {emoji:"💥",label:"Unlimited Wipe Out tasks"},
+    {emoji:"📋",label:"Unlimited To Do lists"},
+    {emoji:"🎯",label:"Unlimited Goals"},
+    {emoji:"🗺️",label:"Unlimited Mind Maps"},
+    {emoji:"🌀",label:"Unlimited Routines"},
+    {emoji:"💰",label:"Budget planner"},
+    {emoji:"📚",label:"Full Vault + Filing Cabinet"},
+    {emoji:"🔐",label:"PIN lock protection"},
+    {emoji:"⚖️",label:"Matrix prioritiser"},
+    {emoji:"🌿",label:"Rest Space & meditations"},
+    {emoji:"🌐",label:"World time + all tools"},
+    {emoji:"🛒",label:"Shopping lists"},
+  ];
+
+  return(
+    <div
+      onClick={onClose}
+      style={{
+        position:"fixed",inset:0,zIndex:9000,
+        background:"rgba(10,16,8,0.65)",
+        backdropFilter:"blur(4px)",
+        display:"flex",alignItems:"flex-end",
+        transition:"background 0.3s",
+      }}>
+      <style>{`
+        @keyframes promoSlideUp{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+        @keyframes promoSlideDown{0%{transform:translateY(0)}100%{transform:translateY(100%)}}
+        @keyframes promoPulse{0%,100%{box-shadow:0 0 0 0 rgba(90,120,72,0.4)}50%{box-shadow:0 0 0 8px rgba(90,120,72,0)}}
+      `}</style>
+      <div
+        onClick={e=>e.stopPropagation()}
+        style={{
+          width:"100%",
+          background:"linear-gradient(160deg,#1A2810 0%,#2C4020 60%,#1E3818 100%)",
+          borderRadius:"28px 28px 0 0",
+          padding:"28px 24px 40px",
+          paddingBottom:"max(40px,calc(env(safe-area-inset-bottom,0px) + 40px))",
+          animation:visible?"promoSlideUp 0.45s cubic-bezier(0.16,1,0.3,1) forwards":"none",
+          boxShadow:"0 -12px 60px rgba(0,0,0,0.45)",
+          position:"relative",
+          maxHeight:"90vh",
+          overflowY:"auto",
+        }}>
+
+        {/* Handle bar */}
+        <div style={{width:40,height:4,borderRadius:100,background:"rgba(255,255,255,0.18)",margin:"0 auto 20px"}}/>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:36,marginBottom:8}}>💎</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff",marginBottom:6,lineHeight:1.2}}>
+            Unlock everything in Thinko
+          </div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",lineHeight:1.6}}>
+            You're on the free plan. Upgrade to Pro and get the full experience — unlimited, no limits, no restrictions.
+          </div>
+        </div>
+
+        {/* Feature pills */}
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",marginBottom:24}}>
+          {FEATURES.map(f=>(
+            <div key={f.label} style={{
+              display:"flex",alignItems:"center",gap:5,
+              background:"rgba(90,120,72,0.18)",
+              border:"1px solid rgba(90,120,72,0.30)",
+              borderRadius:100,
+              padding:"6px 12px",
+              fontSize:12,fontWeight:600,
+              color:"rgba(255,255,255,0.88)",
+            }}>
+              <span>{f.emoji}</span>
+              <span>{f.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Price line */}
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <span style={{fontSize:13,color:"rgba(255,255,255,0.40)"}}>From just </span>
+          <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#FFD700"}}>£3.99/month</span>
+          <span style={{fontSize:13,color:"rgba(255,255,255,0.40)"}}> · cancel any time</span>
+        </div>
+
+        {/* CTA */}
+        <button onClick={onUpgrade}
+          style={{
+            width:"100%",padding:"16px",
+            background:"linear-gradient(135deg,#5A9840,#3A7828)",
+            color:"#fff",border:"none",borderRadius:100,
+            fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,
+            cursor:"pointer",marginBottom:12,
+            boxShadow:"0 6px 24px rgba(58,120,40,0.45)",
+            animation:"promoPulse 2s ease-in-out infinite",
+          }}>
+          🌿 Try Pro Free for 7 Days
+        </button>
+
+        <button onClick={onClose}
+          style={{
+            width:"100%",padding:"13px",
+            background:"transparent",
+            color:"rgba(255,255,255,0.40)",
+            border:"1px solid rgba(255,255,255,0.12)",
+            borderRadius:100,
+            fontFamily:"'Segoe UI',sans-serif",fontWeight:600,fontSize:14,
+            cursor:"pointer",
+          }}>
+          No thanks, stay on free
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ProLoginModal({onClose,onSignIn}){
   const [tab,setTab]=useState("monthly"); // monthly | yearly
   return(
@@ -10955,6 +11078,14 @@ export default function App() {
   };
   const {user,loading,signIn,signOut,isPro}=useAuth();
   const [showLoginModal,setShowLoginModal]=useState(false);
+  const [showPromo,setShowPromo]=useState(false);
+
+  // One-time-per-session promo popup — 30s delay, free users only
+  useEffect(()=>{
+    if(TESTING_MODE)return; // never show to pro/testing
+    const t=setTimeout(()=>setShowPromo(true),30000);
+    return()=>clearTimeout(t);
+  },[]);
   const [priData,setPriData]=useState(()=>{try{const v=localStorage.getItem('thinko_pri');return v?JSON.parse(v):[];}catch{return [];}});
   useEffect(()=>{try{localStorage.setItem('thinko_pri',JSON.stringify(priData));}catch{}},[priData]);
   const [mapData,setMapData]=useState(()=>{try{const v=localStorage.getItem('thinko_map');return v?JSON.parse(v):[];}catch{return [];}});
@@ -11302,6 +11433,7 @@ export default function App() {
     </div>
     <NavBar current="home" setScreen={setScreen}/>
     {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{signIn();setShowLoginModal(false);}}/>}
+    {showPromo&&<PromoPopup onClose={()=>setShowPromo(false)} onUpgrade={()=>{setShowPromo(false);setShowLoginModal(true);}}/>}
     </>
   );
 }
