@@ -1502,30 +1502,30 @@ function SimpleTimer(){
 /* ── ListPage: individual list view ── */
 function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
   const [newTask,setNewTask]=useState("");
+  const [comparing,setComparing]=useState(false);
   const [taskCelebration,setTaskCelebration]=useState(null);
   const [taskConfetti,setTaskConfetti]=useState([]);
+  const [dragId,setDragId]=useState(null);
   const inputRef=useRef(null);
+  const touchRef=useRef(null);
 
   const COLOURS=[
-    {id:"red",    fill:"#E05840",label:"Red"},
-    {id:"yellow", fill:"#F0B429",label:"Yellow"},
-    {id:"green",  fill:"#5A9840",label:"Green"},
-    {id:"purple", fill:"#8B5CF6",label:"Purple"},
-    {id:"blue",   fill:"#4870A0",label:"Blue"},
-    {id:"pink",   fill:"#D96BA0",label:"Pink"},
+    {id:"red",fill:"#E05840",label:"Red"},{id:"yellow",fill:"#F0B429",label:"Yellow"},
+    {id:"green",fill:"#5A9840",label:"Green"},{id:"purple",fill:"#8B5CF6",label:"Purple"},
+    {id:"blue",fill:"#4870A0",label:"Blue"},{id:"pink",fill:"#D96BA0",label:"Pink"},
   ];
   const getCol=id=>COLOURS.find(c=>c.id===id)||COLOURS[0];
 
+  // Confetti
   const launchConfetti=allDone=>{
-    const e=allDone?["🏆","⭐","🌟","💫","✨","🎊"]:["🎉","✨","🌿","💫"];
-    setTaskConfetti(Array.from({length:allDone?60:30},(_,i)=>({id:i,x:Math.random()*100,emoji:e[i%e.length],size:allDone?14+Math.random()*10:10+Math.random()*8,delay:Math.random()*0.5,speed:1.4+Math.random()*1.0,rotation:Math.random()*360})));
+    const em=allDone?["🏆","⭐","🌟","💫","✨","🎊"]:["🎉","✨","🌿","💫"];
+    setTaskConfetti(Array.from({length:allDone?60:28},(_,i)=>({id:i,x:Math.random()*100,emoji:em[i%em.length],size:allDone?13+Math.random()*10:9+Math.random()*8,delay:Math.random()*0.5,speed:1.3+Math.random()*1.0,rotation:Math.random()*360})));
     setTimeout(()=>setTaskConfetti([]),3000);
   };
 
   const addTask=()=>{
     if(!newTask.trim())return;
-    const t={id:Date.now(),name:newTask.trim(),done:false,color:"green",url:""};
-    onUpdate({...list,tasks:[...list.tasks,t]});
+    onUpdate({...list,tasks:[...list.tasks,{id:Date.now(),name:newTask.trim(),done:false,color:"green",url:""}]});
     setNewTask("");
     if(inputRef.current)inputRef.current.focus();
   };
@@ -1545,61 +1545,91 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
   const deleteTask=id=>onUpdate({...list,tasks:list.tasks.filter(t=>t.id!==id)});
   const colorTask=(id,color)=>onUpdate({...list,tasks:list.tasks.map(t=>t.id===id?{...t,color}:t)});
 
+  // Drag reorder
+  const dragOver=(e,toId)=>{
+    e.preventDefault();
+    if(!dragId||dragId===toId)return;
+    const tasks=[...list.tasks];
+    const fi=tasks.findIndex(t=>t.id===dragId);
+    const ti=tasks.findIndex(t=>t.id===toId);
+    if(fi<0||ti<0)return;
+    tasks.splice(fi,1);tasks.splice(ti,0,list.tasks[fi]);
+    onUpdate({...list,tasks});
+  };
+
+  // Touch drag
+  const touchStart=(e,id)=>{touchRef.current=id;};
+  const touchMove=(e)=>{
+    if(!dragId)return;e.preventDefault();
+    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+    const tid=el?.dataset?.taskid;
+    if(tid&&Number(tid)!==dragId){
+      const tasks=[...list.tasks];
+      const fi=tasks.findIndex(t=>t.id===dragId);
+      const ti=tasks.findIndex(t=>String(t.id)===tid);
+      if(fi>=0&&ti>=0){tasks.splice(fi,1);tasks.splice(ti,0,list.tasks[fi]);onUpdate({...list,tasks});}
+    }
+  };
+
+  // Compare / prioritise
+  const onPriDone=sorted=>{
+    const doneItems=list.tasks.filter(t=>t.done);
+    onUpdate({...list,tasks:[...sorted,...doneItems]});
+    setComparing(false);
+  };
+
+  if(comparing) return <PriCompare tasks={list.tasks} onDone={onPriDone}/>;
+
   const active=list.tasks.filter(t=>!t.done);
   const done=list.tasks.filter(t=>t.done);
   const pct=list.tasks.length?Math.round((done.length/list.tasks.length)*100):0;
 
-  const listAccentColors=["#E05840","#5A7848","#4870A0","#A04870","#C08830","#3A8878"];
-
   return(
-    <div style={{minHeight:"100vh",background:"#F8F4EC",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#F4F7F2",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",overflow:"hidden"}}>
       <style>{`
-        @keyframes lpConfetti{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
-        @keyframes lpCelebIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
+        @keyframes lpConf{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+        @keyframes lpCIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
         @keyframes lpBob{0%{transform:scale(1) rotate(-4deg)}100%{transform:scale(1.18) rotate(4deg)}}
       `}</style>
-      {/* Vine background */}
+      {/* Vine bg */}
       <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
         <svg width="100%" height="100%" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <radialGradient id="vg1" cx="40%" cy="35%" r="60%"><stop offset="0%" stopColor="#7AB848"/><stop offset="60%" stopColor="#4A8828"/><stop offset="100%" stopColor="#2A5818"/></radialGradient>
-            <radialGradient id="vg2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#90C858"/><stop offset="55%" stopColor="#5A9838"/><stop offset="100%" stopColor="#305820"/></radialGradient>
-            <filter id="vs"><feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="rgba(20,60,10,0.20)"/></filter>
+            <radialGradient id="lpg1" cx="40%" cy="35%" r="60%"><stop offset="0%" stopColor="#7AB848"/><stop offset="60%" stopColor="#4A8828"/><stop offset="100%" stopColor="#2A5818"/></radialGradient>
+            <radialGradient id="lpg2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#90C858"/><stop offset="55%" stopColor="#5A9838"/><stop offset="100%" stopColor="#305820"/></radialGradient>
+            <filter id="lps"><feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="rgba(20,60,10,0.18)"/></filter>
           </defs>
           <ellipse cx="200" cy="-20" rx="280" ry="180" fill="rgba(255,210,120,0.10)"/>
-          <path d="M-10 0 C20 80 -5 160 15 240 C35 320 10 400 25 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
-          <ellipse cx="28" cy="60" rx="38" ry="22" fill="url(#vg1)" filter="url(#vs)" transform="rotate(-30 28 60)" opacity="0.85"/>
-          <ellipse cx="35" cy="140" rx="44" ry="25" fill="url(#vg2)" filter="url(#vs)" transform="rotate(-20 35 140)" opacity="0.80"/>
-          <ellipse cx="22" cy="230" rx="40" ry="24" fill="url(#vg1)" transform="rotate(-35 22 230)" opacity="0.65"/>
-          <ellipse cx="18" cy="340" rx="38" ry="22" fill="url(#vg2)" transform="rotate(-25 18 340)" opacity="0.55"/>
-          <path d="M410 0 C380 80 405 160 385 240 C365 320 390 400 375 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.6"/>
-          <ellipse cx="372" cy="55" rx="42" ry="24" fill="url(#vg2)" filter="url(#vs)" transform="rotate(28 372 55)" opacity="0.85"/>
-          <ellipse cx="365" cy="145" rx="46" ry="26" fill="url(#vg1)" filter="url(#vs)" transform="rotate(22 365 145)" opacity="0.80"/>
-          <ellipse cx="378" cy="235" rx="42" ry="24" fill="url(#vg2)" transform="rotate(32 378 235)" opacity="0.65"/>
-          <ellipse cx="382" cy="350" rx="38" ry="22" fill="url(#vg1)" transform="rotate(25 382 350)" opacity="0.55"/>
-          <ellipse cx="100" cy="15" rx="50" ry="28" fill="url(#vg1)" filter="url(#vs)" transform="rotate(-10 100 15)" opacity="0.75"/>
-          <ellipse cx="200" cy="5" rx="55" ry="30" fill="url(#vg2)" filter="url(#vs)" transform="rotate(5 200 5)" opacity="0.70"/>
-          <ellipse cx="305" cy="18" rx="48" ry="27" fill="url(#vg1)" transform="rotate(12 305 18)" opacity="0.75"/>
+          <path d="M-10 0 C20 80 -5 160 15 240 C35 320 10 400 25 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.55"/>
+          <ellipse cx="28" cy="60" rx="38" ry="22" fill="url(#lpg1)" filter="url(#lps)" transform="rotate(-30 28 60)" opacity="0.80"/>
+          <ellipse cx="35" cy="155" rx="44" ry="25" fill="url(#lpg2)" filter="url(#lps)" transform="rotate(-20 35 155)" opacity="0.75"/>
+          <ellipse cx="22" cy="260" rx="40" ry="24" fill="url(#lpg1)" transform="rotate(-35 22 260)" opacity="0.60"/>
+          <path d="M410 0 C380 80 405 160 385 240 C365 320 390 400 375 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.55"/>
+          <ellipse cx="372" cy="55" rx="42" ry="24" fill="url(#lpg2)" filter="url(#lps)" transform="rotate(28 372 55)" opacity="0.80"/>
+          <ellipse cx="365" cy="155" rx="46" ry="26" fill="url(#lpg1)" filter="url(#lps)" transform="rotate(22 365 155)" opacity="0.75"/>
+          <ellipse cx="378" cy="265" rx="42" ry="24" fill="url(#lpg2)" transform="rotate(32 378 265)" opacity="0.60"/>
+          <ellipse cx="100" cy="15" rx="50" ry="28" fill="url(#lpg1)" filter="url(#lps)" transform="rotate(-10 100 15)" opacity="0.72"/>
+          <ellipse cx="200" cy="5" rx="55" ry="30" fill="url(#lpg2)" filter="url(#lps)" transform="rotate(5 200 5)" opacity="0.68"/>
+          <ellipse cx="305" cy="18" rx="48" ry="27" fill="url(#lpg1)" transform="rotate(12 305 18)" opacity="0.72"/>
         </svg>
       </div>
 
       {/* Celebration */}
       {taskCelebration&&(
         <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",
-          background:taskCelebration.allDone?"radial-gradient(ellipse at center,rgba(15,50,10,0.96),rgba(5,15,5,0.98))":"rgba(10,10,10,0.80)",
-          backdropFilter:"blur(5px)"}}
+          background:taskCelebration.allDone?"radial-gradient(ellipse at center,rgba(15,50,10,0.96),rgba(5,15,5,0.98))":"rgba(10,10,10,0.80)",backdropFilter:"blur(5px)"}}
           onClick={()=>setTaskCelebration(null)}>
           {taskConfetti.map(p=>(
-            <div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:"-5%",fontSize:p.size,animation:`lpConfetti ${p.speed}s ${p.delay}s ease-in forwards`,transform:`rotate(${p.rotation}deg)`,pointerEvents:"none",zIndex:1}}>{p.emoji}</div>
+            <div key={p.id} style={{position:"absolute",left:p.x+"%",top:"-5%",fontSize:p.size,animation:"lpConf "+p.speed+"s "+p.delay+"s ease-in forwards",transform:"rotate("+p.rotation+"deg)",pointerEvents:"none",zIndex:1}}>{p.emoji}</div>
           ))}
           {taskCelebration.allDone?(
             <div style={{textAlign:"center",zIndex:2,padding:"0 28px"}}>
               <div style={{fontSize:88,lineHeight:1,marginBottom:12,animation:"lpBob 0.5s ease-in-out infinite alternate",filter:"drop-shadow(0 0 28px rgba(255,215,0,0.8))"}}>🏆</div>
               <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:28,color:"#FFD700",marginBottom:10}}>LIST COMPLETE!</div>
-              <div style={{fontSize:15,color:"rgba(255,255,255,0.88)"}}>You can achieve anything you put your mind to ✨</div>
+              <div style={{fontSize:15,color:"rgba(255,255,255,0.88)"}}>You can achieve anything you put your mind to</div>
             </div>
           ):(
-            <div style={{background:"rgba(255,253,240,0.97)",borderRadius:28,padding:"28px 24px",textAlign:"center",maxWidth:290,margin:"0 24px",zIndex:2,border:"2.5px solid rgba(90,160,80,0.35)",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",animation:"lpCelebIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
+            <div style={{background:"rgba(240,247,238,0.97)",borderRadius:28,padding:"28px 24px",textAlign:"center",maxWidth:290,margin:"0 24px",zIndex:2,border:"2.5px solid rgba(90,160,80,0.35)",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",animation:"lpCIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
               <div style={{fontSize:60,lineHeight:1,marginBottom:8,animation:"lpBob 0.5s ease-in-out infinite alternate"}}>🎉</div>
               <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:21,color:"#1A1A10",marginBottom:6}}>{["Done! 💪","Yes! ⚡","Nailed it! 💥","Keep going! 🔥"][done.length%4]}</div>
               <div style={{fontSize:13,color:"#5A7060"}}>{taskCelebration.name} - crossed off!</div>
@@ -1609,19 +1639,19 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
       )}
 
       {/* Header */}
-      <div style={{position:"relative",zIndex:1,padding:"52px 22px 16px",textAlign:"center"}}>
-        <button onClick={onBack} style={{position:"absolute",top:16,left:16,background:"rgba(238,244,235,0.70)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",backdropFilter:"blur(8px)"}}>
+      <div style={{position:"relative",zIndex:1,padding:"52px 22px 14px",textAlign:"center"}}>
+        <button onClick={onBack} style={{position:"absolute",top:16,left:16,background:"rgba(235,242,232,0.70)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",backdropFilter:"blur(8px)"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2C3820" strokeWidth="2.2" strokeLinecap="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#1A2810",marginBottom:2}}>{list.name}</div>
-        <div style={{fontSize:13,color:"rgba(42,60,28,0.55)",fontStyle:"italic",marginBottom:2,fontFamily:"Georgia,serif"}}>Time to focus 🌿</div>
-        <div style={{fontSize:12,color:"rgba(42,60,28,0.45)",marginBottom:8}}>
-          {active.length===0&&done.length>0?"All done! Well done you! ✅":active.length>0?`${done.length} done · ${active.length} to go`:"Add your first task below"}
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:26,color:"#1A2810",marginBottom:2}}>{list.name}</div>
+        <div style={{fontSize:13,color:"rgba(42,60,28,0.55)",fontStyle:"italic",marginBottom:6,fontFamily:"Georgia,serif"}}>Time to focus 🌿</div>
+        <div style={{fontSize:11,color:"rgba(42,60,28,0.42)"}}>
+          {active.length===0&&done.length>0?"All done! Well done!":active.length>0?(done.length+" done · "+active.length+" to go"):"Add your first task"}
         </div>
         {list.tasks.length>0&&(
-          <div style={{maxWidth:240,margin:"0 auto"}}>
-            <div style={{height:5,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${pct}%`,background:"#4A7838",borderRadius:100,transition:"width 0.4s"}}/>
+          <div style={{maxWidth:200,margin:"8px auto 0"}}>
+            <div style={{height:4,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+              <div style={{height:"100%",width:pct+"%",background:"#4A7838",borderRadius:100,transition:"width 0.4s"}}/>
             </div>
           </div>
         )}
@@ -1629,12 +1659,24 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
 
       <div style={{position:"relative",zIndex:1,padding:"0 14px"}}>
 
-        {/* Personal timer */}
-        <MiniTimer/>
+        {/* Timer */}
+        <SimpleTimer/>
+
+        {/* Prioritise button — shows when 2+ active tasks */}
+        {active.length>=2&&(
+          <button onClick={()=>setComparing(true)}
+            style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"13px 20px",
+              background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",
+              borderRadius:22,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",
+              marginBottom:14,boxShadow:"0 4px 18px rgba(58,80,38,0.32)"}}>
+            <span style={{fontSize:18}}>⬆</span>
+            <span>Prioritise — what is most important?</span>
+          </button>
+        )}
 
         {/* Add task */}
         <div style={{background:"rgba(238,244,235,0.85)",backdropFilter:"blur(16px)",borderRadius:22,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.15)",boxShadow:"0 4px 20px rgba(42,80,28,0.07)"}}>
-          <div style={{fontSize:12,fontWeight:600,color:"rgba(42,60,28,0.50)",marginBottom:8}}>✏️ What needs doing?</div>
+          <div style={{fontSize:12,fontWeight:600,color:"rgba(42,60,28,0.50)",marginBottom:8}}>What needs doing?</div>
           <div style={{display:"flex",gap:10}}>
             <input ref={inputRef} value={newTask} onChange={e=>setNewTask(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&addTask()}
@@ -1644,21 +1686,38 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
           </div>
         </div>
 
-        {/* Active tasks */}
+        {/* Active tasks — draggable */}
         {active.length===0&&done.length===0&&(
-          <div style={{textAlign:"center",padding:"30px 20px"}}>
-            <div style={{fontSize:52,marginBottom:10}}>📋</div>
+          <div style={{textAlign:"center",padding:"28px 20px"}}>
+            <div style={{fontSize:48,marginBottom:10}}>📋</div>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A2810",marginBottom:6}}>No tasks yet</div>
             <div style={{fontSize:14,color:"rgba(42,60,28,0.50)"}}>Add your first task above.</div>
           </div>
         )}
 
         {active.map((task,i)=>(
-          <ListTaskRow key={task.id} task={task} num={i+1} col={getCol(task.color)} COLOURS={COLOURS}
-            onComplete={()=>completeTask(task.id)}
-            onDelete={()=>deleteTask(task.id)}
-            onColour={color=>colorTask(task.id,color)}/>
+          <div key={task.id}
+            data-taskid={String(task.id)}
+            draggable
+            onDragStart={()=>setDragId(task.id)}
+            onDragOver={e=>dragOver(e,task.id)}
+            onDragEnd={()=>setDragId(null)}
+            onTouchStart={()=>{touchRef.current=task.id;setTimeout(()=>setDragId(task.id),200);}}
+            onTouchMove={touchMove}
+            onTouchEnd={()=>setDragId(null)}
+            style={{opacity:dragId===task.id?0.5:1,transition:"opacity 0.15s"}}>
+            <ListTaskRow task={task} num={i+1} col={getCol(task.color)} COLOURS={COLOURS}
+              onComplete={()=>completeTask(task.id)}
+              onDelete={()=>deleteTask(task.id)}
+              onColour={color=>colorTask(task.id,color)}/>
+          </div>
         ))}
+
+        {active.length>0&&(
+          <div style={{textAlign:"center",marginBottom:8}}>
+            <span style={{fontSize:11,color:"rgba(42,60,28,0.35)",letterSpacing:0.5}}>Hold and drag to reorder</span>
+          </div>
+        )}
 
         {/* Done tasks */}
         {done.length>0&&(
@@ -1666,7 +1725,7 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
             <div style={{fontSize:10,fontWeight:700,color:"rgba(42,60,28,0.35)",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Done</div>
             {done.map(task=>(
               <div key={task.id} style={{background:"rgba(235,242,232,0.65)",borderRadius:14,marginBottom:6,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,border:"1px solid rgba(90,80,60,0.08)",opacity:0.65}}>
-                <button onClick={()=>completeTask(task.id)} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>↩</button>
+                <button onClick={()=>completeTask(task.id)} style={{background:"rgba(90,120,72,0.15)",color:"#3A6020",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>↩</button>
                 <span style={{flex:1,fontSize:14,color:"#8A9080",textDecoration:"line-through"}}>{task.name}</span>
                 <button onClick={()=>deleteTask(task.id)} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
               </div>
@@ -1677,8 +1736,6 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
     </div>
   );
 }
-
-/* ── ListTaskRow: task row for ListPage with working colour picker ── */
 function ListTaskRow({task,num,col,COLOURS,onComplete,onDelete,onColour}){
   const [showColours,setShowColours]=useState(false);
   const [above,setAbove]=useState(false);
@@ -1757,6 +1814,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
   const [addingList,setAddingList]=useState(false);
   const [listName,setListName]=useState("");
   const [showLists,setShowLists]=useState(false);
+  const [dragListId,setDragListId]=useState(null);
   const [pickerEmoji,setPickerEmoji]=useState(null); // list id being emoji-picked
   const [tempEmoji,setTempEmoji]=useState("");
   const listInputRef=useRef(null);
@@ -1886,7 +1944,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
             <div style={{marginBottom:12}}>
               <div style={{fontSize:11,fontWeight:600,color:"rgba(42,60,28,0.45)",marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>Choose an emoji</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {["📋","🔥","🌿","💧","🌸","⭐","🌊","💼","🏠","🎯","💪","📚","🎨","🛒","🧘","🎉","💡","🐾","🌱","🌻"].map(e=>(
+                {["🎁","🏠","💡","💼","⭐","🌱","🎨"].map(e=>(
                   <button key={e} onClick={()=>setTempEmoji(e)}
                     style={{width:36,height:36,borderRadius:10,fontSize:18,cursor:"pointer",
                       background:tempEmoji===e?"rgba(74,120,56,0.15)":"rgba(255,255,255,0.80)",
@@ -1962,8 +2020,13 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
           const le=list.emoji||LIST_EMOJIS[i%LIST_EMOJIS.length];
           const activeCount=total-done;
           return(
-            <div key={list.id} onClick={()=>setActiveListId(list.id)}
-              style={{background:"rgba(235,242,232,0.90)",backdropFilter:"blur(16px)",borderRadius:22,marginBottom:10,overflow:"hidden",cursor:"pointer",borderLeft:"4px solid "+lc,boxShadow:"0 4px 18px rgba(42,60,28,0.08)",animation:"listCardIn 0.3s "+(i*0.07)+"s both"}}>
+            <div key={list.id}
+              draggable
+              onDragStart={()=>setDragListId(list.id)}
+              onDragOver={e=>{e.preventDefault();if(!dragListId||dragListId===list.id)return;const a=[...data];const fi=a.findIndex(l=>l.id===dragListId);const ti=a.findIndex(l=>l.id===list.id);if(fi<0||ti<0)return;a.splice(fi,1);a.splice(ti,0,data[fi]);setData(a);}}
+              onDragEnd={()=>setDragListId(null)}
+              onClick={()=>setActiveListId(list.id)}
+              style={{background:"rgba(235,242,232,0.90)",opacity:dragListId===list.id?0.5:1,backdropFilter:"blur(16px)",borderRadius:22,marginBottom:10,overflow:"hidden",cursor:"pointer",borderLeft:"4px solid "+lc,boxShadow:"0 4px 18px rgba(42,60,28,0.08)",animation:"listCardIn 0.3s "+(i*0.07)+"s both"}}>
               <div style={{padding:"13px 14px",display:"flex",alignItems:"center",gap:12}}>
                 <div style={{width:46,height:46,borderRadius:16,background:"rgba(238,244,235,0.75)",border:"2px solid "+lc+"40",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{le}</div>
                 <div style={{flex:1,minWidth:0}}>
@@ -3055,7 +3118,35 @@ function mkDrawer(name,color,icon){return{id:Date.now()+Math.random(),name,color
 function mkSubCat(name){return{id:Date.now()+Math.random(),name,files:[]};}
 function mkFile(name,type,data){return{id:Date.now()+Math.random(),name,type,data,added:Date.now()};}
 
-function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
+function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
+  const [showPinSetup,setShowPinSetup]=useState(false);
+  const [pinStep,setPinStep]=useState('new'); // new|confirm
+  const [newPin,setNewPin]=useState('');
+  const [confirmPin,setConfirmPin]=useState('');
+  const [pinError,setPinError]=useState('');
+
+  const hasPin=!!localStorage.getItem('thinko_vault_pin');
+
+  const pinPress=n=>{
+    if(pinStep==='new'){
+      const next=newPin+n;setNewPin(next);
+      if(next.length===4){setPinStep('confirm');setPinError('');}
+    } else {
+      const next=confirmPin+n;setConfirmPin(next);
+      if(next.length===4){
+        if(next===newPin){
+          localStorage.setItem('thinko_vault_pin',next);
+          setShowPinSetup(false);setNewPin('');setConfirmPin('');setPinStep('new');
+          alert('PIN set! Your vault is now locked.');
+        } else {
+          setPinError("PINs don't match");
+          setTimeout(()=>{setConfirmPin('');setPinError('');},800);
+        }
+      }
+    }
+  };
+  const pinDel=()=>{if(pinStep==='new')setNewPin(p=>p.slice(0,-1));else setConfirmPin(p=>p.slice(0,-1));};
+  const displayPinDots=pinStep==='new'?newPin:confirmPin;
   const [view,setView]=useState("cabinet"); // cabinet | drawer | sub | preview
   const [activeDrawerId,setActiveDrawerId]=useState(null);
   const [activeSubId,setActiveSubId]=useState(null);
@@ -3244,14 +3335,57 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome}){
   /* ── Cabinet home — the drawers ── */
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      {/* PIN setup overlay */}
+      {showPinSetup&&(
+        <div style={{position:"fixed",inset:0,zIndex:800,background:"linear-gradient(135deg,#1A2810,#2C4020,#3A5030)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Segoe UI',sans-serif"}}>
+          <div style={{textAlign:"center",padding:"0 32px",width:"100%",maxWidth:360}}>
+            <div style={{fontSize:40,marginBottom:16}}>🔐</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff",marginBottom:6}}>
+              {pinStep==="new"?"Set a Vault PIN":"Confirm your PIN"}
+            </div>
+            <div style={{fontSize:13,color:"rgba(255,255,255,0.55)",marginBottom:28}}>
+              {pinStep==="new"?"Choose a 4-digit PIN":"Enter the same PIN again"}
+            </div>
+            {/* Dots */}
+            <div style={{display:"flex",justifyContent:"center",gap:16,marginBottom:28}}>
+              {[0,1,2,3].map(i=>(
+                <div key={i} style={{width:20,height:20,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.5)",background:i<displayPinDots.length?"#FFD700":"transparent",transition:"background 0.15s"}}/>
+              ))}
+            </div>
+            {pinError&&<div style={{color:"#FF6B6B",fontSize:13,marginBottom:12}}>{pinError}</div>}
+            {/* Keypad */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:12}}>
+              {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((n,i)=>(
+                <button key={i} onClick={()=>{if(n==="⌫")pinDel();else if(n!=="")pinPress(String(n));}}
+                  style={{padding:"18px 0",borderRadius:14,fontSize:n==="⌫"?18:22,fontWeight:700,cursor:n===""?"default":"pointer",
+                    background:n===""?"transparent":"rgba(255,255,255,0.10)",
+                    color:"#fff",border:n===""?"none":"1.5px solid rgba(255,255,255,0.15)",
+                    opacity:n===""?0:1}}>
+                  {n}
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>{setShowPinSetup(false);setNewPin("");setConfirmPin("");setPinStep("new");setPinError("");}}
+              style={{width:"100%",padding:"12px",background:"rgba(255,255,255,0.10)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       <Header title="🗄️ Filing Cabinet" onBack={onBack} right={
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>{
-            const hasPin=localStorage.getItem('thinko_vault_pin');
-            if(hasPin){if(window.confirm("Remove vault PIN lock?"))localStorage.removeItem('thinko_vault_pin');alert("PIN removed.");}
-            else{alert("Go to Vault home screen to set up a 4-digit PIN lock.");}
-          }} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}} title={localStorage.getItem('thinko_vault_pin')?"PIN lock active — tap to remove":"No PIN — tap to set one"}>
-            {localStorage.getItem('thinko_vault_pin')?"🔒":"🔓"}
+            if(hasPin){
+              if(window.confirm("Remove vault PIN lock?")){
+                localStorage.removeItem('thinko_vault_pin');
+                if(onLockChange)onLockChange();
+                alert("PIN removed. Vault is now unlocked.");
+              }
+            } else {
+              setShowPinSetup(true);
+            }
+          }} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}} title={hasPin?"PIN lock active — tap to remove":"No PIN — tap to set one"}>
+            {hasPin?"🔒":"🔓"}
           </button>
           <button onClick={onHome} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🏠</button>
           <button onClick={()=>setAddingDrawer(true)} style={{background:"rgba(255,255,255,0.22)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"8px 14px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>+ Drawer</button>
@@ -3711,7 +3845,7 @@ function VaultPinLock({onUnlock}){
   );
 }
 
-function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,cabinetData:cabinetDataProp,setCabinetData:setCabinetDataProp,setScreen,initialMode=null}) {
+function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,cabinetData:cabinetDataProp,setCabinetData:setCabinetDataProp,setScreen,initialMode=null,onLockChange}) {
   // ── ALL hooks at top level — never inside conditionals or IIFEs ──
   const [sectionId,setSectionId]=useState(null);
   const [pageId,setPageId]=useState(null);
@@ -4059,7 +4193,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       <Ideas data={ideasData} setData={setIdeasData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} onBack={()=>{setNotesMode(null);setSectionId(null);setPageId(null);}}/>
     </div>
   );
-  if(notesMode==="filing") return <FilingCabinet cabinetData={cabinetData} setCabinetData={setCabinetData} onBack={()=>setNotesMode(null)} onHome={()=>setNotesMode(null)}/>;
+  if(notesMode==="filing") return <FilingCabinet cabinetData={cabinetData} setCabinetData={setCabinetData} onBack={()=>setNotesMode(null)} onHome={()=>setNotesMode(null)} onLockChange={onLockChange}/>;
   // Notes sections list (when in notes mode)
   const moveSection=(id,dir)=>{
     setData(ds=>{
@@ -5905,7 +6039,8 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       {/* ── 2×2 GRID — fills all remaining space above nav bar ── */}
       <div style={{
         flex:1,
-        padding:"6px 6px 72px 6px",
+        padding:"6px",
+        paddingBottom:68,
         display:"grid",
         gridTemplateColumns:"1fr 1fr",
         gridTemplateRows:"1fr 1fr",
@@ -6119,7 +6254,7 @@ function SectionLabel({n,label}){
 
 function BudgetDetail({budget,onBack,onUpdate,onDelete,cabinetData,setCabinetData}){
   const [tab,setTab]=useState("plan"); // plan | spent | tickets
-  const [newExp,setNewExp]=useState({label:"",amount:""});
+  const [newExp,setNewExp]=useState({label:"",amount:"",category:""});
   const [newTicket,setNewTicket]=useState({name:"",price:"",date:"",type:"✈️",file:null,fileName:""});
   const [toast,setToast]=useState("");
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
@@ -6246,6 +6381,26 @@ Budget: ${b.name}`,created:Date.now()});
                 style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",background:"rgba(242,248,240,0.94)",fontFamily:"'Segoe UI',sans-serif"}}/>
             </div>
 
+            {/* Budget calculator */}
+            <div style={{background:"rgba(238,244,235,0.85)",borderRadius:22,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.18)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>🧮 How much left?</div>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <input type="number" placeholder="Item cost £" id="bc_item"
+                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.96)",color:"#1A2810"}}/>
+                <input type="number" placeholder="I have £" id="bc_have"
+                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.96)",color:"#1A2810"}}/>
+              </div>
+              <button onClick={()=>{
+                const item=parseFloat(document.getElementById("bc_item").value)||0;
+                const have=parseFloat(document.getElementById("bc_have").value)||0;
+                const left=have-item;
+                const el=document.getElementById("bc_result");
+                if(el)el.textContent=left>=0?"You would have £"+left.toFixed(2)+" left over":"You need £"+Math.abs(left).toFixed(2)+" more";
+                if(el)el.style.color=left>=0?"#4A7838":"#c0392b";
+              }} style={{width:"100%",padding:"9px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Calculate</button>
+              <div id="bc_result" style={{textAlign:"center",fontSize:14,fontWeight:700,minHeight:18}}></div>
+            </div>
+
             {/* Planned items */}
             <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:12}}>🗒️ Planned costs</div>
@@ -6254,9 +6409,13 @@ Budget: ${b.name}`,created:Date.now()});
                 <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
                   <div style={{flex:1}}>
                     <div style={{fontSize:14,fontWeight:600,color:"#1A1A10"}}>{item.label}</div>
-                    <div style={{fontSize:11,color:"#8A8070"}}>{item.notes||""}</div>
+                    {item.category&&<div style={{fontSize:11,color:"#5A7848",fontWeight:600}}>{item.category}</div>}
+                    {item.notes&&<div style={{fontSize:11,color:"#8A8070"}}>{item.notes}</div>}
                   </div>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#5A7848"}}>£{parseFloat(item.amount||0).toFixed(2)}</div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#5A7848"}}>£{parseFloat(item.amount||0).toFixed(2)}</div>
+                    <button onClick={()=>{const d=new Date();const ds=d.toISOString().slice(0,10).replace(/-/g,"");window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(item.label+(item.category?" ("+item.category+")":""))+"&dates="+ds+"T090000/"+ds+"T100000","_blank");}} style={{background:"none",border:"none",color:"#4285f4",cursor:"pointer",fontSize:11,fontWeight:600}}>📅 Cal</button>
+                  </div>
                   <button onClick={()=>upd({plannedItems:(b.plannedItems||[]).filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer"}}>✕</button>
                 </div>
               ))}
@@ -6266,7 +6425,12 @@ Budget: ${b.name}`,created:Date.now()});
                   style={{flex:2,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.94)",color:"#1A1A10"}}/>
                 <input value={b._newPlanAmt||""} onChange={e=>upd({_newPlanAmt:e.target.value})} placeholder="£" type="number"
                   style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.94)",color:"#1A1A10"}}/>
-                <button onClick={()=>{if(!(b._newPlan||"").trim())return;upd({plannedItems:[...(b.plannedItems||[]),{label:b._newPlan.trim(),amount:b._newPlanAmt||0}],_newPlan:"",_newPlanAmt:""});}}
+                <select value={b._newPlanCat||""} onChange={e=>upd({_newPlanCat:e.target.value})}
+                  style={{width:"100%",padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.94)",color:"#1A1A10",marginBottom:8}}>
+                  <option value="">Category (optional)</option>
+                  {["🎄 Christmas","🎁 Presents","🏖️ Holiday","🏠 Home","🎓 School","🍽️ Eating out","💊 Health","👗 Clothes","🚗 Car","💆 Treat","🛒 Shopping","🎉 Event","📦 Other"].map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+                <button onClick={()=>{if(!(b._newPlan||"").trim())return;upd({plannedItems:[...(b.plannedItems||[]),{label:b._newPlan.trim(),amount:b._newPlanAmt||0,category:b._newPlanCat||""}],_newPlan:"",_newPlanCat:"",_newPlanAmt:""});}}
                   style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"9px 16px",fontWeight:700,cursor:"pointer"}}>+</button>
               </div>
               {(b.plannedItems||[]).length>0&&(
@@ -6283,6 +6447,11 @@ Budget: ${b.name}`,created:Date.now()});
           <div>
             <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1px solid rgba(255,255,255,0.9)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:12}}>💸 Log actual spending</div>
+              <select value={newExp.category||""} onChange={e=>setNewExp(x=>({...x,category:e.target.value}))}
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.94)",marginBottom:8}}>
+                <option value="">Category (optional)</option>
+                {["🎄 Christmas","🎁 Presents","🏖️ Holiday","🏠 Home","🎓 School","🍽️ Eating out","💊 Health","👗 Clothes","🚗 Car","💆 Treat","🛒 Shopping","🎉 Event","📦 Other"].map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
               <input value={newExp.label} onChange={e=>setNewExp(x=>({...x,label:e.target.value}))} placeholder="What did you spend on?"
                 style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:8,background:"rgba(242,248,240,0.94)"}}/>
               <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -6302,6 +6471,7 @@ Budget: ${b.name}`,created:Date.now()});
                   <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
                     <div style={{flex:1}}>
                       <div style={{fontSize:14,fontWeight:600,color:"#1A1A10"}}>{e.label}</div>
+                      {e.category&&<div style={{fontSize:11,color:"#5A7848",fontWeight:600}}>{e.category}</div>}
                       {e.date&&<div style={{fontSize:11,color:"#8A8070"}}>{new Date(e.date+'T12:00:00').toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</div>}
                     </div>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#c0392b"}}>£{parseFloat(e.amount).toFixed(2)}</div>
@@ -9278,7 +9448,15 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                       </div>
                       {rewardName&&<button onClick={()=>{if(window.confirm("Delete this reward?")){{upd({weeklyAward:"",reward:{name:"",cost:"",url:"",photo:""},rewardDate:""});showToast("🗑 Reward deleted");}}}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>🗑 Delete</button>}
                     </div>
-                    {reward.cost&&<div style={{fontSize:12,color:"#8A8070",marginBottom:2}}>💰 {reward.cost} · <button onClick={()=>setScreen&&setScreen("budget")} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,textDecoration:"underline"}}>Budget it</button></div>}
+                    {reward.cost&&<div style={{fontSize:12,color:"#8A8070",marginBottom:2}}>💰 {reward.cost} · <button onClick={()=>{
+                        try{
+                          const bd=JSON.parse(localStorage.getItem('thinko_budget')||'[]');
+                          const newItem={label:"Reward: "+(reward.name||"Treat"),amount:reward.cost,category:"💆 Treat"};
+                          if(bd.length>0){bd[0].plannedItems=[...(bd[0].plannedItems||[]),newItem];localStorage.setItem('thinko_budget',JSON.stringify(bd));alert("Added to your first budget as a planned item!");}
+                          else{alert("Create a budget first, then try again.");}
+                        }catch(e){alert("Could not add to budget.");}
+                        setScreen&&setScreen("budget");
+                      }} style={{background:"none",border:"none",color:"#5A7848",fontSize:12,fontWeight:700,cursor:"pointer",padding:0,textDecoration:"underline"}}>💰 Send to Budget</button></div>}
                     {reward.url&&<a href={reward.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#5A7848",display:"block",marginBottom:2}}>🔗 View</a>}
                     {/* Clear unlock message */}
                     {rewardName&&(
@@ -10894,7 +11072,7 @@ export default function App() {
   if((screen==="notes"||screen==="noteshub"||screen==="filing")&&!vaultUnlocked)
     return <VaultPinLock onUnlock={()=>setVaultUnlocked(true)}/>;
 
-  if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} cabinetData={cabinetData} setCabinetData={setCabinetData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div></>);
+  if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} cabinetData={cabinetData} setCabinetData={setCabinetData} setScreen={setScreen} onLockChange={()=>setVaultUnlocked(false)}/><NavBar current="notes" setScreen={setScreen}/></div></>);
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
   if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
