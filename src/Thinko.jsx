@@ -6036,11 +6036,10 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
         </div>
       </div>
 
-      {/* ── 2×2 GRID — fills all remaining space above nav bar ── */}
+      {/* ── 2×2 GRID ── */}
       <div style={{
         flex:1,
-        padding:"6px",
-        paddingBottom:68,
+        padding:"6px 6px 68px 6px",
         display:"grid",
         gridTemplateColumns:"1fr 1fr",
         gridTemplateRows:"1fr 1fr",
