@@ -3039,264 +3039,119 @@ function VoiceToText({setNotesData:setND}){
 ═══════════════════════════════════════════════════════ */
 function Onboarding({onComplete}){
   const [slide,setSlide]=useState(0);
-  const [exiting,setExiting]=useState(false);
+  const [animDir,setAnimDir]=useState(1); // 1=forward, -1=back
 
   const SLIDES=[
-    {
-      id:"welcome",
-      bg:"linear-gradient(160deg,#1A2810 0%,#2C4020 50%,#1A3818 100%)",
-      emoji:"🌿",
-      title:"Welcome to Thinko",
-      tagline:"Think it. Plan it. Live it.",
-      body:"Your personal space for everything — tasks, goals, notes, habits, budget and more. Let's take a quick tour so you know where everything lives.",
-      accent:"#7AB868",
-      cta:"Let's go →",
-    },
-    {
-      id:"charge",
-      bg:"linear-gradient(160deg,#1A0A08 0%,#3A1808 50%,#280C04 100%)",
-      emoji:"💥",
-      title:"Wipe Out",
-      tagline:"Slay your tasks — defeat the monster",
-      body:"Set how many tasks you want to crush today. Each one you complete weakens the monster. Finish them all and it gets wiped out entirely. Set a reward for yourself and collect it when you're done.",
-      accent:"#FF6030",
-      cta:"Next →",
-      features:["Set a daily target","Watch the monster weaken","Earn your reward","Wipe Out Day challenge"],
-    },
-    {
-      id:"todo",
-      bg:"linear-gradient(160deg,#0A1808 0%,#1A3020 50%,#0C2818 100%)",
-      emoji:"📋",
-      title:"To Do List",
-      tagline:"Prioritise and get it done",
-      body:"Create separate lists for work, home, today — whatever you need. Drag tasks to reorder by priority. Tick them off and get a confetti celebration every time. 🎉",
-      accent:"#7AB868",
-      cta:"Next →",
-      features:["Multiple lists","Drag to prioritise","Celebration on completion","Focus timer built in"],
-    },
-    {
-      id:"vault",
-      bg:"linear-gradient(160deg,#0A1020 0%,#182840 50%,#0A2030 100%)",
-      emoji:"📚",
-      title:"The Vault",
-      tagline:"Your private space for everything important",
-      body:"Notes, ideas, mind maps, filing cabinet — all in one secure place. Optional 4-digit PIN lock keeps it private. The filing cabinet stores documents, tickets and important files.",
-      accent:"#6898C8",
-      cta:"Next →",
-      features:["Notes & pages","💡 Ideas board","🗄️ Filing Cabinet","Optional PIN lock 🔐"],
-    },
-    {
-      id:"goals",
-      bg:"linear-gradient(160deg,#100A20 0%,#281840 50%,#180A30 100%)",
-      emoji:"🎯",
-      title:"Goals",
-      tagline:"Plant seeds for every horizon",
-      body:"Set goals across 5 time horizons — 90 days, 1 year, 3 years, 5 years, and your life vision. Watch your garden grow as you make progress. Break goals into subtasks and track milestones.",
-      accent:"#A868D8",
-      cta:"Next →",
-      features:["5 time horizons","Garden grows with progress","Break into subtasks","Send to To Do List"],
-    },
-    {
-      id:"routine",
-      bg:"linear-gradient(160deg,#0A1808 0%,#182C10 50%,#0C2010 100%)",
-      emoji:"🌀",
-      title:"Routines",
-      tagline:"Build habits that stick",
-      body:"Create multiple routines for morning, evening, cleaning, laundry — anything you repeat. Add tasks with timers, track streaks, and get prompted if you haven't done something in a week.",
-      accent:"#68A858",
-      cta:"Next →",
-      features:["Multiple routines","Built-in timers","Streak tracking","Stale task reminders"],
-    },
-    {
-      id:"budget",
-      bg:"linear-gradient(160deg,#100A00 0%,#281800 50%,#1A1008 100%)",
-      emoji:"💰",
-      title:"Budget",
-      tagline:"Plan ahead and stay on track",
-      body:"Plan budgets for holidays, events, big purchases. Add planned costs before you spend, log actual expenses, and save tickets and bookings. Send tickets straight to your Filing Cabinet.",
-      accent:"#C8A030",
-      cta:"Next →",
-      features:["Plan future events","Log actual spending","Save tickets & bookings","Send to Filing Cabinet"],
-    },
-    {
-      id:"rest",
-      bg:"linear-gradient(160deg,#08100A 0%,#102018 50%,#081410 100%)",
-      emoji:"🌿",
-      title:"Rest Space",
-      tagline:"Recharge your mind and body",
-      body:"Guided meditations, nature sounds, a focus timer and break timer. Save your favourites to come back to quickly. Everything you need to breathe, reset and refocus.",
-      accent:"#58A878",
-      cta:"Next →",
-      features:["Guided meditations","Nature sounds","Focus & break timers","Save favourites ⭐"],
-    },
-    {
-      id:"tools",
-      bg:"linear-gradient(160deg,#080A10 0%,#101828 50%,#080C18 100%)",
-      emoji:"🔧",
-      title:"Tools",
-      tagline:"Everything else you need",
-      body:"Calculator, stopwatch, countdown timer, alarm, language translator, currency converter and world time. All the little utilities that make your day easier.",
-      accent:"#7888C8",
-      cta:"Next →",
-      features:["Calculator & timers","Alarm clock","Translator & currency","🌐 World time — 35+ cities"],
-    },
-    {
-      id:"ready",
-      bg:"linear-gradient(160deg,#0C1A08 0%,#1A3010 50%,#102808 100%)",
-      emoji:"🚀",
-      title:"You're all set!",
-      tagline:"Everything you need to thrive",
-      body:"You can always come back to this tour from the settings menu. Now go explore — start with something that excites you most, whether that's setting a goal, building a routine, or crushing today's tasks.",
-      accent:"#FFD700",
-      cta:"🌿 Start using Thinko",
-      isLast:true,
-    },
+    {id:"welcome",bg:"linear-gradient(160deg,#1A2810 0%,#2C4020 50%,#1A3818 100%)",emoji:"🌿",title:"Welcome to Thinko",tagline:"Think it. Plan it. Live it.",body:"Your personal space for everything — tasks, goals, notes, habits, budget and more. Let's take a quick tour so you know where everything lives.",accent:"#7AB868",cta:"Let's go →"},
+    {id:"charge",bg:"linear-gradient(160deg,#1A0A08 0%,#3A1808 50%,#280C04 100%)",emoji:"💥",title:"Wipe Out",tagline:"Slay your tasks — defeat the monster",body:"Set how many tasks you want to crush today. Each one you complete weakens the monster. Finish them all and it gets wiped out entirely.",accent:"#FF6030",cta:"Next →",features:["Set a daily target","Monster weakens with each task","Earn your reward","Wipe Out Day challenge"]},
+    {id:"todo",bg:"linear-gradient(160deg,#0A1808 0%,#1A3020 50%,#0C2818 100%)",emoji:"📋",title:"To Do List",tagline:"Prioritise and get it done",body:"Create separate lists for work, home, today. Drag tasks to reorder by priority. Tick them off and get a celebration every time.",accent:"#7AB868",cta:"Next →",features:["Multiple lists","Drag to prioritise","Celebration on completion","Focus timer built in"]},
+    {id:"vault",bg:"linear-gradient(160deg,#0A1020 0%,#182840 50%,#0A2030 100%)",emoji:"📚",title:"The Vault",tagline:"Your private space",body:"Notes, ideas, mind maps, filing cabinet — all in one secure place. Optional 4-digit PIN lock keeps it private.",accent:"#6898C8",cta:"Next →",features:["Notes & pages","💡 Ideas board","🗄️ Filing Cabinet","Optional PIN lock 🔐"]},
+    {id:"goals",bg:"linear-gradient(160deg,#100A20 0%,#281840 50%,#180A30 100%)",emoji:"🎯",title:"Goals",tagline:"Plant seeds for every horizon",body:"Set goals across 5 time horizons — 90 days, 1 year, 3 years, 5 years, and your life vision. Watch your garden grow.",accent:"#A868D8",cta:"Next →",features:["5 time horizons","Garden grows with progress","Break into subtasks","Send to To Do List"]},
+    {id:"routine",bg:"linear-gradient(160deg,#0A1808 0%,#182C10 50%,#0C2010 100%)",emoji:"🌀",title:"Routines",tagline:"Build habits that stick",body:"Create multiple routines for morning, evening, cleaning, laundry. Add tasks with timers, track streaks.",accent:"#68A858",cta:"Next →",features:["Multiple routines","Built-in timers","Streak tracking","Stale task reminders"]},
+    {id:"budget",bg:"linear-gradient(160deg,#100A00 0%,#281800 50%,#1A1008 100%)",emoji:"💰",title:"Budget",tagline:"Plan ahead and stay on track",body:"Plan budgets for holidays, events, big purchases. Add planned costs, log spending, and save tickets and bookings.",accent:"#C8A030",cta:"Next →",features:["Plan future events","Log actual spending","Save tickets & bookings","Send to Filing Cabinet"]},
+    {id:"rest",bg:"linear-gradient(160deg,#08100A 0%,#102018 50%,#081410 100%)",emoji:"🌿",title:"Rest Space",tagline:"Recharge your mind and body",body:"Guided meditations, nature sounds, a focus timer and break timer. Save favourites for quick access.",accent:"#58A878",cta:"Next →",features:["Guided meditations","Nature sounds","Focus & break timers","Save favourites ⭐"]},
+    {id:"tools",bg:"linear-gradient(160deg,#080A10 0%,#101828 50%,#080C18 100%)",emoji:"🔧",title:"Tools",tagline:"Everything else you need",body:"Calculator, stopwatch, timer, alarm, translator, currency converter and world time for 35+ cities.",accent:"#7888C8",cta:"Next →",features:["Calculator & timers","Alarm clock","Translator & currency","🌐 World time"]},
+    {id:"ready",bg:"linear-gradient(160deg,#0C1A08 0%,#1A3010 50%,#102808 100%)",emoji:"🚀",title:"You're all set!",tagline:"Everything you need to thrive",body:"You can always revisit this tour from settings. Now go explore — start with whatever excites you most.",accent:"#FFD700",cta:"🌿 Start using Thinko",isLast:true},
   ];
 
   const current=SLIDES[slide];
-  const progress=(slide/(SLIDES.length-1))*100;
 
-  const next=()=>{
-    if(slide>=SLIDES.length-1){onComplete();return;}
-    setExiting(true);
-    setTimeout(()=>{setSlide(s=>s+1);setExiting(false);},200);
+  const goTo=(idx)=>{
+    if(idx<0||idx>=SLIDES.length)return;
+    setAnimDir(idx>slide?1:-1);
+    setSlide(idx);
   };
-  const prev=()=>{if(slide>0){setExiting(true);setTimeout(()=>{setSlide(s=>s-1);setExiting(false);},200);}};
-  const skip=()=>onComplete();
+  const next=()=>{ if(slide>=SLIDES.length-1){onComplete();return;} goTo(slide+1); };
+  const prev=()=>goTo(slide-1);
 
   return(
-    <div style={{position:"fixed",inset:0,zIndex:9999,fontFamily:"Georgia,serif",overflow:"hidden"}}>
+    <div style={{position:"fixed",inset:0,zIndex:9999,fontFamily:"Georgia,serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{`
-        @keyframes slideIn{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:translateY(0)}}
-        @keyframes slideOut{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-16px)}}
-        @keyframes featurePop{0%{opacity:0;transform:translateX(-12px)}100%{opacity:1;transform:translateX(0)}}
-        @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px rgba(255,255,255,0.08)}50%{box-shadow:0 0 40px rgba(255,255,255,0.18)}}
-        @keyframes floatEmoji{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        @keyframes obSlideIn{0%{opacity:0;transform:translateY(18px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes obPill{0%{opacity:0;transform:translateX(-10px)}100%{opacity:1;transform:translateX(0)}}
+        @keyframes obFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes obPulse{0%,100%{box-shadow:0 0 16px rgba(255,255,255,0.08)}50%{box-shadow:0 0 32px rgba(255,255,255,0.18)}}
       `}</style>
 
-      {/* Full background */}
-      <div style={{position:"absolute",inset:0,background:current.bg,transition:"background 0.6s ease"}}/>
+      {/* Background */}
+      <div style={{position:"absolute",inset:0,background:current.bg,transition:"background 0.5s ease"}}/>
+      <div style={{position:"absolute",top:"-15%",right:"-15%",width:"60vw",height:"60vw",borderRadius:"50%",background:current.accent,opacity:0.05,transition:"background 0.5s",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:"-8%",left:"-8%",width:"40vw",height:"40vw",borderRadius:"50%",background:current.accent,opacity:0.07,transition:"background 0.5s",pointerEvents:"none"}}/>
 
-      {/* Subtle grain overlay */}
-      <div style={{position:"absolute",inset:0,backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",opacity:0.4,pointerEvents:"none"}}/>
-
-      {/* Decorative blobs */}
-      <div style={{position:"absolute",top:"-10%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:`${current.accent}`,opacity:0.04,transition:"background 0.6s",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",bottom:"-5%",left:"-5%",width:"35vw",height:"35vw",borderRadius:"50%",background:`${current.accent}`,opacity:0.06,transition:"background 0.6s",pointerEvents:"none"}}/>
-
-      {/* Skip button */}
-      {!current.isLast&&(
-        <button onClick={skip} style={{position:"absolute",top:20,right:20,background:"rgba(255,255,255,0.10)",color:"rgba(255,255,255,0.50)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",zIndex:10,fontFamily:"'Segoe UI',sans-serif"}}>
-          Skip tour
-        </button>
-      )}
-
-      {/* Progress dots */}
-      <div style={{position:"absolute",top:24,left:0,right:0,display:"flex",justifyContent:"center",gap:6,zIndex:10}}>
-        {SLIDES.map((_,i)=>(
-          <div key={i} onClick={()=>{setExiting(true);setTimeout(()=>{setSlide(i);setExiting(false);},150);}}
-            style={{width:i===slide?24:7,height:7,borderRadius:100,cursor:"pointer",
-              background:i===slide?current.accent:"rgba(255,255,255,0.20)",
-              transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-              boxShadow:i===slide?`0 0 8px ${current.accent}80`:""}}/>
-        ))}
-      </div>
-
-      {/* Main content */}
-      <div style={{
-        position:"absolute",inset:0,display:"flex",flexDirection:"column",
-        alignItems:"center",justifyContent:"center",
-        padding:"80px 28px 100px",
-        animation:exiting?"slideOut 0.18s ease-in forwards":"slideIn 0.35s cubic-bezier(0.34,1.2,0.64,1) forwards",
-      }}>
-        {/* Big emoji */}
-        <div style={{
-          fontSize:slide===0?88:76,lineHeight:1,marginBottom:20,
-          animation:"floatEmoji 3s ease-in-out infinite",
-          filter:`drop-shadow(0 0 24px ${current.accent}60)`,
-        }}>
-          {current.emoji}
+      {/* Top bar: dots + skip */}
+      <div style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",justifyContent:"center",padding:"52px 20px 12px",flexShrink:0}}>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {SLIDES.map((_,i)=>(
+            <div key={i} onClick={()=>goTo(i)}
+              style={{width:i===slide?22:7,height:7,borderRadius:100,cursor:"pointer",
+                background:i===slide?current.accent:"rgba(255,255,255,0.22)",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow:i===slide?`0 0 8px ${current.accent}80`:""}}/>
+          ))}
         </div>
-
-        {/* Title */}
-        <div style={{
-          fontWeight:700,fontSize:slide===0?36:30,color:"#fff",
-          textAlign:"center",marginBottom:8,letterSpacing:-0.5,lineHeight:1.1,
-          textShadow:`0 0 30px ${current.accent}50`,
-        }}>
-          {current.title}
-        </div>
-
-        {/* Tagline */}
-        <div style={{
-          fontSize:13,fontWeight:600,color:current.accent,
-          textAlign:"center",marginBottom:20,letterSpacing:0.5,
-          fontFamily:"'Segoe UI',sans-serif",textTransform:"uppercase",
-        }}>
-          {current.tagline}
-        </div>
-
-        {/* Body */}
-        <div style={{
-          fontSize:16,color:"rgba(255,255,255,0.78)",textAlign:"center",
-          lineHeight:1.75,maxWidth:340,marginBottom:current.features?20:32,
-          fontFamily:"'Segoe UI',sans-serif",fontWeight:400,
-        }}>
-          {current.body}
-        </div>
-
-        {/* Feature pills */}
-        {current.features&&(
-          <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",maxWidth:360,marginBottom:32}}>
-            {current.features.map((f,i)=>(
-              <div key={f} style={{
-                background:`${current.accent}18`,
-                border:`1px solid ${current.accent}40`,
-                color:"rgba(255,255,255,0.85)",
-                borderRadius:100,padding:"6px 14px",
-                fontSize:12,fontWeight:600,fontFamily:"'Segoe UI',sans-serif",
-                animation:`featurePop 0.3s ${0.1+i*0.07}s both`,
-              }}>
-                {f}
-              </div>
-            ))}
-          </div>
+        {!current.isLast&&(
+          <button onClick={onComplete}
+            style={{position:"absolute",right:20,background:"rgba(255,255,255,0.10)",color:"rgba(255,255,255,0.45)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:100,padding:"6px 14px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif"}}>
+            Skip
+          </button>
         )}
       </div>
 
-      {/* Bottom navigation */}
-      <div style={{
-        position:"absolute",bottom:0,left:0,right:0,
-        padding:"20px 28px 36px",
-        background:"linear-gradient(to top,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0) 100%)",
-      }}>
-        <div style={{display:"flex",gap:12,maxWidth:400,margin:"0 auto"}}>
-          {slide>0&&(
-            <button onClick={prev} style={{
-              flex:1,padding:"15px",
-              background:"rgba(255,255,255,0.08)",
-              color:"rgba(255,255,255,0.65)",
-              border:"1px solid rgba(255,255,255,0.12)",
-              borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",
-            }}>← Back</button>
+      {/* Scrollable content area */}
+      <div key={slide} style={{flex:1,overflowY:"auto",position:"relative",zIndex:2,WebkitOverflowScrolling:"touch",animation:"obSlideIn 0.32s cubic-bezier(0.34,1.2,0.64,1) forwards"}}>
+        <div style={{padding:"8px 28px 24px",display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",minHeight:"100%"}}>
+
+          {/* Emoji */}
+          <div style={{fontSize:70,lineHeight:1,margin:"16px 0 14px",animation:"obFloat 3s ease-in-out infinite",filter:`drop-shadow(0 0 20px ${current.accent}55)`}}>
+            {current.emoji}
+          </div>
+
+          {/* Title */}
+          <div style={{fontWeight:700,fontSize:slide===0?32:26,color:"#fff",marginBottom:6,letterSpacing:-0.5,lineHeight:1.15,textShadow:`0 0 24px ${current.accent}44`}}>
+            {current.title}
+          </div>
+
+          {/* Tagline */}
+          <div style={{fontSize:12,fontWeight:600,color:current.accent,marginBottom:14,letterSpacing:0.6,fontFamily:"'Segoe UI',sans-serif",textTransform:"uppercase"}}>
+            {current.tagline}
+          </div>
+
+          {/* Body */}
+          <div style={{fontSize:15,color:"rgba(255,255,255,0.78)",lineHeight:1.7,maxWidth:340,marginBottom:current.features?16:8,fontFamily:"'Segoe UI',sans-serif"}}>
+            {current.body}
+          </div>
+
+          {/* Feature pills */}
+          {current.features&&(
+            <div style={{display:"flex",flexWrap:"wrap",gap:7,justifyContent:"center",maxWidth:340,marginBottom:8}}>
+              {current.features.map((f,i)=>(
+                <div key={f} style={{background:`${current.accent}18`,border:`1px solid ${current.accent}38`,color:"rgba(255,255,255,0.88)",borderRadius:100,padding:"5px 12px",fontSize:12,fontWeight:600,fontFamily:"'Segoe UI',sans-serif",animation:`obPill 0.28s ${0.08+i*0.06}s both`}}>
+                  {f}
+                </div>
+              ))}
+            </div>
           )}
-          <button onClick={next} style={{
-            flex:3,padding:"16px",
-            background:current.isLast?`linear-gradient(135deg,${current.accent},#90C070)`:current.accent,
-            color:current.isLast?"#1A2810":"#fff",
-            border:"none",borderRadius:100,
-            fontFamily:"Georgia,serif",fontWeight:700,fontSize:current.isLast?17:15,cursor:"pointer",
-            boxShadow:`0 6px 24px ${current.accent}60`,
-            animation:current.isLast?"pulseGlow 2s ease-in-out infinite":"none",
-            letterSpacing:current.isLast?0.2:0,
-          }}>
+
+          {/* Slide number */}
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.22)",fontFamily:"'Segoe UI',sans-serif",marginTop:8}}>
+            {slide+1} / {SLIDES.length}
+          </div>
+        </div>
+      </div>
+
+      {/* Fixed bottom nav — always visible, never overlaps */}
+      <div style={{position:"relative",zIndex:2,flexShrink:0,padding:"12px 24px",paddingBottom:"max(24px,env(safe-area-inset-bottom,24px))",background:"linear-gradient(to top,rgba(0,0,0,0.45) 0%,rgba(0,0,0,0) 100%)"}}>
+        <div style={{display:"flex",gap:10,maxWidth:400,margin:"0 auto"}}>
+          {slide>0&&(
+            <button onClick={prev}
+              style={{flex:1,padding:"15px 0",background:"rgba(255,255,255,0.09)",color:"rgba(255,255,255,0.70)",border:"1px solid rgba(255,255,255,0.14)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+              ← Back
+            </button>
+          )}
+          <button onClick={next}
+            style={{flex:3,padding:"16px 0",background:current.isLast?`linear-gradient(135deg,${current.accent},#90C070)`:current.accent,color:current.isLast?"#1A2810":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:current.isLast?16:15,cursor:"pointer",boxShadow:`0 5px 20px ${current.accent}55`,animation:current.isLast?"obPulse 2s ease-in-out infinite":"none"}}>
             {current.cta}
           </button>
-        </div>
-
-        {/* Slide counter */}
-        <div style={{textAlign:"center",marginTop:12,fontSize:11,color:"rgba(255,255,255,0.25)",fontFamily:"'Segoe UI',sans-serif"}}>
-          {slide+1} of {SLIDES.length}
         </div>
       </div>
     </div>
@@ -3389,15 +3244,17 @@ function VaultPinLock({onUnlock}){
   );
 }
 
-function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,setScreen,initialMode=null}) {
+function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,setIdeasData,matrixData,setMatrixData,goalsData,setGoalsData,cabinetData:cabinetDataProp,setCabinetData:setCabinetDataProp,setScreen,initialMode=null}) {
   // ── ALL hooks at top level — never inside conditionals or IIFEs ──
   const [sectionId,setSectionId]=useState(null);
   const [pageId,setPageId]=useState(null);
   const [sendOpen,setSendOpen]=useState(false);
   const [toast,setToast]=useState("");
   const [notesMode,setNotesMode]=useState(initialMode||null); // null = show vault hub
-  const [cabinetData,setCabinetDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_cabinet');return v?JSON.parse(v):[];}catch{return [];}});
-  const setCabinetData=d=>{const next=typeof d==="function"?d(cabinetData):d;setCabinetDataRaw(next);try{localStorage.setItem('thinko_cabinet',JSON.stringify(next));}catch{}};
+  const [_cd,_scdRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_cabinet');return v?JSON.parse(v):[];}catch{return [];}});
+  const _scd=d=>{const next=typeof d==="function"?d(_cd):d;_scdRaw(next);try{localStorage.setItem('thinko_cabinet',JSON.stringify(next));}catch{}};
+  const cabinetData=cabinetDataProp!==undefined?cabinetDataProp:_cd;
+  const setCabinetData=setCabinetDataProp||_scd;
   const [addingSectionForm,setAddingSectionForm]=useState(false);
   const [addingPageForm,setAddingPageForm]=useState(false);
   const [newSectionName,setNewSectionName]=useState('');
@@ -5473,7 +5330,16 @@ function MatrixTimer({setScreen}) {
   );
 }
 
+const QUADS=[
+  {key:"do",   label:"Do First",  sub:"Urgent & Important",    color:"#C03020",bg:"rgba(192,48,32,0.06)",  emoji:"🔥"},
+  {key:"plan", label:"Schedule",  sub:"Important, Not Urgent", color:"#4870A0",bg:"rgba(72,112,160,0.06)",emoji:"📅"},
+  {key:"help", label:"Delegate",  sub:"Urgent, Not Important", color:"#C08820",bg:"rgba(192,136,32,0.06)",emoji:"🤝"},
+  {key:"drop", label:"Eliminate", sub:"Neither",               color:"#5A5A5A",bg:"rgba(90,90,90,0.06)",  emoji:"🗑"},
+];
+
 function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) {
+  data=data||[];
+  priData=priData||[];
   const [inlineTexts,setInlineTexts]=useState({do:"",plan:"",help:"",drop:""});
   const [inlineUrls,setInlineUrls]=useState({do:"",plan:"",help:"",drop:""});
   const [expandedTask,setExpandedTask]=useState(null);
@@ -5549,9 +5415,17 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
   );
 
   return (
-    <div style={{height:"100svh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",flexDirection:"column",overflow:"hidden",boxSizing:"border-box",paddingBottom:60}}>
+    <div style={{
+      position:"fixed",
+      inset:0,
+      background:"transparent",
+      fontFamily:"'Segoe UI',sans-serif",
+      display:"flex",
+      flexDirection:"column",
+      overflow:"hidden",
+    }}>
 
-      {/* ── HEADER — compact to save vertical space ── */}
+      {/* ── HEADER — compact ── */}
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 16px 12px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
         <button onClick={()=>setScreen("home")} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -5561,31 +5435,32 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
         </div>
       </div>
 
-      {/* ── 2×2 GRID — exact width, no overflow ── */}
-      <div style={{flex:1,padding:"8px",display:"flex",flexDirection:"column",overflow:"hidden",boxSizing:"border-box",width:"100%"}}>
-        <div style={{
-          display:"grid",
-          gridTemplateColumns:"calc(50% - 4px) calc(50% - 4px)",
-          gridTemplateRows:"1fr 1fr",
-          gap:8,
-          flex:1,
-          overflow:"hidden",
-          width:"100%",
-          boxSizing:"border-box",
-        }}>
-          {QUADS.map((q,qi)=>{
+      {/* ── 2×2 GRID — fills all remaining space above nav bar ── */}
+      <div style={{
+        flex:1,
+        padding:"6px 6px 72px 6px",
+        display:"grid",
+        gridTemplateColumns:"1fr 1fr",
+        gridTemplateRows:"1fr 1fr",
+        gap:6,
+        overflow:"hidden",
+        boxSizing:"border-box",
+        minHeight:0,
+      }}>
+        {QUADS.map((q,qi)=>{
             const tasks=data.filter(d=>d.quad===q.key);
             const isSage=qi===0||qi===2;
             return(
               <div key={q.key} style={{
                 background:isSage?"rgba(124,148,104,0.35)":"rgba(245,242,234,0.88)",
                 borderRadius:16,
-                padding:"12px 10px 10px",
+                padding:"10px 8px 8px",
                 position:"relative",
                 display:"flex",
                 flexDirection:"column",
                 overflow:"hidden",
                 boxSizing:"border-box",
+                minHeight:0,
                 minWidth:0,
               }}>
                 {/* Leaf icon */}
@@ -5636,15 +5511,14 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                   <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:30,height:30,fontSize:20,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
               </div>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
 
-      {/* ── BOTTOM BUTTONS ── */}
-      <div style={{padding:"10px 12px 28px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,flexShrink:0,boxSizing:"border-box",width:"100%"}}>
-        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"14px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 4px 16px rgba(90,120,72,0.30)"}}>Move to To Do List</button>
-        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"14px 8px",background:"transparent",color:"#3A6020",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>Weekly Insights</button>
+      {/* ── BOTTOM BUTTONS — overlaid above nav bar ── */}
+      <div style={{position:"fixed",bottom:60,left:0,right:0,padding:"8px 12px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,zIndex:20,boxSizing:"border-box"}}>
+        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"11px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 To Do List</button>
+        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"11px 8px",background:"transparent",color:"#3A6020",border:"1px solid rgba(90,120,72,0.3)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>🎯 Goals</button>
       </div>
       {/* Send menu */}
       {sendMenu&&<SendMenu task={sendMenu}/>}
@@ -5737,7 +5611,7 @@ function BudgetPlanner({data,setData,setScreen,cabinetData,setCabinetData}){
       </div>
       <div style={{padding:"16px 16px"}}>
         {data.map(b=>{
-          const tot=b.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+          const tot=(b.expenses||[]).reduce((s,e)=>s+Number(e.amount||0),0);
           const rem=Number(b.budgetAmount||0)-tot;
           return(
             <div key={b.id} onClick={()=>setActiveId(b.id)} style={{background:"rgba(248,245,236,0.90)",borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:"0 2px 14px rgba(60,70,40,0.07)",border:"1px solid rgba(255,255,255,0.9)",cursor:"pointer"}}>
@@ -8125,6 +7999,129 @@ function Routine({routineData,setRoutineData,setScreen}){
   );
 }
 
+/* ── TaskReschedule: options for incomplete plan tasks ── */
+function TaskReschedule({task,i,data,upd,priData,setPriData,charged}){
+  const [open,setOpen]=useState(false);
+  const [mode,setMode]=useState(null); // null | calendar | weekly | breakdown
+  const [breakdownItems,setBreakdownItems]=useState([]);
+  const [newStep,setNewStep]=useState("");
+  const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+  if(!open) return(
+    <div style={{display:"flex",gap:6,marginTop:4,paddingLeft:34,flexWrap:"wrap"}}>
+      <button onClick={()=>{setOpen(true);setMode(null);}}
+        style={{background:"rgba(192,57,43,0.06)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.15)",borderRadius:100,padding:"4px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+        ⚠️ Not done — options
+      </button>
+    </div>
+  );
+
+  return(
+    <div style={{marginTop:6,paddingLeft:34}}>
+      {/* Mode selector */}
+      {!mode&&(
+        <div style={{background:"rgba(255,248,240,0.95)",borderRadius:16,padding:"12px 14px",border:"1.5px solid rgba(192,57,43,0.12)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#c0392b",marginBottom:8}}>{`"${task}" wasn't done — what would you like to do?`}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            <button onClick={()=>setMode("calendar")} style={{padding:"7px 12px",background:"rgba(66,133,244,0.10)",color:"#4285f4",border:"1px solid rgba(66,133,244,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>📅 Schedule to calendar</button>
+            <button onClick={()=>setMode("weekly")} style={{padding:"7px 12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>📆 Move to weekly plan</button>
+            <button onClick={()=>setMode("breakdown")} style={{padding:"7px 12px",background:"rgba(192,136,32,0.10)",color:"#C08820",border:"1px solid rgba(192,136,32,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>🔧 Break it down</button>
+            <button onClick={()=>setOpen(false)} style={{padding:"7px 12px",background:"rgba(90,80,60,0.06)",color:"#8A8070",border:"none",borderRadius:100,fontSize:11,cursor:"pointer"}}>✕ Dismiss</button>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar mode */}
+      {mode==="calendar"&&(
+        <div style={{background:"rgba(240,246,255,0.97)",borderRadius:16,padding:"12px 14px",border:"1.5px solid rgba(66,133,244,0.15)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#4285f4",marginBottom:10}}>📅 Schedule "{task}"</div>
+          <button onClick={()=>{
+            const now=new Date();now.setDate(now.getDate()+1);
+            const d=now.toISOString().slice(0,10).replace(/-/g,"");
+            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(task)}&dates=${d}T090000/${d}T100000`,"_blank");
+            setOpen(false);
+          }} style={{width:"100%",padding:"10px",background:"#4285f4",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:8}}>
+            📅 Open Google Calendar
+          </button>
+          <button onClick={()=>{setMode(null);}} style={{width:"100%",padding:"8px",background:"transparent",color:"#8A8070",border:"none",fontSize:11,cursor:"pointer"}}>← Back</button>
+        </div>
+      )}
+
+      {/* Weekly plan mode */}
+      {mode==="weekly"&&(
+        <div style={{background:"rgba(240,248,240,0.97)",borderRadius:16,padding:"12px 14px",border:"1.5px solid rgba(90,120,72,0.20)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#3A6020",marginBottom:8}}>📆 Which day?</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+            {DAYS.map(day=>(
+              <button key={day} onClick={()=>{
+                // Add to weekly plan for that day
+                try{
+                  const wp=JSON.parse(localStorage.getItem('thinko_week_plan')||'[]');
+                  const updated=wp.map(d=>d.day===day?{...d,tasks:[...(d.tasks||[]),task]}:{...d});
+                  if(!updated.find(d=>d.day===day)) updated.push({day,tasks:[task]});
+                  localStorage.setItem('thinko_week_plan',JSON.stringify(updated));
+                }catch{}
+                setOpen(false);
+                alert(`"${task}" added to ${day}'s plan ✅`);
+              }} style={{padding:"6px 12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                {day.slice(0,3)}
+              </button>
+            ))}
+          </div>
+          <button onClick={()=>setMode(null)} style={{fontSize:11,color:"#8A8070",background:"transparent",border:"none",cursor:"pointer"}}>← Back</button>
+        </div>
+      )}
+
+      {/* Breakdown mode */}
+      {mode==="breakdown"&&(
+        <div style={{background:"rgba(255,248,220,0.97)",borderRadius:16,padding:"14px",border:"1.5px solid rgba(192,136,32,0.20)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#C08820",marginBottom:4}}>🔧 Break down "{task}"</div>
+          <div style={{fontSize:11,color:"#8A8070",marginBottom:10}}>Split into smaller steps, then send them wherever you need.</div>
+          {breakdownItems.map((step,si)=>(
+            <div key={si} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              <span style={{fontSize:11,color:"#C08820",flexShrink:0,width:16}}>•</span>
+              <span style={{flex:1,fontSize:13,color:"#1A1A10"}}>{step}</span>
+              <button onClick={()=>setBreakdownItems(bi=>bi.filter((_,j)=>j!==si))} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:12}}>✕</button>
+            </div>
+          ))}
+          <div style={{display:"flex",gap:6,marginBottom:10}}>
+            <input value={newStep} onChange={e=>setNewStep(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&newStep.trim()){setBreakdownItems(bi=>[...bi,newStep.trim()]);setNewStep("");}}}
+              placeholder="Add a step…"
+              style={{flex:1,padding:"8px 12px",borderRadius:100,border:"1.5px solid rgba(192,136,32,0.22)",fontSize:12,outline:"none",background:"rgba(255,255,255,0.90)",color:"#1A1A10"}}/>
+            <button onClick={()=>{if(!newStep.trim())return;setBreakdownItems(bi=>[...bi,newStep.trim()]);setNewStep("");}} style={{background:"#C08820",color:"#fff",border:"none",borderRadius:100,padding:"8px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>+</button>
+          </div>
+          {breakdownItems.length>0&&(
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+              <button onClick={()=>{
+                // Add to Today's tasks
+                const next=[...(data.targetTasks||[]).filter(t=>t?.trim()&&t!==task),...breakdownItems];
+                upd({targetTasks:next,dailyTarget:next.length});
+                setOpen(false);
+              }} style={{padding:"7px 12px",background:"rgba(255,100,0,0.12)",color:"#c0392b",border:"1px solid rgba(255,100,0,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>💥 Add to Today</button>
+              <button onClick={()=>{
+                // Add to first To Do list
+                if(setPriData&&priData&&priData.length>0){
+                  setPriData(ls=>ls.map((l,li)=>li===0?{...l,tasks:[...l.tasks,...breakdownItems.map(s=>({id:Date.now()+Math.random(),name:s,done:false,color:"lilac"}))]}:l));
+                  setOpen(false);alert("Steps added to To Do List ✅");
+                } else alert("Add a To Do List first");
+              }} style={{padding:"7px 12px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>📋 Send to To Do List</button>
+              <button onClick={()=>{
+                // Add to weekly plan
+                const DAYS2=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+                const day=DAYS2[new Date().getDay()===0?6:new Date().getDay()-1];
+                try{const wp=JSON.parse(localStorage.getItem('thinko_week_plan')||'[]');const updated=DAYS2.map(d=>{const found=wp.find(w=>w.day===d)||{day:d,tasks:[]};return d===day?{...found,tasks:[...(found.tasks||[]),...breakdownItems]}:found;});localStorage.setItem('thinko_week_plan',JSON.stringify(updated));}catch{}
+                setOpen(false);alert(`Steps added to this week's plan ✅`);
+              }} style={{padding:"7px 12px",background:"rgba(66,133,244,0.10)",color:"#4285f4",border:"1px solid rgba(66,133,244,0.20)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>📆 Add to Week Plan</button>
+            </div>
+          )}
+          <button onClick={()=>setMode(null)} style={{fontSize:11,color:"#8A8070",background:"transparent",border:"none",cursor:"pointer"}}>← Back</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ChargeCompare({tasks, onDone}) {
   const active = tasks.filter(t=>t?.trim());
   const pairs = [];
@@ -9023,22 +9020,21 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
             {/* Existing tasks */}
             {(data.targetTasks||[]).map((task,i)=>{
               if(!task?.trim()) return null;
+              const isIncomplete=!charged.includes(task);
               return(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <div style={{width:26,height:26,borderRadius:"50%",background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#3A6020",flexShrink:0}}>{i+1}</div>
-                  <input
-                    value={task}
-                    onChange={e=>{
-                      const next=[...(data.targetTasks||[])];
-                      next[i]=e.target.value;
-                      upd({targetTasks:next});
-                    }}
-                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}
-                  />
-                  <button onClick={()=>{
-                    const next=(data.targetTasks||[]).filter((_,j)=>j!==i);
-                    upd({targetTasks:next,dailyTarget:next.filter(t=>t?.trim()).length||1});
-                  }} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:"50%",width:30,height:30,fontSize:14,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+                <div key={i} style={{marginBottom:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:26,height:26,borderRadius:"50%",background:isIncomplete?"rgba(192,57,43,0.08)":"rgba(90,120,72,0.12)",border:`1.5px solid ${isIncomplete?"rgba(192,57,43,0.22)":"rgba(90,120,72,0.22)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:isIncomplete?"#c0392b":"#3A6020",flexShrink:0}}>{isIncomplete?"!":i+1}</div>
+                    <input
+                      value={task}
+                      onChange={e=>{const next=[...(data.targetTasks||[])];next[i]=e.target.value;upd({targetTasks:next});}}
+                      style={{flex:1,padding:"10px 14px",borderRadius:100,border:`1.5px solid ${isIncomplete?"rgba(192,57,43,0.22)":"rgba(90,120,72,0.18)"}`,fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.88)"}}/>
+                    <button onClick={()=>{const next=(data.targetTasks||[]).filter((_,j)=>j!==i);upd({targetTasks:next,dailyTarget:next.filter(t=>t?.trim()).length||1});}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:"50%",width:30,height:30,fontSize:14,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+                  </div>
+                  {/* Options for incomplete tasks */}
+                  {isIncomplete&&(
+                    <TaskReschedule task={task} i={i} data={data} upd={upd} priData={priData} setPriData={setPriData} charged={charged}/>
+                  )}
                 </div>
               );
             })}
@@ -10155,9 +10151,9 @@ function useAuth(){
 
 const MODULES=[
   {id:"prioritizer", icon:"📋", name:"To Do List",  color:"#5A7848",
-   summary:"Drag & rank tasks · Top 3 focus · Break timer · Send to Matrix"},
+   summary:"Multiple lists · Prioritise · Tick off · Focus timer"},
   {id:"mindmap",     icon:"🧠", name:"Mind Map",     color:"#486878",
-   summary:"Visual thinking · AI branch grow · Voice notes · 8 templates"},
+   summary:"Visual thinking · 8 templates · Connect ideas"},
   {id:"notes",       icon:"📚", name:"The Vault",    color:"#7A5838",
    summary:"Notes · Ideas · Filing cabinet · Voice to Text"},
   {id:"meals",       icon:"🍽️", name:"Meal Planner", color:"#6A8858",
@@ -10167,9 +10163,9 @@ const MODULES=[
   {id:"matrix",      icon:"⚖️", name:"Matrix",       color:"#7A6038",
    summary:"Eisenhower grid · Urgent vs Important"},
   {id:"charge",      icon:"⚡", name:"Wipe Out",   color:"#6A5870",
-   summary:"Daily challenge · Orb of light · Reward tracking"},
+   summary:"Daily challenge · Monster · Reward tracking"},
   {id:"budget",      icon:"💰", name:"Budget",       color:"#5A6878",
-   summary:"Income & outgoings · Expenses tracker · AI review"},
+   summary:"Plan future events · Log spending · Tickets"},
   {id:"shopping",    icon:"🛒", name:"Shopping",     color:"#486050",
    summary:"Multiple lists · Tick off · Categories · Share"},
   {id:"tools",       icon:"🔧", name:"Tools",        color:"#705848",
@@ -10182,11 +10178,9 @@ const MODULES=[
   {id:"calc",        icon:"🧮", name:"Calculator",   color:"#4A6038",
    summary:"Garden-themed calculator",           optional:true},
   {id:"translate",   icon:"🌍", name:"Translator",   color:"#3A5868",
-   summary:"AI-powered · 18 languages",          optional:true},
+   summary:"Translate between 18 languages",          optional:true},
   {id:"currency",    icon:"💱", name:"Currency",     color:"#486050",
    summary:"Live exchange rates · 150 currencies",optional:true},
-  {id:"study",       icon:"🎓", name:"Study Studio", color:"#5A4878",
-   summary:"Flashcards · Quiz · AI study tools",  optional:true},
   {id:"noteshub",    icon:"📓", name:"Notes",        color:"#5A7848",
    summary:"Jump straight into your notes",       optional:true},
   {id:"filing",      icon:"🗄️", name:"Filing Cabinet",color:"#486878",
@@ -10322,8 +10316,10 @@ export default function App() {
   const [notesData,setNotesData]=useState(()=>{try{const v=localStorage.getItem('thinko_notes');return v?JSON.parse(v):[];}catch{return [];}});
   const [mealData,setMealData]=useState(()=>{try{const v=localStorage.getItem('thinko_meal');return v?JSON.parse(v):{};}catch{return {};}});
   const [ideasData,setIdeasData]=useState(()=>{try{const v=localStorage.getItem('thinko_ideas');return v?JSON.parse(v):[];}catch{return [];}});
-  const [matrixData,setMatrixData]=useState(()=>{try{const v=localStorage.getItem('thinko_matrix');return v?JSON.parse(v):[];}catch{return [];}});
-  const [budgetData,setBudgetData]=useState(()=>{try{const v=localStorage.getItem('thinko_budget');return v?JSON.parse(v):[];}catch{return [];}});
+  const [matrixData,setMatrixData]=useState(()=>{try{const v=localStorage.getItem('thinko_matrix');const d=v?JSON.parse(v):[];return Array.isArray(d)?d:[];}catch{return [];}});
+  const [budgetData,setBudgetData]=useState(()=>{try{const v=localStorage.getItem('thinko_budget');const d=v?JSON.parse(v):[];return Array.isArray(d)?d:[];}catch{return [];}});
+  const [cabinetData,setCabinetDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_cabinet');return v?JSON.parse(v):[];}catch{return [];}});
+  const setCabinetData=d=>{const next=typeof d==="function"?d(cabinetData):d;setCabinetDataRaw(next);try{localStorage.setItem('thinko_cabinet',JSON.stringify(next));}catch{}};
   const [routineData,setRoutineDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_routine');return v?JSON.parse(v):[];}catch{return [];}});
   const setRoutineData=d=>{const next=typeof d==="function"?d(routineData):d;setRoutineDataRaw(next);try{localStorage.setItem('thinko_routine',JSON.stringify(next));}catch{}};
   const [shopData,setShopDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_shop');return v?JSON.parse(v):[];}catch{return [];}});
@@ -10431,7 +10427,7 @@ export default function App() {
   if((screen==="notes"||screen==="noteshub"||screen==="filing")&&!vaultUnlocked)
     return <VaultPinLock onUnlock={()=>setVaultUnlocked(true)}/>;
 
-  if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div></>);
+  if(screen==="notes") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Notes data={notesData} setData={setNotesData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} cabinetData={cabinetData} setCabinetData={setCabinetData} setScreen={setScreen}/><NavBar current="notes" setScreen={setScreen}/></div></>);
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
   if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
@@ -10529,7 +10525,7 @@ export default function App() {
         {TESTING_MODE&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.22)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
         <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\n📱 Android: tap ⋮ → Add to Home Screen\n🍎 iPhone: Share → Add to Home Screen");}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>📲 App</button>
         <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#5A7848,#3A5830)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>💎 Go Pro</button>
-        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>⚙️ Customise</button>
+        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#3A6020",cursor:"pointer"}}>⚙️ Customise Home</button>
       </div>
 
       {/* ── HOME CUSTOMISE MODAL ── */}
@@ -10542,32 +10538,38 @@ export default function App() {
               <button onClick={()=>setShowHomeEdit(false)} style={{background:"rgba(90,80,60,0.08)",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:16}}>✕</button>
             </div>
             <div style={{padding:"0 20px"}}>
-              <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Tap to add or remove sections from your home screen. Drag cards on the home screen to reorder them.</div>
-              {MODULES.map(m=>{
-                const active=moduleOrder.includes(m.id);
-                return(
-                  <div key={m.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
-                    <div style={{width:40,height:40,borderRadius:14,background:`${m.color}22`,border:`1.5px solid ${m.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{m.icon}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>{m.name}</div>
-                      <div style={{fontSize:11,color:"#8A8070"}}>{m.summary}</div>
-                    </div>
-                    <button onClick={()=>{
-                      setModuleOrder(o=>{
-                        const next=active?o.filter(id=>id!==m.id):[...o,m.id];
-                        try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}
-                        return next;
-                      });
-                    }} style={{background:active?"rgba(192,57,43,0.08)":"rgba(90,120,72,0.10)",color:active?"#c0392b":"#3A6020",border:`1px solid ${active?"rgba(192,57,43,0.18)":"rgba(90,120,72,0.22)"}`,borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>
-                      {active?"Remove":"Add"}
-                    </button>
-                  </div>
-                );
-              })}
+              <div style={{fontSize:13,color:"#5A7040",marginBottom:16,lineHeight:1.6,fontWeight:600}}>Tap to pin or unpin any section. Pinned sections appear on your home screen.</div>
+
+              {/* Pinned first */}
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#3A6020",marginBottom:8,letterSpacing:0.3}}>📌 PINNED TO HOME</div>
+              {MODULES.filter(m=>moduleOrder.includes(m.id)).length===0&&<div style={{fontSize:12,color:"#8A8070",marginBottom:12,fontStyle:"italic"}}>Nothing pinned yet — add sections below</div>}
+              {MODULES.filter(m=>moduleOrder.includes(m.id)).map(m=>{const active=true;return(
+                <div key={m.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(90,80,60,0.06)"}}>
+                  <div style={{width:38,height:38,borderRadius:12,background:`${m.color}22`,border:`1.5px solid ${m.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{m.icon}</div>
+                  <div style={{flex:1}}><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{m.name}</div><div style={{fontSize:11,color:"#8A8070"}}>{m.summary}</div></div>
+                  <button onClick={()=>{setModuleOrder(o=>{const next=o.filter(id=>id!==m.id);try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}return next;});}}
+                    style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                    📌 Unpin
+                  </button>
+                </div>
+              );})}
+
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#8A8070",margin:"16px 0 8px",letterSpacing:0.3}}>+ ADD TO HOME</div>
+              {MODULES.filter(m=>!moduleOrder.includes(m.id)).map(m=>{return(
+                <div key={m.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(90,80,60,0.06)"}}>
+                  <div style={{width:38,height:38,borderRadius:12,background:`${m.color}22`,border:`1.5px solid ${m.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{m.icon}</div>
+                  <div style={{flex:1}}><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10"}}>{m.name}</div><div style={{fontSize:11,color:"#8A8070"}}>{m.summary}</div></div>
+                  <button onClick={()=>{setModuleOrder(o=>{const next=[...o,m.id];try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}return next;});}}
+                    style={{background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.22)",borderRadius:100,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                    + Add
+                  </button>
+                </div>
+              );})}
             </div>
           </div>
         </div>
       )}
+
 
       {/* ── DRAG HINT ── */}
       <div style={{textAlign:"center",marginBottom:10,flexShrink:0,display:"flex",flexDirection:"column",gap:3}}>
@@ -10611,6 +10613,12 @@ export default function App() {
             }}>
             {/* Subtle colour wash */}
             <div style={{position:"absolute",inset:0,background:`linear-gradient(160deg, ${m.color}0a 0%, transparent 60%)`,pointerEvents:"none",borderRadius:28}}/>
+            {/* Pin button top-left */}
+            <button onClick={e=>{e.stopPropagation();setModuleOrder(o=>{const next=o.filter(id=>id!==m.id);try{localStorage.setItem('thinko_order',JSON.stringify(next));}catch{}return next;});}}
+              title="Remove from home"
+              style={{position:"absolute",top:8,left:10,width:26,height:26,borderRadius:"50%",background:"rgba(255,255,255,0.12)",border:"1px solid rgba(255,255,255,0.18)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,zIndex:5}}>
+              📌
+            </button>
             {/* Drag dots */}
             <div style={{position:"absolute",top:10,right:12,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
               {[0,1,2].map(i=>(
