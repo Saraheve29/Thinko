@@ -2038,7 +2038,10 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,flexShrink:0}}>
                   <svg width="6" height="11" viewBox="0 0 6 11" fill="none"><path d="M1 1l4 4.5-4 4.5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                  <button onClick={e=>{e.stopPropagation();if(window.confirm("Delete "+list.name+"?"))setData(ls=>ls.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.06)",color:"rgba(192,57,43,0.45)",border:"none",borderRadius:100,padding:"3px 7px",cursor:"pointer",fontSize:11}}>X</button>
+                  <button onClick={e=>{e.stopPropagation();setData(ls=>ls.filter(l=>l.id!==list.id));}}
+                    style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    🗑
+                  </button>
                 </div>
               </div>
             </div>
@@ -6017,35 +6020,30 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 
   return (
     <div style={{
-      position:"fixed",
-      inset:0,
+      minHeight:"100vh",
       background:"transparent",
       fontFamily:"'Segoe UI',sans-serif",
-      display:"flex",
-      flexDirection:"column",
+      paddingBottom:120,
     }}>
 
-      {/* ── HEADER — compact ── */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"10px 16px 8px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
+      {/* ── HEADER ── */}
+      <div style={{background:"rgba(248,245,236,0.95)",padding:"12px 16px 10px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
         <button onClick={()=>setScreen("home")} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,color:"#1A1A10",letterSpacing:-0.3,lineHeight:1.2}}>
+        <div style={{fontFamily:"Georgia,serif",fontSize:18,fontWeight:700,color:"#1A1A10"}}>
           Matrix — Urgent vs Important
         </div>
       </div>
 
-      {/* ── 2×2 GRID ── */}
+      {/* ── 2×2 GRID — scrollable, each box fixed height ── */}
       <div style={{
-        flex:1,
-        padding:"6px",
         display:"grid",
         gridTemplateColumns:"1fr 1fr",
-        gridTemplateRows:"1fr 1fr",
+        gridTemplateRows:"repeat(2,220px)",
         gap:6,
+        padding:"6px",
         boxSizing:"border-box",
-        minHeight:0,
-        paddingBottom:66,
       }}>
         {QUADS.map((q,qi)=>{
             const tasks=data.filter(d=>d.quad===q.key);
@@ -6060,10 +6058,9 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                 flexDirection:"column",
                 overflow:"hidden",
                 boxSizing:"border-box",
-                minHeight:0,
-                minWidth:0,
+                height:220,
               }}>
-                {/* Leaf icon */}
+{/* Leaf icon */}
                 <div style={{position:"absolute",top:10,right:10,opacity:0.8}}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={isSage?"rgba(255,255,255,0.7)":"#5A7848"}/>
@@ -6071,18 +6068,18 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                 </div>
 
                 {/* Label */}
-                <div style={{paddingRight:22,marginBottom:6}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.3,marginBottom:1}}>{q.label}</div>
-                  <div style={{fontFamily:"Georgia,serif",fontSize:12,color:isSage?"#3A5028":"#6A6050",fontWeight:400}}>{q.sub}</div>
+                <div style={{paddingRight:18,marginBottom:4}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
+                  <div style={{fontSize:10,color:isSage?"#3A5028":"#6A6050",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
                 </div>
-                <div style={{height:1,background:isSage?"rgba(255,255,255,0.3)":"rgba(90,80,60,0.12)",marginBottom:8}}/>
+                <div style={{height:1,background:isSage?"rgba(255,255,255,0.3)":"rgba(90,80,60,0.12)",marginBottom:5}}/>
 
                 {/* Tasks scroll area */}
                 <div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0}}>
                   {tasks.map(t=>{
                     const expanded=expandedTask===t.id;
                     return(
-                      <div key={t.id} style={{background:"rgba(235,242,232,0.85)",borderRadius:10,padding:"7px 8px",marginBottom:5,border:"1px solid rgba(255,255,255,0.9)"}}>
+                      <div key={t.id} style={{background:"rgba(235,242,232,0.85)",borderRadius:8,padding:"5px 6px",marginBottom:4,border:"1px solid rgba(255,255,255,0.9)"}}>
                         <div onClick={()=>setExpandedTask(expanded?null:t.id)} style={{fontFamily:"Georgia,serif",fontSize:12,fontWeight:600,color:"#1A1A10",lineHeight:1.35,cursor:"pointer",wordBreak:"break-word"}}>{t.text}</div>
                         {expanded&&(
                           <div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:5}}>
@@ -6106,9 +6103,9 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                     onChange={e=>setInlineTexts(t=>({...t,[q.key]:e.target.value}))}
                     onKeyDown={e=>e.key==="Enter"&&addInline(q.key)}
                     placeholder="Add task…"
-                    style={{flex:1,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(240,247,238,0.92)",fontSize:12,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}
+                    style={{flex:1,padding:"5px 8px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",background:"rgba(240,247,238,0.92)",fontSize:11,color:"#1A1A10",outline:"none",minWidth:0,boxSizing:"border-box"}}
                   />
-                  <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:30,height:30,fontSize:20,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
+                  <button onClick={()=>addInline(q.key)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:26,height:26,fontSize:16,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>+</button>
                 </div>
               </div>
           );
@@ -6116,9 +6113,9 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       </div>
 
       {/* ── BOTTOM BUTTONS — overlaid above nav bar ── */}
-      <div style={{position:"fixed",bottom:60,left:0,right:0,padding:"8px 12px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,zIndex:20,boxSizing:"border-box"}}>
-        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"11px 8px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 To Do List</button>
-        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"11px 8px",background:"transparent",color:"#3A6020",border:"1px solid rgba(90,120,72,0.3)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>🎯 Goals</button>
+      <div style={{position:"fixed",bottom:58,left:0,right:0,padding:"6px 10px",background:"rgba(238,234,222,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.6)",display:"flex",gap:10,zIndex:20,boxSizing:"border-box"}}>
+        <button onClick={()=>setScreen("prioritizer")} style={{flex:1,padding:"8px 6px",background:"#6A8858",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>📋 To Do List</button>
+        <button onClick={()=>setScreen("goals")} style={{flex:1,padding:"8px 6px",background:"transparent",color:"#3A6020",border:"1px solid rgba(90,120,72,0.3)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>🎯 Goals</button>
       </div>
       {/* Send menu */}
       {sendMenu&&<SendMenu task={sendMenu}/>}
@@ -6324,7 +6321,7 @@ Budget: ${b.name}`,created:Date.now()});
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{b.icon||"💰"} {b.name}</div>
             <div style={{fontSize:12,color:"rgba(255,255,255,0.60)",marginTop:2}}>{b.description||"Budget planner"}</div>
           </div>
-          <button onClick={()=>{if(window.confirm(`Delete "${b.name}"?`))onDelete(b.id);}} style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:100,padding:"6px 12px",color:"#fff",fontSize:12,cursor:"pointer"}}>🗑</button>
+          <button onClick={()=>{onDelete(b.id);}} style={{background:"rgba(255,255,255,0.12)",border:"none",borderRadius:100,padding:"6px 12px",color:"#fff",fontSize:12,cursor:"pointer"}}>🗑</button>
         </div>
 
         {/* Budget amount input */}
@@ -6590,7 +6587,7 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
         <div style={{fontSize:24}}>{list.icon||"🛒"}</div>
         <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{list.name}</div>
         <div style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{done}/{total}</div>
-        <button onClick={()=>{if(window.confirm(`Delete "${list.name}"?`))onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:16}}>🗑</button>
+        <button onClick={()=>{onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:16}}>🗑</button>
       </div>
 
       {/* Progress bar */}
@@ -6745,7 +6742,7 @@ function ShoppingList({data,setData,setScreen}){
                 <span onClick={()=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,on:!x.on}:x))}
                   style={{flex:1,fontSize:14,fontWeight:500,color:item.on?"#1A1A10":"#B0A898",textDecoration:item.on?"none":"line-through",cursor:"pointer"}}>{item.name}</span>
                 {/* Permanent delete */}
-                <button onClick={()=>{if(window.confirm(`Permanently remove "${item.name}" from this template?`))setCustomItems(ci=>ci.filter((_,j)=>j!==i));}}
+                <button onClick={()=>{setCustomItems(ci=>ci.filter((_,j)=>j!==i));}}
                   style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
               </div>
             ))}
@@ -6938,7 +6935,7 @@ function ShoppingList({data,setData,setScreen}){
                   </div>
                 )}
                 <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.25,marginRight:4}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${list.name}"?`))setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
+                <button onClick={e=>{e.stopPropagation();setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
               </div>
               {/* Progress + preview for regular cards */}
               {!isMostBought&&total>0&&(
@@ -7912,7 +7909,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
         }}>
           {goal.status==="done"?" Done":"Mark done"}
         </button>
-        <button onClick={()=>{if(window.confirm("Delete this goal?"))onDelete(goal.id);}} style={{background:"rgba(192,57,43,0.1)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.2)",borderRadius:10,width:36,height:36,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+        <button onClick={()=>{onDelete(goal.id);}} style={{background:"rgba(192,57,43,0.1)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.2)",borderRadius:10,width:36,height:36,cursor:"pointer",fontSize:15,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
       </div>
 
       <div style={{padding:"16px 16px"}}>
@@ -8622,7 +8619,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
                   <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                  <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${r.name}"?`)){saveRoutines(routines.filter(x=>x.id!==r.id));}}}
+                  <button onClick={e=>{e.stopPropagation();saveRoutines(routines.filter(x=>x.id!==r.id));}}
                     style={{background:"none",color:"rgba(192,57,43,0.40)",border:"none",cursor:"pointer",fontSize:11,padding:"2px"}}>🗑</button>
                 </div>
               </div>
@@ -9542,7 +9539,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:i<charged.length-1?"1px solid rgba(90,120,72,0.12)":"none"}}>
                   <span style={{fontSize:14}}>⚡</span>
                   <span style={{flex:1,fontSize:13,fontWeight:600,color:"#3A5020"}}>{n}</span>
-                  <button onClick={()=>{if(window.confirm(`Remove "${n}" from today's charged list?`))updToday({charged:charged.filter((_,j)=>j!==i)});}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"3px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑</button>
+                  <button onClick={()=>{updToday({charged:charged.filter((_,j)=>j!==i)});}} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.12)",borderRadius:100,padding:"3px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑</button>
                 </div>
               ))}
             </div>
