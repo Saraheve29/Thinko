@@ -10926,7 +10926,7 @@ function PromoPopup({onClose,onUpgrade}){
         {/* Price line */}
         <div style={{textAlign:"center",marginBottom:18}}>
           <span style={{fontSize:13,color:"rgba(255,255,255,0.40)"}}>From just </span>
-          <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#FFD700"}}>£3.99/month</span>
+          <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#FFD700"}}>£4.99/month</span>
           <span style={{fontSize:13,color:"rgba(255,255,255,0.40)"}}> · cancel any time</span>
         </div>
 
