@@ -6023,11 +6023,10 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       fontFamily:"'Segoe UI',sans-serif",
       display:"flex",
       flexDirection:"column",
-      overflow:"hidden",
     }}>
 
       {/* ── HEADER — compact ── */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 16px 12px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
+      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"10px 16px 8px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",flexShrink:0,position:"relative"}}>
         <button onClick={()=>setScreen("home")} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
@@ -6039,14 +6038,14 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
       {/* ── 2×2 GRID ── */}
       <div style={{
         flex:1,
-        padding:"6px 6px 68px 6px",
+        padding:"6px",
         display:"grid",
         gridTemplateColumns:"1fr 1fr",
         gridTemplateRows:"1fr 1fr",
         gap:6,
-        overflow:"hidden",
         boxSizing:"border-box",
         minHeight:0,
+        paddingBottom:66,
       }}>
         {QUADS.map((q,qi)=>{
             const tasks=data.filter(d=>d.quad===q.key);
@@ -6054,8 +6053,8 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
             return(
               <div key={q.key} style={{
                 background:isSage?"rgba(124,148,104,0.35)":"rgba(245,242,234,0.88)",
-                borderRadius:16,
-                padding:"10px 8px 8px",
+                borderRadius:14,
+                padding:"8px 6px 6px",
                 position:"relative",
                 display:"flex",
                 flexDirection:"column",
