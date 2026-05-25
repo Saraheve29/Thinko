@@ -611,20 +611,37 @@ function PurpleBtn({ children, onClick, style={}, small=false }) {
 function UrlField({value, onChange, style={}}) {
   const clean = v => v?.trim().startsWith("http") ? v.trim() : v?.trim() ? "https://"+v.trim() : "";
   return (
-    <div style={{display:"flex",alignItems:"center",gap:6,...style}}>
-      <span style={{fontSize:14,flexShrink:0}}>🔗</span>
-      <input
-        value={value||""}
-        onChange={e=>onChange(e.target.value)}
-        placeholder="Paste website address (optional)"
-        style={{flex:1,padding:"7px 10px",borderRadius:9,border:`1.5px solid ${C.ll}`,fontSize:12,color:C.txt,outline:"none",background:C.pale,fontWeight:600}}
-      />
-      {value?.trim()&&(
-        <button onClick={()=>window.open(clean(value),"_blank")}
-          style={{background:C.pp,color:"#1A1A10",border:"none",borderRadius:8,padding:"5px 10px",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
-          Open ↗
+    <div style={{...style}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        <span style={{fontSize:14,flexShrink:0}}>🔗</span>
+        <input
+          value={value||""}
+          onChange={e=>onChange(e.target.value)}
+          placeholder="Paste recipe or Pinterest link..."
+          style={{flex:1,padding:"7px 10px",borderRadius:9,border:`1.5px solid ${C.ll}`,fontSize:12,color:C.txt,outline:"none",background:C.pale,fontWeight:600}}
+        />
+        {value?.trim()&&(
+          <button onClick={()=>window.open(clean(value),"_blank")}
+            style={{background:C.pp,color:"#1A1A10",border:"none",borderRadius:8,padding:"5px 10px",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+            Open ↗
+          </button>
+        )}
+      </div>
+      {/* Quick shortcut buttons */}
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={()=>window.open("https://www.pinterest.co.uk/search/pins/?q=recipe","_blank")}
+          style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",background:"rgba(230,0,35,0.08)",color:"#E60023",border:"1px solid rgba(230,0,35,0.18)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+          📌 Pinterest
         </button>
-      )}
+        <button onClick={()=>window.open("https://www.bbcgoodfood.com/recipes","_blank")}
+          style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",background:"rgba(90,120,72,0.08)",color:"#3A6020",border:"1px solid rgba(90,120,72,0.18)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+          🍽️ BBC Food
+        </button>
+        <button onClick={()=>window.open("https://www.google.com/search?q=recipe","_blank")}
+          style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",background:"rgba(66,133,244,0.08)",color:"#4285f4",border:"1px solid rgba(66,133,244,0.18)",borderRadius:100,fontSize:11,fontWeight:700,cursor:"pointer"}}>
+          🔍 Search
+        </button>
+      </div>
     </div>
   );
 }
@@ -1585,7 +1602,7 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
   const pct=list.tasks.length?Math.round((done.length/list.tasks.length)*100):0;
 
   return(
-    <div style={{minHeight:"100vh",background:"#F4F7F2",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#F4F7F2",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative"}}>
       <style>{`
         @keyframes lpConf{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
         @keyframes lpCIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
@@ -1738,73 +1755,43 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
 }
 function ListTaskRow({task,num,col,COLOURS,onComplete,onDelete,onColour}){
   const [showColours,setShowColours]=useState(false);
-  const [above,setAbove]=useState(false);
-  const dotRef=useRef(null);
-
-  const togglePicker=e=>{
-    e.stopPropagation();
-    if(dotRef.current){
-      const r=dotRef.current.getBoundingClientRect();
-      setAbove(window.innerHeight-r.bottom<200);
-    }
-    setShowColours(s=>!s);
-  };
-
-  useEffect(()=>{
-    if(!showColours)return;
-    const h=e=>{if(dotRef.current&&!dotRef.current.closest('[data-picker]')?.contains(e.target))setShowColours(false);};
-    setTimeout(()=>document.addEventListener("click",h),50);
-    return()=>document.removeEventListener("click",h);
-  },[showColours]);
 
   return(
-    <div data-picker="1" style={{background:"rgba(235,242,232,0.88)",backdropFilter:"blur(12px)",borderRadius:18,marginBottom:8,borderLeft:`4px solid ${col.fill}`,border:`1.5px solid ${col.fill}30`,boxShadow:"0 2px 12px rgba(42,60,28,0.06)",position:"relative"}}>
+    <div style={{background:"rgba(240,247,238,0.82)",backdropFilter:"blur(12px)",borderRadius:18,marginBottom:8,borderLeft:"4px solid "+col.fill,border:"1.5px solid "+col.fill+"30",boxShadow:"0 2px 12px rgba(42,60,28,0.06)"}}>
+      {/* Main task row */}
       <div style={{padding:"11px 12px",display:"flex",alignItems:"center",gap:10}}>
         <div style={{width:22,height:22,borderRadius:"50%",background:num<=3?"linear-gradient(135deg,#4A7838,#3A6028)":"rgba(90,80,60,0.10)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:num<=3?"#fff":"#5A6848",flexShrink:0}}>{num}</div>
-        {/* Colour dot */}
-        <div style={{position:"relative",flexShrink:0}} data-picker="1">
-          <button ref={dotRef} onClick={togglePicker}
-            style={{width:24,height:24,borderRadius:"50%",background:col.fill,border:"2.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0,display:"block",boxShadow:`0 1px 6px ${col.fill}80`}}/>
-          {showColours&&(
-            <div onClick={e=>e.stopPropagation()} style={{
-              position:"absolute",
-              [above?"bottom":"top"]:above?"calc(100% + 8px)":"calc(100% + 8px)",
-              left:"50%",
-              transform:"translateX(-50%)",
-              zIndex:9999,
-              background:"#FFFCF4",
-              borderRadius:18,
-              padding:"12px 14px",
-              boxShadow:"0 16px 48px rgba(0,0,0,0.30)",
-              border:"1.5px solid rgba(90,80,60,0.14)",
-              minWidth:196,
-            }}>
-              <div style={{fontSize:10,fontWeight:700,color:"rgba(60,50,30,0.50)",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Colour label</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-                {COLOURS.map(c=>(
-                  <button key={c.id} onClick={e=>{e.stopPropagation();onColour(c.id);setShowColours(false);}}
-                    style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"transparent",border:"none",cursor:"pointer",padding:"3px"}}>
-                    <div style={{
-                      width:38,height:38,borderRadius:10,background:c.fill,
-                      border:task.color===c.id?"3.5px solid rgba(0,0,0,0.55)":"2px solid rgba(0,0,0,0.10)",
-                      transform:task.color===c.id?"scale(1.15)":"scale(1)",
-                      transition:"all 0.12s",
-                      boxShadow:task.color===c.id?`0 0 0 3px #fff,0 3px 10px ${c.fill}90`:"0 1px 4px rgba(0,0,0,0.10)"
-                    }}/>
-                    <span style={{fontSize:10,color:"rgba(40,30,10,0.65)",fontWeight:600}}>{c.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <button onClick={()=>setShowColours(s=>!s)}
+          style={{width:22,height:22,borderRadius:"50%",background:col.fill,border:"2.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0,flexShrink:0,boxShadow:"0 1px 6px "+col.fill+"70"}}
+          title="Change colour"/>
         <span style={{flex:1,fontSize:14,fontWeight:600,color:"#1A2810",lineHeight:1.35}}>{task.name}</span>
         <button onClick={onComplete} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✓</button>
         <button onClick={onDelete} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
       </div>
+      {/* Colour picker — expands inside the card, never hidden */}
+      {showColours&&(
+        <div style={{padding:"10px 12px 12px",borderTop:"1px solid rgba(90,80,60,0.08)"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"rgba(60,50,30,0.45)",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Colour label</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {COLOURS.map(c=>(
+              <button key={c.id} onClick={()=>{onColour(c.id);setShowColours(false);}}
+                style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"transparent",border:"none",cursor:"pointer",padding:2}}>
+                <div style={{width:36,height:36,borderRadius:10,background:c.fill,
+                  border:task.color===c.id?"3px solid rgba(0,0,0,0.50)":"2px solid rgba(0,0,0,0.08)",
+                  transform:task.color===c.id?"scale(1.12)":"scale(1)",
+                  transition:"all 0.12s",
+                  boxShadow:task.color===c.id?"0 0 0 3px rgba(255,255,255,0.9),0 2px 8px "+c.fill+"80":"0 1px 3px rgba(0,0,0,0.08)"
+                }}/>
+                <span style={{fontSize:9,color:"rgba(40,30,10,0.60)",fontWeight:600}}>{c.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,setFocusMins,focusLeft,setFocusLeft,focusOn,setFocusOn,setFocusAlerted,fmtTimer,breakMins,setBreakMins,breakLeft,setBreakLeft,breakOn,setBreakOn,setBreakAlerted}) {
   const [activeListId,setActiveListId]=useState(null);
@@ -4452,7 +4439,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
   const [recipes,setRecipes]=useState([]);
   const [addingRecipe,setAddingRecipe]=useState(false);
   const [recipeDetail,setRecipeDetail]=useState(null);
-  const [recipeDraft,setRecipeDraft]=useState({name:'',description:'',ingredients:'',method:'',url:'',photo:''});
+  const [recipeDraft,setRecipeDraft]=useState({name:'',description:'',ingredients:'',method:'',url:'',pinUrl:'',photo:''});
   const [editLabelIdx,setEditLabelIdx]=useState(null);
   const [labelDraft,setLabelDraft]=useState('');
 
@@ -4536,7 +4523,13 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
         }/>
         <div style={{padding:"16px 14px"}}>
           {r.photo&&<img src={r.photo} alt={r.name} style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:20,marginBottom:14,boxShadow:"0 4px 18px rgba(0,0,0,0.10)"}}/>}
-          {r.url&&<div style={{marginBottom:12}}><UrlBadge url={r.url}/></div>}
+          {r.url&&<div style={{marginBottom:8}}><UrlBadge url={r.url}/></div>}
+          {r.pinUrl&&(
+            <a href={r.pinUrl} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:"rgba(230,0,35,0.06)",border:"1.5px solid rgba(230,0,35,0.15)",borderRadius:100,marginBottom:12,textDecoration:"none"}}>
+              <span style={{fontSize:16}}>📌</span>
+              <span style={{fontSize:13,fontWeight:600,color:"#E60023"}}>View on Pinterest</span>
+            </a>
+          )}
           {r.ingredients&&<div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(90,120,72,0.15)",boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
             <div style={{fontWeight:700,color:"#2A4020",fontSize:14,marginBottom:8}}>🥕 Ingredients</div>
             <div style={{fontSize:14,color:"#3A3020",lineHeight:1.8,whiteSpace:"pre-wrap"}}>{r.ingredients}</div>
@@ -4577,6 +4570,15 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
           boxShadow:mealTab==="week"?"0 2px 10px rgba(0,0,0,0.2)":"none",
           transition:"all 0.15s",
         }}>Week Plan</button>
+        <button onClick={()=>setMealTab("ideas")} style={{
+          background:mealTab==="ideas"?"#E60023":"rgba(248,245,236,0.88)",
+          color:mealTab==="ideas"?"#fff":"#5A5040",
+          border:mealTab==="ideas"?"none":"1.5px solid rgba(90,80,60,0.2)",
+          borderRadius:100,padding:"10px 16px",
+          fontWeight:700,fontSize:14,cursor:"pointer",
+          boxShadow:mealTab==="ideas"?"0 2px 10px rgba(230,0,35,0.3)":"none",
+          transition:"all 0.15s",
+        }}>📌 Ideas</button>
         <button onClick={()=>setMealTab("recipes")} style={{
           background:mealTab==="recipes"?"#1A1A10":"rgba(248,245,236,0.88)",
           color:mealTab==="recipes"?"#fff":"#5A5040",
@@ -4596,6 +4598,102 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
       </div>
 
       {/* Recipes tab */}
+      {/* ── IDEAS TAB ── */}
+      {mealTab==="ideas"&&(
+        <div style={{padding:"0 14px 20px"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4,marginTop:8}}>Meal Ideas</div>
+          <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Save inspiration from Pinterest, websites or your own photos. Tap an idea to add it to your week plan.</div>
+
+          {/* Add idea form */}
+          {addingRecipe?(
+            <div style={{background:"rgba(248,245,236,0.94)",borderRadius:22,padding:"16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.20)",boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:12}}>💡 New idea</div>
+              <input value={recipeDraft.name} onChange={e=>setRecipeDraft(d=>({...d,name:e.target.value}))} placeholder="Meal name"
+                style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(255,255,255,0.9)"}}/>
+              {/* Photo upload */}
+              <label style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1.5px dashed rgba(90,120,72,0.22)",cursor:"pointer",marginBottom:10}}>
+                {recipeDraft.photo
+                  ?<img src={recipeDraft.photo} style={{width:44,height:44,objectFit:"cover",borderRadius:10}} alt=""/>
+                  :<span style={{fontSize:28}}>📷</span>}
+                <div>
+                  <div style={{fontWeight:600,fontSize:13,color:"#2A4020"}}>{recipeDraft.photo?"Change photo":"Upload photo"}</div>
+                  <div style={{fontSize:11,color:"#8A8070"}}>From your camera roll</div>
+                </div>
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setRecipeDraft(d=>({...d,photo:ev.target.result}));r.readAsDataURL(f);}}/>
+              </label>
+              {/* Pinterest URL */}
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(230,0,35,0.05)",borderRadius:100,border:"1.5px solid rgba(230,0,35,0.15)",marginBottom:8}}>
+                <span style={{fontSize:16,flexShrink:0}}>📌</span>
+                <input value={recipeDraft.pinUrl||""} onChange={e=>setRecipeDraft(d=>({...d,pinUrl:e.target.value}))}
+                  placeholder="Pinterest URL (paste link)"
+                  style={{flex:1,border:"none",outline:"none",background:"transparent",fontSize:13,color:"#1A1A10"}}/>
+              </div>
+              {/* Webpage URL */}
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(66,133,244,0.05)",borderRadius:100,border:"1.5px solid rgba(66,133,244,0.18)",marginBottom:12}}>
+                <span style={{fontSize:16,flexShrink:0}}>🌐</span>
+                <input value={recipeDraft.url||""} onChange={e=>setRecipeDraft(d=>({...d,url:e.target.value}))}
+                  placeholder="Website / recipe link"
+                  style={{flex:1,border:"none",outline:"none",background:"transparent",fontSize:13,color:"#1A1A10"}}/>
+              </div>
+              <textarea value={recipeDraft.description||""} onChange={e=>setRecipeDraft(d=>({...d,description:e.target.value}))}
+                placeholder="Notes (optional)..."
+                rows={2}
+                style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",background:"rgba(255,255,255,0.9)",marginBottom:12}}/>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{
+                  if(!recipeDraft.name.trim())return;
+                  const idea={...recipeDraft,id:Date.now(),savedAt:new Date().toISOString()};
+                  setRecipes(rs=>[idea,...rs]);
+                  setRecipeDraft({name:'',description:'',ingredients:'',method:'',url:'',pinUrl:'',photo:''});
+                  setAddingRecipe(false);
+                }} style={{flex:1,padding:"12px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                  💡 Save idea
+                </button>
+                <button onClick={()=>{setAddingRecipe(false);setRecipeDraft({name:'',description:'',ingredients:'',method:'',url:'',pinUrl:'',photo:''}); }} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
+              </div>
+            </div>
+          ):(
+            <button onClick={()=>setAddingRecipe(true)}
+              style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 18px",background:"rgba(248,245,236,0.88)",borderRadius:20,border:"1.5px dashed rgba(90,120,72,0.25)",cursor:"pointer",marginBottom:14}}>
+              <span style={{fontSize:28}}>💡</span>
+              <div style={{textAlign:"left"}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#2A4020"}}>Save a meal idea</div>
+                <div style={{fontSize:11,color:"#8A8070"}}>Photo, Pinterest, website or just a name</div>
+              </div>
+            </button>
+          )}
+
+          {/* Ideas grid */}
+          {recipes.length===0&&!addingRecipe&&(
+            <div style={{textAlign:"center",padding:"24px 20px",color:"#8A8070"}}>
+              <div style={{fontSize:40,marginBottom:8}}>🍽️</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:4}}>No ideas yet</div>
+              <div style={{fontSize:13}}>Save recipes, Pinterest pins and photos here for inspiration.</div>
+            </div>
+          )}
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {recipes.map(r=>(
+              <div key={r.id} style={{background:"rgba(248,245,236,0.92)",borderRadius:18,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)",border:"1px solid rgba(90,120,72,0.12)",cursor:"pointer"}}
+                onClick={()=>setRecipeDetail(r)}>
+                {r.photo
+                  ?<img src={r.photo} alt={r.name} style={{width:"100%",height:100,objectFit:"cover"}}/>
+                  :<div style={{width:"100%",height:80,background:"linear-gradient(135deg,#4A7838,#3A6028)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>{r.pinUrl?"📌":"🍽️"}</div>
+                }
+                <div style={{padding:"8px 10px"}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#1A1A10",lineHeight:1.3,marginBottom:2}}>{r.name}</div>
+                  <div style={{display:"flex",gap:4}}>
+                    {r.pinUrl&&<span style={{fontSize:10,color:"#E60023",fontWeight:600}}>📌</span>}
+                    {r.url&&<span style={{fontSize:10,color:"#4285f4",fontWeight:600}}>🌐</span>}
+                    {r.description&&<span style={{fontSize:10,color:"#8A8070",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.description}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {mealTab==="recipes"&&(
         <div style={{padding:"8px 16px"}}>
           <button onClick={()=>setAddingRecipe(true)} style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:14,boxShadow:"0 3px 12px rgba(58,80,38,0.28)",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
@@ -4613,7 +4711,13 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
                 <span style={{fontSize:13,color:"#5A7848",fontWeight:600}}>{recipeDraft.photo?"Change photo":"Add a photo (optional)"}</span>
                 <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setRecipeDraft(d=>({...d,photo:ev.target.result}));r.readAsDataURL(f);}}/>
               </label>
-              <UrlField value={recipeDraft.url} onChange={v=>setRecipeDraft(d=>({...d,url:v}))} style={{marginBottom:10}}/>
+              <UrlField value={recipeDraft.url} onChange={v=>setRecipeDraft(d=>({...d,url:v}))} style={{marginBottom:8}}/>
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(230,0,35,0.05)",borderRadius:100,border:"1.5px solid rgba(230,0,35,0.15)",marginBottom:10}}>
+                <span style={{fontSize:16,flexShrink:0}}>📌</span>
+                <input value={recipeDraft.pinUrl||""} onChange={e=>setRecipeDraft(d=>({...d,pinUrl:e.target.value}))}
+                  placeholder="Pinterest pin URL (optional)"
+                  style={{flex:1,border:"none",outline:"none",background:"transparent",fontSize:13,color:"#1A1A10"}}/>
+              </div>
               <textarea value={recipeDraft.ingredients} onChange={e=>setRecipeDraft(d=>({...d,ingredients:e.target.value}))} placeholder="Ingredients (one per line)..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(240,247,238,0.92)"}}/>
               <textarea value={recipeDraft.method} onChange={e=>setRecipeDraft(d=>({...d,method:e.target.value}))} placeholder="Method / steps..." rows={4} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:10,background:"rgba(240,247,238,0.92)"}}/>
               <textarea value={recipeDraft.description} onChange={e=>setRecipeDraft(d=>({...d,description:e.target.value}))} placeholder="Notes (optional)..." rows={2} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:16,border:"1.5px solid rgba(90,120,72,0.2)",fontSize:13,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"inherit",marginBottom:14,background:"rgba(240,247,238,0.92)"}}/>
@@ -4638,7 +4742,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
                 <div style={{width:42,height:42,borderRadius:12,background:"#5A7848",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🍽️</div>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:15,color:"#1A1A10"}}>{r.name}</div>
-                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>{r.ingredients?(r.ingredients.split("\n").filter(Boolean).length+" ingredients"):"Freewrite recipe"}{r.url&&" · 🔗 link"}</div>
+                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>{r.ingredients?(r.ingredients.split("\n").filter(Boolean).length+" ingredients"):"Freewrite recipe"}{r.url&&" · 🔗 link"}{r.pinUrl&&" · 📌 Pinterest"}</div>
                 </div>
                 <span style={{color:"#A0907A",fontSize:18}}>›</span>
               </div>
@@ -6550,13 +6654,13 @@ Budget: ${b.name}`,created:Date.now()});
 }
 
 const SHOP_TEMPLATES=[
-  {id:"blank",   icon:"📝",name:"Blank list",         items:[]},
-  {id:"weekly",  icon:"🛒",name:"Weekly shop",         items:["Milk","Bread","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Vegetables","Fruit","Yoghurt","Juice"]},
-  {id:"cleaning",icon:"🧹",name:"Cleaning supplies",   items:["Washing up liquid","Bleach","Surface spray","Sponges","Bin bags","Toilet roll","Laundry tablets","Fabric softener"]},
-  {id:"toiletries",icon:"🧴",name:"Toiletries",        items:["Shampoo","Conditioner","Body wash","Toothpaste","Deodorant","Moisturiser","Razors","Cotton pads"]},
-  {id:"baby",    icon:"🍼",name:"Baby & kids",         items:["Nappies","Wipes","Baby formula","Baby food","Calpol","Snacks","Juice pouches"]},
-  {id:"party",   icon:"🎉",name:"Party",               items:["Crisps","Dips","Sausage rolls","Sandwiches","Cake","Juice","Pop","Plates","Cups","Napkins"]},
-  {id:"health",  icon:"💊",name:"Health",              items:["Vitamins","Paracetamol","Ibuprofen","Plasters","Hand sanitiser","Tissues"]},
+  {id:"blank",     icon:"📝",name:"Blank list",        color:"#5A7848",items:[]},
+  {id:"weekly",    icon:"🛒",name:"Weekly shop",        color:"#2ECC71",items:["Milk","Bread","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Vegetables","Fruit","Yoghurt","Juice"]},
+  {id:"cleaning",  icon:"🧹",name:"Cleaning supplies",  color:"#3498DB",items:["Washing up liquid","Bleach","Surface spray","Sponges","Bin bags","Toilet roll","Laundry tablets","Fabric softener"]},
+  {id:"toiletries",icon:"🧴",name:"Toiletries",         color:"#9B59B6",items:["Shampoo","Conditioner","Body wash","Toothpaste","Deodorant","Moisturiser","Razors","Cotton pads"]},
+  {id:"baby",      icon:"🍼",name:"Baby & kids",        color:"#E91E8C",items:["Nappies","Wipes","Baby formula","Baby food","Calpol","Snacks","Juice pouches"]},
+  {id:"party",     icon:"🎉",name:"Party",              color:"#E67E22",items:["Crisps","Dips","Sausage rolls","Sandwiches","Cake","Juice","Pop","Plates","Cups","Napkins"]},
+  {id:"health",    icon:"💊",name:"Health",             color:"#E74C3C",items:["Vitamins","Paracetamol","Ibuprofen","Plasters","Hand sanitiser","Tissues"]},
 ];
 
 const SHOP_LIST_ICONS=["🛒","🎁","🍎","👗","🏠","🐾","💊","📚","🎉","✈️"];
@@ -6631,6 +6735,9 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
     </div>
   );
 }
+
+const mkItem=(text)=>({id:Date.now()+Math.random(),text:text.trim(),done:false});
+const mkShopList=(name,icon)=>({id:Date.now()+Math.random(),name:name||"My List",icon:icon||"🛒",items:[],color:"#5A7848"});
 
 function ShoppingList({data,setData,setScreen}){
   const [activeId,setActiveId]=useState(null);
@@ -8199,9 +8306,7 @@ function Routine({routineData,setRoutineData,setScreen}){
     const [items,setItems]=useState(routine.items||[]);
     const [adding,setAdding]=useState(items.length===0);
     const [newName,setNewName]=useState("");
-    const [newMins,setNewMins]=useState(5);
     const [newIcon,setNewIcon]=useState("⭐");
-    const [timers,setTimers]=useState({});
     const [celebration,setCelebration]=useState(null);
     const [confetti,setConfetti]=useState([]);
     const [showTemplates,setShowTemplates]=useState(false);
@@ -8209,7 +8314,6 @@ function Routine({routineData,setRoutineData,setScreen}){
     const [openCat,setOpenCat]=useState(null);
     const [colourPickerId,setColourPickerId]=useState(null);
     const [stalePromptId,setStalePromptId]=useState(null);
-    const timerRefs=useRef({});
 
     const TASK_COLOURS=["#E07048","#E0A030","#5A9848","#4870A0","#8848A0","#C06080","#3A8878","#C06828","#2A8058","#606060"];
     const ONE_WEEK_MS=7*24*60*60*1000;
@@ -8234,19 +8338,7 @@ function Routine({routineData,setRoutineData,setScreen}){
       return s;
     };
 
-    const startTimer=(id,secs)=>{
-      if(timerRefs.current[id])clearInterval(timerRefs.current[id]);
-      setTimers(t=>({...t,[id]:{left:secs,on:true,total:secs}}));
-      timerRefs.current[id]=setInterval(()=>{
-        setTimers(t=>{
-          const cur=t[id];
-          if(!cur||cur.left<=1){clearInterval(timerRefs.current[id]);playAlarm("gentle");return {...t,[id]:{...cur,left:0,on:false}};}
-          return {...t,[id]:{...cur,left:cur.left-1}};
-        });
-      },1000);
-    };
-    const stopTimer=id=>{clearInterval(timerRefs.current[id]);setTimers(t=>({...t,[id]:{...t[id],on:false,left:null}}));};
-    const fmtT=s=>{if(!s&&s!==0)return"";return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
+
 
     const completeItem=id=>{
       const updated=items.map(it=>{
@@ -8255,7 +8347,7 @@ function Routine({routineData,setRoutineData,setScreen}){
         if(!hist.includes(todayStr))hist.push(todayStr);
         return {...it,doneToday:true,history:hist};
       });
-      save(updated);stopTimer(id);
+      save(updated);
       const pieces=Array.from({length:44},(_,i)=>({id:i,x:Math.random()*100,emoji:["🎊","🎉","✨","⭐","🌟","💫","🌿","🔥"][i%8],size:14+Math.random()*14,delay:Math.random()*0.5,speed:1.5+Math.random()*1.2}));
       setConfetti(pieces);setTimeout(()=>setConfetti([]),3500);
       const allDone=updated.filter(it=>!it.doneToday).length===0;
@@ -8358,16 +8450,10 @@ function Routine({routineData,setRoutineData,setScreen}){
                 );
               })()}
               <input value={newName} onChange={e=>setNewName(e.target.value)}
-                onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
+                onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
                 placeholder="Task name…"
                 style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(242,248,240,0.96)"}}/>
-              <div style={{fontFamily:"Georgia,serif",fontSize:13,color:"#3A6020",fontWeight:600,marginBottom:10}}>⏱ Duration</div>
-              <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-                {[1,2,5,10,15,20,30].map(m=>(
-                  <button key={m} onClick={()=>setNewMins(m)} style={{padding:"9px 14px",borderRadius:100,fontSize:13,fontFamily:"Georgia,serif",fontWeight:600,cursor:"pointer",background:newMins===m?"#5A7848":"rgba(255,255,255,0.88)",color:newMins===m?"#fff":"#3A6020",border:`1.5px solid ${newMins===m?"#5A7848":"rgba(90,120,72,0.22)"}`}}>{m}m</button>
-                ))}
-              </div>
-              <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),mins:newMins,icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
+                      <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
                 style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}> Add task</button>
             </div>
           )}
@@ -8393,8 +8479,11 @@ function Routine({routineData,setRoutineData,setScreen}){
             </div>
           )}
 
+          {/* Timer — same style as To Do list */}
+          <SimpleTimer/>
+
           {items.map((item)=>{
-            const tt=timers[item.id];const running=tt?.on&&tt?.left>0;const streak=getStreak(item);
+            const streak=getStreak(item);
             const PALETTES=["#E07048","#5A7848","#4870A0","#A04870","#7A6030","#3A8878","#8848A0","#C06828","#2A8058","#D04848"];
             const ic=item.icon||"⭐";
             const autoCol=PALETTES[ic.codePointAt(0)%PALETTES.length];
@@ -8483,22 +8572,6 @@ function Routine({routineData,setRoutineData,setScreen}){
                       </div>
                     )}
 
-                    {/* Timer row */}
-                    {!item.doneToday&&(
-                      <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(90,120,72,0.06)",borderRadius:16,border:"1px solid rgba(90,120,72,0.10)"}}>
-                        {running?(
-                          <><span style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:tt.left<60?"#c0392b":"#2C3820",minWidth:54}}>{fmtT(tt.left)}</span>
-                          <div style={{flex:1,height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}><div style={{height:"100%",width:`${Math.round((tt.left/tt.total)*100)}%`,background:tt.left<60?"#c0392b":col,borderRadius:100,transition:"width 1s linear"}}/></div>
-                          <button onClick={()=>stopTimer(item.id)} style={{background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>⏹ Stop</button></>
-                        ):(
-                          <>{tt?.left===0
-                            ?<span style={{fontSize:13,color:"#c0392b",fontWeight:600,flex:1,fontFamily:"'Segoe UI',sans-serif",animation:"rPulse 1.5s ease-in-out infinite"}}>⏰ Timer done! Tap </span>
-                            :<span style={{fontSize:13,color:"#8A8070",flex:1,fontFamily:"'Segoe UI',sans-serif"}}>Start {item.mins}min timer</span>
-                          }
-                          <button onClick={()=>startTimer(item.id,item.mins*60)} style={{background:col,color:"#fff",border:"none",borderRadius:100,padding:"8px 18px",fontFamily:"Georgia,serif",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶ Start</button></>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
