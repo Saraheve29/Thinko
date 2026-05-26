@@ -6654,8 +6654,8 @@ Budget: ${b.name}`,created:Date.now()});
 }
 
 const SHOP_TEMPLATES=[
-  {id:"blank",     icon:"📝",name:"Blank list",        color:"#5A7848",items:[]},
   {id:"weekly",    icon:"🛒",name:"Weekly shop",        color:"#2ECC71",items:["Milk","Bread","Eggs","Butter","Cheese","Chicken","Pasta","Rice","Vegetables","Fruit","Yoghurt","Juice"]},
+  {id:"topup",     icon:"⚡",name:"Top up",            color:"#F39C12",items:["Milk","Bread","Eggs","Butter","Cheese","Bananas","Juice","Snacks","Toilet roll","Washing up liquid"]},
   {id:"cleaning",  icon:"🧹",name:"Cleaning supplies",  color:"#3498DB",items:["Washing up liquid","Bleach","Surface spray","Sponges","Bin bags","Toilet roll","Laundry tablets","Fabric softener"]},
   {id:"toiletries",icon:"🧴",name:"Toiletries",         color:"#9B59B6",items:["Shampoo","Conditioner","Body wash","Toothpaste","Deodorant","Moisturiser","Razors","Cotton pads"]},
   {id:"baby",      icon:"🍼",name:"Baby & kids",        color:"#E91E8C",items:["Nappies","Wipes","Baby formula","Baby food","Calpol","Snacks","Juice pouches"]},
@@ -6720,7 +6720,10 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
               style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff"}}>
               {item.done?"✓":""}
             </button>
-            <span style={{flex:1,fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none"}}>{item.text}</span>
+            <div style={{flex:1,minWidth:0}}>
+                <span style={{fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none",display:"block"}}>{item.text}</span>
+                {item.cat&&<span style={{fontSize:11,color:"#5A7848",fontWeight:600}}>{CAT_EMOJI[item.cat]||""} {item.cat}</span>}
+              </div>
             <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14}}>🗑</button>
           </div>
         ))}
@@ -6739,336 +6742,303 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
 const mkItem=(text)=>({id:Date.now()+Math.random(),text:text.trim(),done:false});
 const mkShopList=(name,icon)=>({id:Date.now()+Math.random(),name:name||"My List",icon:icon||"🛒",items:[],color:"#5A7848"});
 
+const CAT_EMOJI={
+  fresh:"🥦",dairy:"🧀",meat:"🥩",bakery:"🥖",frozen:"🧊",
+  drinks:"🥤",snacks:"🍿",household:"🧹",health:"💊",baby:"🍼",
+  other:"🛒"
+};
+
 function ShoppingList({data,setData,setScreen}){
   const [activeId,setActiveId]=useState(null);
-  const [showTemplates,setShowTemplates]=useState(!data||data.length===0);
-  const [customising,setCustomising]=useState(null); // template being customised
-  const [customItems,setCustomItems]=useState([]);   // ticked items for that template
-  const [custDrag,setCustDrag]=useState(null);       // drag index in customise screen
+  const [showTemplates,setShowTemplates]=useState(true);
+  const [customising,setCustomising]=useState(null);
+  const [customItems,setCustomItems]=useState([]);
+  const [custNewItem,setCustNewItem]=useState("");
+  const [custListName,setCustListName]=useState("");
+  const [custDrag,setCustDrag]=useState(null);
   const [dragShop,setDragShop]=useState(null);
+  const shopTouchRef=useRef(null);
   const [templateOrder,setTemplateOrder]=useState(()=>{
-    try{const v=localStorage.getItem('thinko_template_order');return v?JSON.parse(v):SHOP_TEMPLATES.filter(t=>t.id!=="blank").map(t=>t.id);}catch{return SHOP_TEMPLATES.filter(t=>t.id!=="blank").map(t=>t.id);}
+    try{
+      const v=localStorage.getItem('thinko_template_order');
+      const stored=v?JSON.parse(v):null;
+      const allIds=SHOP_TEMPLATES.map(t=>t.id);
+      if(!stored||!allIds.every(id=>stored.includes(id)))return allIds;
+      return stored;
+    }catch{return SHOP_TEMPLATES.map(t=>t.id);}
   });
-  const [hiddenTemplates,setHiddenTemplates]=useState(()=>{
-    try{const v=localStorage.getItem('thinko_hidden_templates');return v?JSON.parse(v):[];}catch{return [];}
-  });
-  const [dragTemplId,setDragTemplId]=useState(null);
   const [shopOrder,setShopOrder]=useState(()=>{
     try{const v=localStorage.getItem('thinko_shop_order');return v?JSON.parse(v):null;}catch{return null;}
   });
 
+  // Navigate to open list
   const active=data.find(l=>l.id===activeId);
   if(active) return <ShopListDetail list={active} onBack={()=>setActiveId(null)} onUpdate={u=>setData(ds=>ds.map(l=>l.id===u.id?u:l))} onDelete={id=>{setData(ds=>ds.filter(l=>l.id!==id));setActiveId(null);}}/>;
 
-  // Ordered list for display
   const orderedLists=shopOrder
     ?(shopOrder.map(id=>data.find(l=>l.id===id)).filter(Boolean).concat(data.filter(l=>!shopOrder.includes(l.id))))
     :data;
 
-  const shopDragStart=(e,id)=>{e.dataTransfer.effectAllowed="move";setDragShop(id);};
   const shopDragOver=(e,id)=>{
     e.preventDefault();
     if(!dragShop||dragShop===id)return;
     const ids=orderedLists.map(l=>l.id);
     const fi=ids.indexOf(dragShop),ti=ids.indexOf(id);
+    if(fi<0||ti<0)return;
     ids.splice(fi,1);ids.splice(ti,0,dragShop);
     setShopOrder(ids);
     try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}
   };
-  // Touch drag for shopping list hub
-  const shopTouchStart=(e,id)=>{shopTouchRef.current=setTimeout(()=>setDragShop(id),200);};
-  const shopTouchMove=(e)=>{
-    if(!dragShop)return;e.preventDefault();
-    const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
-    const tid=el?.dataset?.shoplistid;
-    if(tid&&Number(tid)!==dragShop){
-      const ids=orderedLists.map(l=>l.id);
-      const fi=ids.indexOf(dragShop),ti=ids.indexOf(Number(tid));
-      if(fi>=0&&ti>=0&&fi!==ti){ids.splice(fi,1);ids.splice(ti,0,dragShop);setShopOrder(ids);try{localStorage.setItem('thinko_shop_order',JSON.stringify(ids));}catch{}}
-    }
-  };
-  const shopTouchEnd=()=>{clearTimeout(shopTouchRef.current);setDragShop(null);};
 
-  // Step 1: pick template → go to customise
+  // Open the customise screen for a template
   const pickTemplate=(t)=>{
-    if(t.id==="blank"){loadTemplate(t,[]);return;}
     setCustomising(t);
-    setCustomItems(t.items.map(n=>({name:n,on:true})));
+    setCustomItems((t.items||[]).map(n=>({name:typeof n==="string"?n:n.name,on:true,cat:""})));
+    setCustNewItem("");
+    setCustListName(t.id==="blank"?"":t.name);
+    setShowTemplates(false);
   };
 
-  // Step 2: load with chosen items
-  const loadTemplate=(t,chosenItems)=>{
-    const items=(chosenItems||customItems.filter(ci=>ci.on).map(ci=>ci.name))
-      .map((name,i)=>({...mkItem(typeof name==="string"?name:name.name),id:Date.now()+i}));
-    const nl={...mkShopList(t.name,t.icon),items,color:t.color};
+  // Create and save the list
+  const createList=()=>{
+    const name=custListName.trim()||customising.name||"My List";
+    const items=customItems
+      .filter(ci=>ci.on)
+      .map((ci,i)=>({...mkItem(ci.name),id:Date.now()+i,cat:ci.cat||""}));
+    const nl={...mkShopList(name,customising.icon||"📝"),items,color:customising.color||"#5A7848"};
     setData(ds=>[...(ds||[]),nl]);
     setActiveId(nl.id);
-    setShowTemplates(false);setCustomising(null);
+    setCustomising(null);
+    setCustListName("");
+    setCustNewItem("");
+    setCustomItems([]);
   };
 
-  // — Customise screen —
+  // ── Customise screen ──────────────────────────────────────────────────────
   if(customising) return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      {/* Header */}
       <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
         <button onClick={()=>setCustomising(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <div style={{flex:1}}>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{customising.icon} {customising.name}</div>
-          <div style={{fontSize:12,color:"#8A8070"}}>Tick items to include · 🗑 to permanently remove · drag to reorder</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{customising.icon} New list</div>
+          <div style={{fontSize:12,color:"#8A8070"}}>Name it, tick items, then tap Create</div>
         </div>
-        <button onClick={()=>loadTemplate(customising)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
-          Load →
+        <button onClick={createList}
+          style={{background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.30)"}}>
+          ✅ Create
         </button>
       </div>
+
       <div style={{padding:"16px 14px"}}>
-        <div style={{background:"rgba(248,245,236,0.90)",borderRadius:22,overflow:"hidden",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 14px rgba(60,70,40,0.06)"}}>
-          <div style={{height:4,background:customising.color}}/>
+        {/* List name */}
+        <div style={{background:"rgba(238,244,235,0.88)",borderRadius:20,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.18)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"rgba(42,60,28,0.50)",marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>List name</div>
+          <input value={custListName} onChange={e=>setCustListName(e.target.value)}
+            placeholder={"e.g. My "+customising.name+"..."}
+            style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontWeight:600,color:"#1A2810",outline:"none",background:"rgba(255,255,255,0.95)"}}/>
+        </div>
+
+        {/* Items */}
+        <div style={{background:"rgba(248,245,236,0.92)",borderRadius:22,overflow:"hidden",border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 2px 14px rgba(60,70,40,0.06)"}}>
+          <div style={{height:4,background:customising.color||"#5A7848"}}/>
           <div style={{padding:"14px 16px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <span style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{customItems.filter(i=>i.on).length} of {customItems.length} selected</span>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:true})))} style={{fontSize:11,color:"#5A7848",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>All</button>
-                <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:false})))} style={{fontSize:11,color:"#c0392b",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>None</button>
+            {customItems.length>0&&(
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <span style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{customItems.filter(i=>i.on).length} of {customItems.length} selected</span>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:true})))} style={{fontSize:11,color:"#5A7848",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>All</button>
+                  <button onClick={()=>setCustomItems(ci=>ci.map(i=>({...i,on:false})))} style={{fontSize:11,color:"#c0392b",background:"none",border:"none",cursor:"pointer",fontWeight:700}}>None</button>
+                </div>
               </div>
-            </div>
+            )}
+            {customItems.length===0&&(
+              <div style={{textAlign:"center",padding:"12px 0 8px",color:"#8A8070",fontSize:13}}>Add items below</div>
+            )}
             {customItems.map((item,i)=>(
               <div key={i}
                 draggable
                 onDragStart={e=>{e.dataTransfer.effectAllowed="move";setCustDrag(i);}}
                 onDragOver={e=>{e.preventDefault();if(custDrag===null||custDrag===i)return;setCustomItems(ci=>{const a=[...ci];const[m]=a.splice(custDrag,1);a.splice(i,0,m);return a;});setCustDrag(i);}}
                 onDragEnd={()=>setCustDrag(null)}
-                style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",borderBottom:i<customItems.length-1?"1px solid rgba(90,80,60,0.07)":"none",cursor:"grab",opacity:custDrag===i?0.5:1,transition:"opacity 0.15s"}}>
-                {/* Drag handle */}
-                <div style={{color:"rgba(90,120,72,0.30)",fontSize:16,flexShrink:0,letterSpacing:1}}>⠿</div>
-                {/* Tick */}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<customItems.length-1?"1px solid rgba(90,80,60,0.07)":"none",opacity:custDrag===i?0.5:1}}>
+                <div style={{color:"rgba(90,120,72,0.30)",fontSize:14,flexShrink:0}}>⠿</div>
                 <div onClick={()=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,on:!x.on}:x))}
-                  style={{width:26,height:26,borderRadius:"50%",border:`2px solid ${item.on?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.on?"#5A7848":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
+                  style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+(item.on?"#5A7848":"rgba(90,80,60,0.25)"),background:item.on?"#5A7848":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}}>
                   {item.on&&<svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>}
                 </div>
-                <span onClick={()=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,on:!x.on}:x))}
-                  style={{flex:1,fontSize:14,fontWeight:500,color:item.on?"#1A1A10":"#B0A898",textDecoration:item.on?"none":"line-through",cursor:"pointer"}}>{item.name}</span>
-                {/* Permanent delete */}
-                <button onClick={()=>{setCustomItems(ci=>ci.filter((_,j)=>j!==i));}}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:500,color:item.on?"#1A1A10":"#B0A898",textDecoration:item.on?"none":"line-through",marginBottom:3}}>{item.name}</div>
+                  <select value={item.cat||""} onChange={e=>setCustomItems(ci=>ci.map((x,j)=>j===i?{...x,cat:e.target.value}:x))}
+                    style={{fontSize:11,color:"#5A7848",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,padding:"2px 8px",background:"rgba(238,244,235,0.90)",cursor:"pointer"}}>
+                    <option value="">+ category</option>
+                    {Object.entries(CAT_EMOJI).map(([k,v])=><option key={k} value={k}>{v} {k}</option>)}
+                  </select>
+                </div>
+                <button onClick={()=>setCustomItems(ci=>ci.filter((_,j)=>j!==i))}
                   style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
               </div>
             ))}
-            {/* Add custom item */}
+            {/* Add item */}
             <div style={{display:"flex",gap:8,marginTop:12,paddingTop:12,borderTop:"1px solid rgba(90,80,60,0.07)"}}>
-              <input
-                placeholder="Add your own item…"
-                style={{flex:1,padding:"9px 13px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(240,247,238,0.92)"}}
-                onKeyDown={e=>{if(e.key==="Enter"&&e.target.value.trim()){setCustomItems(ci=>[...ci,{name:e.target.value.trim(),on:true}]);e.target.value="";}}}
-              />
-              <span style={{fontSize:11,color:"#8A8070",alignSelf:"center",flexShrink:0}}>Enter to add</span>
+              <input value={custNewItem} onChange={e=>setCustNewItem(e.target.value)}
+                placeholder="Add an item…"
+                onKeyDown={e=>{if(e.key==="Enter"&&custNewItem.trim()){setCustomItems(ci=>[...ci,{name:custNewItem.trim(),on:true,cat:""}]);setCustNewItem("");}}}
+                style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:13,color:"#1A2810",outline:"none",background:"rgba(240,247,238,0.92)"}}/>
+              <button onClick={()=>{if(custNewItem.trim()){setCustomItems(ci=>[...ci,{name:custNewItem.trim(),on:true,cat:""}]);setCustNewItem("");}}}
+                style={{width:42,height:42,borderRadius:"50%",background:"#FFD700",color:"#2C3820",border:"none",fontSize:20,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 8px rgba(255,200,0,0.35)"}}>+</button>
             </div>
           </div>
         </div>
-        <div style={{fontSize:11,color:"#8A8070",textAlign:"center",marginTop:12,lineHeight:1.6}}>
-          🗑 permanently removes from template · untick just skips for this list
-        </div>
+
+        <button onClick={createList}
+          style={{width:"100%",marginTop:14,padding:"15px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>
+          ✅ Create list
+        </button>
+        <button onClick={()=>setCustomising(null)}
+          style={{width:"100%",marginTop:8,padding:"12px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>
+          Cancel
+        </button>
       </div>
     </div>
   );
 
+  const ALL_TEMPLATES=[
+    {id:"blank",icon:"📝",name:"Start fresh",color:"#5A7848",items:[],subtitle:"Name it, build from scratch"},
+    ...SHOP_TEMPLATES,
+  ];
+
+  // ── Beautiful full-page template picker ───────────────────────────────────
+  if(showTemplates||data.length===0){
+    const hasLists=data.length>0;
+    return(
+      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#E4EFE0 0%,#D4E6CC 40%,#C8DFBE 100%)",fontFamily:"'Segoe UI',sans-serif",position:"relative",overflow:"hidden"}}>
+        {/* Decorative circles */}
+        <div style={{position:"absolute",top:-80,right:-80,width:280,height:280,borderRadius:"50%",background:"rgba(90,140,72,0.18)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",top:60,left:-60,width:200,height:200,borderRadius:"50%",background:"rgba(255,220,100,0.12)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:120,right:-40,width:180,height:180,borderRadius:"50%",background:"rgba(90,140,72,0.14)",pointerEvents:"none"}}/>
+        {/* Vine overlay */}
+        <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden",opacity:0.35}}>
+          <svg width="100%" height="100%" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="sg1" cx="40%" cy="35%" r="60%"><stop offset="0%" stopColor="#7AB848"/><stop offset="100%" stopColor="#2A5818"/></radialGradient>
+            </defs>
+            <path d="M-10 0 C20 80 -5 160 15 240 C35 320 10 400 25 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round"/>
+            <ellipse cx="28" cy="60" rx="38" ry="22" fill="url(#sg1)" transform="rotate(-30 28 60)"/>
+            <ellipse cx="35" cy="155" rx="44" ry="25" fill="url(#sg1)" transform="rotate(-20 35 155)"/>
+            <ellipse cx="22" cy="260" rx="40" ry="24" fill="url(#sg1)" transform="rotate(-35 22 260)"/>
+            <path d="M410 0 C380 80 405 160 385 240" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round"/>
+            <ellipse cx="372" cy="55" rx="42" ry="24" fill="url(#sg1)" transform="rotate(28 372 55)"/>
+            <ellipse cx="365" cy="155" rx="46" ry="26" fill="url(#sg1)" transform="rotate(22 365 155)"/>
+            <ellipse cx="100" cy="8" rx="50" ry="28" fill="url(#sg1)" transform="rotate(-10 100 8)"/>
+            <ellipse cx="200" cy="0" rx="55" ry="30" fill="url(#sg1)" transform="rotate(5 200 0)"/>
+            <ellipse cx="305" cy="10" rx="48" ry="27" fill="url(#sg1)" transform="rotate(12 305 10)"/>
+          </svg>
+        </div>
+
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"56px 20px 0",position:"relative",zIndex:1}}>
+          <button onClick={()=>hasLists?setShowTemplates(false):setScreen("home")}
+            style={{background:"rgba(255,255,255,0.55)",border:"1.5px solid rgba(90,120,72,0.18)",backdropFilter:"blur(8px)",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2C4020" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          </button>
+          {hasLists&&(
+            <button onClick={()=>setShowTemplates(false)}
+              style={{background:"rgba(255,255,255,0.55)",border:"1.5px solid rgba(90,120,72,0.22)",backdropFilter:"blur(8px)",borderRadius:100,padding:"8px 16px",color:"#2C4020",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+              My lists
+            </button>
+          )}
+        </div>
+
+        {/* Hero */}
+        <div style={{textAlign:"center",padding:"28px 24px 24px",position:"relative",zIndex:1}}>
+          <div style={{fontSize:56,marginBottom:12,filter:"drop-shadow(0 4px 16px rgba(42,80,28,0.20))"}}>🛒</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:26,color:"#1A2810",marginBottom:6,letterSpacing:-0.5}}>
+            New shopping list
+          </div>
+          <div style={{fontSize:13,color:"rgba(42,60,28,0.60)",lineHeight:1.6}}>
+            Pick a type — customise it before saving
+          </div>
+        </div>
+
+        {/* Template grid */}
+        <div style={{padding:"0 16px 100px",position:"relative",zIndex:1}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            {ALL_TEMPLATES.map((t,i)=>(
+              <button key={t.id} onClick={()=>pickTemplate({...t,items:t.items||[]})}
+                style={{
+                  background:"rgba(255,255,255,0.72)",
+                  backdropFilter:"blur(16px)",
+                  border:"1.5px solid rgba(255,255,255,0.90)",
+                  borderRadius:22,
+                  padding:"18px 12px 14px",
+                  cursor:"pointer",
+                  textAlign:"center",
+                  position:"relative",
+                  overflow:"hidden",
+                  boxShadow:"0 4px 20px rgba(42,80,28,0.12)",
+                  transition:"transform 0.12s,box-shadow 0.12s",
+                  animation:`fadeInUp 0.35s ${i*0.05}s both`,
+                }}>
+                {/* Colour top bar */}
+                <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:t.color,borderRadius:"22px 22px 0 0"}}/>
+                {/* Item count badge */}
+                {t.items.length>0&&(
+                  <div style={{position:"absolute",top:10,right:10,background:"rgba(90,120,72,0.15)",borderRadius:100,padding:"2px 7px",fontSize:9,fontWeight:700,color:"#3A6020"}}>
+                    {t.items.length}
+                  </div>
+                )}
+                <div style={{fontSize:34,marginBottom:8,marginTop:4}}>{t.icon}</div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810",marginBottom:4}}>{t.name}</div>
+                <div style={{fontSize:10,color:"rgba(42,60,28,0.50)",lineHeight:1.4}}>{t.subtitle||t.items.slice(0,3).join(", ")+(t.items.length>3?"…":"")}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <style>{`@keyframes fadeInUp{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}`}</style>
+      </div>
+    );
+  }
+
+  // ── Hub: list of all saved lists ──────────────────────────────────────────
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title="🛒 Shopping" onBack={()=>setScreen("home")} right={
-        <button onClick={()=>setShowTemplates(true)} style={{background:"rgba(248,245,236,0.85)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ New List</button>
+        <button onClick={()=>setShowTemplates(true)}
+          style={{background:"rgba(248,245,236,0.85)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+          + New List
+        </button>
       }/>
 
       <div style={{padding:"16px 14px"}}>
-
-        {/* Template picker */}
-        {showTemplates&&(
-          <div style={{background:"rgba(248,245,236,0.94)",borderRadius:26,padding:"20px 16px",marginBottom:16,border:"1px solid rgba(255,255,255,0.9)",boxShadow:"0 4px 24px rgba(60,70,40,0.10)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10",marginBottom:4}}>Choose a list template</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:16,lineHeight:1.6}}>Tap one to pick which items you want — drag to reorder templates. 🗑 permanently removes items.</div>
-            {/* My Own List — wide rectangular like Charge */}
-            {(()=>{
-              const t=SHOP_TEMPLATES.find(x=>x.id==="blank");
-              return t?(
-                <button onClick={()=>pickTemplate(t)}
-                  style={{width:"100%",background:"rgba(248,245,236,0.88)",border:"1.5px solid rgba(90,80,60,0.10)",borderRadius:20,padding:"14px 16px",cursor:"pointer",textAlign:"left",boxShadow:"0 1px 8px rgba(60,70,40,0.05)",marginBottom:10,display:"flex",alignItems:"center",gap:14,overflow:"hidden",position:"relative"}}>
-                  <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:t.color}}/>
-                  <div style={{fontSize:30,marginTop:2}}>{t.icon}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>{t.name}</div>
-                    <div style={{fontSize:11,color:"#8A8070"}}>Start from scratch — build it your way</div>
-                  </div>
-                  <div style={{fontSize:24,opacity:0.25,flexShrink:0}}>→</div>
-                </button>
-              ):null;
-            })()}
-            {/* Other templates — draggable grid, order persists */}
-            {(()=>{
-              const orderedTemplates=templateOrder
-                .filter(id=>!hiddenTemplates.includes(id))
-                .map(id=>SHOP_TEMPLATES.find(t=>t.id===id)).filter(Boolean);
-              if(orderedTemplates.length===0) return(
-                <div style={{textAlign:"center",padding:"20px 0",color:"#8A8070"}}>
-                  <div style={{fontSize:32,marginBottom:8}}>😶</div>
-                  <div style={{fontSize:13,marginBottom:12}}>All templates hidden</div>
-                  <button onClick={()=>{setHiddenTemplates([]);try{localStorage.removeItem('thinko_hidden_templates');}catch{}}}
-                    style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                    Restore all templates
-                  </button>
-                </div>
-              );
-              return(
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                  {orderedTemplates.map((t)=>(
-                    <div key={t.id} style={{position:"relative"}}>
-                      {/* Template card */}
-                      <button onClick={()=>pickTemplate(t)}
-                        draggable
-                        onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragTemplId(t.id);e.stopPropagation();}}
-                        onDragOver={e=>{
-                          e.preventDefault();e.stopPropagation();
-                          if(!dragTemplId||dragTemplId===t.id)return;
-                          setTemplateOrder(o=>{
-                            const a=[...o];
-                            const fi=a.indexOf(dragTemplId),ti=a.indexOf(t.id);
-                            if(fi<0||ti<0||fi===ti)return o;
-                            a.splice(fi,1);a.splice(ti,0,dragTemplId);
-                            try{localStorage.setItem('thinko_template_order',JSON.stringify(a));}catch{}
-                            return a;
-                          });
-                        }}
-                        onDragEnd={e=>{e.stopPropagation();setDragTemplId(null);}}
-                        style={{width:"100%",background:dragTemplId===t.id?"rgba(220,235,210,0.95)":"rgba(248,245,236,0.88)",border:`1.5px solid ${dragTemplId===t.id?"#6A8858":"rgba(90,80,60,0.10)"}`,borderRadius:20,padding:"14px 12px 14px 12px",paddingRight:36,cursor:"grab",textAlign:"left",boxShadow:dragTemplId===t.id?"0 6px 20px rgba(60,70,40,0.14)":"0 1px 8px rgba(60,70,40,0.05)",overflow:"hidden",position:"relative",transform:dragTemplId===t.id?"scale(1.03)":"scale(1)",transition:"all 0.15s"}}>
-                        <div style={{height:3,background:t.color,borderRadius:2,marginBottom:10,marginLeft:-12,marginRight:-36,marginTop:-14}}/>
-                        <div style={{fontSize:26,marginBottom:6}}>{t.icon}</div>
-                        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:3}}>{t.name}</div>
-                        <div style={{fontSize:10,color:"#8A8070"}}>{t.items.length>0?`${t.items.length} items`:"Start fresh"}</div>
-                      </button>
-                      {/* Delete button — sits ON TOP of card, outside button element */}
-                      <div onClick={e=>{
-                        e.stopPropagation();
-                        const updated=[...hiddenTemplates,t.id];
-                        setHiddenTemplates(updated);
-                        try{localStorage.setItem('thinko_hidden_templates',JSON.stringify(updated));}catch{}
-                      }}
-                        style={{position:"absolute",top:8,right:8,background:"rgba(192,57,43,0.12)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:"50%",width:26,height:26,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",zIndex:20,userSelect:"none"}}>🗑</div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-            {/* Restore hidden templates */}
-            {hiddenTemplates.length>0&&(
-              <button onClick={()=>{setHiddenTemplates([]);try{localStorage.removeItem('thinko_hidden_templates');}catch{}}}
-                style={{width:"100%",marginTop:8,padding:"8px",background:"transparent",color:"#8A8070",border:"none",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>
-                Restore {hiddenTemplates.length} hidden template{hiddenTemplates.length!==1?"s":""}
-              </button>
-            )}
-            {data&&data.length>0&&(
-              <button onClick={()=>setShowTemplates(false)} style={{width:"100%",marginTop:12,padding:"11px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
-            )}
-          </div>
-        )}
-
-        {/* List hub — draggable cards */}
-        {!showTemplates&&data.length===0&&(
-          <div style={{textAlign:"center",padding:"60px 20px"}}>
-            <div style={{fontSize:48,marginBottom:12}}>🛒</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No lists yet</div>
-            <div style={{color:"#8A8070",fontSize:14,marginBottom:20}}>Tap "+ New List" to get started</div>
-            <button onClick={()=>setShowTemplates(true)} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create list</button>
-          </div>
-        )}
-
-        {/* List cards grid — most bought spans full width */}
-        {!showTemplates&&data.length>0&&(
-          <div style={{display:"grid",gridTemplateColumns:"1fr",gap:0}}>
-            {!showTemplates&&orderedLists.map((list)=>{
-          const total=list.items.length;
-          const done=list.items.filter(it=>it.checked).length;
-          const pct=total>0?Math.round((done/total)*100):0;
-          const accent=list.color||"#5A7848";
-          const isMostBought=list.name==="Most Bought Items";
-          return(
-            <div key={list.id}
-              data-shoplistid={list.id}
-              draggable
-              onDragStart={e=>shopDragStart(e,list.id)}
-              onDragOver={e=>shopDragOver(e,list.id)}
-              onDragEnd={()=>setDragShop(null)}
-              onTouchStart={e=>shopTouchStart(e,list.id)}
-              onTouchMove={shopTouchMove}
-              onTouchEnd={shopTouchEnd}
-              onClick={()=>setActiveId(list.id)}
-              style={{
-                background:dragShop===list.id?"rgba(255,255,255,0.98)":"rgba(248,245,236,0.90)",
-                borderRadius:22,marginBottom:12,overflow:"hidden",
-                boxShadow:dragShop===list.id?"0 10px 32px rgba(60,70,40,0.16)":"0 2px 14px rgba(60,70,40,0.08)",
-                border:"1px solid rgba(255,255,255,0.9)",cursor:"grab",
-                transform:dragShop===list.id?"scale(1.03) rotate(-0.5deg)":"scale(1)",
-                transition:"all 0.18s",position:"relative",
-                // Most Bought = wide row layout like Charge
-                ...(isMostBought?{gridColumn:"1 / -1"}:{}),
-              }}>
-              <div style={{height:4,background:accent}}/>
-              {/* Drag dots */}
-              <div style={{position:"absolute",top:14,right:14,opacity:0.18,display:"flex",flexDirection:"column",gap:2.5}}>
-                {[0,1,2].map(i=><div key={i} style={{display:"flex",gap:2.5}}>{[0,1].map(j=><div key={j} style={{width:3,height:3,borderRadius:"50%",background:"#3A3020"}}/>)}</div>)}
-              </div>
-              <div style={{padding:isMostBought?"14px 16px":"14px 16px",display:"flex",alignItems:"center",gap:12,flexDirection:"row"}}>
-                <div style={{width:44,height:44,borderRadius:14,background:`${accent}18`,border:`1.5px solid ${accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{list.icon}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10"}}>{list.name}</div>
-                  <div style={{fontSize:12,color:"#8A8070",marginTop:2}}>
-                    {total===0?"Empty — tap to add items":`${done}/${total} done`}
-                    {pct===100&&total>0&&<span style={{color:"#5A9040",fontWeight:700}}> </span>}
-                    {isMostBought&&total>0&&<span style={{marginLeft:6,fontSize:11}}>· Your everyday essentials</span>}
-                  </div>
-                  {/* Item preview inline for wide card */}
-                  {isMostBought&&total>0&&(
-                    <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
-                      {list.items.filter(it=>!it.checked).slice(0,8).map(it=>(
-                        <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:10,fontWeight:600,borderRadius:100,padding:"1px 8px"}}>{it.name}</span>
-                      ))}
-                      {list.items.filter(it=>!it.checked).length>8&&<span style={{color:"#8A8070",fontSize:10,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-8} more</span>}
-                    </div>
-                  )}
-                </div>
-                {/* Progress bar inline for wide card */}
-                {isMostBought&&total>0&&(
-                  <div style={{width:80,flexShrink:0}}>
-                    <div style={{fontSize:11,color:"#8A8070",textAlign:"right",marginBottom:4}}>{pct}%</div>
-                    <div style={{height:6,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:100,transition:"width 0.4s"}}/>
-                    </div>
-                  </div>
-                )}
-                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.25,marginRight:4}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                <button onClick={e=>{e.stopPropagation();setData(ds=>ds.filter(l=>l.id!==list.id));}} style={{background:"rgba(192,57,43,0.07)",color:"#c0392b",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
-              </div>
-              {/* Progress + preview for regular cards */}
-              {!isMostBought&&total>0&&(
-                <>
-                  <div style={{height:3,background:"rgba(90,80,60,0.08)",margin:"0 16px"}}>
-                    <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#5A9040":accent,borderRadius:2,transition:"width 0.4s"}}/>
-                  </div>
-                  <div style={{padding:"8px 16px 12px",display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {list.items.filter(it=>!it.checked).slice(0,6).map(it=>(
-                      <span key={it.id} style={{background:"rgba(90,120,72,0.10)",color:"#3A5020",fontSize:11,fontWeight:600,borderRadius:100,padding:"2px 10px"}}>{CAT_EMOJI[it.cat]||""} {it.name}</span>
-                    ))}
-                    {list.items.filter(it=>!it.checked).length>6&&<span style={{color:"#8A8070",fontSize:11,alignSelf:"center"}}>+{list.items.filter(it=>!it.checked).length-6} more</span>}
-                  </div>
-                </>
-              )}
+        {/* List cards */}
+        {orderedLists.map(list=>(
+          <div key={list.id}
+            draggable
+            onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragShop(list.id);}}
+            onDragOver={e=>shopDragOver(e,list.id)}
+            onDragEnd={()=>setDragShop(null)}
+            data-shoplistid={list.id}
+            onClick={()=>setActiveId(list.id)}
+            style={{background:"rgba(238,244,235,0.88)",borderRadius:20,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14,cursor:"pointer",border:"1.5px solid rgba(90,120,72,0.12)",boxShadow:"0 2px 12px rgba(42,60,28,0.07)",opacity:dragShop===list.id?0.5:1,position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",left:0,top:0,bottom:0,width:4,background:list.color||"#5A7848",borderRadius:"4px 0 0 4px"}}/>
+            <div style={{width:44,height:44,borderRadius:14,background:(list.color||"#5A7848")+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{list.icon||"🛒"}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{list.name}</div>
+              <div style={{fontSize:12,color:"#8A8070"}}>{list.items.filter(i=>!i.done).length} item{list.items.filter(i=>!i.done).length!==1?"s":""} left</div>
             </div>
-          );
-        })}
-        )})}
+            <svg width="6" height="11" viewBox="0 0 6 11" fill="none"><path d="M1 1l4 4.5-4 4.5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
           </div>
-        )}
-        {!showTemplates&&data.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",marginTop:4}}>⠿ Hold and drag lists to reorder</div>}
+        ))}
+        {data.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",marginTop:4}}>⠿ Hold and drag to reorder</div>}
       </div>
     </div>
   );
 }
+
 
 /* ═══════════════════════════════════════════════════════
    TOOLS  — Calculator · Stopwatch · Countdown Timer ·
@@ -11167,7 +11137,7 @@ export default function App() {
   const [routineData,setRoutineDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_routine');return v?JSON.parse(v):[];}catch{return [];}});
   const setRoutineData=d=>{const next=typeof d==="function"?d(routineData):d;setRoutineDataRaw(next);try{localStorage.setItem('thinko_routine',JSON.stringify(next));}catch{}};
   const [shopData,setShopDataRaw]=useState(()=>{try{const v=localStorage.getItem('thinko_shop');return v?JSON.parse(v):[];}catch{return [];}});
-  const setShopData=d=>{const next=typeof d==="function"?d(shopData):d;setShopDataRaw(next);try{localStorage.setItem('thinko_shop',JSON.stringify(next));}catch{}};
+  const setShopData=d=>{setShopDataRaw(prev=>{const next=typeof d==="function"?d(prev):d;try{localStorage.setItem('thinko_shop',JSON.stringify(next));}catch{}return next;});};
   const [goalsData,setGoalsData]=useState(()=>{try{const v=localStorage.getItem('thinko_goals');return v?JSON.parse(v):[];}catch{return [];}});
   const [chargeData,setChargeData]=useState(()=>{try{const v=localStorage.getItem('thinko_charge');return v?JSON.parse(v):{dailyTarget:3,weeklyAward:'',days:{},streak:0};}catch{return {dailyTarget:3,weeklyAward:'',days:{},streak:0};}});
 
