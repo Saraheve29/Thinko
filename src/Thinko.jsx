@@ -1465,6 +1465,13 @@ function MiniTimer(){
   );
 }
 
+// ── Stale task helper — flags tasks older than 7 days ──
+const isStale=(id)=>{
+  const created=typeof id==="number"?id:parseInt(id);
+  if(!created||isNaN(created))return false;
+  return Date.now()-created > 7*24*60*60*1000;
+};
+
 /* ── SimpleTimer: blank timer for top of page ── */
 function SimpleTimer(){
   const [mins,setMins]=useState("");
@@ -1679,7 +1686,21 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
         {/* Timer */}
         <SimpleTimer/>
 
-        {/* Prioritise button — shows when 2+ active tasks */}
+        {/* Stale task banner */}
+        {(()=>{
+          const staleCount=active.filter(t=>isStale(t.id)).length;
+          return staleCount>0?(
+            <div style={{background:"rgba(255,210,60,0.15)",border:"1.5px solid rgba(220,160,20,0.30)",borderRadius:16,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18,flexShrink:0}}>🚩</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#7A5A00"}}>{staleCount} task{staleCount>1?"s have":" has"} been here 7+ days</div>
+                <div style={{fontSize:11,color:"rgba(100,70,0,0.65)",marginTop:1}}>Delete it, or break it down into smaller steps</div>
+              </div>
+            </div>
+          ):null;
+        })()}
+
+        {/* Prioritise button */}
         {active.length>=2&&(
           <button onClick={()=>setComparing(true)}
             style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"13px 20px",
@@ -1765,6 +1786,9 @@ function ListTaskRow({task,num,col,COLOURS,onComplete,onDelete,onColour}){
           style={{width:22,height:22,borderRadius:"50%",background:col.fill,border:"2.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0,flexShrink:0,boxShadow:"0 1px 6px "+col.fill+"70"}}
           title="Change colour"/>
         <span style={{flex:1,fontSize:14,fontWeight:600,color:"#1A2810",lineHeight:1.35}}>{task.name}</span>
+        {isStale(task.id)&&(
+          <span title="7+ days old — delete or break it down into smaller steps" style={{fontSize:15,flexShrink:0,cursor:"default"}} onClick={e=>e.stopPropagation()}>🚩</span>
+        )}
         <button onClick={onComplete} style={{background:"rgba(90,120,72,0.12)",color:"#3A6020",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✓</button>
         <button onClick={onDelete} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
       </div>
@@ -6608,8 +6632,27 @@ Budget: ${b.name}`,created:Date.now()});
                   style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.94)"}}/>
               </div>
               <button onClick={addTicket} disabled={!newTicket.name.trim()}
-                style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newTicket.name.trim()?0.5:1}}>
+                style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newTicket.name.trim()?0.5:1,marginBottom:8}}>
                 🎫 Save ticket
+              </button>
+              {/* Send to Filing Cabinet */}
+              <button onClick={()=>{
+                if(!newTicket.name.trim())return;
+                const entry={id:Date.now(),name:newTicket.name,type:newTicket.type,price:newTicket.price,date:newTicket.date,notes:"Budget: "+(b.name||""),addedAt:new Date().toISOString()};
+                try{
+                  const cab=JSON.parse(localStorage.getItem('thinko_cabinet')||'[]');
+                  // Add to first drawer, or create a Tickets drawer
+                  const ticketDrawer=cab.find(d=>d.name==="Tickets")||{id:Date.now()+1,name:"Tickets",icon:"🎫",items:[]};
+                  if(!cab.find(d=>d.name==="Tickets"))cab.push(ticketDrawer);
+                  ticketDrawer.items=[...(ticketDrawer.items||[]),entry];
+                  localStorage.setItem('thinko_cabinet',JSON.stringify(cab));
+                  if(setCabinetData)setCabinetData(cab);
+                  addTicket();
+                  alert("Saved to Filing Cabinet → Tickets 🎫");
+                }catch(e){addTicket();alert("Saved to budget only.");}
+              }} disabled={!newTicket.name.trim()}
+                style={{width:"100%",padding:"11px",background:"rgba(90,120,72,0.10)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.22)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",opacity:!newTicket.name.trim()?0.5:1}}>
+                🗄️ Save to Budget + Filing Cabinet
               </button>
             </div>
 
@@ -6669,8 +6712,8 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
   const [newItem,setNewItem]=useState("");
   const [dragId,setDragId]=useState(null);
 
-  const save=items=>onUpdate({...list,items});
-  const addItem=()=>{if(!newItem.trim())return;save([...list.items,{id:Date.now(),text:newItem.trim(),done:false}]);setNewItem("");};
+  const save=items=>onUpdate({...list,items:items.map(i=>({cat:"",...i}))});
+  const addItem=()=>{if(!newItem.trim())return;save([...list.items,{id:Date.now()+Math.random(),text:newItem.trim(),done:false,cat:""}]);setNewItem("");};
   const toggle=id=>save(list.items.map(it=>it.id===id?{...it,done:!it.done}:it));
   const del=id=>save(list.items.filter(it=>it.id!==id));
   const dragOver=toId=>{
@@ -6711,29 +6754,75 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
           <div style={{textAlign:"center",color:"#8A8070",padding:"30px 0",fontSize:14}}>No items yet — add one above</div>
         )}
 
-        {list.items.map(item=>(
-          <div key={item.id}
-            draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
-            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"rgba(248,245,236,0.94)",borderRadius:18,marginBottom:8,border:"1px solid rgba(90,80,60,0.10)",opacity:dragId===item.id?0.5:1,boxShadow:"0 2px 8px rgba(60,60,40,0.05)"}}>
-            <span style={{cursor:"grab",color:"rgba(90,80,60,0.25)",fontSize:14,flexShrink:0}}>⠿</span>
-            <button onClick={()=>toggle(item.id)}
-              style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff"}}>
-              {item.done?"✓":""}
-            </button>
-            <div style={{flex:1,minWidth:0}}>
-                <span style={{fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none",display:"block"}}>{item.text}</span>
-                {item.cat&&<span style={{fontSize:11,color:"#5A7848",fontWeight:600}}>{CAT_EMOJI[item.cat]||""} {item.cat}</span>}
+        {/* Items grouped by category */}
+        {(()=>{
+          const active=list.items.filter(i=>!i.done);
+          const done=list.items.filter(i=>i.done);
+          const groups={};
+          const noCat=[];
+          active.forEach(item=>{
+            if(item.cat&&CAT_EMOJI[item.cat]){if(!groups[item.cat])groups[item.cat]=[];groups[item.cat].push(item);}
+            else noCat.push(item);
+          });
+          const renderItem=(item)=>(
+            <div key={item.id}
+              draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
+              style={{background:"rgba(248,245,236,0.94)",borderRadius:18,marginBottom:8,border:"1px solid rgba(90,80,60,0.10)",opacity:dragId===item.id?0.5:1,boxShadow:"0 2px 8px rgba(60,60,40,0.05)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px"}}>
+                <span style={{cursor:"grab",color:"rgba(90,80,60,0.25)",fontSize:14,flexShrink:0}}>⠿</span>
+                <button onClick={()=>toggle(item.id)}
+                  style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff"}}>
+                  {item.done?"✓":""}
+                </button>
+                <div style={{flex:1,minWidth:0}}>
+                  <span style={{fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none",display:"block"}}>{item.text}</span>
+                  <select value={item.cat||""} onChange={e=>{
+                    const updated=list.items.map(i=>i.id===item.id?{...i,cat:e.target.value}:i);
+                    save(updated);
+                  }} style={{
+                    fontSize:11,fontWeight:600,
+                    color:item.cat?"#3A6020":"#8A8070",
+                    border:item.cat?"1px solid rgba(90,120,72,0.25)":"1px dashed rgba(90,80,60,0.20)",
+                    background:item.cat?"rgba(90,120,72,0.08)":"rgba(255,255,255,0.60)",
+                    borderRadius:100,
+                    cursor:"pointer",
+                    padding:"3px 8px",
+                    marginTop:3,
+                    outline:"none",
+                    maxWidth:"100%",
+                  }}>
+                    <option value="">＋ category</option>
+                    {Object.entries(CAT_EMOJI).map(([k,v])=><option key={k} value={k}>{v} {k}</option>)}
+                  </select>
+                </div>
+                <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14,flexShrink:0}}>🗑</button>
               </div>
-            <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14}}>🗑</button>
-          </div>
-        ))}
-
-        {done>0&&(
-          <button onClick={()=>save(list.items.filter(i=>!i.done))}
-            style={{width:"100%",padding:"10px",marginTop:8,background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
-            🗑 Remove checked items
-          </button>
-        )}
+            </div>
+          );
+          return(
+            <div>
+              {noCat.map(renderItem)}
+              {Object.entries(groups).map(([cat,items])=>(
+                <div key={cat} style={{marginBottom:10}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#5A7848",letterSpacing:0.8,textTransform:"uppercase",marginBottom:6,paddingLeft:4}}>
+                    {CAT_EMOJI[cat]} {cat}
+                  </div>
+                  {items.map(renderItem)}
+                </div>
+              ))}
+              {done.length>0&&(
+                <div style={{marginTop:14}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"rgba(90,80,60,0.35)",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Done</div>
+                  {done.map(renderItem)}
+                  <button onClick={()=>save(list.items.filter(i=>!i.done))}
+                    style={{width:"100%",padding:"10px",marginTop:8,background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    🗑 Remove ticked items
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -6833,12 +6922,14 @@ function ShoppingList({data,setData,setScreen}){
       </div>
 
       <div style={{padding:"16px 14px"}}>
-        {/* List name */}
-        <div style={{background:"rgba(238,244,235,0.88)",borderRadius:20,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.18)"}}>
-          <div style={{fontSize:12,fontWeight:700,color:"rgba(42,60,28,0.50)",marginBottom:8,textTransform:"uppercase",letterSpacing:0.8}}>List name</div>
+        {/* List name — always shown, prominent */}
+        <div style={{background:"rgba(255,255,255,0.85)",backdropFilter:"blur(12px)",borderRadius:22,padding:"16px 18px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.22)",boxShadow:"0 4px 18px rgba(42,80,28,0.08)"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"rgba(42,60,28,0.45)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>📝 Name your list</div>
           <input value={custListName} onChange={e=>setCustListName(e.target.value)}
-            placeholder={"e.g. My "+customising.name+"..."}
-            style={{width:"100%",boxSizing:"border-box",padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontWeight:600,color:"#1A2810",outline:"none",background:"rgba(255,255,255,0.95)"}}/>
+            placeholder="e.g. This week, Pharmacy, School run..."
+            autoFocus
+            style={{width:"100%",boxSizing:"border-box",padding:"13px 18px",borderRadius:100,border:"2px solid rgba(90,120,72,0.25)",fontSize:16,fontWeight:700,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.96)"}}/>
+          {custListName.trim()===''&&<div style={{fontSize:11,color:"rgba(42,60,28,0.40)",marginTop:6,paddingLeft:4}}>Tip: give it a name that makes sense to you</div>}
         </div>
 
         {/* Items */}
@@ -6905,10 +6996,7 @@ function ShoppingList({data,setData,setScreen}){
     </div>
   );
 
-  const ALL_TEMPLATES=[
-    {id:"blank",icon:"📝",name:"Start fresh",color:"#5A7848",items:[],subtitle:"Name it, build from scratch"},
-    ...SHOP_TEMPLATES,
-  ];
+  const ALL_TEMPLATES=[...SHOP_TEMPLATES];
 
   // ── Beautiful full-page template picker ───────────────────────────────────
   if(showTemplates||data.length===0){
@@ -6965,6 +7053,19 @@ function ShoppingList({data,setData,setScreen}){
 
         {/* Template grid */}
         <div style={{padding:"0 16px 100px",position:"relative",zIndex:1}}>
+
+          {/* Create your own — first, above templates */}
+          <button onClick={()=>pickTemplate({id:"blank",icon:"✏️",name:"",color:"#5A7848",items:[]})}
+            style={{width:"100%",marginBottom:14,padding:"16px 18px",background:"rgba(255,255,255,0.55)",backdropFilter:"blur(12px)",border:"1.5px dashed rgba(90,120,72,0.38)",borderRadius:22,cursor:"pointer",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(42,80,28,0.08)"}}>
+            <div style={{width:46,height:46,borderRadius:16,background:"rgba(90,120,72,0.10)",border:"1.5px dashed rgba(90,120,72,0.28)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>✏️</div>
+            <div style={{textAlign:"left",flex:1}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810"}}>Create your own list</div>
+              <div style={{fontSize:12,color:"rgba(42,60,28,0.50)",marginTop:2}}>Name it and add items from scratch</div>
+            </div>
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none" style={{flexShrink:0}}><path d="M1 1l6 6-6 6" stroke="rgba(42,60,28,0.30)" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </button>
+
+          {/* Templates */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {ALL_TEMPLATES.map((t,i)=>(
               <button key={t.id} onClick={()=>pickTemplate({...t,items:t.items||[]})}
@@ -6996,6 +7097,7 @@ function ShoppingList({data,setData,setScreen}){
               </button>
             ))}
           </div>
+
         </div>
 
         <style>{`@keyframes fadeInUp{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}`}</style>
@@ -9114,12 +9216,15 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
   
   
 
-  const Row=({name,src,done,onCharge,onPri,onMatrix,onDelete})=>(
+  const Row=({id,name,src,done,onCharge,onPri,onMatrix,onDelete})=>(
     <div style={{background:done?"rgba(90,160,80,0.10)":"rgba(248,245,236,0.88)",borderRadius:18,padding:"12px 14px",marginBottom:9,border:`1.5px solid ${done?"rgba(90,160,80,0.3)":"rgba(255,255,255,0.9)"}`,backdropFilter:"blur(8px)"}}>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <button onClick={()=>!done&&onCharge()} style={{width:32,height:32,borderRadius:"50%",border:`2.5px solid ${done?"#5A9040":"rgba(90,120,72,0.4)"}`,background:done?"#5A9040":"transparent",cursor:done?"default":"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:15,fontWeight:900,transition:"all 0.2s"}}>{done?"✓":""}</button>
         <div style={{flex:1}}>
-          <div style={{color:done?"#9A9080":"#1A1A10",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.35}}>{name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{color:done?"#9A9080":"#1A1A10",fontWeight:700,fontSize:14,textDecoration:done?"line-through":"none",lineHeight:1.35}}>{name}</span>
+            {!done&&isStale(id)&&<span title="7+ days old — delete or break into smaller steps" style={{fontSize:14,flexShrink:0}}>🚩</span>}
+          </div>
           {src&&<div style={{color:"#9A9080",fontSize:11,marginTop:1}}>{src}</div>}
         </div>
         {!done&&<span style={{fontSize:16}}>⚡</span>}
@@ -9566,7 +9671,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 <span style={{fontFamily:"Georgia,serif",color:"#7A5820",fontWeight:700,fontSize:15}}>⏰ Overdue tasks</span>
                 <span style={{background:"rgba(192,120,40,0.12)",color:"#7A5820",borderRadius:100,padding:"2px 10px",fontSize:12,fontWeight:600}}>{allStale.length}</span>
               </div>
-              {allStale.map((t,i)=>(<Row key={i} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}
+              {allStale.map((t,i)=>(<Row key={i} id={t.id} name={t.name||t.text} src={t.src} done={charged.includes(t.name||t.text)} onCharge={()=>chargeIt(t.name||t.text)}
                 onPri={()=>{if(setPriData&&(priData||[]).length){setPriData(ls=>ls.map((l,j)=>j===0?{...l,tasks:[...l.tasks,{id:Date.now(),name:t.name||t.text,done:false,color:"lilac"}]}:l));showToast("📋 Added to To Do List!");}else showToast("Add a To Do List list first");}}
                 onMatrix={()=>{if(setMatrixData){setMatrixData(ds=>[...ds,{id:Date.now(),text:t.name||t.text,quad:"do",created:Date.now(),touched:Date.now()}]);showToast("⚖️ Added to Matrix!");}}}
                 onDelete={()=>{if(t.srcType==="pri"&&setPriData)setPriData(ls=>ls.map(l=>({...l,tasks:l.tasks.filter(task=>task.id!==t.id)})));if(t.srcType==="matrix"&&setMatrixData)setMatrixData(ds=>ds.filter(d=>d.id!==t.id));showToast("🗑 Removed");}}
