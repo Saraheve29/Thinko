@@ -3873,6 +3873,11 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const [addingSectionForm,setAddingSectionForm]=useState(false);
   const [addingPageForm,setAddingPageForm]=useState(false);
   const [newSectionName,setNewSectionName]=useState('');
+  const [newSectionCat,setNewSectionCat]=useState('');
+  const [renamingSecId,setRenamingSecId]=useState(null);
+  const [renameSecText,setRenameSecText]=useState('');
+  const [renamingPageId,setRenamingPageId]=useState(null);
+  const [renamePageText,setRenamePageText]=useState('');
   const [newPageName,setNewPageName]=useState('');
   // Vault hub drag state
   const [hubOrder,setHubOrder]=useState(()=>{
@@ -3909,8 +3914,10 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   const showToast=msg=>{setToast(msg);setTimeout(()=>setToast(""),2200);};
 
   const addSection=()=>setAddingSectionForm(true);
-  const submitSection=()=>{if(!newSectionName.trim())return;setData(ds=>[...ds,{id:Date.now(),name:newSectionName.trim(),color:NODE_COLORS[ds.length%NODE_COLORS.length],pages:[]}]);setNewSectionName('');setAddingSectionForm(false);};
+  const submitSection=()=>{if(!newSectionName.trim())return;setData(ds=>[...ds,{id:Date.now(),name:newSectionName.trim(),color:NODE_COLORS[ds.length%NODE_COLORS.length],category:newSectionCat,pages:[]}]);setNewSectionName('');setNewSectionCat('');setAddingSectionForm(false);};
   const deleteSection=id=>setData(ds=>ds.filter(s=>s.id!==id));
+  const renameSection=(id,name)=>{if(!name.trim())return;setData(ds=>ds.map(s=>s.id===id?{...s,name:name.trim()}:s));setRenamingSecId(null);};
+  const renamePage=(sid,pid,title)=>{if(!title.trim())return;setData(ds=>ds.map(s=>s.id===sid?{...s,pages:s.pages.map(p=>p.id===pid?{...p,title:title.trim()}:p)}:s));setRenamingPageId(null);};
   const addPage=()=>setAddingPageForm(true);
   const submitPage=()=>{if(!newPageName.trim()||!section)return;setData(ds=>ds.map(s=>s.id===sectionId?{...s,pages:[...s.pages,{id:Date.now(),title:newPageName.trim(),content:'',url:'',updated:Date.now()}]}:s));setNewPageName('');setAddingPageForm(false);};
   const deletePage=id=>{if(section)setData(ds=>ds.map(s=>s.id===sectionId?{...s,pages:s.pages.filter(p=>p.id!==id)}:s));};
@@ -4165,7 +4172,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       <div style={{padding:"20px 16px"}}>
         {addingPageForm&&(
           <div style={{background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${C.lp}`}}>
-            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>New page</div>
+            <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>New note</div>
             <input autoFocus value={newPageName} onChange={e=>setNewPageName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitPage();if(e.key==="Escape")setAddingPageForm(false);}}
               placeholder="Page title..." style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:10}}/>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
@@ -4176,14 +4183,27 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
         )}
         {section.pages.length===0&&!addingPageForm&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.55)",marginTop:60,fontSize:15}}>Tap + to add a page</div>}
         {section.pages.map(p=>(
-          <div key={p.id} onClick={()=>setPageId(p.id)} style={{display:"flex",alignItems:"center",gap:12,background:cardGlass,borderRadius:16,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,0.25)",cursor:"pointer",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.28)"} onMouseLeave={e=>e.currentTarget.style.background=cardGlass}>
-            <div style={{width:36,height:36,borderRadius:9,background:`linear-gradient(135deg,${section.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>📄</div>
-            <div style={{flex:1}}>
-              <div style={{color:"#1A1A10",fontWeight:700,fontSize:16}}>{p.title}</div>
-              <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:2}}>{p.content.slice(0,50)||"Empty"}{p.content.length>50?"…":""}</div>
-              {p.url&&<UrlBadge url={p.url}/>}
-            </div>
-            <button onClick={e=>{e.stopPropagation();deletePage(p.id);}} style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+          <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,background:cardGlass,borderRadius:16,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,0.25)",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.28)"} onMouseLeave={e=>e.currentTarget.style.background=cardGlass}>
+            <div onClick={()=>setPageId(p.id)} style={{width:36,height:36,borderRadius:9,background:`linear-gradient(135deg,${section.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,cursor:"pointer",flexShrink:0}}>📄</div>
+            {renamingPageId===p.id?(
+              <div style={{display:"flex",gap:6,flex:1}}>
+                <input value={renamePageText} onChange={e=>setRenamePageText(e.target.value)} autoFocus
+                  onKeyDown={e=>{if(e.key==="Enter")renamePage(sectionId,p.id,renamePageText);if(e.key==="Escape")setRenamingPageId(null);}}
+                  style={{flex:1,padding:"6px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.30)",fontSize:14,fontWeight:700,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.95)"}}/>
+                <button onClick={()=>renamePage(sectionId,p.id,renamePageText)} style={{background:"#4A7838",color:"#fff",border:"none",borderRadius:100,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✅</button>
+                <button onClick={()=>setRenamingPageId(null)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"6px 10px",fontSize:12,cursor:"pointer"}}>✕</button>
+              </div>
+            ):(
+              <div style={{flex:1,cursor:"pointer"}} onClick={()=>setPageId(p.id)}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{color:"#1A1A10",fontWeight:700,fontSize:16}}>{p.title}</div>
+                  <button onClick={e=>{e.stopPropagation();setRenamingPageId(p.id);setRenamePageText(p.title);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:0.40,padding:"2px 4px",flexShrink:0}} title="Rename note">✏️</button>
+                </div>
+                <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:2}}>{p.content.slice(0,50)||"Empty"}{p.content.length>50?"…":""}</div>
+                {p.url&&<UrlBadge url={p.url}/>}
+              </div>
+            )}
+            <button onClick={e=>{e.stopPropagation();deletePage(p.id);}} style={{background:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.25)",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
           </div>
         ))}
       </div>
@@ -4244,21 +4264,26 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       <div style={{padding:"16px 16px"}}>
         {addingSectionForm&&(
           <div style={{background:"rgba(248,245,236,0.92)",borderRadius:20,padding:"16px 18px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.22)",boxShadow:"0 2px 14px rgba(60,70,40,0.08)"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>New section</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,color:"#1A1A10",fontSize:15,marginBottom:10}}>New group</div>
             <input autoFocus value={newSectionName} onChange={e=>setNewSectionName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitSection();if(e.key==="Escape")setAddingSectionForm(false);}}
               placeholder="Section name..." style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(242,248,240,0.92)"}}/>
+            <select value={newSectionCat} onChange={e=>setNewSectionCat(e.target.value)}
+              style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:10,background:"rgba(242,248,240,0.92)"}}>
+              <option value="">Category (optional)</option>
+              {["📓 General","💼 Work","🏠 Home","🌿 Personal","🎯 Goals","💡 Ideas","📚 Study","🧘 Wellbeing","🎉 Plans","✈️ Travel"].map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
               <button onClick={()=>{setAddingSectionForm(false);setNewSectionName('');}} style={{background:"transparent",color:"#8A8070",border:"none",fontWeight:600,cursor:"pointer",fontSize:14,padding:"8px 14px"}}>Cancel</button>
-              <button onClick={submitSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>Create</button>
+              <button onClick={submitSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>Create group</button>
             </div>
           </div>
         )}
         {data.length===0&&!addingSectionForm&&(
           <div style={{textAlign:"center",padding:"48px 24px"}}>
             <div style={{fontSize:48,marginBottom:12}}>📓</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No sections yet</div>
-            <div style={{color:"#8A8070",fontSize:14,marginBottom:20,lineHeight:1.7}}>Create a section to start writing.<br/>Think of sections like notebooks — one for each topic.</div>
-            <button onClick={addSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create first section</button>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:6}}>No groups yet</div>
+            <div style={{color:"#8A8070",fontSize:14,marginBottom:20,lineHeight:1.7}}>Create a group to organise your notes.<br/>Name a group and add notes inside it — one for each topic.</div>
+            <button onClick={addSection} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>+ Create first group</button>
           </div>
         )}
         {data.map((s,idx)=>(
@@ -4280,8 +4305,25 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
               <div onClick={()=>setSectionId(s.id)} style={{display:"flex",alignItems:"center",gap:12,flex:1,cursor:"pointer"}}>
                 <div style={{width:42,height:42,borderRadius:13,background:`${s.color||"#5A7848"}22`,border:`1.5px solid ${s.color||"#5A7848"}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>📒</div>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"Georgia,serif",color:"#1A1A10",fontWeight:700,fontSize:16}}>{s.name}</div>
-                  <div style={{color:"#8A8070",fontSize:12,marginTop:1}}>{s.pages.length} page{s.pages.length!==1?"s":""}</div>
+                  {renamingSecId===s.id?(
+                  <div style={{display:"flex",gap:6,flex:1}} onClick={e=>e.stopPropagation()}>
+                    <input value={renameSecText} onChange={e=>setRenameSecText(e.target.value)} autoFocus
+                      onKeyDown={e=>{if(e.key==="Enter")renameSection(s.id,renameSecText);if(e.key==="Escape")setRenamingSecId(null);}}
+                      style={{flex:1,padding:"6px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.30)",fontSize:14,fontWeight:700,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.95)"}}/>
+                    <button onClick={()=>renameSection(s.id,renameSecText)} style={{background:"#4A7838",color:"#fff",border:"none",borderRadius:100,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✅</button>
+                    <button onClick={()=>setRenamingSecId(null)} style={{background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,padding:"6px 10px",fontSize:12,cursor:"pointer"}}>✕</button>
+                  </div>
+                ):(
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{fontFamily:"Georgia,serif",color:"#1A1A10",fontWeight:700,fontSize:16}}>{s.name}</div>
+                      <button onClick={e=>{e.stopPropagation();setRenamingSecId(s.id);setRenameSecText(s.name);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:0.45,padding:"2px 4px",flexShrink:0}} title="Rename group">✏️</button>
+                    </div>
+                    <div style={{color:"#8A8070",fontSize:12,marginTop:1}}>{s.pages.length} note{s.pages.length!==1?"s":""}</div>
+                  </div>
+                )}
+                <div style={{display:"none"}}>{/* spacer */}</div>
+                <div style={{color:"#8A8070",fontSize:12,marginTop:1,display:"none"}}>{s.pages.length} page{s.pages.length!==1?"s":""}</div>
                 </div>
                 <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{flexShrink:0,opacity:0.3}}><path d="M1 1l4 4-4 4" stroke="#3A3020" strokeWidth="1.8" strokeLinecap="round"/></svg>
               </div>
@@ -6712,6 +6754,9 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
   const [newItem,setNewItem]=useState("");
   const [dragId,setDragId]=useState(null);
 
+  const [editingId,setEditingId]=useState(null);
+  const [editText,setEditText]=useState("");
+  const [editQty,setEditQty]=useState("");
   const save=items=>onUpdate({...list,items:items.map(i=>({cat:"",...i}))});
   const addItem=()=>{if(!newItem.trim())return;save([...list.items,{id:Date.now()+Math.random(),text:newItem.trim(),done:false,cat:""}]);setNewItem("");};
   const toggle=id=>save(list.items.map(it=>it.id===id?{...it,done:!it.done}:it));
@@ -6768,35 +6813,56 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
             <div key={item.id}
               draggable onDragStart={()=>setDragId(item.id)} onDragOver={e=>{e.preventDefault();dragOver(item.id);}} onDragEnd={()=>setDragId(null)}
               style={{background:"rgba(248,245,236,0.94)",borderRadius:18,marginBottom:8,border:"1px solid rgba(90,80,60,0.10)",opacity:dragId===item.id?0.5:1,boxShadow:"0 2px 8px rgba(60,60,40,0.05)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px"}}>
-                <span style={{cursor:"grab",color:"rgba(90,80,60,0.25)",fontSize:14,flexShrink:0}}>⠿</span>
-                <button onClick={()=>toggle(item.id)}
-                  style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff"}}>
-                  {item.done?"✓":""}
-                </button>
-                <div style={{flex:1,minWidth:0}}>
-                  <span style={{fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none",display:"block"}}>{item.text}</span>
-                  <select value={item.cat||""} onChange={e=>{
-                    const updated=list.items.map(i=>i.id===item.id?{...i,cat:e.target.value}:i);
-                    save(updated);
-                  }} style={{
-                    fontSize:11,fontWeight:600,
-                    color:item.cat?"#3A6020":"#8A8070",
-                    border:item.cat?"1px solid rgba(90,120,72,0.25)":"1px dashed rgba(90,80,60,0.20)",
-                    background:item.cat?"rgba(90,120,72,0.08)":"rgba(255,255,255,0.60)",
-                    borderRadius:100,
-                    cursor:"pointer",
-                    padding:"3px 8px",
-                    marginTop:3,
-                    outline:"none",
-                    maxWidth:"100%",
-                  }}>
-                    <option value="">＋ category</option>
-                    {Object.entries(CAT_EMOJI).map(([k,v])=><option key={k} value={k}>{v} {k}</option>)}
-                  </select>
+              {editingId===item.id&&editText!==(item.qty||"")?(
+                /* Edit name mode — only when ✏️ tapped, not qty */
+                <div style={{padding:"10px 12px"}}>
+                  <input value={editText} onChange={e=>setEditText(e.target.value)}
+                    autoFocus
+                    onKeyDown={e=>{if(e.key==="Enter"){save(list.items.map(i=>i.id===item.id?{...i,text:editText.trim()||i.text}:i));setEditingId(null);}if(e.key==="Escape")setEditingId(null);}}
+                    style={{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,fontWeight:600,color:"#1A1A10",outline:"none",background:"rgba(240,247,238,0.95)",marginBottom:8}}/>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>{save(list.items.map(i=>i.id===item.id?{...i,text:editText.trim()||i.text}:i));setEditingId(null);}}
+                      style={{flex:1,padding:"9px",background:"#4A7838",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>✅ Save</button>
+                    <button onClick={()=>setEditingId(null)}
+                      style={{flex:1,padding:"9px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
+                  </div>
                 </div>
-                <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14,flexShrink:0}}>🗑</button>
-              </div>
+              ):(
+                <div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 12px"}}>
+                  <span style={{cursor:"grab",color:"rgba(90,80,60,0.25)",fontSize:14,flexShrink:0}}>⠿</span>
+                  <button onClick={()=>toggle(item.id)}
+                    style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${item.done?"#5A7848":"rgba(90,80,60,0.25)"}`,background:item.done?"#5A7848":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#fff"}}>
+                    {item.done?"✓":""}
+                  </button>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <span style={{fontSize:15,fontWeight:item.done?400:600,color:item.done?"#8A9080":"#1A1A10",textDecoration:item.done?"line-through":"none"}}>{item.text}</span>
+                      {/* Qty badge — always shown, tap to edit inline */}
+                      {editingId===item.id?(
+                        <input value={editQty} onChange={e=>setEditQty(e.target.value)}
+                          onBlur={()=>{save(list.items.map(i=>i.id===item.id?{...i,qty:editQty.trim()}:i));setEditingId(null);}}
+                          onKeyDown={e=>{if(e.key==="Enter"||e.key==="Escape"){save(list.items.map(i=>i.id===item.id?{...i,qty:editQty.trim()}:i));setEditingId(null);}}}
+                          autoFocus
+                          placeholder="qty"
+                          style={{width:52,padding:"2px 8px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.35)",fontSize:12,fontWeight:700,color:"#3A6020",outline:"none",background:"rgba(240,247,238,0.95)",textAlign:"center"}}/>
+                      ):(
+                        <button onClick={()=>{setEditingId(item.id);setEditQty(item.qty||"");setEditText(item.text);}}
+                          style={{fontSize:12,fontWeight:700,color:item.qty?"#3A6020":"#B0A898",background:item.qty?"rgba(90,120,72,0.10)":"rgba(90,80,60,0.05)",border:item.qty?"1px solid rgba(90,120,72,0.22)":"1px dashed rgba(90,80,60,0.18)",borderRadius:100,padding:"2px 8px",cursor:"pointer",flexShrink:0}}>
+                          {item.qty||"+ qty"}
+                        </button>
+                      )}
+                    </div>
+                    <select value={item.cat||""} onChange={e=>{save(list.items.map(i=>i.id===item.id?{...i,cat:e.target.value}:i));}}
+                      style={{fontSize:11,fontWeight:600,color:item.cat?"#3A6020":"#8A8070",border:item.cat?"1px solid rgba(90,120,72,0.25)":"1px dashed rgba(90,80,60,0.20)",background:item.cat?"rgba(90,120,72,0.08)":"rgba(255,255,255,0.60)",borderRadius:100,cursor:"pointer",padding:"3px 8px",marginTop:3,outline:"none",maxWidth:"100%"}}>
+                      <option value="">＋ category</option>
+                      {Object.entries(CAT_EMOJI).map(([k,v])=><option key={k} value={k}>{v} {k}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={()=>{setEditingId(item.id);setEditText(item.text);setEditQty(item.qty||"");}}
+                    style={{background:"rgba(90,80,60,0.07)",color:"#8A8070",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}} title="Edit name">✏️</button>
+                  <button onClick={()=>del(item.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.4)",cursor:"pointer",fontSize:14,flexShrink:0}}>🗑</button>
+                </div>
+              )}
             </div>
           );
           return(
@@ -6832,9 +6898,21 @@ const mkItem=(text)=>({id:Date.now()+Math.random(),text:text.trim(),done:false})
 const mkShopList=(name,icon)=>({id:Date.now()+Math.random(),name:name||"My List",icon:icon||"🛒",items:[],color:"#5A7848"});
 
 const CAT_EMOJI={
-  fresh:"🥦",dairy:"🧀",meat:"🥩",bakery:"🥖",frozen:"🧊",
-  drinks:"🥤",snacks:"🍿",household:"🧹",health:"💊",baby:"🍼",
-  other:"🛒"
+  "fruit & veg":"🥦",
+  "meat & fish":"🥩",
+  "dairy & eggs":"🧀",
+  "bread & bakery":"🥖",
+  "tins & packets":"🥫",
+  "frozen":"🧊",
+  "drinks":"🥤",
+  "snacks & confectionery":"🍿",
+  "condiments & sauces":"🫙",
+  "cleaning & household":"🧹",
+  "toiletries & beauty":"🧴",
+  "clothing":"👗",
+  "baby & kids":"🍼",
+  "health & pharmacy":"💊",
+  "pets":"🐾",
 };
 
 function ShoppingList({data,setData,setScreen}){
@@ -7026,29 +7104,38 @@ function ShoppingList({data,setData,setScreen}){
           </svg>
         </div>
 
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"56px 20px 0",position:"relative",zIndex:1}}>
-          <button onClick={()=>hasLists?setShowTemplates(false):setScreen("home")}
+        {/* Header — back button only */}
+        <div style={{padding:"56px 20px 0",position:"relative",zIndex:1}}>
+          <button onClick={()=>setScreen("home")}
             style={{background:"rgba(255,255,255,0.55)",border:"1.5px solid rgba(90,120,72,0.18)",backdropFilter:"blur(8px)",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2C4020" strokeWidth="2.2" strokeLinecap="round"/></svg>
           </button>
-          {hasLists&&(
-            <button onClick={()=>setShowTemplates(false)}
-              style={{background:"rgba(255,255,255,0.55)",border:"1.5px solid rgba(90,120,72,0.22)",backdropFilter:"blur(8px)",borderRadius:100,padding:"8px 16px",color:"#2C4020",fontWeight:600,fontSize:13,cursor:"pointer"}}>
-              My lists
-            </button>
-          )}
         </div>
 
         {/* Hero */}
-        <div style={{textAlign:"center",padding:"28px 24px 24px",position:"relative",zIndex:1}}>
+        <div style={{textAlign:"center",padding:"24px 24px 20px",position:"relative",zIndex:1}}>
           <div style={{fontSize:56,marginBottom:12,filter:"drop-shadow(0 4px 16px rgba(42,80,28,0.20))"}}>🛒</div>
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:26,color:"#1A2810",marginBottom:6,letterSpacing:-0.5}}>
             New shopping list
           </div>
-          <div style={{fontSize:13,color:"rgba(42,60,28,0.60)",lineHeight:1.6}}>
+          <div style={{fontSize:13,color:"rgba(42,60,28,0.60)",lineHeight:1.6,marginBottom:hasLists?18:0}}>
             Pick a type — customise it before saving
           </div>
+          {/* My lists button — centred, prominent */}
+          {hasLists&&(
+            <button onClick={()=>setShowTemplates(false)}
+              style={{
+                display:"inline-flex",alignItems:"center",gap:8,
+                background:"linear-gradient(135deg,#4A7838,#3A6028)",
+                border:"none",borderRadius:100,
+                padding:"13px 28px",
+                color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,
+                cursor:"pointer",
+                boxShadow:"0 4px 18px rgba(58,80,38,0.35)",
+              }}>
+              <span>📋</span> My lists
+            </button>
+          )}
         </div>
 
         {/* Template grid */}
@@ -7110,31 +7197,93 @@ function ShoppingList({data,setData,setScreen}){
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title="🛒 Shopping" onBack={()=>setScreen("home")} right={
         <button onClick={()=>setShowTemplates(true)}
-          style={{background:"rgba(248,245,236,0.85)",color:"#3A6020",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+          style={{background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
           + New List
         </button>
       }/>
 
-      <div style={{padding:"16px 14px"}}>
-        {/* List cards */}
-        {orderedLists.map(list=>(
-          <div key={list.id}
-            draggable
-            onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragShop(list.id);}}
-            onDragOver={e=>shopDragOver(e,list.id)}
-            onDragEnd={()=>setDragShop(null)}
-            data-shoplistid={list.id}
-            onClick={()=>setActiveId(list.id)}
-            style={{background:"rgba(238,244,235,0.88)",borderRadius:20,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14,cursor:"pointer",border:"1.5px solid rgba(90,120,72,0.12)",boxShadow:"0 2px 12px rgba(42,60,28,0.07)",opacity:dragShop===list.id?0.5:1,position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",left:0,top:0,bottom:0,width:4,background:list.color||"#5A7848",borderRadius:"4px 0 0 4px"}}/>
-            <div style={{width:44,height:44,borderRadius:14,background:(list.color||"#5A7848")+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{list.icon||"🛒"}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{list.name}</div>
-              <div style={{fontSize:12,color:"#8A8070"}}>{list.items.filter(i=>!i.done).length} item{list.items.filter(i=>!i.done).length!==1?"s":""} left</div>
-            </div>
-            <svg width="6" height="11" viewBox="0 0 6 11" fill="none"><path d="M1 1l4 4.5-4 4.5" stroke="#8A8070" strokeWidth="1.8" strokeLinecap="round"/></svg>
+      {/* My Lists section header */}
+      <div style={{padding:"16px 18px 8px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A2810",letterSpacing:-0.3}}>My Lists</div>
+          <div style={{fontSize:12,color:"rgba(42,60,28,0.50)",marginTop:2}}>{data.length} list{data.length!==1?"s":""} · {data.reduce((s,l)=>s+l.items.filter(i=>!i.done).length,0)} items remaining</div>
+        </div>
+      </div>
+
+      <div style={{padding:"0 14px"}}>
+        {/* Empty state when no lists */}
+        {data.length===0&&(
+          <div style={{textAlign:"center",padding:"60px 24px"}}>
+            <div style={{fontSize:64,marginBottom:16}}>🛒</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A2810",marginBottom:8}}>No lists yet</div>
+            <div style={{fontSize:14,color:"rgba(42,60,28,0.50)",marginBottom:24,lineHeight:1.6}}>Tap <strong>+ New List</strong> above to get started</div>
+            <button onClick={()=>setShowTemplates(true)}
+              style={{background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,padding:"14px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>
+              + Create your first list
+            </button>
           </div>
-        ))}
+        )}
+        {/* List cards — big, beautiful, prominent */}
+        {orderedLists.map((list,i)=>{
+          const remaining=list.items.filter(it=>!it.done).length;
+          const total=list.items.length;
+          const pct=total?Math.round(((total-remaining)/total)*100):0;
+          const col=list.color||"#5A7848";
+          return(
+            <div key={list.id}
+              draggable
+              onDragStart={e=>{e.dataTransfer.effectAllowed="move";setDragShop(list.id);}}
+              onDragOver={e=>shopDragOver(e,list.id)}
+              onDragEnd={()=>setDragShop(null)}
+              data-shoplistid={list.id}
+              onClick={()=>setActiveId(list.id)}
+              style={{
+                background:"rgba(255,255,255,0.82)",
+                backdropFilter:"blur(16px)",
+                borderRadius:26,
+                marginBottom:14,
+                overflow:"hidden",
+                cursor:"pointer",
+                border:"1.5px solid "+col+"30",
+                boxShadow:"0 6px 28px "+col+"20, 0 1px 0 rgba(255,255,255,0.9) inset",
+                opacity:dragShop===list.id?0.5:1,
+                transition:"transform 0.12s, box-shadow 0.12s",
+              }}>
+              {/* Colour top bar */}
+              <div style={{height:6,background:"linear-gradient(90deg,"+col+","+col+"aa)"}}/>
+              <div style={{padding:"18px 20px",display:"flex",alignItems:"center",gap:16}}>
+                {/* Big icon circle */}
+                <div style={{
+                  width:64,height:64,borderRadius:22,
+                  background:"linear-gradient(135deg,"+col+"30,"+col+"12)",
+                  border:"2.5px solid "+col+"40",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontSize:30,flexShrink:0,
+                  boxShadow:"0 3px 14px "+col+"25",
+                }}>{list.icon||"🛒"}</div>
+                {/* Text */}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{list.name}</div>
+                  <div style={{fontSize:13,color:pct===100?"#4A7838":"#8A8070",fontWeight:pct===100?700:400,marginBottom:total>0?8:0}}>
+                    {total===0?"Empty — tap to add items":pct===100?"✅ All done!":remaining+" item"+(remaining!==1?"s":"")+" to get"}
+                  </div>
+                  {total>0&&(
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{flex:1,height:5,background:"rgba(90,80,60,0.10)",borderRadius:100,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:pct+"%",background:pct===100?"#4A7838":col,borderRadius:100,transition:"width 0.4s"}}/>
+                      </div>
+                      <span style={{fontSize:11,color:"rgba(42,60,28,0.45)",fontWeight:700,flexShrink:0}}>{pct}%</span>
+                    </div>
+                  )}
+                </div>
+                {/* Arrow */}
+                <div style={{width:32,height:32,borderRadius:"50%",background:col+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <svg width="7" height="13" viewBox="0 0 7 13" fill="none"><path d="M1 1l5 5.5-5 5.5" stroke={col} strokeWidth="2" strokeLinecap="round"/></svg>
+                </div>
+              </div>
+            </div>
+          );
+        })}
         {data.length>1&&<div style={{textAlign:"center",fontSize:11,color:"rgba(60,50,30,0.35)",marginTop:4}}>⠿ Hold and drag to reorder</div>}
       </div>
     </div>
@@ -8445,14 +8594,37 @@ function Routine({routineData,setRoutineData,setScreen}){
         ))}
 
         {celebration&&(
-          <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
-            <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 28px",textAlign:"center",maxWidth:310,margin:"0 24px",border:`3px solid ${celebration.allDone?"rgba(255,200,50,0.6)":"rgba(90,160,80,0.35)"}`,animation:"rCelebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards"}}>
-              <div style={{fontSize:celebration.allDone?80:60,marginBottom:8,animation:"rBounce 0.6s ease-in-out infinite alternate"}}>{celebration.allDone?"🏆":""}</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:celebration.allDone?24:20,color:"#1A1A10",marginBottom:10}}>{celebration.allDone?"FULL ROUTINE COMPLETE! 🔥":"Step done! Keep it up 💪"}</div>
-              <div style={{fontSize:14,color:"#5A7060",lineHeight:1.8,fontFamily:"'Segoe UI',sans-serif"}}>{celebration.allDone?"You showed up for yourself today. 🌟":`"${celebration.name}" · ${doneCount}/${items.length} done`}</div>
-            </div>
+          <div style={{position:"fixed",inset:0,zIndex:700,display:"flex",alignItems:"center",justifyContent:"center",background:celebration.allDone?"radial-gradient(ellipse at center,rgba(15,50,10,0.97),rgba(5,15,5,0.99))":"rgba(10,10,10,0.75)",backdropFilter:"blur(4px)"}} onClick={()=>setCelebration(null)}>
+            {confetti.map(p=>(<div key={p.id} style={{position:"absolute",left:p.x+"%",top:"-5%",fontSize:p.size,animation:`rConf ${p.speed}s ${p.delay}s ease-in forwards`,transform:"rotate("+Math.random()*360+"deg)",pointerEvents:"none",zIndex:1}}>{p.emoji}</div>))}
+            {celebration.allDone?(
+              <div style={{textAlign:"center",zIndex:2,padding:"0 28px"}}>
+                {/* Graffiti-style WELL DONE */}
+                <div style={{
+                  fontFamily:"Georgia,serif",fontWeight:900,
+                  fontSize:52,
+                  color:"#FFD700",
+                  textShadow:"4px 4px 0 #C8870A,8px 8px 0 rgba(0,0,0,0.4)",
+                  letterSpacing:2,
+                  marginBottom:8,
+                  animation:"rBounce 0.5s ease-in-out infinite alternate",
+                  transform:"rotate(-2deg)",
+                  display:"inline-block",
+                }}>WELL DONE!</div>
+                <div style={{fontSize:64,marginBottom:12,animation:"rBounce 0.6s 0.1s ease-in-out infinite alternate",filter:"drop-shadow(0 0 20px rgba(255,215,0,0.8))"}}>🏆</div>
+                <div style={{fontSize:40,marginBottom:12,letterSpacing:6}}>🎊 🌟 🎊</div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#FFD700",marginBottom:8}}>Full routine complete!</div>
+                <div style={{fontSize:15,color:"rgba(255,255,255,0.80)",lineHeight:1.8}}>You showed up for yourself today 🌿</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.45)",marginTop:12}}>Tap anywhere to close</div>
+              </div>
+            ):(
+              <div style={{background:"rgba(255,253,240,0.98)",borderRadius:32,padding:"36px 28px",textAlign:"center",maxWidth:310,margin:"0 24px",border:"3px solid rgba(90,160,80,0.35)",animation:"rCelebPop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards",zIndex:2}}>
+                <div style={{fontSize:52,marginBottom:8,animation:"rBounce 0.6s ease-in-out infinite alternate"}}>⚡</div>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",marginBottom:8}}>Step done! Keep going 💪</div>
+                <div style={{fontSize:14,color:"#5A7060",lineHeight:1.8}}>{`"${celebration.name}"`} · {doneCount}/{items.length} done</div>
+              </div>
+            )}
           </div>
-        )}
+        )} )}
 
         {/* Header */}
         <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 26px"}}>
