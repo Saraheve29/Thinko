@@ -6344,7 +6344,8 @@ const SHOP_TEMPLATES=[
   {id:"topup",     icon:"⚡",name:"Top up",            color:"#F39C12",items:["Milk","Bread","Eggs","Butter","Cheese","Bananas","Juice","Snacks","Toilet roll","Washing up liquid"]},
   {id:"cleaning",  icon:"🧹",name:"Cleaning supplies",  color:"#3498DB",items:["Washing up liquid","Bleach","Surface spray","Sponges","Bin bags","Toilet roll","Laundry tablets","Fabric softener"]},
   {id:"toiletries",icon:"🧴",name:"Toiletries",         color:"#9B59B6",items:["Shampoo","Conditioner","Body wash","Toothpaste","Deodorant","Moisturiser","Razors","Cotton pads"]},
-  {id:"baby",      icon:"🍼",name:"Baby & kids",        color:"#E91E8C",items:["Nappies","Wipes","Baby formula","Baby food","Calpol","Snacks","Juice pouches"]},
+  {id:"pets",      icon:"🐾",name:"Pets",               color:"#8D6E63",items:["Dog food","Cat food","Treats","Poo bags","Flea treatment","Pet shampoo","Toys","Bedding"]},
+  {id:"gifts",     icon:"🎁",name:"Gifts & Presents",   color:"#C0392B",items:["Birthday card","Wrapping paper","Ribbon","Gift bags","Sellotape","Tissue paper","Birthday candles"]},
   {id:"party",     icon:"🎉",name:"Party",              color:"#E67E22",items:["Crisps","Dips","Sausage rolls","Sandwiches","Cake","Juice","Pop","Plates","Cups","Napkins"]},
   {id:"health",    icon:"💊",name:"Health",             color:"#E74C3C",items:["Vitamins","Paracetamol","Ibuprofen","Plasters","Hand sanitiser","Tissues"]},
 ];
