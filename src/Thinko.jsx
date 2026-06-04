@@ -621,7 +621,7 @@ function PriCompare({tasks,onDone}) {
 /* ── HomeBar — sticky top bar with 🏠 home for all modules ── */
 function HomeBar({setScreen,title,onBack}){
   return(
-    <div style={{position:"sticky",top:0,zIndex:50,background:`linear-gradient(135deg,${C.dp},${C.mp})`,display:"flex",alignItems:"center",gap:10,padding:"10px 14px",boxShadow:"0 2px 12px rgba(90,80,60,0.35)",flexShrink:0}}>
+    <div style={{position:"sticky",top:0,zIndex:50,background:"linear-gradient(135deg,#7AAD5A,#5A8840)",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",boxShadow:"0 2px 12px rgba(90,80,60,0.35)",flexShrink:0}}>
       {onBack&&<button onClick={onBack} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>}
       <span style={{flex:1,color:"#1A1A10",fontWeight:800,fontSize:16,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{title}</span>
       <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 13px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
@@ -1719,12 +1719,12 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
             </svg>
 
             {/* Headline */}
-            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#1A1A10",textAlign:"center",marginBottom:10,letterSpacing:-0.4,lineHeight:1.25}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#ffffff",textAlign:"center",marginBottom:10,letterSpacing:-0.4,lineHeight:1.25,textShadow:"0 2px 8px rgba(0,0,0,0.4)"}}>
               Think visually, think freely
             </div>
 
             {/* Description */}
-            <div style={{fontSize:15,color:"#6A6050",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,fontWeight:400}}>
+            <div style={{fontSize:15,color:"rgba(255,255,255,0.88)",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,textShadow:"0 1px 4px rgba(0,0,0,0.3)",fontWeight:400}}>
               Create multiple mind maps — one for each project, idea, or dream. Let your thoughts branch naturally, like vines finding the light.
             </div>
 
@@ -3865,7 +3865,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       {/* Beautiful header */}
-      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 60%,#4A6840 100%)",padding:"52px 22px 28px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+      <div style={{background:"linear-gradient(135deg,#7AAD5A,#5A8840)",padding:"52px 22px 28px",textAlign:"center",position:"relative",overflow:"hidden"}}>
         {/* Decorative leaves */}
         <div style={{position:"absolute",top:-10,left:-10,fontSize:60,opacity:0.08,transform:"rotate(-20deg)"}}>🌿</div>
         <div style={{position:"absolute",top:10,right:-10,fontSize:50,opacity:0.08,transform:"rotate(15deg)"}}>🍃</div>
@@ -4028,6 +4028,8 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
   const [editMeal,setEditMeal]=useState(null); // {dayIdx, mealId|null}
   const [mealDraft,setMealDraft]=useState("");
   const [mealUrl,setMealUrl]=useState("");
+  const [expandedMeal,setExpandedMeal]=useState(null);
+  const [ingInput,setIngInput]=useState("");
 
   const openAddMeal=(dayIdx)=>{setEditMeal({dayIdx,mealId:null});setMealDraft("");setMealUrl("");};
   const openEditMeal=(dayIdx,meal)=>{setEditMeal({dayIdx,mealId:meal.id});setMealDraft(meal.text);setMealUrl(meal.url||"");};
@@ -4035,7 +4037,7 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
     if(!editMeal||!mealDraft.trim()){setEditMeal(null);setMealUrl("");return;}
     const days=plan.days.map((d,i)=>{
       if(i!==editMeal.dayIdx)return d;
-      if(editMeal.mealId===null) return [...d,{id:Date.now(),text:mealDraft.trim(),url:mealUrl.trim()}];
+      if(editMeal.mealId===null) return [...d,{id:Date.now(),text:mealDraft.trim(),url:mealUrl.trim(),ingredients:[]}];
       return d.map(m=>m.id===editMeal.mealId?{...m,text:mealDraft.trim(),url:mealUrl.trim()}:m);
     });
     save({...plan,days});
@@ -4046,7 +4048,47 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
     save({...plan,days});
   };
 
-  const sendMealToShop=(meal,label)=>{
+  
+  const addIngredient=(dayIdx,mealId,ing)=>{
+    if(!ing.trim())return;
+    const days=plan.days.map((d,di)=>di!==dayIdx?d:d.map(m=>m.id!==mealId?m:{...m,ingredients:[...(m.ingredients||[]),{id:Date.now(),text:ing.trim(),got:false}]}));
+    save({...plan,days});
+    setIngInput("");
+  };
+  const toggleIngGot=(dayIdx,mealId,ingId)=>{
+    const days=plan.days.map((d,di)=>di!==dayIdx?d:d.map(m=>m.id!==mealId?m:{...m,ingredients:(m.ingredients||[]).map(ig=>ig.id===ingId?{...ig,got:!ig.got}:ig)}));
+    save({...plan,days});
+  };
+  const deleteIng=(dayIdx,mealId,ingId)=>{
+    const days=plan.days.map((d,di)=>di!==dayIdx?d:d.map(m=>m.id!==mealId?m:{...m,ingredients:(m.ingredients||[]).filter(ig=>ig.id!==ingId)}));
+    save({...plan,days});
+  };
+  const sendIngredientsToShop=(dayIdx,mealId,mealName)=>{
+    if(!shopData||!setShopData)return;
+    const meal=plan.days[dayIdx]?.find(m=>m.id===mealId);
+    if(!meal?.ingredients?.length)return;
+    const needed=(meal.ingredients||[]).filter(ig=>!ig.got);
+    if(!needed.length){alert("You already have everything! ✅");return;}
+    const listName=`🍽 ${mealName}`;
+    const existing=shopData.find(l=>l.name===listName);
+    const newItems=needed.map(ig=>({id:Date.now()+Math.random(),name:ig.text,qty:"",unit:"",cat:"",checked:false}));
+    if(existing){
+      setShopData(shopData.map(l=>l.id===existing.id?{...l,items:[...l.items,...newItems]}:l));
+    } else {
+      setShopData([...shopData,{id:Date.now(),name:listName,items:newItems}]);
+    }
+    alert("Added "+needed.length+" ingredient"+(needed.length>1?"s":"")+" to Shopping List ✅");
+  };
+  const shareShoppingList=(dayIdx,mealId,mealName)=>{
+    const meal=plan.days[dayIdx]?.find(m=>m.id===mealId);
+    const ings=(meal?.ingredients||[]);
+    if(!ings.length){alert("No ingredients added yet");return;}
+    const lines=ings.map(ig=>(ig.got?"✅ ":"🛒 ")+ig.text);
+    const text="🍽 "+mealName+" — Ingredients:\n"+lines.join("\n")+"\n\nSent from Thinko 🌿";
+    const encoded=encodeURIComponent(text);
+    window.open("https://wa.me/?text="+encoded,"_blank");
+  };
+const sendMealToShop=(meal,label)=>{
     if(!shopData||!setShopData)return;
     // Find or create a "Meal Plan" shopping list
     const existing=shopData.find(l=>l.name==="Meal Plan");
@@ -4383,14 +4425,53 @@ function MealPlanner({data,setData,shopData,setShopData,setScreen}) {
                 {meals.length>0&&(
                   <div style={{padding:"0 18px 14px"}}>
                     {meals.map((meal,mi)=>(
-                      <div key={meal.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderTop:`1px solid ${border}`}}>
+                      <>
+                      <div key={meal.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderTop:"1px solid "+border}}>
                         <div style={{width:6,height:6,borderRadius:"50%",background:textCol,flexShrink:0,opacity:0.6}}/>
                         <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:textCol,lineHeight:1.4}}>{meal.text}</div>{meal.url&&<UrlBadge url={meal.url}/>}</div>
                         <button onClick={()=>sendMealToShop(meal,label)} title="Shopping list" style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🛒</button>
                         <button onClick={()=>scheduleMeal(meal,label)} title="Calendar" style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>📅</button>
+                        <button onClick={()=>{const key=dayIdx+"-"+meal.id;setExpandedMeal(expandedMeal===key?null:key);}} title="Ingredients" style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🥦</button>
                         <button onClick={()=>openEditMeal(dayIdx,meal)} style={{background:"rgba(255,255,255,0.5)",color:textCol,border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✏️</button>
                         <button onClick={()=>deleteMeal(dayIdx,meal.id)} style={{background:"rgba(255,255,255,0.5)",color:"#c0392b",border:"none",borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🗑</button>
                       </div>
+                      {/* Ingredients panel */}
+                      {expandedMeal===(dayIdx+"-"+meal.id)&&(
+                        <div style={{padding:"10px 14px 14px",borderTop:"1px solid "+border,background:"rgba(255,255,255,0.25)"}}>
+                          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:textCol,marginBottom:8}}>🥦 Ingredients for {meal.text}</div>
+                          {/* Ingredient list */}
+                          {(meal.ingredients||[]).map(ig=>(
+                            <div key={ig.id} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0"}}>
+                              <button onClick={()=>toggleIngGot(dayIdx,meal.id,ig.id)}
+                                style={{width:20,height:20,borderRadius:4,border:"1.5px solid "+(ig.got?"#5A7848":"rgba(90,120,72,0.4)"),background:ig.got?"#5A7848":"transparent",color:"#fff",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>
+                                {ig.got?"✓":""}
+                              </button>
+                              <span style={{flex:1,fontSize:13,color:textCol,textDecoration:ig.got?"line-through":"none",opacity:ig.got?0.6:1}}>{ig.text}</span>
+                              <span style={{fontSize:10,color:textCol,opacity:0.7,fontWeight:600}}>{ig.got?"✅ Got it":"🛒 Need"}</span>
+                              <button onClick={()=>deleteIng(dayIdx,meal.id,ig.id)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.5)",cursor:"pointer",fontSize:12,flexShrink:0}}>✕</button>
+                            </div>
+                          ))}
+                          {/* Add ingredient */}
+                          <div style={{display:"flex",gap:6,marginTop:8}}>
+                            <input value={ingInput} onChange={e=>setIngInput(e.target.value)}
+                              onKeyDown={e=>e.key==="Enter"&&addIngredient(dayIdx,meal.id,ingInput)}
+                              placeholder="Add ingredient…"
+                              style={{flex:1,padding:"7px 12px",borderRadius:20,border:`1.5px solid ${border}`,background:"rgba(255,255,255,0.6)",fontSize:13,color:"#1A1A10",outline:"none"}}/>
+                            <button onClick={()=>addIngredient(dayIdx,meal.id,ingInput)}
+                              style={{background:"rgba(255,255,255,0.7)",border:`1.5px solid ${border}`,borderRadius:20,padding:"7px 14px",fontSize:12,fontWeight:700,color:textCol,cursor:"pointer"}}>+ Add</button>
+                          </div>
+                          {/* Action buttons */}
+                          {(meal.ingredients||[]).length>0&&(
+                            <div style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
+                              <button onClick={()=>sendIngredientsToShop(dayIdx,meal.id,meal.text)}
+                                style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:20,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🛒 Send needed to Shopping</button>
+                              <button onClick={()=>shareShoppingList(dayIdx,meal.id,meal.text)}
+                                style={{background:"#25D366",color:"#fff",border:"none",borderRadius:20,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>💬 Share via WhatsApp</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      </>
                     ))}
                   </div>
                 )}
@@ -5703,7 +5784,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
     }}>
 
       {/* ── HEADER ── */}
-      <div style={{background:"rgba(248,245,236,0.95)",padding:"12px 16px 10px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+      <div style={{background:"rgba(180,220,160,0.85)",padding:"12px 16px 10px",textAlign:"center",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
         <button onClick={()=>setScreen("home")} style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
@@ -5726,7 +5807,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
             const isSage=qi===0||qi===2;
             return(
               <div key={q.key} style={{
-                background:isSage?"rgba(124,148,104,0.35)":"rgba(245,242,234,0.88)",
+                background:qi===0?"rgba(192,48,32,0.18)":qi===1?"rgba(72,112,160,0.18)":qi===2?"rgba(192,136,32,0.18)":"rgba(100,150,80,0.18)",border:`2px solid ${q.color}33`,
                 borderRadius:14,
                 padding:"8px 6px 6px",
                 position:"relative",
@@ -5739,14 +5820,14 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 {/* Leaf icon */}
                 <div style={{position:"absolute",top:10,right:10,opacity:0.8}}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={isSage?"rgba(255,255,255,0.7)":"#5A7848"}/>
+                    <path d="M12 3C7 7 4 12 4 17a8 8 0 0016 0C20 12 17 7 12 3z" fill={q.color}/>
                   </svg>
                 </div>
 
                 {/* Label */}
                 <div style={{paddingRight:18,marginBottom:4}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:isSage?"#1E2E14":"#1A1A10",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
-                  <div style={{fontSize:10,color:isSage?"#3A5028":"#6A6050",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:"#1A1A10",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
+                  <div style={{fontSize:10,color:"#5A5040",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
                 </div>
                 <div style={{height:1,background:isSage?"rgba(255,255,255,0.3)":"rgba(90,80,60,0.12)",marginBottom:5}}/>
 
@@ -8320,7 +8401,7 @@ function Routine({routineData,setRoutineData,setScreen}){
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"Georgia,serif",paddingBottom:90}}>
       {/* Header with back button */}
-      <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 28px"}}>
+      <div style={{background:"linear-gradient(135deg,#7AAD5A,#5A8840)",padding:"52px 22px 28px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
           <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
@@ -10017,14 +10098,14 @@ function RestSpace({setScreen}){
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
       {/* Garden header */}
-      <div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 0",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+      <div style={{background:"linear-gradient(135deg,#8DC45A,#6A9E40)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 0",borderBottom:"none",position:"sticky",top:0,zIndex:50}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
           <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div style={{flex:1}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A1A10"}}>🌿 Rest Space</div>
-            <div style={{fontSize:12,color:"#8A8070",marginTop:1,fontStyle:"italic"}}>"Rest is not a reward — it's part of the work"</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff",textShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>🌿 Rest Space</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",marginTop:1,fontStyle:"italic"}}>"Rest is not a reward — it's part of the work"</div>
           </div>
         </div>
         <div style={{display:"flex"}}>
@@ -10228,7 +10309,7 @@ function RestSpace({setScreen}){
           {WN_PRESETS.filter(p=>p.mp3).map(p=>{
             const isPlaying=activeSnd===p.id;
             return(
-              <div key={p.id} style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(90,120,72,0.20)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+              <div key={p.id} style={{background:"rgba(138,195,90,0.22)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(90,160,60,0.40)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#5A7848":"rgba(90,120,72,0.20)"}}/>
                 <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
                   <span style={{fontSize:28}}>{p.icon}</span>
@@ -10250,7 +10331,7 @@ function RestSpace({setScreen}){
           {(()=>{
             const isPlaying=activeSnd==="ocean_yt";
             return(
-              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(72,104,120,0.25)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+              <div style={{background:"rgba(72,140,180,0.18)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(72,120,160,0.40)",overflow:"hidden",boxShadow:"0 2px 12px rgba(40,60,80,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#486878":"rgba(72,104,120,0.20)"}}/>
                 {isPlaying?(
                   <>
@@ -10289,7 +10370,7 @@ function RestSpace({setScreen}){
           {(()=>{
             const isPlaying=activeSnd==="campfire_yt";
             return(
-              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(120,80,40,0.25)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+              <div style={{background:"rgba(220,160,60,0.18)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(200,140,40,0.40)",overflow:"hidden",boxShadow:"0 2px 12px rgba(80,60,20,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#8A5028":"rgba(120,80,40,0.20)"}}/>
                 {isPlaying?(
                   <>
@@ -10329,7 +10410,7 @@ function RestSpace({setScreen}){
           {(()=>{
             const isPlaying=activeSnd==="jungle_yt";
             return(
-              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:`1.5px solid ${isPlaying?"rgba(58,104,56,0.40)":"rgba(58,104,56,0.22)"}`,overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+              <div style={{background:`rgba(${isPlaying?"60,160,80":"100,180,120"},0.18)`,borderRadius:18,marginBottom:10,border:`1.5px solid rgba(58,140,70,${isPlaying?"0.5":"0.35"})`,overflow:"hidden",boxShadow:"0 2px 12px rgba(40,80,40,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#3A6838":"rgba(58,104,56,0.20)"}}/>
                 {isPlaying?(
                   <>
@@ -10368,7 +10449,7 @@ function RestSpace({setScreen}){
           {(()=>{
             const isPlaying=activeSnd==="rain_yt";
             return(
-              <div style={{background:"rgba(248,245,236,0.92)",borderRadius:18,marginBottom:10,border:`1.5px solid ${isPlaying?"rgba(60,80,120,0.40)":"rgba(60,80,120,0.22)"}`,overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.07)"}}>
+              <div style={{background:`rgba(${isPlaying?"60,100,180":"80,120,200"},0.18)`,borderRadius:18,marginBottom:10,border:`1.5px solid rgba(60,90,160,${isPlaying?"0.5":"0.35"})`,overflow:"hidden",boxShadow:"0 2px 12px rgba(40,50,100,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#3C5078":"rgba(60,80,120,0.20)"}}/>
                 {isPlaying?(
                   <>
@@ -11014,7 +11095,7 @@ export default function App() {
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen} cabinetData={cabinetData} setCabinetData={setCabinetData}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
-  if(screen==="rest") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
+  if(screen==="rest") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.1) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
   if(screen==="routine") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Routine routineData={routineData} setRoutineData={setRoutineData} setScreen={setScreen}/><NavBar current="routine" setScreen={setScreen}/></div></>);
   // Individual tool shortcuts
   if(screen==="calc") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"rgba(248,245,236,0.92)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🧮 Calculator</div></div><div style={{padding:"16px 14px"}}><Calculator/></div><NavBar current="calc" setScreen={setScreen}/></div></>);
@@ -11104,7 +11185,7 @@ export default function App() {
         {TESTING_MODE&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.22)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
         <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\n📱 Android: tap ⋮ → Add to Home Screen\n🍎 iPhone: Share → Add to Home Screen");}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>📲 App</button>
         <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#5A7848,#3A5830)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>💎 Go Pro</button>
-        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#3A6020",cursor:"pointer"}}>⚙️ Customise Home</button>
+        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#7AAD5A,#5A8840)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,100,38,0.30)"}}>⚙️ Customise Home</button>
       </div>
 
       {/* ── HOME CUSTOMISE MODAL ── */}
