@@ -1738,7 +1738,7 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
             </div>
 
             {/* Description */}
-            <div style={{fontSize:15,color:"#2A4020",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,fontWeight:500,fontWeight:400}}>
+            <div style={{fontSize:16,color:"#1A3010",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,fontWeight:700,fontWeight:400}}>
               Create multiple mind maps — one for each project, idea, or dream. Let your thoughts branch naturally, like vines finding the light.
             </div>
 
@@ -7646,6 +7646,372 @@ function WorldTime({moduleOrder,setModuleOrder,setScreen}){
   );
 }
 
+
+// ── UNIT CONVERTER ─────────────────────────────────────────
+function UnitConverter(){
+  const [cat,setCat]=useState("length");
+  const [val,setVal]=useState("");
+  const [from,setFrom]=useState("");
+  const [to,setTo]=useState("");
+
+  const CATS={
+    length:{label:"📏 Length",units:[
+      {id:"cm",label:"cm"},
+      {id:"m",label:"m"},
+      {id:"km",label:"km"},
+      {id:"in",label:"inches"},
+      {id:"ft",label:"feet"},
+      {id:"mi",label:"miles"},
+    ],toBase:{cm:v=>v/100,m:v=>v,km:v=>v*1000,in:v=>v*0.0254,ft:v=>v*0.3048,mi:v=>v*1609.344},
+     fromBase:{cm:v=>v*100,m:v=>v,km:v=>v/1000,in:v=>v/0.0254,ft:v=>v/0.3048,mi:v=>v/1609.344}},
+    weight:{label:"⚖️ Weight",units:[
+      {id:"g",label:"grams"},
+      {id:"kg",label:"kg"},
+      {id:"lb",label:"lbs"},
+      {id:"oz",label:"oz"},
+      {id:"st",label:"stone"},
+    ],toBase:{g:v=>v/1000,kg:v=>v,lb:v=>v*0.453592,oz:v=>v*0.0283495,st:v=>v*6.35029},
+     fromBase:{g:v=>v*1000,kg:v=>v,lb:v=>v/0.453592,oz:v=>v/0.0283495,st:v=>v/6.35029}},
+    temp:{label:"🌡️ Temperature",units:[
+      {id:"c",label:"°C"},
+      {id:"f",label:"°F"},
+      {id:"k",label:"K"},
+    ],toBase:{c:v=>v,f:v=>(v-32)*5/9,k:v=>v-273.15},
+     fromBase:{c:v=>v,f:v=>v*9/5+32,k:v=>v+273.15}},
+    distance:{label:"🚗 Distance",units:[
+      {id:"km",label:"km"},
+      {id:"mi",label:"miles"},
+      {id:"m",label:"metres"},
+      {id:"ft",label:"feet"},
+      {id:"yd",label:"yards"},
+    ],toBase:{km:v=>v*1000,mi:v=>v*1609.344,m:v=>v,ft:v=>v*0.3048,yd:v=>v*0.9144},
+     fromBase:{km:v=>v/1000,mi:v=>v/1609.344,m:v=>v,ft:v=>v/0.3048,yd:v=>v/0.9144}},
+  };
+
+  const cat_=CATS[cat];
+  const units=cat_.units;
+
+  // Auto-set defaults when cat changes
+  React.useEffect(()=>{
+    setFrom(units[0].id);
+    setTo(units[1].id);
+    setVal("");
+  },[cat]);
+
+  const convert=()=>{
+    const n=parseFloat(val);
+    if(isNaN(n)||!from||!to) return "";
+    if(from===to) return n.toFixed(4).replace(/\.?0+$/,"");
+    const base=cat_.toBase[from](n);
+    const result=cat_.fromBase[to](base);
+    return result.toFixed(6).replace(/\.?0+$/,"");
+  };
+
+  const result=val?convert():"";
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+
+  return(
+    <div style={{padding:"16px"}}>
+      {/* Category tabs */}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {Object.entries(CATS).map(([key,c])=>(
+          <button key={key} onClick={()=>setCat(key)} style={{
+            background:cat===key?MULTI:"rgba(255,255,255,0.40)",
+            border:"1.5px solid rgba(180,160,140,0.35)",
+            borderRadius:20,padding:"8px 14px",fontSize:13,fontWeight:700,
+            color:"#2A1A08",cursor:"pointer",backdropFilter:"blur(8px)"
+          }}>{c.label}</button>
+        ))}
+      </div>
+      {/* Input */}
+      <div style={{background:MULTI,borderRadius:20,padding:"20px",marginBottom:12,backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#2A1A08",marginBottom:12}}>{cat_.label}</div>
+        <input
+          type="number" value={val} onChange={e=>setVal(e.target.value)}
+          placeholder="Enter value..."
+          style={{width:"100%",boxSizing:"border-box",padding:"14px 16px",borderRadius:14,border:"2px solid rgba(180,160,140,0.40)",fontSize:20,fontWeight:700,color:"#2A1A08",background:"rgba(255,255,255,0.60)",outline:"none",marginBottom:16}}/>
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <select value={from} onChange={e=>setFrom(e.target.value)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:15,fontWeight:600,color:"#2A1A08",background:"rgba(255,255,255,0.70)",outline:"none"}}>
+            {units.map(u=><option key={u.id} value={u.id}>{u.label}</option>)}
+          </select>
+          <button onClick={()=>{const t=from;setFrom(to);setTo(t);}} style={{background:"rgba(255,255,255,0.70)",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:50,width:40,height:40,fontSize:18,cursor:"pointer",flexShrink:0}}>⇄</button>
+          <select value={to} onChange={e=>setTo(e.target.value)} style={{flex:1,padding:"12px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:15,fontWeight:600,color:"#2A1A08",background:"rgba(255,255,255,0.70)",outline:"none"}}>
+            {units.map(u=><option key={u.id} value={u.id}>{u.label}</option>)}
+          </select>
+        </div>
+      </div>
+      {/* Result */}
+      {result&&(
+        <div style={{background:MULTI,borderRadius:20,padding:"20px",textAlign:"center",backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+          <div style={{fontSize:13,color:"#7A6A50",marginBottom:4}}>{val} {units.find(u=>u.id===from)?.label} =</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:36,color:"#2A1A08"}}>{result}</div>
+          <div style={{fontSize:16,color:"#5A4A30",fontWeight:600}}>{units.find(u=>u.id===to)?.label}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── QR SCANNER ─────────────────────────────────────────────
+function QRScanner(){
+  const [result,setResult]=useState("");
+  const [error,setError]=useState("");
+  const [scanning,setScanning]=useState(false);
+  const videoRef=useRef(null);
+  const streamRef=useRef(null);
+
+  const startScan=async()=>{
+    setError("");setResult("");setScanning(true);
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+      streamRef.current=stream;
+      if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play();}
+    }catch(e){
+      setError("Camera access denied. Please allow camera permission.");
+      setScanning(false);
+    }
+  };
+
+  const stopScan=()=>{
+    if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
+    setScanning(false);
+  };
+
+  // Use BarcodeDetector API if available
+  React.useEffect(()=>{
+    if(!scanning||!videoRef.current) return;
+    if(!("BarcodeDetector" in window)){setError("QR scanning not supported in this browser. Try Chrome on Android.");setScanning(false);return;}
+    const detector=new window.BarcodeDetector({formats:["qr_code"]});
+    let running=true;
+    const scan=async()=>{
+      if(!running||!videoRef.current) return;
+      try{
+        const codes=await detector.detect(videoRef.current);
+        if(codes.length>0){setResult(codes[0].rawValue);stopScan();return;}
+      }catch(e){}
+      if(running) requestAnimationFrame(scan);
+    };
+    videoRef.current.addEventListener("playing",scan,{once:true});
+    return()=>{running=false;};
+  },[scanning]);
+
+  useEffect(()=>()=>stopScan(),[]);
+
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+  return(
+    <div style={{padding:"16px"}}>
+      <div style={{background:MULTI,borderRadius:20,padding:"20px",backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#2A1A08",marginBottom:4}}>📷 QR Code Scanner</div>
+        <div style={{fontSize:13,color:"#7A6A50",marginBottom:16}}>Point your camera at a QR code</div>
+        {scanning?(
+          <div>
+            <video ref={videoRef} style={{width:"100%",borderRadius:14,maxHeight:280,background:"#000"}} playsInline muted/>
+            <button onClick={stopScan} style={{width:"100%",marginTop:12,padding:"13px",background:"rgba(192,57,43,0.85)",color:"#fff",border:"none",borderRadius:14,fontSize:15,fontWeight:700,cursor:"pointer"}}>✕ Stop Scanning</button>
+          </div>
+        ):(
+          <button onClick={startScan} style={{width:"100%",padding:"16px",background:"#2A3848",color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+            <span style={{fontSize:24}}>📷</span> Start Scanning
+          </button>
+        )}
+        {error&&<div style={{marginTop:12,padding:"12px",background:"rgba(192,57,43,0.12)",borderRadius:12,color:"#c0392b",fontSize:13,fontWeight:600}}>{error}</div>}
+        {result&&(
+          <div style={{marginTop:16,padding:"16px",background:"rgba(255,255,255,0.70)",borderRadius:14,border:"1.5px solid rgba(90,140,60,0.30)"}}>
+            <div style={{fontSize:12,color:"#7A6A50",marginBottom:4,fontWeight:600}}>✅ QR Code detected:</div>
+            <div style={{fontSize:15,color:"#1A3010",fontWeight:700,wordBreak:"break-all",marginBottom:10}}>{result}</div>
+            {result.startsWith("http")&&(
+              <button onClick={()=>window.open(result,"_blank")} style={{padding:"10px 18px",background:"#2A5878",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>🔗 Open Link</button>
+            )}
+            <button onClick={()=>navigator.clipboard?.writeText(result).then(()=>alert("Copied!"))} style={{marginLeft:8,padding:"10px 18px",background:"#5A7848",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>📋 Copy</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── QR GENERATOR ───────────────────────────────────────────
+function QRGenerator(){
+  const [text,setText]=useState("");
+  const [qr,setQr]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+
+  const generate=()=>{
+    if(!text.trim()) return;
+    setLoading(true);
+    const url="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(text.trim());
+    setQr(url);
+    setLoading(false);
+  };
+
+  return(
+    <div style={{padding:"16px"}}>
+      <div style={{background:MULTI,borderRadius:20,padding:"20px",backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#2A1A08",marginBottom:4}}>⬛ QR Generator</div>
+        <div style={{fontSize:13,color:"#7A6A50",marginBottom:16}}>Turn any text, link or message into a QR code</div>
+        <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Enter URL, text, phone number..."
+          style={{width:"100%",boxSizing:"border-box",padding:"14px",borderRadius:14,border:"2px solid rgba(180,160,140,0.40)",fontSize:15,color:"#2A1A08",background:"rgba(255,255,255,0.60)",outline:"none",resize:"none",minHeight:90,fontFamily:"inherit",marginBottom:12}}/>
+        <button onClick={generate} disabled={!text.trim()}
+          style={{width:"100%",padding:"14px",background:text.trim()?"#2A3848":"rgba(90,80,60,0.20)",color:text.trim()?"#fff":"#8A8070",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:text.trim()?"pointer":"default",marginBottom:16}}>
+          ⬛ Generate QR Code
+        </button>
+        {qr&&(
+          <div style={{textAlign:"center"}}>
+            <img src={qr} alt="QR Code" style={{width:200,height:200,borderRadius:14,border:"4px solid rgba(180,160,140,0.35)",boxShadow:"0 4px 20px rgba(0,0,0,0.12)"}}/>
+            <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+              <a href={qr} download="thinko-qr.png" style={{padding:"10px 18px",background:"#5A7848",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6}}>⬇️ Download</a>
+              <button onClick={()=>window.open(qr,"_blank")} style={{padding:"10px 18px",background:"#2A5878",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>🔍 Full Size</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── DECISION MAKER ─────────────────────────────────────────
+function DecisionMaker(){
+  const [options,setOptions]=useState(["Option 1","Option 2","Option 3"]);
+  const [newOpt,setNewOpt]=useState("");
+  const [spinning,setSpinning]=useState(false);
+  const [angle,setAngle]=useState(0);
+  const [winner,setWinner]=useState(null);
+  const [mode,setMode]=useState("wheel"); // wheel | flip
+  const [flipResult,setFlipResult]=useState(null);
+  const [flipping,setFlipping]=useState(false);
+  const canvasRef=useRef(null);
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+  const COLOURS=["#E07060","#60A878","#6080C0","#C09040","#9060C0","#40A0A0","#C06080","#80A040"];
+
+  // Draw wheel
+  React.useEffect(()=>{
+    const canvas=canvasRef.current;
+    if(!canvas||options.length<2) return;
+    const ctx=canvas.getContext("2d");
+    const cx=canvas.width/2,cy=canvas.height/2,r=cx-8;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const slice=(2*Math.PI)/options.length;
+    options.forEach((opt,i)=>{
+      const start=angle*Math.PI/180+i*slice;
+      const end=start+slice;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+      ctx.fillStyle=COLOURS[i%COLOURS.length];ctx.fill();
+      ctx.strokeStyle="rgba(255,255,255,0.8)";ctx.lineWidth=2;ctx.stroke();
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(start+slice/2);
+      ctx.textAlign="right";ctx.fillStyle="#fff";ctx.font="bold 13px Georgia";
+      const label=opt.length>12?opt.slice(0,11)+"…":opt;
+      ctx.fillText(label,r-10,5);ctx.restore();
+    });
+    // Centre circle
+    ctx.beginPath();ctx.arc(cx,cy,18,0,2*Math.PI);
+    ctx.fillStyle="#fff";ctx.fill();
+    ctx.strokeStyle="rgba(90,80,60,0.3)";ctx.lineWidth=2;ctx.stroke();
+  },[angle,options]);
+
+  const spin=()=>{
+    if(spinning||options.length<2) return;
+    setWinner(null);setSpinning(true);
+    const extraSpins=360*5+Math.random()*360;
+    const duration=3500;
+    const start=performance.now();
+    const startAngle=angle;
+    const easeOut=t=>1-Math.pow(1-t,4);
+    const animate=(now)=>{
+      const t=Math.min((now-start)/duration,1);
+      const cur=startAngle+extraSpins*easeOut(t);
+      setAngle(cur%360);
+      if(t<1){requestAnimationFrame(animate);}
+      else{
+        const finalAngle=cur%360;
+        const slice=360/options.length;
+        const idx=Math.floor(((360-finalAngle%360)%360)/slice)%options.length;
+        setWinner(options[idx]);setSpinning(false);
+      }
+    };
+    requestAnimationFrame(animate);
+  };
+
+  const doFlip=()=>{
+    if(flipping||options.length<2) return;
+    setFlipping(true);setFlipResult(null);
+    setTimeout(()=>{
+      setFlipResult(options[Math.floor(Math.random()*options.length)]);
+      setFlipping(false);
+    },800);
+  };
+
+  return(
+    <div style={{padding:"16px",paddingBottom:90}}>
+      {/* Mode toggle */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {["wheel","flip"].map(m=>(
+          <button key={m} onClick={()=>{setMode(m);setWinner(null);setFlipResult(null);}} style={{
+            flex:1,padding:"10px",background:mode===m?MULTI:"rgba(255,255,255,0.40)",
+            border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:20,fontSize:14,fontWeight:700,
+            color:"#2A1A08",cursor:"pointer",backdropFilter:"blur(8px)"
+          }}>{m==="wheel"?"🎡 Spin Wheel":"🎲 Random Pick"}</button>
+        ))}
+      </div>
+
+      {/* Options */}
+      <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:16,backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#2A1A08",marginBottom:10}}>Your Options</div>
+        {options.map((o,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <div style={{width:14,height:14,borderRadius:"50%",background:COLOURS[i%COLOURS.length],flexShrink:0}}/>
+            <input value={o} onChange={e=>{const a=[...options];a[i]=e.target.value;setOptions(a);}}
+              style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:14,color:"#2A1A08",background:"rgba(255,255,255,0.60)",outline:"none"}}/>
+            {options.length>2&&<button onClick={()=>setOptions(options.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"rgba(192,57,43,0.6)",fontSize:18,cursor:"pointer",flexShrink:0}}>✕</button>}
+          </div>
+        ))}
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <input value={newOpt} onChange={e=>setNewOpt(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&newOpt.trim()){setOptions([...options,newOpt.trim()]);setNewOpt("");}}}
+            placeholder="Add option..."
+            style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:14,color:"#2A1A08",background:"rgba(255,255,255,0.60)",outline:"none"}}/>
+          <button onClick={()=>{if(newOpt.trim()){setOptions([...options,newOpt.trim()]);setNewOpt("");}}}
+            style={{padding:"8px 16px",background:"#5A7848",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>+</button>
+        </div>
+      </div>
+
+      {mode==="wheel"?(
+        <div style={{textAlign:"center"}}>
+          <div style={{position:"relative",display:"inline-block",marginBottom:12}}>
+            <canvas ref={canvasRef} width={280} height={280} style={{borderRadius:"50%",boxShadow:"0 8px 32px rgba(0,0,0,0.18)"}}/>
+            {/* Pointer */}
+            <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",fontSize:28,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.3))"}}>▼</div>
+          </div>
+          <br/>
+          <button onClick={spin} disabled={spinning||options.length<2}
+            style={{padding:"16px 40px",background:spinning?"rgba(90,80,60,0.30)":"linear-gradient(135deg,#E07060,#C05040)",color:"#fff",border:"none",borderRadius:100,fontSize:18,fontWeight:800,cursor:spinning?"default":"pointer",boxShadow:"0 4px 20px rgba(192,80,64,0.35)",letterSpacing:0.5}}>
+            {spinning?"Spinning...":"🎡 SPIN!"}
+          </button>
+          {winner&&(
+            <div style={{marginTop:16,background:MULTI,borderRadius:20,padding:"20px",backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+              <div style={{fontSize:13,color:"#7A6A50",marginBottom:4,fontWeight:600}}>🎉 The wheel chose...</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:28,color:"#2A1A08"}}>{winner}</div>
+            </div>
+          )}
+        </div>
+      ):(
+        <div style={{textAlign:"center"}}>
+          <button onClick={doFlip} disabled={flipping||options.length<2}
+            style={{padding:"20px 40px",background:flipping?"rgba(90,80,60,0.30)":"linear-gradient(135deg,#6080C0,#4060A0)",color:"#fff",border:"none",borderRadius:100,fontSize:18,fontWeight:800,cursor:flipping?"default":"pointer",boxShadow:"0 4px 20px rgba(64,96,160,0.35)",marginBottom:16,letterSpacing:0.5}}>
+            {flipping?"Thinking...":"🎲 Pick For Me!"}
+          </button>
+          {flipResult&&(
+            <div style={{background:MULTI,borderRadius:20,padding:"24px",backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+              <div style={{fontSize:13,color:"#7A6A50",marginBottom:4,fontWeight:600}}>🎯 The decision is...</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:32,color:"#2A1A08",marginBottom:8}}>{flipResult}</div>
+              <button onClick={doFlip} style={{padding:"8px 20px",background:"rgba(90,80,60,0.12)",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:20,fontSize:13,fontWeight:600,color:"#5A4A30",cursor:"pointer"}}>Try again</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}) {
   const [active, setActive] = useState(null);
   const [toolOrder, setToolOrderRaw] = useState(()=>{
@@ -7679,6 +8045,9 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
     {id:"translate",emoji:"🌍", label:"Translator",         color:"#3A6848"},
     {id:"currency", emoji:"💱", label:"Currency\nConverter",color:"#486050"},
     {id:"worldtime",emoji:"🌐", label:"World Time",         color:"#2A5878"},
+    {id:"units",    emoji:"📏", label:"Unit Converter",     color:"#6A4878"},
+    {id:"qr",       emoji:"📷", label:"QR Scanner",         color:"#384858"},
+    {id:"qrgen",    emoji:"⬛", label:"QR Generator",       color:"#2A3848"},
   ];
   const orderedTools = toolOrder ? toolOrder.map(id=>TOOL_GRID.find(t=>t.id===id)).filter(Boolean).concat(TOOL_GRID.filter(t=>!toolOrder.includes(t.id))) : TOOL_GRID;
 
@@ -7703,6 +8072,9 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
           {active==="timer"    &&<CountdownTool/>}
           {active==="alarm"    &&<AlarmTool/>}
           {active==="worldtime"&&<WorldTime moduleOrder={moduleOrder} setModuleOrder={setModuleOrder} setScreen={setScreen}/>}
+          {active==="units"&&<UnitConverter/>}
+          {active==="qr"&&<QRScanner/>}
+          {active==="qrgen"&&<QRGenerator/>}
         </div>
       </div>
     );
@@ -11180,7 +11552,7 @@ export default function App() {
   const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}};
 
   if(showOnboarding) return <Onboarding onComplete={()=>{localStorage.setItem('thinko_onboarded','1');setShowOnboarding(false);}}/>;
-  if(screen==="prioritizer") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
+  if(screen==="prioritizer") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
   if((screen==="notes"||screen==="noteshub"||screen==="filing")&&!vaultUnlocked)
     return <VaultPinLock onUnlock={()=>setVaultUnlocked(true)}/>;
@@ -11192,7 +11564,8 @@ export default function App() {
   if(screen==="charge") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen} cabinetData={cabinetData} setCabinetData={setCabinetData}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
-  if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
+  if(screen==="decision") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(180,160,140,0.35)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2A1A08" strokeWidth="2.2" strokeLinecap="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#2A1A08",flex:1}}>🎲 Decision Maker</div></div><DecisionMaker/><NavBar current="decision" setScreen={setScreen}/></div></>);
+if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
   if(screen==="rest") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.1) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
   if(screen==="routine") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Routine routineData={routineData} setRoutineData={setRoutineData} setScreen={setScreen}/><NavBar current="routine" setScreen={setScreen}/></div></>);
   // Individual tool shortcuts
