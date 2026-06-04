@@ -1733,12 +1733,12 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
             </svg>
 
             {/* Headline */}
-            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#ffffff",textAlign:"center",marginBottom:10,letterSpacing:-0.4,lineHeight:1.25,textShadow:"0 2px 8px rgba(0,0,0,0.4)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:"#1A3010",textAlign:"center",marginBottom:10,letterSpacing:-0.4,lineHeight:1.25,textShadow:"0 1px 3px rgba(255,255,255,0.6)"}}>
               Think visually, think freely
             </div>
 
             {/* Description */}
-            <div style={{fontSize:15,color:"rgba(255,255,255,0.88)",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,textShadow:"0 1px 4px rgba(0,0,0,0.3)",fontWeight:400}}>
+            <div style={{fontSize:15,color:"#2A4020",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,fontWeight:500,fontWeight:400}}>
               Create multiple mind maps — one for each project, idea, or dream. Let your thoughts branch naturally, like vines finding the light.
             </div>
 
@@ -2328,7 +2328,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
             {/* ── Branch nodes — sage rounded pills ── */}
             {nodes.filter(n=>n.parent!==null).map(n=>{
               const isSel=n.id===selected;
-              const W=n.text.length>12?140:116, H=38;
+              const W=n.text.length>16?180:n.text.length>10?150:120, H=44;
               const hasIcon=n.icon;
               return(
                 <g key={n.id} style={{cursor:"pointer"}}
@@ -2339,7 +2339,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
                   <rect x={n.x-W/2+1} y={n.y-H/2+2} width={W} height={H} rx={H/2} fill="rgba(0,0,0,0.12)" filter="url(#nodeSh)"/>
                   {/* Pill */}
                   <rect x={n.x-W/2} y={n.y-H/2} width={W} height={H} rx={H/2}
-                    fill={isSel?"url(#nodeGrad)":"rgba(248,245,236,0.88)"}
+                    fill={"url(#nodeGrad)"}
                     stroke={isSel?"rgba(255,255,255,0.7)":"rgba(90,120,72,0.35)"}
                     strokeWidth={1.5}/>
                   {/* Icon circle if node has icon */}
@@ -2356,9 +2356,9 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
                   <text
                     x={hasIcon?n.x+10:n.x} y={n.y}
                     textAnchor="middle" dominantBaseline="middle"
-                    fill={isSel?"white":"#1A2E10"} fontSize={12} fontWeight={600}
+                    fill={isSel?"white":"#1A2E10"} fontSize={15} fontWeight={700}
                     style={{pointerEvents:"none",userSelect:"none"}}>
-                    {n.text.length>14?n.text.slice(0,13)+"…":n.text}
+                    {n.text}
                   </text>
                   {/* Link icon if has url */}
                   {n.url&&(
@@ -2851,7 +2851,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
               style={{display:"flex",alignItems:"center",gap:12,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 4px 20px rgba(90,80,60,0.12)",border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",cursor:"pointer",transition:"transform 0.15s"}}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-              <div style={{width:42,height:42,borderRadius:10,background:`linear-gradient(135deg,${drawer.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>📂</div>
+              <div style={{width:42,height:42,borderRadius:10,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>📂</div>
               <div style={{flex:1}}>
                 <div style={{fontWeight:700,fontSize:15,color:C.txt}}>{s.name}</div>
                 <div style={{fontSize:12,color:C.soft,marginTop:2}}>{totalFiles} file{totalFiles!==1?"s":""}</div>
@@ -3012,7 +3012,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
                   <div style={{position:"relative",marginBottom:4}}>
                     {/* Drawer body */}
                     <div onClick={()=>setActiveDrawerId(d.id)}
-                      style={{background:`linear-gradient(135deg,${d.color},${d.color})`,borderRadius:8,padding:"0",cursor:"pointer",border:`2px solid ${d.color}`,boxShadow:`inset 0 2px 4px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.3)`,overflow:"hidden",transition:"transform 0.15s"}}
+                      style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:8,padding:"0",cursor:"pointer",border:`2px solid ${d.color}`,boxShadow:`inset 0 2px 4px rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.3)`,overflow:"hidden",transition:"transform 0.15s"}}
                       onMouseEnter={e=>e.currentTarget.style.transform="translateX(3px)"}
                       onMouseLeave={e=>e.currentTarget.style.transform="translateX(0)"}>
                       {/* Drawer face */}
@@ -3021,12 +3021,12 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
                         <div style={{width:36,height:14,background:"rgba(255,255,255,0.3)",borderRadius:7,border:"1px solid rgba(255,255,255,0.4)",flexShrink:0,boxShadow:"inset 0 1px 2px rgba(0,0,0,0.2)"}}/>
                         <span style={{fontSize:20,flexShrink:0}}>{d.icon}</span>
                         <div style={{flex:1}}>
-                          <div style={{color:"#fff",fontWeight:900,fontSize:15,textShadow:"0 1px 2px rgba(0,0,0,0.4)"}}>{d.name}</div>
-                          <div style={{color:"rgba(255,255,255,0.7)",fontSize:11,marginTop:1}}>
+                          <div style={{color:"#2A1A08",fontWeight:900,fontSize:15}}>{d.name}</div>
+                          <div style={{color:"rgba(42,26,8,0.65)",fontSize:11,marginTop:1}}>
                             {d.subCats.length} folder{d.subCats.length!==1?"s":""} · {totalFiles} file{totalFiles!==1?"s":""}
                           </div>
                         </div>
-                        <div style={{color:"rgba(255,255,255,0.6)",fontSize:18}}>›</div>
+                        <div style={{color:"rgba(42,26,8,0.50)",fontSize:18}}>›</div>
                       </div>
                       {/* Bottom shadow line */}
                       <div style={{height:3,background:"rgba(0,0,0,0.25)"}}/>
@@ -3888,23 +3888,23 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2A1A08" strokeWidth="2.2" strokeLinecap="round"/></svg>
         </button>
         <div style={{fontSize:44,marginBottom:8}}>📚</div>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#fff",marginBottom:4,letterSpacing:-0.5}}>The Vault</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.60)",fontStyle:"italic",marginBottom:16}}>"A place for every thought, document and idea"</div>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#2A1A08",marginBottom:4,letterSpacing:-0.5}}>The Vault</div>
+        <div style={{fontSize:13,color:"#5A4A30",fontStyle:"italic",marginBottom:16}}>"A place for every thought, document and idea"</div>
         {/* Stats row */}
         <div style={{display:"flex",justifyContent:"center",gap:20}}>
           <div style={{textAlign:"center"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{totalPages}</div>
-            <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.8}}>Pages</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#2A1A08"}}>{totalPages}</div>
+            <div style={{fontSize:10,color:"#7A6A50",textTransform:"uppercase",letterSpacing:0.8}}>Pages</div>
           </div>
-          <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
+          <div style={{width:1,background:"rgba(42,26,8,0.15)"}}/>
           <div style={{textAlign:"center"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{data.length}</div>
-            <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.8}}>Sections</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#2A1A08"}}>{data.length}</div>
+            <div style={{fontSize:10,color:"#7A6A50",textTransform:"uppercase",letterSpacing:0.8}}>Sections</div>
           </div>
-          <div style={{width:1,background:"rgba(255,255,255,0.15)"}}/>
+          <div style={{width:1,background:"rgba(42,26,8,0.15)"}}/>
           <div style={{textAlign:"center"}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff"}}>{(ideasData||[]).length}</div>
-            <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",letterSpacing:0.8}}>Ideas</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#2A1A08"}}>{(ideasData||[]).length}</div>
+            <div style={{fontSize:10,color:"#7A6A50",textTransform:"uppercase",letterSpacing:0.8}}>Ideas</div>
           </div>
         </div>
       </div>
@@ -3926,12 +3926,12 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
                 if(m.id==="studio")setNotesMode("ideas");
                 else setNotesMode(m.id);
               }}
-              style={{background:`${m.grad}12`,border:`1.5px solid ${m.grad}28`,borderRadius:24,padding:"20px 16px",cursor:"pointer",boxShadow:"0 3px 14px rgba(60,70,40,0.07)",transition:"all 0.15s",transform:dragVault===m.id?"scale(1.04)":"scale(1)",position:"relative",overflow:"hidden"}}>
+              style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:24,padding:"20px 16px",cursor:"pointer",boxShadow:"0 4px 20px rgba(90,80,60,0.12)",backdropFilter:"blur(8px)",transition:"all 0.15s",transform:dragVault===m.id?"scale(1.04)":"scale(1)",position:"relative",overflow:"hidden"}}>
               {/* Colour top strip */}
               <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:`linear-gradient(90deg,${m.grad},${m.grad}80)`}}/>
               <div style={{fontSize:34,marginBottom:10,marginTop:2}}>{m.icon}</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:3}}>{m.name}</div>
-              <div style={{fontSize:11,color:"#8A8070",lineHeight:1.5,marginBottom:10}}>{m.desc}</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:17,color:"#2A1A08",marginBottom:3}}>{m.name}</div>
+              <div style={{fontSize:12,color:"#5A4A30",lineHeight:1.5,marginBottom:10,fontWeight:500}}>{m.desc}</div>
               <div style={{display:"inline-flex",alignItems:"center",background:`${m.grad}18`,color:m.grad,fontSize:11,fontWeight:700,borderRadius:100,padding:"4px 12px",border:`1px solid ${m.grad}28`}}>{m.count}</div>
               {/* Pin buttons for Notes and Filing */}
               {(m.id==="notes"||m.id==="filing")&&(()=>{
@@ -11189,7 +11189,7 @@ export default function App() {
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
   if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
-  if(screen==="charge") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
+  if(screen==="charge") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen} cabinetData={cabinetData} setCabinetData={setCabinetData}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
