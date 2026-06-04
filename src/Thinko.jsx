@@ -6402,6 +6402,18 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
           <button onClick={addItem} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 10px rgba(58,80,38,0.3)"}}>+</button>
         </div>
 
+        {/* Share row */}
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          <button onClick={()=>{
+            const txt="🛒 "+list.name+"\n\n"+list.items.filter(i=>!i.done).map(i=>"☐ "+i.text).join("\n")+(list.items.filter(i=>i.done).length?"\n\n✅ Got:\n"+list.items.filter(i=>i.done).map(i=>"✓ "+i.text).join("\n"):"")+("\n\nFrom Thinko 🌿");
+            window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");
+          }} style={{flex:1,background:"#25D366",color:"#fff",border:"none",borderRadius:14,padding:"12px 8px",fontSize:14,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>💬 WhatsApp</button>
+          <button onClick={()=>{
+            const txt="🛒 "+list.name+"\n\n"+list.items.filter(i=>!i.done).map(i=>"☐ "+i.text).join("\n")+(list.items.filter(i=>i.done).length?"\n\n✅ Got:\n"+list.items.filter(i=>i.done).map(i=>"✓ "+i.text).join("\n"):"")+("\n\nFrom Thinko 🌿");
+            window.open("sms:?body="+encodeURIComponent(txt),"_blank");
+          }} style={{flex:1,background:"#3A6028",color:"#fff",border:"none",borderRadius:14,padding:"12px 8px",fontSize:14,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>📱 Text</button>
+        </div>
+
         {list.items.length===0&&(
           <div style={{textAlign:"center",color:"#8A8070",padding:"30px 0",fontSize:14}}>No items yet — add one above</div>
         )}
