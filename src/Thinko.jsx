@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+
 // Thinko v2.5 — Top3 To Do List · MindMap Goals · SendToDropdown · Ideas fix
 
 /* ═══════════════════════════════════════════════════════
@@ -51,514 +52,19 @@ const btnGrad     = `linear-gradient(135deg,#3D5A2A,#6A9058)`;
 const cardGlass   = "rgba(252,248,238,0.75)";
 
 /* ── GARDEN VINE BACKGROUND ── */
-const GardenBg=()=>(
+/* ── GARDEN BACKGROUND ── */
+const GardenBg = () => (
   <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
-    <svg width="100%" height="100%" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        {/* ── WALL ── */}
-        <radialGradient id="wall" cx="48%" cy="35%" r="68%">
-          <stop offset="0%" stopColor="#FAF8EE"/>
-          <stop offset="40%" stopColor="#F3ECDB"/>
-          <stop offset="100%" stopColor="#E8DFCA"/>
-        </radialGradient>
-        <radialGradient id="sunL" cx="90%" cy="4%" r="42%">
-          <stop offset="0%" stopColor="rgba(235,212,148,0.50)"/>
-          <stop offset="60%" stopColor="rgba(235,212,148,0.12)"/>
-          <stop offset="100%" stopColor="transparent"/>
-        </radialGradient>
-        <radialGradient id="sunR" cx="10%" cy="58%" r="35%">
-          <stop offset="0%" stopColor="rgba(180,210,150,0.13)"/>
-          <stop offset="100%" stopColor="transparent"/>
-        </radialGradient>
-        <radialGradient id="vig" cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="transparent"/>
-          <stop offset="100%" stopColor="rgba(28,38,14,0.18)"/>
-        </radialGradient>
-        {/* ── LEAF FILLS — photographic layered gradients ── */}
-        {/* Each leaf uses 3 gradients: base colour, light-face, dark-underside */}
-        <radialGradient id="lf1" cx="35%" cy="28%" r="65%">
-          <stop offset="0%" stopColor="#C8E882"/>
-          <stop offset="40%" stopColor="#96C84A"/>
-          <stop offset="75%" stopColor="#6EA028"/>
-          <stop offset="100%" stopColor="#4A7818"/>
-        </radialGradient>
-        <radialGradient id="lf2" cx="30%" cy="25%" r="70%">
-          <stop offset="0%" stopColor="#BADE7A"/>
-          <stop offset="45%" stopColor="#88B840"/>
-          <stop offset="80%" stopColor="#629220"/>
-          <stop offset="100%" stopColor="#407010"/>
-        </radialGradient>
-        <radialGradient id="lf3" cx="40%" cy="30%" r="60%">
-          <stop offset="0%" stopColor="#D2EE98"/>
-          <stop offset="35%" stopColor="#A0D05A"/>
-          <stop offset="70%" stopColor="#78AA30"/>
-          <stop offset="100%" stopColor="#528220"/>
-        </radialGradient>
-        <radialGradient id="lf4" cx="32%" cy="22%" r="72%">
-          <stop offset="0%" stopColor="#C0E070"/>
-          <stop offset="40%" stopColor="#8ABE42"/>
-          <stop offset="78%" stopColor="#649A22"/>
-          <stop offset="100%" stopColor="#447A14"/>
-        </radialGradient>
-        <radialGradient id="lf5" cx="38%" cy="32%" r="62%">
-          <stop offset="0%" stopColor="#CAEA8A"/>
-          <stop offset="42%" stopColor="#94CA4E"/>
-          <stop offset="76%" stopColor="#6CA42C"/>
-          <stop offset="100%" stopColor="#4A801C"/>
-        </radialGradient>
-        <radialGradient id="lf6" cx="28%" cy="20%" r="74%">
-          <stop offset="0%" stopColor="#B8D868"/>
-          <stop offset="45%" stopColor="#84B438"/>
-          <stop offset="80%" stopColor="#5E9018"/>
-          <stop offset="100%" stopColor="#3E6E0A"/>
-        </radialGradient>
-        <radialGradient id="lf7" cx="42%" cy="35%" r="58%">
-          <stop offset="0%" stopColor="#D6F0A0"/>
-          <stop offset="38%" stopColor="#A4D462"/>
-          <stop offset="72%" stopColor="#7CAE38"/>
-          <stop offset="100%" stopColor="#568828"/>
-        </radialGradient>
-        <radialGradient id="lf8" cx="33%" cy="27%" r="68%">
-          <stop offset="0%" stopColor="#C4DE78"/>
-          <stop offset="42%" stopColor="#90BC44"/>
-          <stop offset="76%" stopColor="#6A9824"/>
-          <stop offset="100%" stopColor="#487616"/>
-        </radialGradient>
-        {/* Surface highlight — soft white glow for 3D roundness */}
-        <radialGradient id="hl" cx="30%" cy="22%" r="52%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.38)"/>
-          <stop offset="50%" stopColor="rgba(255,255,255,0.10)"/>
-          <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
-        </radialGradient>
-        <radialGradient id="hl2" cx="28%" cy="20%" r="48%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.30)"/>
-          <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
-        </radialGradient>
-        {/* Midrib shadow — subtle darker strip down the centre */}
-        <linearGradient id="mr" x1="45%" y1="0%" x2="55%" y2="100%">
-          <stop offset="0%" stopColor="rgba(30,55,10,0)"/>
-          <stop offset="20%" stopColor="rgba(30,55,10,0.09)"/>
-          <stop offset="50%" stopColor="rgba(30,55,10,0.13)"/>
-          <stop offset="80%" stopColor="rgba(30,55,10,0.09)"/>
-          <stop offset="100%" stopColor="rgba(30,55,10,0)"/>
-        </linearGradient>
-        {/* Edge darkening for leaf depth */}
-        <radialGradient id="ed" cx="50%" cy="50%" r="50%">
-          <stop offset="55%" stopColor="rgba(0,0,0,0)"/>
-          <stop offset="100%" stopColor="rgba(20,40,8,0.22)"/>
-        </radialGradient>
-        {/* Stem gradients — woody bark */}
-        <linearGradient id="stL" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#5A4416"/>
-          <stop offset="25%" stopColor="#7A6030"/>
-          <stop offset="52%" stopColor="#8C7240"/>
-          <stop offset="78%" stopColor="#6C5420"/>
-          <stop offset="100%" stopColor="#503E12"/>
-        </linearGradient>
-        <linearGradient id="stR" x1="100%" y1="0%" x2="0%" y2="0%">
-          <stop offset="0%" stopColor="#5A4416"/>
-          <stop offset="25%" stopColor="#7A6030"/>
-          <stop offset="52%" stopColor="#8C7240"/>
-          <stop offset="78%" stopColor="#6C5420"/>
-          <stop offset="100%" stopColor="#503E12"/>
-        </linearGradient>
-        <linearGradient id="stH" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#684E1C"/>
-          <stop offset="50%" stopColor="#7E6632"/>
-          <stop offset="100%" stopColor="#5C4818"/>
-        </linearGradient>
-        {/* Photographic leaf shadow — large soft */}
-        <filter id="ls" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="6"/>
-          <feOffset dx="2" dy="5"/>
-          <feComposite in2="SourceGraphic"/>
-          <feColorMatrix type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.12  0 0 0 0 0.02  0 0 0 0.30 0"/>
-        </filter>
-        <filter id="ls2" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-          <feOffset dx="1.5" dy="3.5"/>
-          <feComposite in2="SourceGraphic"/>
-          <feColorMatrix type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.12  0 0 0 0 0.02  0 0 0 0.20 0"/>
-        </filter>
-        {/* Stem shadow */}
-        <filter id="ss" x="-20%" y="-5%" width="140%" height="110%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-          <feOffset dx="2" dy="0"/>
-          <feComposite in2="SourceGraphic"/>
-          <feColorMatrix type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.10  0 0 0 0 0.02  0 0 0 0.25 0"/>
-        </filter>
-        {/* Subtle surface noise for photographic texture */}
-        <filter id="tex">
-          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
-          <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
-          <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blend"/>
-          <feComposite in="blend" in2="SourceGraphic" operator="in"/>
-        </filter>
-        <clipPath id="lc1"><ellipse cx="0" cy="0" rx="38" ry="52"/></clipPath>
-      </defs>
-
-      {/* Wall + lighting */}
-      <rect width="390" height="844" fill="url(#wall)"/>
-      <rect width="390" height="844" fill="url(#sunL)"/>
-      <rect width="390" height="844" fill="url(#sunR)"/>
-
-      {/* ═══════════════════════════════════════════
-          STEMS — thick woody, bark texture
-      ═══════════════════════════════════════════ */}
-      {/* Left main stems */}
-      <path d="M-8 844 Q10 755 0 662 Q-10 572 12 486 Q30 408 8 322 Q-10 244 16 158 Q34 90 12 22" stroke="url(#stL)" strokeWidth="8" fill="none" filter="url(#ss)" strokeLinecap="round"/>
-      <path d="M16 844 Q32 758 22 672 Q12 588 32 504 Q50 428 30 342 Q12 264 36 180 Q52 114 32 48" stroke="url(#stL)" strokeWidth="4.5" fill="none" opacity="0.70" strokeLinecap="round"/>
-      {/* Right main stems */}
-      <path d="M398 844 Q380 755 390 662 Q400 572 378 486 Q360 408 382 322 Q400 244 374 158 Q356 90 378 22" stroke="url(#stR)" strokeWidth="8" fill="none" filter="url(#ss)" strokeLinecap="round"/>
-      <path d="M374 844 Q358 758 368 672 Q378 588 358 504 Q340 428 360 342 Q378 264 354 180 Q338 114 358 48" stroke="url(#stR)" strokeWidth="4.5" fill="none" opacity="0.70" strokeLinecap="round"/>
-      {/* Top canopy stems */}
-      <path d="M-15 -4 Q58 20 132 9 Q198 0 265 16 Q324 30 398 12" stroke="url(#stH)" strokeWidth="5" fill="none" filter="url(#ss)" strokeLinecap="round"/>
-      <path d="M-10 9 Q58 32 130 21 Q195 11 260 28 Q320 42 392 24" stroke="url(#stH)" strokeWidth="2.8" fill="none" opacity="0.60" strokeLinecap="round"/>
-      <path d="M65 8 Q56 52 68 94 Q76 128 60 164" stroke="url(#stH)" strokeWidth="2.4" fill="none" opacity="0.55" strokeLinecap="round"/>
-      <path d="M180 3 Q170 48 182 88 Q190 122 172 157" stroke="url(#stH)" strokeWidth="2.2" fill="none" opacity="0.52" strokeLinecap="round"/>
-      <path d="M300 5 Q291 48 303 88 Q311 122 295 157" stroke="url(#stH)" strokeWidth="2.2" fill="none" opacity="0.50" strokeLinecap="round"/>
-
-      {/* ═══════════════════════════════════════════
-          LEAVES — each is 3 stacked shapes:
-          1. Base fill (radial gradient = natural colour variation)
-          2. Midrib shadow strip (subtle darker centre)
-          3. Edge darkening (depth)
-          4. Surface highlight (3D roundness)
-          NO strokes at all.
-      ═══════════════════════════════════════════ */}
-
-      {/* ── MACRO: leaf painting function ──
-          Each leaf is a <g transform> containing 4 paths.
-          Heart-shaped: notch top, pointed tip, organic lobes.
-          We use only filled shapes — zero strokes. */}
-
-      {/* ════ LEFT LEAVES ════ */}
-
-      {/* L1 */}
-      <g transform="translate(8,816) rotate(-32)" filter="url(#ls)" opacity="0.96">
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#lf1)"/>
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#mr)"/>
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#ed)"/>
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#hl)"/>
-      </g>
-      {/* L2 */}
-      <g transform="translate(-4,774) rotate(-26)" filter="url(#ls)" opacity="0.93">
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#lf2)"/>
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#mr)"/>
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#ed)"/>
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#hl2)"/>
-      </g>
-      {/* L3 */}
-      <g transform="translate(14,732) rotate(-34)" filter="url(#ls)" opacity="0.94">
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#lf3)"/>
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#mr)"/>
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#ed)"/>
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#hl)"/>
-      </g>
-      {/* L4 */}
-      <g transform="translate(10,688) rotate(-29)" filter="url(#ls)" opacity="0.92">
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#lf4)"/>
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#mr)"/>
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#ed)"/>
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#hl2)"/>
-      </g>
-      {/* L5 */}
-      <g transform="translate(16,645) rotate(-31)" filter="url(#ls2)" opacity="0.90">
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#lf5)"/>
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#mr)"/>
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#ed)"/>
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#hl)"/>
-      </g>
-      {/* L6 */}
-      <g transform="translate(-2,600) rotate(-27)" filter="url(#ls2)" opacity="0.88">
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#lf6)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#mr)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#ed)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#hl2)"/>
-      </g>
-      {/* L7 */}
-      <g transform="translate(18,557) rotate(-30)" filter="url(#ls2)" opacity="0.86">
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#lf7)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#mr)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#ed)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#hl)"/>
-      </g>
-      {/* L8 */}
-      <g transform="translate(20,510) rotate(-28)" filter="url(#ls2)" opacity="0.84">
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#lf8)"/>
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#mr)"/>
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#ed)"/>
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#hl2)"/>
-      </g>
-      {/* L9 */}
-      <g transform="translate(18,462) rotate(-32)" filter="url(#ls2)" opacity="0.82">
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#lf1)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#mr)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#ed)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#hl)"/>
-      </g>
-      {/* L10 */}
-      <g transform="translate(20,415) rotate(-29)" filter="url(#ls2)" opacity="0.80">
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#lf2)"/>
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#mr)"/>
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#ed)"/>
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#hl2)"/>
-      </g>
-
-      {/* Large corner leaves — top-left cluster */}
-      {/* CL1 — biggest */}
-      <g transform="translate(4,148) rotate(-44)" filter="url(#ls)" opacity="0.97">
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#lf3)"/>
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#mr)"/>
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#ed)"/>
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#hl)"/>
-      </g>
-      {/* CL2 */}
-      <g transform="translate(20,104) rotate(-48)" filter="url(#ls)" opacity="0.98">
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#lf1)"/>
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#mr)"/>
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#ed)"/>
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#hl2)"/>
-      </g>
-      {/* CL3 */}
-      <g transform="translate(-2,62) rotate(-46)" filter="url(#ls)" opacity="0.99">
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#lf4)"/>
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#mr)"/>
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#ed)"/>
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#hl)"/>
-      </g>
-      {/* CL4 */}
-      <g transform="translate(16,22) rotate(-50)" filter="url(#ls)" opacity="1.0">
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#lf5)"/>
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#mr)"/>
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#ed)"/>
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#hl2)"/>
-      </g>
-      {/* CL5 */}
-      <g transform="translate(-8,10) rotate(-42)" filter="url(#ls)" opacity="1.0">
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#lf6)"/>
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#mr)"/>
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#ed)"/>
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#hl)"/>
-      </g>
-      {/* Extra small accent leaves top-left */}
-      <g transform="translate(56,18) rotate(-34)" filter="url(#ls2)" opacity="0.90">
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#lf7)"/>
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#mr)"/>
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#ed)"/>
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(92,-2) rotate(-26)" filter="url(#ls2)" opacity="0.85">
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#lf8)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#mr)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#ed)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(40,-6) rotate(-38)" filter="url(#ls2)" opacity="0.88">
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#lf2)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#mr)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#ed)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#hl2)"/>
-      </g>
-
-      {/* ════ RIGHT LEAVES — mirror ════ */}
-      <g transform="translate(382,816) rotate(32)" filter="url(#ls)" opacity="0.96">
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#lf2)"/>
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#mr)"/>
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#ed)"/>
-        <path d="M0-52 C-8-46-36-38-38-18 C-38 4-20 22 0 28 C20 22 38 4 38-18 C38-38 8-46 0-52Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(394,774) rotate(26)" filter="url(#ls)" opacity="0.93">
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#lf3)"/>
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#mr)"/>
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#ed)"/>
-        <path d="M0-48 C-7-42-34-35-35-16 C-35 4-18 20 0 26 C18 20 35 4 35-16 C35-35 7-42 0-48Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(376,732) rotate(34)" filter="url(#ls)" opacity="0.94">
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#lf4)"/>
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#mr)"/>
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#ed)"/>
-        <path d="M0-55 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-55Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(380,688) rotate(29)" filter="url(#ls)" opacity="0.92">
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#lf5)"/>
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#mr)"/>
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#ed)"/>
-        <path d="M0-50 C-8-44-37-37-38-17 C-38 5-20 23 0 29 C20 23 38 5 38-17 C38-37 8-44 0-50Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(374,645) rotate(31)" filter="url(#ls2)" opacity="0.90">
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#lf6)"/>
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#mr)"/>
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#ed)"/>
-        <path d="M0-48 C-7-42-35-36-36-16 C-36 4-19 22 0 28 C19 22 36 4 36-16 C36-36 7-42 0-48Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(392,600) rotate(27)" filter="url(#ls2)" opacity="0.88">
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#lf7)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#mr)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#ed)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 5-18 21 0 27 C18 21 34 5 34-15 C34-34 7-40 0-46Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(372,557) rotate(30)" filter="url(#ls2)" opacity="0.86">
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#lf8)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#mr)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#ed)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(370,510) rotate(28)" filter="url(#ls2)" opacity="0.84">
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#lf1)"/>
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#mr)"/>
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#ed)"/>
-        <path d="M0-47 C-7-41-34-35-35-16 C-35 4-18 21 0 27 C18 21 35 4 35-16 C35-35 7-41 0-47Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(372,462) rotate(32)" filter="url(#ls2)" opacity="0.82">
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#lf2)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#mr)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#ed)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 21 0 27 C18 21 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(370,415) rotate(29)" filter="url(#ls2)" opacity="0.80">
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#lf3)"/>
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#mr)"/>
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#ed)"/>
-        <path d="M0-45 C-7-39-32-33-33-14 C-33 5-17 21 0 27 C17 21 33 5 33-14 C33-33 7-39 0-45Z" fill="url(#hl)"/>
-      </g>
-      {/* Top-right corner cluster */}
-      <g transform="translate(386,148) rotate(44)" filter="url(#ls)" opacity="0.97">
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#lf4)"/>
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#mr)"/>
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#ed)"/>
-        <path d="M0-68 C-12-60-50-50-52-22 C-52 8-28 32 0 40 C28 32 52 8 52-22 C52-50 12-60 0-68Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(370,104) rotate(48)" filter="url(#ls)" opacity="0.98">
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#lf5)"/>
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#mr)"/>
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#ed)"/>
-        <path d="M0-74 C-13-65-55-54-57-24 C-57 9-30 36 0 44 C30 36 57 9 57-24 C57-54 13-65 0-74Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(392,62) rotate(46)" filter="url(#ls)" opacity="0.99">
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#lf6)"/>
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#mr)"/>
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#ed)"/>
-        <path d="M0-72 C-12-63-53-52-55-23 C-55 8-29 34 0 42 C29 34 55 8 55-23 C55-52 12-63 0-72Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(374,22) rotate(50)" filter="url(#ls)" opacity="1.0">
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#lf7)"/>
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#mr)"/>
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#ed)"/>
-        <path d="M0-76 C-14-66-57-55-59-24 C-59 10-31 38 0 46 C31 38 59 10 59-24 C59-55 14-66 0-76Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(398,10) rotate(42)" filter="url(#ls)" opacity="1.0">
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#lf8)"/>
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#mr)"/>
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#ed)"/>
-        <path d="M0-70 C-12-61-52-51-54-22 C-54 8-28 33 0 41 C28 33 54 8 54-22 C54-51 12-61 0-70Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(334,18) rotate(34)" filter="url(#ls2)" opacity="0.90">
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#lf1)"/>
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#mr)"/>
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#ed)"/>
-        <path d="M0-52 C-8-46-38-38-39-17 C-39 5-20 23 0 29 C20 23 39 5 39-17 C39-38 8-46 0-52Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(298,-2) rotate(26)" filter="url(#ls2)" opacity="0.85">
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#lf2)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#mr)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#ed)"/>
-        <path d="M0-46 C-7-40-33-34-34-15 C-34 4-18 20 0 26 C18 20 34 4 34-15 C34-34 7-40 0-46Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(350,-6) rotate(38)" filter="url(#ls2)" opacity="0.88">
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#lf3)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#mr)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#ed)"/>
-        <path d="M0-50 C-8-44-36-37-37-17 C-37 5-19 23 0 29 C19 23 37 5 37-17 C37-37 8-44 0-50Z" fill="url(#hl)"/>
-      </g>
-
-      {/* ════ TOP CANOPY ════ */}
-      <g transform="translate(10,2) rotate(-165)" filter="url(#ls)" opacity="0.96">
-        <path d="M0-60 C-10-52-44-44-46-20 C-46 7-24 28 0 35 C24 28 46 7 46-20 C46-44 10-52 0-60Z" fill="url(#lf1)"/>
-        <path d="M0-60 C-10-52-44-44-46-20 C-46 7-24 28 0 35 C24 28 46 7 46-20 C46-44 10-52 0-60Z" fill="url(#mr)"/>
-        <path d="M0-60 C-10-52-44-44-46-20 C-46 7-24 28 0 35 C24 28 46 7 46-20 C46-44 10-52 0-60Z" fill="url(#ed)"/>
-        <path d="M0-60 C-10-52-44-44-46-20 C-46 7-24 28 0 35 C24 28 46 7 46-20 C46-44 10-52 0-60Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(46,-14) rotate(-168)" filter="url(#ls)" opacity="0.93">
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#lf4)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#mr)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#ed)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(30,20) rotate(-158)" filter="url(#ls)" opacity="0.94">
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#lf7)"/>
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#mr)"/>
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#ed)"/>
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(80,26) rotate(-163)" filter="url(#ls)" opacity="0.92">
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#lf2)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#mr)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#ed)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(100,-8) rotate(-170)" filter="url(#ls)" opacity="0.90">
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#lf5)"/>
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#mr)"/>
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#ed)"/>
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(152,16) rotate(-160)" filter="url(#ls)" opacity="0.91">
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#lf6)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#mr)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#ed)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(202,18) rotate(-164)" filter="url(#ls)" opacity="0.89">
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#lf3)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#mr)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#ed)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(255,14) rotate(-159)" filter="url(#ls)" opacity="0.88">
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#lf8)"/>
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#mr)"/>
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#ed)"/>
-        <path d="M0-52 C-8-46-38-39-39-17 C-39 5-20 24 0 30 C20 24 39 5 39-17 C39-39 8-46 0-52Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(310,16) rotate(-163)" filter="url(#ls)" opacity="0.89">
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#lf1)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#mr)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#ed)"/>
-        <path d="M0-54 C-9-48-40-40-41-18 C-41 6-22 26 0 32 C22 26 41 6 41-18 C41-40 9-48 0-54Z" fill="url(#hl)"/>
-      </g>
-      <g transform="translate(346,-10) rotate(-167)" filter="url(#ls)" opacity="0.91">
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#lf4)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#mr)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#ed)"/>
-        <path d="M0-56 C-9-49-42-41-43-18 C-43 6-22 26 0 33 C22 26 43 6 43-18 C43-41 9-49 0-56Z" fill="url(#hl2)"/>
-      </g>
-      <g transform="translate(380,12) rotate(-160)" filter="url(#ls)" opacity="0.92">
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#lf6)"/>
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#mr)"/>
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#ed)"/>
-        <path d="M0-58 C-10-51-43-43-44-19 C-44 7-23 27 0 34 C23 27 44 7 44-19 C44-43 10-51 0-58Z" fill="url(#hl)"/>
-      </g>
-
-      {/* ════ GROUND FOLIAGE ════ */}
-      <ellipse cx="32" cy="840" rx="72" ry="28" fill="#5EA026" opacity="0.52"/>
-      <ellipse cx="4" cy="844" rx="50" ry="22" fill="#7EC040" opacity="0.46"/>
-      <ellipse cx="84" cy="844" rx="60" ry="24" fill="#4E9018" opacity="0.48"/>
-      <ellipse cx="150" cy="844" rx="44" ry="16" fill="#76AE36" opacity="0.40"/>
-      <ellipse cx="358" cy="840" rx="72" ry="28" fill="#5EA026" opacity="0.52"/>
-      <ellipse cx="386" cy="844" rx="50" ry="22" fill="#7EC040" opacity="0.46"/>
-      <ellipse cx="306" cy="844" rx="60" ry="24" fill="#4E9018" opacity="0.48"/>
-      <ellipse cx="240" cy="844" rx="44" ry="16" fill="#76AE36" opacity="0.40"/>
-      <ellipse cx="195" cy="844" rx="36" ry="14" fill="#5EA026" opacity="0.36"/>
-
-      <rect width="390" height="844" fill="url(#vig)"/>
-    </svg>
+    <img
+      src="/garden.jpg"
+      alt=""
+      style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.08) saturate(1.05)"}}
+    />
+    <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(0,0,0,0.08) 100%)"}}/>
   </div>
 );
 
-/* ═══════════════════════════════════════════════════════
-   SHARED COMPONENTS
-═══════════════════════════════════════════════════════ */
+
 function Header({ title, onBack, right }) {
   return (
     <div style={{
@@ -1211,7 +717,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
   const active=list.tasks.filter(t=>!t.done);
   const done=list.tasks.filter(t=>t.done);
   return (
-    <div style={{minHeight:"100vh",background:"#F8F4EC",fontFamily:"'Segoe UI',sans-serif",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",position:"relative",overflow:"hidden"}}>
       <style>{`
         @keyframes taskConfettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
         @keyframes taskCelebIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
@@ -1609,7 +1115,7 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
   const pct=list.tasks.length?Math.round((done.length/list.tasks.length)*100):0;
 
   return(
-    <div style={{minHeight:"100vh",background:"#F4F7F2",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative"}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative"}}>
       <style>{`
         @keyframes lpConf{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
         @keyframes lpCIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
@@ -1883,7 +1389,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
   const LIST_EMOJIS=["🔥","🌿","💧","🌸","⭐","🌊"];
 
   return(
-    <div style={{minHeight:"100vh",background:"#F8F4EC",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90,position:"relative",overflow:"hidden"}}>
       <style>{`
         @keyframes priConf{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
         @keyframes priCIn{0%{transform:scale(0.2) rotate(-5deg);opacity:0}100%{transform:scale(1) rotate(0deg);opacity:1}}
@@ -7085,26 +6591,8 @@ function ShoppingList({data,setData,setScreen}){
         <div style={{position:"absolute",top:-80,right:-80,width:280,height:280,borderRadius:"50%",background:"rgba(90,140,72,0.18)",pointerEvents:"none"}}/>
         <div style={{position:"absolute",top:60,left:-60,width:200,height:200,borderRadius:"50%",background:"rgba(255,220,100,0.12)",pointerEvents:"none"}}/>
         <div style={{position:"absolute",bottom:120,right:-40,width:180,height:180,borderRadius:"50%",background:"rgba(90,140,72,0.14)",pointerEvents:"none"}}/>
-        {/* Vine overlay */}
-        <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden",opacity:0.35}}>
-          <svg width="100%" height="100%" viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="sg1" cx="40%" cy="35%" r="60%"><stop offset="0%" stopColor="#7AB848"/><stop offset="100%" stopColor="#2A5818"/></radialGradient>
-            </defs>
-            <path d="M-10 0 C20 80 -5 160 15 240 C35 320 10 400 25 480" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round"/>
-            <ellipse cx="28" cy="60" rx="38" ry="22" fill="url(#sg1)" transform="rotate(-30 28 60)"/>
-            <ellipse cx="35" cy="155" rx="44" ry="25" fill="url(#sg1)" transform="rotate(-20 35 155)"/>
-            <ellipse cx="22" cy="260" rx="40" ry="24" fill="url(#sg1)" transform="rotate(-35 22 260)"/>
-            <path d="M410 0 C380 80 405 160 385 240" stroke="#3A6820" strokeWidth="4" fill="none" strokeLinecap="round"/>
-            <ellipse cx="372" cy="55" rx="42" ry="24" fill="url(#sg1)" transform="rotate(28 372 55)"/>
-            <ellipse cx="365" cy="155" rx="46" ry="26" fill="url(#sg1)" transform="rotate(22 365 155)"/>
-            <ellipse cx="100" cy="8" rx="50" ry="28" fill="url(#sg1)" transform="rotate(-10 100 8)"/>
-            <ellipse cx="200" cy="0" rx="55" ry="30" fill="url(#sg1)" transform="rotate(5 200 0)"/>
-            <ellipse cx="305" cy="10" rx="48" ry="27" fill="url(#sg1)" transform="rotate(12 305 10)"/>
-          </svg>
-        </div>
 
-        {/* Header — back button only */}
+{/* Header — back button only */}
         <div style={{padding:"56px 20px 0",position:"relative",zIndex:1}}>
           <button onClick={()=>setScreen("home")}
             style={{background:"rgba(255,255,255,0.55)",border:"1.5px solid rgba(90,120,72,0.18)",backdropFilter:"blur(8px)",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
@@ -11671,6 +11159,7 @@ export default function App() {
       </div>
 
       {/* ── MODULE CARDS GRID ── */}
+      <style>{`.mod-card:active{transform:scale(0.95)!important;opacity:0.82!important;transition:transform 0.1s ease,opacity 0.1s ease!important;}`}</style>
       <div style={{padding:"0 14px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,flex:1}}>
         {orderedModules.map(m=>(
           <div key={m.id}
@@ -11683,22 +11172,27 @@ export default function App() {
             onTouchMove={homeTouchMove}
             onTouchEnd={homeTouchEnd}
             onClick={()=>setScreen(m.id)}
+            onMouseEnter={(e)=>e.currentTarget.style.transform="translateY(-10px) scale(1.04)"}
+            onMouseLeave={(e)=>e.currentTarget.style.transform="translateY(0) scale(1)"}
+            className="mod-card"
             style={{
-              background:dragHome===m.id?"rgba(255,255,255,0.96)":"rgba(250,248,240,0.82)",
-              backdropFilter:"blur(18px)",
-              WebkitBackdropFilter:"blur(18px)",
+              background: dragHome===m.id
+                ?"rgba(240,248,236,0.96)"
+                :"rgba(236,246,232,0.80)",
+              backdropFilter:"blur(20px)",
+              WebkitBackdropFilter:"blur(20px)",
               borderRadius:28,
-              border:"1.5px solid rgba(255,255,255,0.88)",
-              cursor:"pointer",
-              transition:"all 0.18s ease",
+              border:"1.5px solid rgba(255,255,255,0.75)",
               boxShadow:dragHome===m.id
-                ?"0 12px 36px rgba(60,70,40,0.18), inset 0 1px 0 rgba(255,255,255,1)"
-                :"0 3px 18px rgba(60,70,40,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+                ?"0 20px 50px rgba(0,0,0,0.18)"
+                :"0 6px 24px rgba(60,90,50,0.12)",
+              cursor:"pointer",
+              transition:"all 0.3s ease",
               transform:dragHome===m.id?"scale(1.05) rotate(-1deg)":"scale(1)",
               display:"flex",flexDirection:"column",
               alignItems:"center",justifyContent:"center",
               padding:"28px 12px 22px",
-              minHeight:140,
+              minHeight:155,
               position:"relative",
               overflow:"hidden",
             }}>
@@ -11874,3 +11368,28 @@ function NavBar({current,setScreen}) {
     </div>
   );
 }
+
+          {/* Realistic leaf overlays — add /leaf.png to your public/ folder */}
+          {[
+            {top:-20,left:-30,rot:-35,s:1.1},{top:80,left:-45,rot:-20,s:0.9},
+            {top:220,left:-40,rot:-42,s:1.0},{top:360,left:-50,rot:-25,s:1.2},
+            {top:500,left:-35,rot:-38,s:0.95},{top:640,left:-45,rot:-18,s:1.05},
+            {top:780,left:-40,rot:-30,s:1.0},
+            {top:-20,right:-30,rot:35,s:1.1},{top:80,right:-45,rot:22,s:0.9},
+            {top:220,right:-40,rot:44,s:1.0},{top:360,right:-50,rot:28,s:1.15},
+            {top:500,right:-35,rot:40,s:0.95},{top:640,right:-45,rot:20,s:1.05},
+            {top:780,right:-40,rot:32,s:1.0},
+          ].map((l,i)=>(
+            <img key={i} src="/leaf.png" alt="" onError={e=>e.target.style.display="none"}
+              style={{
+                position:"absolute",
+                top:l.top,
+                ...(l.left!==undefined?{left:l.left}:{right:l.right}),
+                width:120*l.s,
+                height:"auto",
+                transform:`rotate(${l.rot}deg)`,
+                opacity:0.88,
+                pointerEvents:"none",
+                filter:"drop-shadow(2px 4px 6px rgba(20,50,5,0.40)) brightness(1.05) saturate(1.2)",
+              }}/>
+          ))}
