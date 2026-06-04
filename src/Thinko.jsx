@@ -68,7 +68,7 @@ const GardenBg = () => (
 function Header({ title, onBack, right }) {
   return (
     <div style={{
-      background:"rgba(248,245,236,0.92)",
+      background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",
       backdropFilter:"blur(16px)",
       WebkitBackdropFilter:"blur(16px)",
       padding:"16px 20px",
@@ -621,7 +621,7 @@ function PriCompare({tasks,onDone}) {
 /* ── HomeBar — sticky top bar with 🏠 home for all modules ── */
 function HomeBar({setScreen,title,onBack}){
   return(
-    <div style={{position:"sticky",top:0,zIndex:50,background:"linear-gradient(135deg,#7AAD5A,#5A8840)",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",boxShadow:"0 2px 12px rgba(90,80,60,0.35)",flexShrink:0}}>
+    <div style={{position:"sticky",top:0,zIndex:50,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",boxShadow:"0 2px 12px rgba(90,80,60,0.35)",flexShrink:0}}>
       {onBack&&<button onClick={onBack} style={{background:"rgba(255,255,255,0.15)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.3)",borderRadius:10,width:36,height:36,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>}
       <span style={{flex:1,color:"#1A1A10",fontWeight:800,fontSize:16,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{title}</span>
       <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.18)",color:"#1A1A10",border:"1.5px solid rgba(255,255,255,0.35)",borderRadius:10,padding:"7px 13px",fontWeight:800,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
@@ -847,7 +847,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
           )}
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>{if(focusLeft===null){setFocusLeft&&setFocusLeft((focusMins||25)*60);setFocusOn&&setFocusOn(true);setFocusAlerted&&setFocusAlerted(false);}else setFocusOn&&setFocusOn(o=>!o);}}
-              style={{flex:1,padding:"10px",background:focusOn?"rgba(192,57,43,0.10)":"linear-gradient(135deg,#4A7838,#3A6028)",color:focusOn?"#c0392b":"#fff",border:`1px solid ${focusOn?"rgba(192,57,43,0.25)":"transparent"}`,borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:focusOn?"none":"0 3px 12px rgba(58,80,38,0.25)"}}>
+              style={{flex:1,padding:"10px",background:focusOn?"rgba(192,57,43,0.10)":"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:focusOn?"#c0392b":"#fff",border:`1px solid ${focusOn?"rgba(192,57,43,0.25)":"transparent"}`,borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:focusOn?"none":"0 3px 12px rgba(58,80,38,0.25)"}}>
               {focusLeft===null?"▶ Start":focusOn?"⏸ Pause":"▶ Resume"}
             </button>
             {focusLeft!==null&&<button onClick={()=>{setFocusLeft&&setFocusLeft(null);setFocusOn&&setFocusOn(false);setFocusAlerted&&setFocusAlerted(false);}} style={{flex:1,padding:"10px",background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.18)",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop</button>}
@@ -959,7 +959,7 @@ function MiniTimer(){
             onKeyDown={e=>e.key==="Enter"&&start()}
             placeholder="mins"
             style={{width:64,padding:"6px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:13,fontWeight:600,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.94)",textAlign:"center"}}/>
-          <button onClick={start} style={{padding:"7px 18px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>Start</button>
+          <button onClick={start} style={{padding:"7px 18px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>Start</button>
         </>
       ):(
         <>
@@ -1013,14 +1013,14 @@ function SimpleTimer(){
             placeholder="mins"
             style={{width:64,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,fontWeight:600,color:"#1A2810",outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",textAlign:"center"}}/>
           <button onClick={start}
-            style={{padding:"8px 20px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
+            style={{padding:"8px 20px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
             ▶ Start
           </button>
         </>
       ):(
         <>
           <div style={{fontFamily:"monospace",fontSize:24,fontWeight:700,color:left<60?"#c0392b":"#1A2810",flex:1}}>{fmt(left)}</div>
-          {!running&&left>0&&<button onClick={()=>setRunning(true)} style={{padding:"7px 14px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>▶</button>}
+          {!running&&left>0&&<button onClick={()=>setRunning(true)} style={{padding:"7px 14px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>▶</button>}
           {running&&<button onClick={()=>setRunning(false)} style={{padding:"7px 14px",background:"rgba(192,136,32,0.12)",color:"#C08820",border:"1px solid rgba(192,136,32,0.25)",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>⏸</button>}
           <button onClick={stop} style={{padding:"7px 14px",background:"rgba(192,57,43,0.10)",color:"#c0392b",border:"1px solid rgba(192,57,43,0.20)",borderRadius:100,fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
         </>
@@ -1224,7 +1224,7 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
         {active.length>=2&&(
           <button onClick={()=>setComparing(true)}
             style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"13px 20px",
-              background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",
+              background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",
               borderRadius:22,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",
               marginBottom:14,boxShadow:"0 4px 18px rgba(58,80,38,0.32)"}}>
             <span style={{fontSize:18}}>⬆</span>
@@ -1301,7 +1301,7 @@ function ListTaskRow({task,num,col,COLOURS,onComplete,onDelete,onColour}){
     <div style={{background:"rgba(240,247,238,0.82)",backdropFilter:"blur(12px)",borderRadius:18,marginBottom:8,borderLeft:"4px solid "+col.fill,border:"1.5px solid "+col.fill+"30",boxShadow:"0 2px 12px rgba(42,60,28,0.06)"}}>
       {/* Main task row */}
       <div style={{padding:"11px 12px",display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:22,height:22,borderRadius:"50%",background:num<=3?"linear-gradient(135deg,#4A7838,#3A6028)":"rgba(90,80,60,0.10)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:num<=3?"#fff":"#5A6848",flexShrink:0}}>{num}</div>
+        <div style={{width:22,height:22,borderRadius:"50%",background:num<=3?"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)":"rgba(90,80,60,0.10)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:num<=3?"#fff":"#5A6848",flexShrink:0}}>{num}</div>
         <button onClick={()=>setShowColours(s=>!s)}
           style={{width:22,height:22,borderRadius:"50%",background:col.fill,border:"2.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0,flexShrink:0,boxShadow:"0 1px 6px "+col.fill+"70"}}
           title="Change colour"/>
@@ -1493,7 +1493,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
               placeholder="List name e.g. Work, Home, Today..."
               style={{width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:15,fontWeight:600,color:"#1A2810",outline:"none",marginBottom:12,background:"rgba(242,248,240,0.98)"}}/>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={createList} style={{flex:1,padding:"12px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>✅ Create list</button>
+              <button onClick={createList} style={{flex:1,padding:"12px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>✅ Create list</button>
               <button onClick={()=>{setListName("");setTempEmoji("");setAddingList(false);}} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:14,cursor:"pointer"}}>Cancel</button>
             </div>
           </div>
@@ -1522,7 +1522,7 @@ function Prioritizer({data,setData,matrixData,setMatrixData,setScreen,focusMins,
               borderRadius:24,border:"1.5px solid rgba(90,120,72,0.18)",
               cursor:"pointer",marginBottom:showLists?10:0,
               boxShadow:"0 4px 22px rgba(42,80,28,0.10)"}}>
-            <div style={{width:40,height:40,borderRadius:14,background:"linear-gradient(135deg,#4A7838,#3A6028)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,boxShadow:"0 3px 12px rgba(58,80,38,0.35)"}}>📋</div>
+            <div style={{width:40,height:40,borderRadius:14,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0,boxShadow:"0 3px 12px rgba(58,80,38,0.35)"}}>📋</div>
             <div style={{flex:1,textAlign:"left"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A2810",lineHeight:1.2}}>My Lists</div>
               <div style={{fontSize:11,color:"rgba(42,60,28,0.50)",marginTop:1}}>
@@ -2792,7 +2792,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
         ):(
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {sub.files.map(f=>(
-              <div key={f.id} style={{background:"rgba(255,255,255,0.92)",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",border:`1.5px solid ${C.ll}`}}>
+              <div key={f.id} style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:14,overflow:"hidden",boxShadow:"0 4px 16px rgba(0,0,0,0.10)",backdropFilter:"blur(8px)",border:`1.5px solid ${C.ll}`}}>
                 <div onClick={()=>setPreviewFile(f)} style={{height:100,background:f.type==="image"?"#000":"#f0ebff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden"}}>
                   {f.type==="image"
                     ?<img src={f.data} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
@@ -2977,7 +2977,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
                       subCats:pd.subs.map((s,j)=>({id:now+i*100+j,name:s,files:[]}))};
                     upd(ds=>[...ds,newDrawer]);
                     showToast(`📁 ${pd.name} added!`);
-                  }} style={{background:"rgba(138,180,100,0.25)",borderRadius:16,padding:"12px 12px",border:"2px solid rgba(90,140,60,0.50)",cursor:"pointer",transition:"all 0.15s",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                  }} style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 12px",border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",cursor:"pointer",transition:"all 0.15s",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
                     <div style={{fontSize:20,marginBottom:4}}>{pd.icon}</div>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A1A10",marginBottom:2}}>{pd.name}</div>
                     <div style={{fontSize:10,color:"#8A8070",lineHeight:1.5}}>{pd.subs.slice(0,2).join(" · ")}</div>
@@ -3879,13 +3879,13 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
   return (
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       {/* Beautiful header */}
-      <div style={{background:"linear-gradient(135deg,#7AAD5A,#5A8840)",padding:"52px 22px 28px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+      <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",padding:"52px 22px 28px",textAlign:"center",position:"relative",overflow:"hidden"}}>
         {/* Decorative leaves */}
         <div style={{position:"absolute",top:-10,left:-10,fontSize:60,opacity:0.08,transform:"rotate(-20deg)"}}>🌿</div>
         <div style={{position:"absolute",top:10,right:-10,fontSize:50,opacity:0.08,transform:"rotate(15deg)"}}>🍃</div>
         <div style={{position:"absolute",bottom:-5,left:"20%",fontSize:40,opacity:0.06}}>🌱</div>
         <button onClick={()=>setScreen&&setScreen("home")} style={{position:"absolute",top:16,left:16,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2A1A08" strokeWidth="2.2" strokeLinecap="round"/></svg>
         </button>
         <div style={{fontSize:44,marginBottom:8}}>📚</div>
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:28,color:"#fff",marginBottom:4,letterSpacing:-0.5}}>The Vault</div>
@@ -4274,7 +4274,7 @@ const sendMealToShop=(meal,label)=>{
                   setRecipes(rs=>[idea,...rs]);
                   setRecipeDraft({name:'',description:'',ingredients:'',method:'',url:'',pinUrl:'',photo:''});
                   setAddingRecipe(false);
-                }} style={{flex:1,padding:"12px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                }} style={{flex:1,padding:"12px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
                   💡 Save idea
                 </button>
                 <button onClick={()=>{setAddingRecipe(false);setRecipeDraft({name:'',description:'',ingredients:'',method:'',url:'',pinUrl:'',photo:''}); }} style={{flex:1,padding:"12px",background:"rgba(90,80,60,0.08)",color:"#8A8070",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>Cancel</button>
@@ -4306,7 +4306,7 @@ const sendMealToShop=(meal,label)=>{
                 onClick={()=>setRecipeDetail(r)}>
                 {r.photo
                   ?<img src={r.photo} alt={r.name} style={{width:"100%",height:100,objectFit:"cover"}}/>
-                  :<div style={{width:"100%",height:80,background:"linear-gradient(135deg,#4A7838,#3A6028)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>{r.pinUrl?"📌":"🍽️"}</div>
+                  :<div style={{width:"100%",height:80,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>{r.pinUrl?"📌":"🍽️"}</div>
                 }
                 <div style={{padding:"8px 10px"}}>
                   <div style={{fontWeight:700,fontSize:13,color:"#1A1A10",lineHeight:1.3,marginBottom:2}}>{r.name}</div>
@@ -6163,7 +6163,7 @@ Budget: ${b.name}`,created:Date.now()});
                 const el=document.getElementById("bc_result");
                 if(el)el.textContent=left>=0?"You would have £"+left.toFixed(2)+" left over":"You need £"+Math.abs(left).toFixed(2)+" more";
                 if(el)el.style.color=left>=0?"#4A7838":"#c0392b";
-              }} style={{width:"100%",padding:"9px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Calculate</button>
+              }} style={{width:"100%",padding:"9px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:"pointer",marginBottom:6}}>Calculate</button>
               <div id="bc_result" style={{textAlign:"center",fontSize:14,fontWeight:700,minHeight:18}}></div>
             </div>
 
@@ -6275,7 +6275,7 @@ Budget: ${b.name}`,created:Date.now()});
                   style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.94)"}}/>
               </div>
               <button onClick={addTicket} disabled={!newTicket.name.trim()}
-                style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newTicket.name.trim()?0.5:1,marginBottom:8}}>
+                style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",opacity:!newTicket.name.trim()?0.5:1,marginBottom:8}}>
                 🎫 Save ticket
               </button>
               {/* Send to Filing Cabinet */}
@@ -6637,7 +6637,7 @@ function ShoppingList({data,setData,setScreen}){
           <div style={{fontSize:12,color:"#8A8070"}}>Name it, tick items, then tap Create</div>
         </div>
         <button onClick={createList}
-          style={{background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.30)"}}>
+          style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.30)"}}>
           ✅ Create
         </button>
       </div>
@@ -6706,7 +6706,7 @@ function ShoppingList({data,setData,setScreen}){
         </div>
 
         <button onClick={createList}
-          style={{width:"100%",marginTop:14,padding:"15px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>
+          style={{width:"100%",marginTop:14,padding:"15px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>
           ✅ Create list
         </button>
         <button onClick={()=>setCustomising(null)}
@@ -6751,10 +6751,10 @@ function ShoppingList({data,setData,setScreen}){
             <button onClick={()=>setShowTemplates(false)}
               style={{
                 display:"inline-flex",alignItems:"center",gap:8,
-                background:"linear-gradient(135deg,#4A7838,#3A6028)",
+                background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",
                 border:"none",borderRadius:100,
                 padding:"13px 28px",
-                color:"#fff",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,
+                color:"#2A1A08",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,
                 cursor:"pointer",
                 boxShadow:"0 4px 18px rgba(58,80,38,0.35)",
               }}>
@@ -6822,7 +6822,7 @@ function ShoppingList({data,setData,setScreen}){
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
       <Header title="🛒 Shopping" onBack={()=>setScreen("home")} right={
         <button onClick={()=>setShowTemplates(true)}
-          style={{background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
+          style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
           + New List
         </button>
       }/>
@@ -6843,7 +6843,7 @@ function ShoppingList({data,setData,setScreen}){
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A2810",marginBottom:8}}>No lists yet</div>
             <div style={{fontSize:14,color:"rgba(42,60,28,0.50)",marginBottom:24,lineHeight:1.6}}>Tap <strong>+ New List</strong> above to get started</div>
             <button onClick={()=>setShowTemplates(true)}
-              style={{background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,padding:"14px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>
+              style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,padding:"14px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>
               + Create your first list
             </button>
           </div>
@@ -6987,7 +6987,7 @@ function Translator(){
         </div>
         <textarea value={srcText} onChange={e=>setSrcText(e.target.value)} placeholder="Type or paste text to translate…" rows={4}
           style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:18,border:"1.5px solid rgba(90,120,72,0.15)",background:"rgba(240,247,238,0.92)",fontSize:14,color:"#1A1A10",outline:"none",resize:"none",lineHeight:1.65,marginBottom:10}}/>
-        <button onClick={translate} disabled={loading||!srcText.trim()} style={{width:"100%",padding:"13px",background:loading||!srcText.trim()?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading||!srcText.trim()?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:12}}>
+        <button onClick={translate} disabled={loading||!srcText.trim()} style={{width:"100%",padding:"13px",background:loading||!srcText.trim()?"rgba(90,80,60,0.08)":"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:loading||!srcText.trim()?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:12}}>
           {loading?"🌿 Translating…":"🌍 Translate"}
         </button>
         {result&&(
@@ -7052,7 +7052,7 @@ function CurrencyConverter(){
             {CURRENCIES.map(c=><option key={c.code} value={c.code}>{c.flag} {c.code} — {c.name}</option>)}
           </select>
         </div>
-        <button onClick={convert} disabled={loading} style={{width:"100%",padding:"13px",background:loading?"rgba(90,80,60,0.08)":"linear-gradient(135deg,#3E6828,#5E9040)",color:loading?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:14}}>
+        <button onClick={convert} disabled={loading} style={{width:"100%",padding:"13px",background:loading?"rgba(90,80,60,0.08)":"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:loading?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:14}}>
           {loading?"🌿 Fetching rates…":"💱 Convert"}
         </button>
         {result&&!result.error&&(
@@ -8294,7 +8294,7 @@ function Routine({routineData,setRoutineData,setScreen}){
         )} )}
 
         {/* Header */}
-        <div style={{background:"linear-gradient(135deg,#2C3820 0%,#3A5030 50%,#4A6840 100%)",padding:"52px 22px 26px"}}>
+        <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",padding:"52px 22px 26px"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
             <button onClick={onBack} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
               <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
@@ -8338,7 +8338,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                     <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
                       {ROUTINE_ICON_CATS.map(cat=>(
                         <button key={cat.label} onClick={()=>setOpenCat(openCat===cat.label?null:cat.label)}
-                          style={{padding:"7px 14px",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",background:openCat===cat.label?cat.color:"rgba(255,255,255,0.85)",color:openCat===cat.label?"#fff":cat.color,border:`1.5px solid ${cat.color}50`,transition:"all 0.15s"}}>
+                          style={{padding:"7px 14px",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",background:openCat===cat.label?cat.color:"rgba(42,26,8,0.70)",color:openCat===cat.label?"#fff":cat.color,border:`1.5px solid ${cat.color}50`,transition:"all 0.15s"}}>
                           {cat.label}
                         </button>
                       ))}
@@ -8499,7 +8499,7 @@ function Routine({routineData,setRoutineData,setScreen}){
   return(
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"Georgia,serif",paddingBottom:90}}>
       {/* Header with back button */}
-      <div style={{background:"linear-gradient(135deg,#7AAD5A,#5A8840)",padding:"52px 22px 28px"}}>
+      <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",padding:"52px 22px 28px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
           <button onClick={()=>setScreen&&setScreen("home")} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
@@ -8530,7 +8530,7 @@ function Routine({routineData,setRoutineData,setScreen}){
                   <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
                     {ROUTINE_ICON_CATS.map(cat=>(
                       <button key={cat.label} onClick={()=>setOpenCat(openCat===cat.label?null:cat.label)}
-                        style={{padding:"7px 14px",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",background:openCat===cat.label?cat.color:"rgba(255,255,255,0.85)",color:openCat===cat.label?"#fff":cat.color,border:`1.5px solid ${cat.color}50`,transition:"all 0.15s"}}>
+                        style={{padding:"7px 14px",borderRadius:100,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",background:openCat===cat.label?cat.color:"rgba(42,26,8,0.70)",color:openCat===cat.label?"#fff":cat.color,border:`1.5px solid ${cat.color}50`,transition:"all 0.15s"}}>
                         {cat.label}
                       </button>
                     ))}
@@ -9116,7 +9116,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
 
           {/* 💥 Wipe Out Day banner — shows when today is the chosen day */}
           {isWipeDay&&wipePct<100&&(
-            <div style={{background:"linear-gradient(135deg,#C03010,#E06020)",borderRadius:20,padding:"14px 18px",marginBottom:12,boxShadow:"0 4px 20px rgba(192,48,16,0.35)"}}>
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"14px 18px",marginBottom:12,boxShadow:"0 4px 20px rgba(192,48,16,0.35)"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
                 <span style={{fontSize:28}}>💥</span>
                 <div style={{flex:1}}>
@@ -9139,10 +9139,10 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
 
           {/* 🏆 Wipe Out Day complete banner */}
           {isWipeDay&&wipePct===100&&(
-            <div style={{background:"linear-gradient(135deg,#2A7010,#4A9030)",borderRadius:20,padding:"16px 18px",marginBottom:12,boxShadow:"0 4px 20px rgba(42,112,16,0.35)",textAlign:"center"}}>
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"16px 18px",marginBottom:12,textAlign:"center"}}>
               <div style={{fontSize:40,marginBottom:4}}>🏆</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#fff",marginBottom:4}}>WIPE OUT DAY COMPLETE!</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.85)"}}>You wiped out every single task. LEGENDARY! 🌟</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#2A1A08",marginBottom:4}}>WIPE OUT DAY COMPLETE!</div>
+              <div style={{fontSize:13,color:"rgba(42,26,8,0.70)"}}>You wiped out every single task. LEGENDARY! 🌟</div>
             </div>
           )}
 
@@ -9990,7 +9990,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                         const merged=[...new Set([...(data.targetTasks||[]).filter(t=>t?.trim()),...wipeDayData.tasks])];
                         upd({targetTasks:merged,dailyTarget:merged.length});
                         showToast("💥 Wipe Out tasks loaded into today!");
-                      }} style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,#C03010,#E06020)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 14px rgba(192,48,16,0.35)"}}>
+                      }} style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer",boxShadow:"0 3px 14px rgba(192,48,16,0.35)"}}>
                         💥 Load into Today — LET'S GO!
                       </button>
                     )}
@@ -10196,14 +10196,14 @@ function RestSpace({setScreen}){
     <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
 
       {/* Garden header */}
-      <div style={{background:"linear-gradient(135deg,#8DC45A,#6A9E40)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 0",borderBottom:"none",position:"sticky",top:0,zIndex:50}}>
+      <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",padding:"20px 20px 0",borderBottom:"none",position:"sticky",top:0,zIndex:50}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
           <button onClick={()=>setScreen&&setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div style={{flex:1}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#fff",textShadow:"0 1px 4px rgba(0,0,0,0.2)"}}>🌿 Rest Space</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.85)",marginTop:1,fontStyle:"italic"}}>"Rest is not a reward — it's part of the work"</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#2A1A08"}}>🌿 Rest Space</div>
+            <div style={{fontSize:12,color:"rgba(42,26,8,0.70)",marginTop:1,fontStyle:"italic"}}>"Rest is not a reward — it's part of the work"</div>
           </div>
         </div>
         <div style={{display:"flex"}}>
@@ -10916,8 +10916,8 @@ function PromoPopup({onClose,onUpgrade}){
         <button onClick={onUpgrade}
           style={{
             width:"100%",padding:"16px",
-            background:"linear-gradient(135deg,#5A9840,#3A7828)",
-            color:"#fff",border:"none",borderRadius:100,
+            background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",
+            color:"#2A1A08",border:"none",borderRadius:100,
             fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,
             cursor:"pointer",marginBottom:12,
             boxShadow:"0 6px 24px rgba(58,120,40,0.45)",
@@ -11221,7 +11221,7 @@ export default function App() {
               placeholder="Your name…" autoFocus
               style={{width:"100%",boxSizing:"border-box",padding:"13px 18px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:16,color:"#1A1A10",outline:"none",marginBottom:14,textAlign:"center",background:"rgba(255,255,255,0.9)"}}/>
             <button onClick={()=>{if(nameInput.trim()){setUserName(nameInput.trim());localStorage.setItem("thinko_username",nameInput.trim());}setShowNameModal(false);}}
-              style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#3E6828,#5E9040)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 16px rgba(58,80,38,0.30)"}}>
+              style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 16px rgba(58,80,38,0.30)"}}>
               Enter Thinko 🌿
             </button>
           </div>
@@ -11283,7 +11283,7 @@ export default function App() {
         {TESTING_MODE&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.22)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
         <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\n📱 Android: tap ⋮ → Add to Home Screen\n🍎 iPhone: Share → Add to Home Screen");}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(248,245,236,0.75)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>📲 App</button>
         <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#5A7848,#3A5830)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>💎 Go Pro</button>
-        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#7AAD5A,#5A8840)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,100,38,0.30)"}}>⚙️ Customise Home</button>
+        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#2A1A08",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,100,38,0.30)"}}>⚙️ Customise Home</button>
       </div>
 
       {/* ── HOME CUSTOMISE MODAL ── */}
