@@ -6386,7 +6386,16 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
           <div style={{fontSize:12,color:"#8A8070",fontWeight:600,flexShrink:0}}>{done}/{total}</div>
           <button onClick={()=>{onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:20,flexShrink:0}}>🗑</button>
         </div>
-
+        <div style={{display:"flex",gap:6,paddingBottom:6}}>
+          <button onClick={()=>{
+            const txt="🛒 "+list.name+"\n\n"+list.items.filter(i=>!i.done).map(i=>"☐ "+i.text).join("\n")+(list.items.filter(i=>i.done).length?"\n\n✅ Got:\n"+list.items.filter(i=>i.done).map(i=>"✓ "+i.text).join("\n"):"")+("\n\nFrom Thinko 🌿");
+            window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");
+          }} style={{flex:1,background:"#25D366",color:"#fff",border:"none",borderRadius:12,padding:"11px",fontSize:14,fontWeight:800,cursor:"pointer"}}>💬 WhatsApp</button>
+          <button onClick={()=>{
+            const txt="🛒 "+list.name+"\n\n"+list.items.filter(i=>!i.done).map(i=>"☐ "+i.text).join("\n")+(list.items.filter(i=>i.done).length?"\n\n✅ Got:\n"+list.items.filter(i=>i.done).map(i=>"✓ "+i.text).join("\n"):"")+("\n\nFrom Thinko 🌿");
+            window.open("sms:?body="+encodeURIComponent(txt),"_blank");
+          }} style={{flex:1,background:"#3A6028",color:"#fff",border:"none",borderRadius:12,padding:"11px",fontSize:14,fontWeight:800,cursor:"pointer"}}>📱 Text</button>
+        </div>
       </div>
 
       {/* Progress bar */}
