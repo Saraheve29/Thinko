@@ -5706,9 +5706,9 @@ function MatrixTimer({setScreen}) {
 }
 
 const QUADS=[
-  {key:"do",   label:"Do First",  sub:"Urgent & Important",    color:"#C03020",bg:"rgba(192,48,32,0.06)",  emoji:"🔥"},
-  {key:"plan", label:"Schedule",  sub:"Important, Not Urgent", color:"#4870A0",bg:"rgba(72,112,160,0.06)",emoji:"📅"},
-  {key:"help", label:"Delegate",  sub:"Urgent, Not Important", color:"#C08820",bg:"rgba(192,136,32,0.06)",emoji:"🤝"},
+  {key:"do",   label:"Do First",  sub:"Urgent & Important",    color:"#4A7A38",bg:"rgba(74,122,56,0.12)",  emoji:"🔥"},
+  {key:"plan", label:"Schedule",  sub:"Important, Not Urgent", color:"#3A6858",bg:"rgba(58,104,88,0.12)",emoji:"📅"},
+  {key:"help", label:"Delegate",  sub:"Urgent, Not Important", color:"#7A8A38",bg:"rgba(122,138,56,0.12)",emoji:"🤝"},
   {key:"drop", label:"Eliminate", sub:"Neither",               color:"#5A5A5A",bg:"rgba(90,90,90,0.06)",  emoji:"🗑"},
 ];
 
@@ -5821,7 +5821,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
             const isSage=qi===0||qi===2;
             return(
               <div key={q.key} style={{
-                background:qi===0?"rgba(192,48,32,0.82)":qi===1?"rgba(72,112,160,0.82)":qi===2?"rgba(192,136,32,0.82)":"rgba(80,140,70,0.82)",border:"3px solid "+q.color,
+                background:qi===0?"rgba(74,122,56,0.75)":qi===1?"rgba(58,104,88,0.75)":qi===2?"rgba(122,138,56,0.75)":"rgba(90,130,70,0.75)",border:"2px solid "+q.color+"99",
                 borderRadius:14,
                 padding:"8px 6px 6px",
                 position:"relative",
@@ -6373,28 +6373,40 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
   return(
     <div style={{minHeight:"100vh",background:"transparent",paddingBottom:90,fontFamily:"'Segoe UI',sans-serif"}}>
       {/* Header */}
-      <div style={{background:"rgba(248,245,236,0.94)",backdropFilter:"blur(16px)",padding:"18px 20px 14px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round"/></svg>
-        </button>
-        <div style={{fontSize:24}}>{list.icon||"🛒"}</div>
-        <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{list.name}</div>
-        <div style={{fontSize:12,color:"#8A8070",fontWeight:600}}>{done}/{total}</div>
-        <button onClick={()=>{
-          const needed=list.items.filter(i=>!i.checked);
-          const got=list.items.filter(i=>i.checked);
-          if(!list.items.length){alert("No items to share");return;}
-          const text="🛒 "+list.name+"\n\n"+(needed.length?"Need to get:\n"+needed.map(i=>"☐ "+i.name+(i.qty?" ("+i.qty+")":"")).join("\n"):"")+(got.length?"\n\n✅ Got:\n"+got.map(i=>"✓ "+i.name).join("\n"):"")+("\n\nSent from Thinko 🌿");
-          window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
-        }} style={{background:"#25D366",color:"#fff",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>💬 WhatsApp</button>
-        <button onClick={()=>{
-          const needed=list.items.filter(i=>!i.checked);
-          const got=list.items.filter(i=>i.checked);
-          if(!list.items.length){alert("No items to share");return;}
-          const text="🛒 "+list.name+"\n\n"+(needed.length?"Need to get:\n"+needed.map(i=>"☐ "+i.name+(i.qty?" ("+i.qty+")":"")).join("\n"):"")+(got.length?"\n\n✅ Got:\n"+got.map(i=>"✓ "+i.name).join("\n"):"")+("\n\nSent from Thinko 🌿");
-          window.open("sms:?body="+encodeURIComponent(text),"_blank");
-        }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>📱 Text</button>
-        <button onClick={()=>{onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:16}}>🗑</button>
+      <div style={{background:"rgba(248,245,236,0.94)",backdropFilter:"blur(16px)",padding:"14px 16px 10px",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+        {/* Title row */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          </button>
+          <div style={{fontSize:22,flexShrink:0}}>{list.icon||"🛒"}</div>
+          <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>{list.name}</div>
+          <div style={{fontSize:12,color:"#8A8070",fontWeight:600,flexShrink:0}}>{done}/{total}</div>
+          <button onClick={()=>{onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:20,flexShrink:0}}>🗑</button>
+        </div>
+        {/* Share row */}
+        <div style={{display:"flex",gap:8,paddingLeft:4}}>
+          <button onClick={()=>{
+            const needed=list.items.filter(i=>!i.done);
+            const got=list.items.filter(i=>i.done);
+            if(!list.items.length){alert("Nothing in this list yet");return;}
+            const text="🛒 "+list.name+"\n\n"
+              +(needed.length?"Still need:\n"+needed.map(i=>"☐ "+i.name+(i.qty?" ("+i.qty+")":"")).join("\n"):"")
+              +(got.length?"\n\n✅ Already got:\n"+got.map(i=>"✓ "+i.name).join("\n"):"")
+              +"\n\nSent from Thinko 🌿";
+            window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+          }} style={{background:"#25D366",color:"#fff",border:"none",borderRadius:20,padding:"7px 16px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>💬 WhatsApp</button>
+          <button onClick={()=>{
+            const needed=list.items.filter(i=>!i.done);
+            const got=list.items.filter(i=>i.done);
+            if(!list.items.length){alert("Nothing in this list yet");return;}
+            const text="🛒 "+list.name+"\n\n"
+              +(needed.length?"Still need:\n"+needed.map(i=>"☐ "+i.name+(i.qty?" ("+i.qty+")":"")).join("\n"):"")
+              +(got.length?"\n\n✅ Already got:\n"+got.map(i=>"✓ "+i.name).join("\n"):"")
+              +"\n\nSent from Thinko 🌿";
+            window.open("sms:?body="+encodeURIComponent(text),"_blank");
+          }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:20,padding:"7px 16px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>📱 Text</button>
+        </div>
       </div>
 
       {/* Progress bar */}
