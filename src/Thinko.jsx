@@ -560,7 +560,7 @@ function PriCompare({tasks,onDone}) {
     const sw=swatchById(task.color);
     return(
       <button onClick={onPick}
-        style={{flex:1,padding:"22px 16px 20px",borderRadius:20,background:"rgba(242,248,240,0.96)",border:`3px solid ${sw.fill}`,color:C.txt,fontWeight:800,fontSize:16,cursor:"pointer",boxShadow:`0 6px 24px ${sw.fill}`,display:"flex",flexDirection:"column",alignItems:"center",gap:14,transition:"all 0.15s",minHeight:160,textAlign:"center",lineHeight:1.4}}
+        style={{flex:1,padding:"22px 16px 20px",borderRadius:20,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:`3px solid ${sw.fill}`,color:C.txt,fontWeight:800,fontSize:16,cursor:"pointer",boxShadow:`0 6px 24px ${sw.fill}`,display:"flex",flexDirection:"column",alignItems:"center",gap:14,transition:"all 0.15s",minHeight:160,textAlign:"center",lineHeight:1.4}}
         onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.04)";}}
         onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}>
         {/* Colour circle — explicitly forced round */}
@@ -863,7 +863,7 @@ function PriList({list,onBack,onUpdate,matrixData,setMatrixData,setScreen,focusM
             <input value={newTask} onChange={e=>setNewTask(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&addTask()}
               placeholder="Add a task…"
-              style={{flex:1,padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:15,fontWeight:600,color:"#1A2810",background:"rgba(242,248,240,0.96)",outline:"none"}}/>
+              style={{flex:1,padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:15,fontWeight:600,color:"#1A2810",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",outline:"none"}}/>
             <button onClick={addTask}
               style={{width:46,height:46,borderRadius:"50%",background:"#FFD700",color:"#2C3820",border:"none",fontSize:24,fontWeight:900,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 12px rgba(255,200,0,0.40)"}}>
               +
@@ -1011,7 +1011,7 @@ function SimpleTimer(){
           <input type="number" min="1" max="300" value={mins} onChange={e=>setMins(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&start()}
             placeholder="mins"
-            style={{width:64,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,fontWeight:600,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.96)",textAlign:"center"}}/>
+            style={{width:64,padding:"7px 10px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,fontWeight:600,color:"#1A2810",outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",textAlign:"center"}}/>
           <button onClick={start}
             style={{padding:"8px 20px",background:"linear-gradient(135deg,#4A7838,#3A6028)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.28)"}}>
             ▶ Start
@@ -1239,7 +1239,7 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
             <input ref={inputRef} value={newTask} onChange={e=>setNewTask(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&addTask()}
               placeholder="Add a task..."
-              style={{flex:1,padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:15,fontWeight:600,color:"#1A2810",background:"rgba(242,248,240,0.96)",outline:"none"}}/>
+              style={{flex:1,padding:"11px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.18)",fontSize:15,fontWeight:600,color:"#1A2810",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",outline:"none"}}/>
             <button onClick={addTask} style={{width:46,height:46,borderRadius:"50%",background:"#FFD700",color:"#2C3820",border:"none",fontSize:24,fontWeight:900,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 12px rgba(255,200,0,0.40)"}}>+</button>
           </div>
         </div>
@@ -2848,7 +2848,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
           const totalFiles=s.files.length;
           return(
             <div key={s.id} onClick={()=>setActiveSubId(s.id)}
-              style={{display:"flex",alignItems:"center",gap:12,background:drawer.color+"BB",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 4px 20px rgba(0,0,0,0.20)",border:"2px solid "+drawer.color,cursor:"pointer",transition:"transform 0.15s"}}
+              style={{display:"flex",alignItems:"center",gap:12,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 4px 20px rgba(90,80,60,0.12)",border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",cursor:"pointer",transition:"transform 0.15s"}}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
               <div style={{width:42,height:42,borderRadius:10,background:`linear-gradient(135deg,${drawer.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>📂</div>
@@ -3596,7 +3596,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
           value={page.content}
           onChange={e=>updatePage(page.id,e.target.value)}
           placeholder="Start writing..."
-          style={{flex:1,minHeight:"55vh",padding:"16px",borderRadius:16,border:`1.5px solid ${C.ll}`,fontSize:15,lineHeight:1.8,color:C.txt,fontFamily:"'Segoe UI',sans-serif",resize:"none",outline:"none",background:"rgba(242,248,240,0.96)",boxShadow:"0 2px 12px rgba(90,80,60,0.09)"}}
+          style={{flex:1,minHeight:"55vh",padding:"16px",borderRadius:16,border:`1.5px solid ${C.ll}`,fontSize:15,lineHeight:1.8,color:C.txt,fontFamily:"'Segoe UI',sans-serif",resize:"none",outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",boxShadow:"0 2px 12px rgba(90,80,60,0.09)"}}
         />
         <UrlField value={page.url||""} onChange={v=>updatePageUrl(page.id,v)} style={{marginTop:8,marginBottom:4}}/>
         <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:2,marginBottom:8,textAlign:"right"}}>{page.content.length} chars · auto-saved</div>
@@ -3691,7 +3691,7 @@ function Notes({data,setData,priData,setPriData,mapData,setMapData,ideasData,set
       </div>
       <div style={{padding:"20px 16px"}}>
         {addingPageForm&&(
-          <div style={{background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${C.lp}`}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${C.lp}`}}>
             <div style={{fontWeight:800,color:C.dp,fontSize:14,marginBottom:10}}>New note</div>
             <input autoFocus value={newPageName} onChange={e=>setNewPageName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")submitPage();if(e.key==="Escape")setAddingPageForm(false);}}
               placeholder="Page title..." style={{width:"100%",boxSizing:"border-box",padding:"10px 13px",borderRadius:10,border:`1.5px solid ${C.lp}`,fontSize:15,fontWeight:600,color:C.txt,outline:"none",marginBottom:10}}/>
@@ -4844,8 +4844,8 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,setScre
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
           {[{key:"week",label:"Next Week"},{key:"month6",label:"6 Months"}].map(({key,label})=>(
             <button key={key} onClick={()=>setActiveHorizon(key)} style={{
-              background:"rgba(248,245,236,0.88)",
-              border:"1.5px solid rgba(90,80,60,0.12)",
+              background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",
+              border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",
               borderRadius:18,
               padding:"18px 12px",
               cursor:"pointer",
@@ -4862,8 +4862,8 @@ function Goals({data,setData,priData,setPriData,matrixData,setMatrixData,setScre
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:18}}>
           {[{key:"year1",label:"1 Year"},{key:"year3",label:"3 Years"},{key:"year5",label:"5 Years"}].map(({key,label})=>(
             <button key={key} onClick={()=>setActiveHorizon(key)} style={{
-              background:"rgba(248,245,236,0.88)",
-              border:"1.5px solid rgba(90,80,60,0.12)",
+              background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",
+              border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",
               borderRadius:18,
               padding:"16px 8px",
               cursor:"pointer",
@@ -5368,7 +5368,7 @@ function IdeaDetail({idea,onBack,onUpdate,priData,setPriData,mapData,setMapData,
         {steps.map((step,si)=>{
           const microDone=(step.microSteps||[]).filter(m=>m.done).length;
           return(
-            <div key={step.id} style={{background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${step.done?"#a5d6a7":C.ll}`,boxShadow:"0 2px 10px rgba(90,80,60,0.07)",opacity:step.done?0.75:1}}>
+            <div key={step.id} style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${step.done?"#a5d6a7":C.ll}`,boxShadow:"0 2px 10px rgba(90,80,60,0.07)",opacity:step.done?0.75:1}}>
 
               {/* Step row */}
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
@@ -5546,7 +5546,7 @@ function Ideas({data,setData,priData,setPriData,mapData,setMapData,matrixData,se
             <textarea ref={textRef} value={draft.text} onChange={e=>setDraft(d=>({...d,text:e.target.value}))}
               placeholder="What's your idea?"
               rows={3}
-              style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:16,border:"1.5px solid rgba(192,160,40,0.25)",fontSize:15,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",marginBottom:12,background:"rgba(242,248,240,0.96)"}}/>
+              style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:16,border:"1.5px solid rgba(192,160,40,0.25)",fontSize:15,color:"#1A1A10",outline:"none",resize:"none",fontFamily:"'Segoe UI',sans-serif",marginBottom:12,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)"}}/>
             {/* Tag picker */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
               {TAGS.map(t=>(
@@ -5821,7 +5821,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
             const isSage=qi===0||qi===2;
             return(
               <div key={q.key} style={{
-                background:qi===0?"rgba(74,122,56,0.75)":qi===1?"rgba(58,104,88,0.75)":qi===2?"rgba(122,138,56,0.75)":"rgba(90,130,70,0.75)",border:"2px solid "+q.color+"99",
+                background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"2px solid "+q.color+"99",
                 borderRadius:14,
                 padding:"8px 6px 6px",
                 position:"relative",
@@ -5840,8 +5840,8 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 
                 {/* Label */}
                 <div style={{paddingRight:18,marginBottom:4}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:"#ffffff",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
-                  <div style={{fontSize:10,color:"rgba(255,255,255,0.80)",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:"#2A1A08",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
+                  <div style={{fontSize:10,color:"rgba(42,26,8,0.70)",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
                 </div>
                 <div style={{height:1,background:isSage?"rgba(255,255,255,0.3)":"rgba(90,80,60,0.12)",marginBottom:5}}/>
 
@@ -6152,9 +6152,9 @@ Budget: ${b.name}`,created:Date.now()});
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>🧮 How much left?</div>
               <div style={{display:"flex",gap:8,marginBottom:8}}>
                 <input type="number" placeholder="Item cost £" id="bc_item"
-                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.96)",color:"#1A2810"}}/>
+                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#1A2810"}}/>
                 <input type="number" placeholder="I have £" id="bc_have"
-                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.96)",color:"#1A2810"}}/>
+                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#1A2810"}}/>
               </div>
               <button onClick={()=>{
                 const item=parseFloat(document.getElementById("bc_item").value)||0;
@@ -6649,7 +6649,7 @@ function ShoppingList({data,setData,setScreen}){
           <input value={custListName} onChange={e=>setCustListName(e.target.value)}
             placeholder="e.g. This week, Pharmacy, School run..."
             autoFocus
-            style={{width:"100%",boxSizing:"border-box",padding:"13px 18px",borderRadius:100,border:"2px solid rgba(90,120,72,0.25)",fontSize:16,fontWeight:700,color:"#1A2810",outline:"none",background:"rgba(242,248,240,0.96)"}}/>
+            style={{width:"100%",boxSizing:"border-box",padding:"13px 18px",borderRadius:100,border:"2px solid rgba(90,120,72,0.25)",fontSize:16,fontWeight:700,color:"#1A2810",outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)"}}/>
           {custListName.trim()===''&&<div style={{fontSize:11,color:"rgba(42,60,28,0.40)",marginTop:6,paddingLeft:4}}>Tip: give it a name that makes sense to you</div>}
         </div>
 
@@ -7625,7 +7625,7 @@ function WorldTime({moduleOrder,setModuleOrder,setScreen}){
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:10}}>🔍 Add a city</div>
         <input value={search} onChange={e=>setSearch(e.target.value)}
           placeholder="Search city or region…"
-          style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(242,248,240,0.96)",marginBottom:10}}/>
+          style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:14,color:"#1A1A10",outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",marginBottom:10}}/>
         {filtered.map(zone=>(
           <div key={zone.tz} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(90,80,60,0.07)"}}>
             <span style={{fontSize:22,flexShrink:0}}>{zone.flag}</span>
@@ -8018,7 +8018,7 @@ function GoalEditor({goal,onBack,onUpdate,onDelete,priData,setPriData,matrixData
         )}
 
         {goal.subtasks.map((sub,si)=>(
-          <div key={sub.id} style={{background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${sub.done?"#a5d6a7":C.ll}`,opacity:sub.done?0.75:1}}>
+          <div key={sub.id} style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 14px",marginBottom:10,border:`1.5px solid ${sub.done?"#a5d6a7":C.ll}`,opacity:sub.done?0.75:1}}>
 
             {/* Subtask row */}
             <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}}>
@@ -8363,7 +8363,7 @@ function Routine({routineData,setRoutineData,setScreen}){
               <input value={newName} onChange={e=>setNewName(e.target.value)}
                 onKeyDown={e=>{if(e.key==="Enter"&&newName.trim()){save([...items,{id:Date.now(),name:newName.trim(),icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");}}}
                 placeholder="Task name…"
-                style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(242,248,240,0.96)"}}/>
+                style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)"}}/>
                       <button onClick={()=>{if(!newName.trim())return;save([...items,{id:Date.now(),name:newName.trim(),icon:newIcon,doneToday:false,history:[]}]);setNewName("");setNewIcon("⭐");if(items.length===0)setAdding(false);}}
                 style={{width:"100%",padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}> Add task</button>
             </div>
@@ -8554,7 +8554,7 @@ function Routine({routineData,setRoutineData,setScreen}){
             <input value={newRoutineName} onChange={e=>setNewRoutineName(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&newRoutineName.trim()){const r={id:Date.now(),name:newRoutineName.trim(),icon:newRoutineIcon,items:[]};const next=[...routines,r];saveRoutines(next);setActiveId(r.id);setNewRoutineName("");setCreatingRoutine(false);}}}
               placeholder="Routine name… e.g. Morning Routine"
-              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"rgba(242,248,240,0.96)"}}/>
+              style={{width:"100%",boxSizing:"border-box",padding:"13px 16px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.22)",fontSize:15,fontFamily:"'Segoe UI',sans-serif",color:"#1A1A10",outline:"none",marginBottom:14,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)"}}/>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>{if(!newRoutineName.trim())return;const r={id:Date.now(),name:newRoutineName.trim(),icon:newRoutineIcon,items:[]};const next=[...routines,r];saveRoutines(next);setActiveId(r.id);setNewRoutineName("");setCreatingRoutine(false);}}
                 style={{flex:1,padding:"14px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 3px 14px rgba(58,80,38,0.28)"}}>Create routine</button>
@@ -8784,7 +8784,7 @@ function ChargeCompare({tasks, onDone}) {
         <div style={{display:"flex",flexDirection:"column",gap:12,width:"100%",maxWidth:420}}>
           {[a,b].map((task,ti)=>(
             <button key={ti} onClick={()=>choose(task)}
-              style={{width:"100%",padding:"20px 22px",borderRadius:22,background:"rgba(242,248,240,0.96)",border:"1.5px solid rgba(90,120,72,0.20)",cursor:"pointer",display:"flex",alignItems:"center",gap:16,boxShadow:"0 3px 16px rgba(60,70,40,0.08)",transition:"all 0.15s",textAlign:"left"}}
+              style={{width:"100%",padding:"20px 22px",borderRadius:22,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"1.5px solid rgba(90,120,72,0.20)",cursor:"pointer",display:"flex",alignItems:"center",gap:16,boxShadow:"0 3px 16px rgba(60,70,40,0.08)",transition:"all 0.15s",textAlign:"left"}}
               onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.02)";e.currentTarget.style.boxShadow="0 6px 24px rgba(60,70,40,0.14)";e.currentTarget.style.borderColor="rgba(90,120,72,0.45)";}}
               onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.boxShadow="0 3px 16px rgba(60,70,40,0.08)";e.currentTarget.style.borderColor="rgba(90,120,72,0.20)";}}
               onTouchStart={e=>{e.currentTarget.style.transform="scale(1.02)";e.currentTarget.style.borderColor="rgba(90,120,72,0.45)";}}
@@ -9900,7 +9900,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                 <input type="date" value={wipeDayData.date}
                   min={new Date().toISOString().slice(0,10)}
                   onChange={e=>saveWipeDay({...wipeDayData,date:e.target.value})}
-                  style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:12,background:"rgba(242,248,240,0.96)"}}/>
+                  style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.25)",fontSize:14,color:"#1A1A10",outline:"none",marginBottom:12,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)"}}/>
 
                 {/* Tasks to wipe out */}
                 <div style={{fontFamily:"Georgia,serif",fontSize:13,fontWeight:600,color:"#C03010",marginBottom:8}}>💥 Tasks to wipe out</div>
@@ -9957,7 +9957,7 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                   <input value={newWipeTask} onChange={e=>setNewWipeTask(e.target.value)}
                     onKeyDown={e=>{if(e.key==="Enter"&&newWipeTask.trim()){saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,newWipeTask.trim()]});setNewWipeTask("");}}}
                     placeholder="Add a task you've been putting off…"
-                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.22)",fontSize:13,outline:"none",background:"rgba(242,248,240,0.96)",color:"#1A1A10"}}/>
+                    style={{flex:1,padding:"10px 14px",borderRadius:100,border:"1.5px solid rgba(220,60,20,0.22)",fontSize:13,outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#1A1A10"}}/>
                   <button onClick={()=>{if(!newWipeTask.trim())return;saveWipeDay({...wipeDayData,tasks:[...wipeDayData.tasks,newWipeTask.trim()]});setNewWipeTask("");}}
                     style={{background:"#C03010",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontWeight:700,fontSize:14,cursor:"pointer"}}>+ Add</button>
                 </div>
@@ -10407,7 +10407,7 @@ function RestSpace({setScreen}){
           {WN_PRESETS.filter(p=>p.mp3).map(p=>{
             const isPlaying=activeSnd===p.id;
             return(
-              <div key={p.id} style={{background:"rgba(138,195,90,0.22)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(90,160,60,0.40)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.10)"}}>
+              <div key={p.id} style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",overflow:"hidden",boxShadow:"0 2px 10px rgba(60,70,40,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#5A7848":"rgba(90,120,72,0.20)"}}/>
                 <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
                   <span style={{fontSize:28}}>{p.icon}</span>
@@ -10429,7 +10429,7 @@ function RestSpace({setScreen}){
           {(()=>{
             const isPlaying=activeSnd==="ocean_yt";
             return(
-              <div style={{background:"rgba(72,140,180,0.18)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(72,120,160,0.40)",overflow:"hidden",boxShadow:"0 2px 12px rgba(40,60,80,0.10)"}}>
+              <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",overflow:"hidden",boxShadow:"0 2px 12px rgba(40,60,80,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#486878":"rgba(72,104,120,0.20)"}}/>
                 {isPlaying?(
                   <>
@@ -10468,7 +10468,7 @@ function RestSpace({setScreen}){
           {(()=>{
             const isPlaying=activeSnd==="campfire_yt";
             return(
-              <div style={{background:"rgba(220,160,60,0.18)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(200,140,40,0.40)",overflow:"hidden",boxShadow:"0 2px 12px rgba(80,60,20,0.10)"}}>
+              <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:18,marginBottom:10,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",overflow:"hidden",boxShadow:"0 2px 12px rgba(80,60,20,0.10)"}}>
                 <div style={{height:3,background:isPlaying?"#8A5028":"rgba(120,80,40,0.20)"}}/>
                 {isPlaying?(
                   <>
@@ -11355,17 +11355,13 @@ export default function App() {
             onMouseLeave={(e)=>e.currentTarget.style.transform="translateY(0) scale(1)"}
             className="mod-card"
             style={{
-              background: dragHome===m.id
-                ?m.color+"33"
-                :m.color+"22",
+              background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",
               backdropFilter:"blur(20px)",
               WebkitBackdropFilter:"blur(20px)",
               borderRadius:28,
-              border:"2px solid "+m.color+"55",
+              border:"1.5px solid rgba(180,160,140,0.35)",
               overflow:"hidden",
-              boxShadow:dragHome===m.id
-                ?"0 20px 50px rgba(0,0,0,0.18)"
-                :"0 6px 24px "+m.color+"33",
+              boxShadow:"0 4px 20px rgba(90,80,60,0.12)",
               cursor:"pointer",
               transition:"all 0.3s ease",
               transform:dragHome===m.id?"scale(1.05) rotate(-1deg)":"scale(1)",
