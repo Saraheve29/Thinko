@@ -1173,7 +1173,21 @@ function ListPage({list,onBack,setScreen,onUpdate,matrixData,setMatrixData}){
         <button onClick={onBack} style={{position:"absolute",top:16,left:16,background:"rgba(235,242,232,0.70)",border:"none",borderRadius:100,width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",backdropFilter:"blur(8px)"}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2C3820" strokeWidth="2.2" strokeLinecap="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:26,color:"#1A2810",marginBottom:2}}>{list.name}</div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:26,color:"#1A2810",flex:1}}>{list.name}</div>
+          <button onClick={()=>{
+            const items=[...active,...done];
+            if(!items.length){alert("No items to share");return;}
+            const text="🛒 "+list.name+"\n\n"+active.map(t=>"☐ "+t.name+(t.qty?" ("+t.qty+")":"")).join("\n")+(done.length?"\n\n✅ Done:\n"+done.map(t=>"✓ "+t.name).join("\n"):"")+("\n\nSent from Thinko 🌿");
+            window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+          }} style={{background:"#25D366",color:"#fff",border:"none",borderRadius:20,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>💬 Share</button>
+          <button onClick={()=>{
+            const items=[...active,...done];
+            if(!items.length){alert("No items to share");return;}
+            const text="🛒 "+list.name+"\n\n"+active.map(t=>"☐ "+t.name+(t.qty?" ("+t.qty+")":"")).join("\n")+(done.length?"\n\n✅ Done:\n"+done.map(t=>"✓ "+t.name).join("\n"):"")+"\n\nSent from Thinko 🌿";
+            window.open("sms:?body="+encodeURIComponent(text),"_blank");
+          }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:20,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>📱 Text</button>
+        </div>
         <div style={{fontSize:13,color:"rgba(42,60,28,0.55)",fontStyle:"italic",marginBottom:6,fontFamily:"Georgia,serif"}}>Time to focus 🌿</div>
         <div style={{fontSize:11,color:"rgba(42,60,28,0.42)"}}>
           {active.length===0&&done.length>0?"All done! Well done!":active.length>0?(done.length+" done · "+active.length+" to go"):"Add your first task"}
@@ -2778,7 +2792,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
         ):(
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {sub.files.map(f=>(
-              <div key={f.id} style={{background:"rgba(242,248,240,0.96)",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(45,10,94,0.1)",border:`1.5px solid ${C.ll}`}}>
+              <div key={f.id} style={{background:"rgba(255,255,255,0.92)",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.15)",border:`1.5px solid ${C.ll}`}}>
                 <div onClick={()=>setPreviewFile(f)} style={{height:100,background:f.type==="image"?"#000":"#f0ebff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden"}}>
                   {f.type==="image"
                     ?<img src={f.data} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
@@ -2834,7 +2848,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
           const totalFiles=s.files.length;
           return(
             <div key={s.id} onClick={()=>setActiveSubId(s.id)}
-              style={{display:"flex",alignItems:"center",gap:12,background:"rgba(242,248,240,0.96)",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 10px rgba(90,80,60,0.08)",border:`1.5px solid ${C.ll}`,cursor:"pointer",transition:"transform 0.15s"}}
+              style={{display:"flex",alignItems:"center",gap:12,background:drawer.color+"BB",borderRadius:16,padding:"14px 16px",marginBottom:10,boxShadow:"0 4px 20px rgba(0,0,0,0.20)",border:"2px solid "+drawer.color,cursor:"pointer",transition:"transform 0.15s"}}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
               onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
               <div style={{width:42,height:42,borderRadius:10,background:`linear-gradient(135deg,${drawer.color},${C.dp})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>📂</div>
@@ -2963,7 +2977,7 @@ function FilingCabinet({cabinetData,setCabinetData,onBack,onHome,onLockChange}){
                       subCats:pd.subs.map((s,j)=>({id:now+i*100+j,name:s,files:[]}))};
                     upd(ds=>[...ds,newDrawer]);
                     showToast(`📁 ${pd.name} added!`);
-                  }} style={{background:"rgba(248,245,236,0.88)",borderRadius:16,padding:"12px 12px",border:"1.5px solid rgba(90,120,72,0.15)",cursor:"pointer",transition:"all 0.15s",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                  }} style={{background:"rgba(138,180,100,0.25)",borderRadius:16,padding:"12px 12px",border:"2px solid rgba(90,140,60,0.50)",cursor:"pointer",transition:"all 0.15s",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
                     <div style={{fontSize:20,marginBottom:4}}>{pd.icon}</div>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A1A10",marginBottom:2}}>{pd.name}</div>
                     <div style={{fontSize:10,color:"#8A8070",lineHeight:1.5}}>{pd.subs.slice(0,2).join(" · ")}</div>
@@ -5807,7 +5821,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
             const isSage=qi===0||qi===2;
             return(
               <div key={q.key} style={{
-                background:qi===0?"rgba(192,48,32,0.18)":qi===1?"rgba(72,112,160,0.18)":qi===2?"rgba(192,136,32,0.18)":"rgba(100,150,80,0.18)",border:`2px solid ${q.color}33`,
+                background:qi===0?"rgba(192,48,32,0.82)":qi===1?"rgba(72,112,160,0.82)":qi===2?"rgba(192,136,32,0.82)":"rgba(80,140,70,0.82)",border:"3px solid "+q.color,
                 borderRadius:14,
                 padding:"8px 6px 6px",
                 position:"relative",
@@ -5826,8 +5840,8 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
 
                 {/* Label */}
                 <div style={{paddingRight:18,marginBottom:4}}>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:"#1A1A10",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
-                  <div style={{fontSize:10,color:"#5A5040",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:"#ffffff",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
+                  <div style={{fontSize:10,color:"rgba(255,255,255,0.80)",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
                 </div>
                 <div style={{height:1,background:isSage?"rgba(255,255,255,0.3)":"rgba(90,80,60,0.12)",marginBottom:5}}/>
 
@@ -7441,7 +7455,7 @@ const TOOLS=[
   {id:"noise", name:"Sounds",     icon:"🎵"},
 ];
 
-function WorldTime(){
+function WorldTime({moduleOrder,setModuleOrder,setScreen}){
   const [now,setNow]=useState(new Date());
   const [search,setSearch]=useState("");
   const [pinned,setPinnedRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_worldtime')||'null')||["Europe/London","America/New_York","Asia/Tokyo","Australia/Sydney"];}catch{return ["Europe/London","America/New_York","Asia/Tokyo","Australia/Sydney"];}});
@@ -7534,16 +7548,16 @@ function WorldTime(){
       <div style={{marginBottom:12,display:"flex",justifyContent:"flex-end"}}>
         <button onClick={()=>{
           try{
-            let order=JSON.parse(localStorage.getItem('thinko_nav_visible')||'[]');
-            const already=order.includes('tools');
-            if(!already){order=[...order,'tools'];localStorage.setItem('thinko_nav_visible',JSON.stringify(order));}
-            let homeOrder=JSON.parse(localStorage.getItem('thinko_order')||'[]');
-            const homeHas=homeOrder.includes('tools');
-            if(!homeHas){homeOrder=[...homeOrder,'tools'];localStorage.setItem('thinko_order',JSON.stringify(homeOrder));}
-            alert("📌 World Time / Tools pinned to your home screen! Tap home to see it.");
+            const current=JSON.parse(localStorage.getItem('thinko_order')||'[]');
+            const already=current.includes('tools');
+            if(already){alert("✅ Tools is already on your home screen!");return;}
+            const next=[...current,'tools'];
+            localStorage.setItem('thinko_order',JSON.stringify(next));
+            if(setModuleOrder)setModuleOrder(next);
+            alert("📌 Tools pinned to home screen! Tap 🏠 Home to see it.");
           }catch(e){alert("Couldn't pin — try again");}
-        }} style={{background:"rgba(42,88,120,0.12)",color:"#2A5878",border:"1.5px solid rgba(42,88,120,0.22)",borderRadius:100,padding:"8px 18px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Segoe UI',sans-serif",display:"flex",alignItems:"center",gap:6}}>
-          📌 Pin to home screen
+        }} style={{background:"linear-gradient(135deg,#2A5878,#1A3858)",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"Georgia,serif",display:"flex",alignItems:"center",gap:8,boxShadow:"0 3px 12px rgba(42,88,120,0.30)"}}>
+          📌 Pin Tools to Home Screen
         </button>
       </div>
 
@@ -7575,6 +7589,12 @@ function WorldTime(){
 
 function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}) {
   const [active, setActive] = useState(null);
+  const [toolOrder, setToolOrderRaw] = useState(()=>{
+    try{const s=localStorage.getItem('thinko_tool_order');return s?JSON.parse(s):null;}catch{return null;}
+  });
+  const [dragTool, setDragTool] = useState(null);
+  const [dragOverTool, setDragOverTool] = useState(null);
+  const saveToolOrder = o => {setToolOrderRaw(o);try{localStorage.setItem('thinko_tool_order',JSON.stringify(o));}catch{}};
 
   const TOOL_TABS=[
     {id:"translate",icon:"🌍", name:"Translate"},
@@ -7601,6 +7621,8 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
     {id:"currency", emoji:"💱", label:"Currency\nConverter",color:"#486050"},
     {id:"worldtime",emoji:"🌐", label:"World Time",         color:"#2A5878"},
   ];
+  const orderedTools = toolOrder ? toolOrder.map(id=>TOOL_GRID.find(t=>t.id===id)).filter(Boolean).concat(TOOL_GRID.filter(t=>!toolOrder.includes(t.id))) : TOOL_GRID;
+
 
   if(active&&active!=="home"){
     return(
@@ -7621,7 +7643,7 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
           {active==="sw"       &&<Stopwatch/>}
           {active==="timer"    &&<CountdownTool/>}
           {active==="alarm"    &&<AlarmTool/>}
-          {active==="worldtime"&&<WorldTime/>}
+          {active==="worldtime"&&<WorldTime moduleOrder={moduleOrder} setModuleOrder={setModuleOrder} setScreen={setScreen}/>}
         </div>
       </div>
     );
@@ -7646,7 +7668,8 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
 
       {/* 3-column icon grid */}
       <div style={{padding:"14px 14px 0",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
-        {TOOL_GRID.map(t=>{
+        <div style={{textAlign:"center",fontSize:11,color:"rgba(42,60,28,0.40)",marginBottom:8,fontStyle:"italic"}}>Hold and drag tiles to reorder</div>
+        {orderedTools.map(t=>{
           const modId={translate:"translate",currency:"currency",calc:"calc",sw:"stopwatch",timer:"countdown",alarm:"alarm"}[t.id]||null;
           const isPinned=modId&&moduleOrder&&moduleOrder.includes(modId);
           const togglePin=(e)=>{
@@ -7656,10 +7679,26 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
             if(setModuleOrder)setModuleOrder(next);
           };
           return(
-            <div key={t.id} style={{position:"relative",display:"flex",flexDirection:"column",gap:6}}>
+            <div key={t.id}
+              draggable
+              onDragStart={()=>setDragTool(t.id)}
+              onDragOver={e=>{e.preventDefault();setDragOverTool(t.id);}}
+              onDrop={()=>{
+                if(!dragTool||dragTool===t.id)return;
+                const base=toolOrder||TOOL_GRID.map(x=>x.id);
+                const from=base.indexOf(dragTool),to=base.indexOf(t.id);
+                if(from<0||to<0)return;
+                const next=[...base];next.splice(from,1);next.splice(to,0,dragTool);
+                saveToolOrder(next);setDragTool(null);setDragOverTool(null);
+              }}
+              onDragEnd={()=>{setDragTool(null);setDragOverTool(null);}}
+              style={{position:"relative",display:"flex",flexDirection:"column",gap:6,
+                opacity:dragTool===t.id?0.5:1,
+                transform:dragOverTool===t.id&&dragTool!==t.id?"scale(1.06)":"scale(1)",
+                transition:"transform 0.15s,opacity 0.15s"}}>
               {/* Main tile */}
               <button onClick={()=>setActive(t.id)}
-                style={{width:"100%",position:"relative",background:"rgba(228,234,222,0.90)",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderRadius:22,border:`2px solid ${isPinned?"rgba(90,120,72,0.4)":"rgba(255,255,255,0.88)"}`,padding:"0",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 4px 20px rgba(60,70,40,0.10)",transition:"transform 0.15s",aspectRatio:"1",overflow:"hidden"}}
+                style={{width:"100%",position:"relative",background:t.color+"33",backdropFilter:"blur(14px)",WebkitBackdropFilter:"blur(14px)",borderRadius:22,border:`2px solid ${isPinned?"rgba(90,120,72,0.4)":"rgba(255,255,255,0.88)"}`,padding:"0",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 4px 20px rgba(60,70,40,0.10)",transition:"transform 0.15s",aspectRatio:"1",overflow:"hidden"}}
                 onTouchStart={e=>e.currentTarget.style.transform="scale(0.94)"}
                 onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}
                 onMouseDown={e=>e.currentTarget.style.transform="scale(0.94)"}
