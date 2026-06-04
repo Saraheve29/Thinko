@@ -11177,7 +11177,7 @@ export default function App() {
             return <>{word}{userName?`, ${userName}`:""}</>;
           })()}
         </div>
-        <div style={{fontSize:13,color:"rgba(42,42,20,0.55)",marginBottom:8,fontStyle:"italic"}}>Think it. 🤔 Plan it. Live it.</div>
+        <div style={{fontSize:13,color:"rgba(42,42,20,0.55)",marginBottom:8,fontStyle:"italic"}}>Think it. 🤔 Plan it. Live it. · v2.6</div>
       </div>
 
       {/* ── ACTION ROW (subtle) ── */}
@@ -11258,15 +11258,16 @@ export default function App() {
             className="mod-card"
             style={{
               background: dragHome===m.id
-                ?"rgba(240,248,236,0.96)"
-                :"rgba(236,246,232,0.80)",
+                ?m.color+"33"
+                :m.color+"22",
               backdropFilter:"blur(20px)",
               WebkitBackdropFilter:"blur(20px)",
               borderRadius:28,
-              border:"1.5px solid rgba(255,255,255,0.75)",
+              border:"2px solid "+m.color+"55",
+              overflow:"hidden",
               boxShadow:dragHome===m.id
                 ?"0 20px 50px rgba(0,0,0,0.18)"
-                :"0 6px 24px rgba(60,90,50,0.12)",
+                :"0 6px 24px "+m.color+"33",
               cursor:"pointer",
               transition:"all 0.3s ease",
               transform:dragHome===m.id?"scale(1.05) rotate(-1deg)":"scale(1)",
@@ -11277,6 +11278,8 @@ export default function App() {
               position:"relative",
               overflow:"hidden",
             }}>
+            {/* Colour top bar */}
+            <div style={{height:6,background:m.color,marginBottom:0,position:"absolute",top:0,left:0,right:0,borderRadius:"28px 28px 0 0"}}/>
             {/* Subtle colour wash */}
             <div style={{position:"absolute",inset:0,background:`linear-gradient(160deg, ${m.color}0a 0%, transparent 60%)`,pointerEvents:"none",borderRadius:28}}/>
             {/* Pin button top-left */}
