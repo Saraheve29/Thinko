@@ -6372,21 +6372,7 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
 
   return(
     <div style={{minHeight:"100vh",background:"transparent",paddingBottom:90,fontFamily:"'Segoe UI',sans-serif"}}>
-      {/* Share banner */}
-      <div style={{background:"#25D366",padding:"10px 16px",display:"flex",gap:8}}>
-        <button onClick={()=>{
-          const items=list.items;
-          if(!items.length){alert("No items yet");return;}
-          const text="🛒 "+list.name+"\n\n"+items.filter(i=>!i.done).map(i=>"☐ "+i.name).join("\n")+(items.filter(i=>i.done).length?"\n\n✅ Got:\n"+items.filter(i=>i.done).map(i=>"✓ "+i.name).join("\n"):"")+("\n\nFrom Thinko 🌿");
-          window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
-        }} style={{flex:1,background:"#fff",color:"#25D366",border:"none",borderRadius:20,padding:"10px",fontSize:14,fontWeight:800,cursor:"pointer"}}>💬 Share on WhatsApp</button>
-        <button onClick={()=>{
-          const items=list.items;
-          if(!items.length){alert("No items yet");return;}
-          const text="🛒 "+list.name+"\n\n"+items.filter(i=>!i.done).map(i=>"☐ "+i.name).join("\n")+(items.filter(i=>i.done).length?"\n\n✅ Got:\n"+items.filter(i=>i.done).map(i=>"✓ "+i.name).join("\n"):"")+("\n\nFrom Thinko 🌿");
-          window.open("sms:?body="+encodeURIComponent(text),"_blank");
-        }} style={{flex:1,background:"#fff",color:"#5A7848",border:"none",borderRadius:20,padding:"10px",fontSize:14,fontWeight:800,cursor:"pointer"}}>📱 Send as Text</button>
-      </div>
+
       {/* Header */}
       <div style={{background:"rgba(248,245,236,0.94)",backdropFilter:"blur(16px)",padding:"14px 16px 10px",borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
         {/* Title row */}
@@ -6399,29 +6385,7 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
           <div style={{fontSize:12,color:"#8A8070",fontWeight:600,flexShrink:0}}>{done}/{total}</div>
           <button onClick={()=>{onDelete(list.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#c0392b",fontSize:20,flexShrink:0}}>🗑</button>
         </div>
-        {/* Share row */}
-        <div style={{display:"flex",gap:8,paddingLeft:4}}>
-          <button onClick={()=>{
-            const needed=list.items.filter(i=>!i.done);
-            const got=list.items.filter(i=>i.done);
-            if(!list.items.length){alert("Nothing in this list yet");return;}
-            const text="🛒 "+list.name+"\n\n"
-              +(needed.length?"Still need:\n"+needed.map(i=>"☐ "+i.name+(i.qty?" ("+i.qty+")":"")).join("\n"):"")
-              +(got.length?"\n\n✅ Already got:\n"+got.map(i=>"✓ "+i.name).join("\n"):"")
-              +"\n\nSent from Thinko 🌿";
-            window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
-          }} style={{background:"#25D366",color:"#fff",border:"none",borderRadius:20,padding:"7px 16px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>💬 WhatsApp</button>
-          <button onClick={()=>{
-            const needed=list.items.filter(i=>!i.done);
-            const got=list.items.filter(i=>i.done);
-            if(!list.items.length){alert("Nothing in this list yet");return;}
-            const text="🛒 "+list.name+"\n\n"
-              +(needed.length?"Still need:\n"+needed.map(i=>"☐ "+i.name+(i.qty?" ("+i.qty+")":"")).join("\n"):"")
-              +(got.length?"\n\n✅ Already got:\n"+got.map(i=>"✓ "+i.name).join("\n"):"")
-              +"\n\nSent from Thinko 🌿";
-            window.open("sms:?body="+encodeURIComponent(text),"_blank");
-          }} style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:20,padding:"7px 16px",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>📱 Text</button>
-        </div>
+
       </div>
 
       {/* Progress bar */}
@@ -6531,6 +6495,21 @@ function ShopListDetail({list,onBack,onUpdate,onDelete}){
             </div>
           );
         })()}
+      {/* Fixed share bar */}
+      <div style={{position:"fixed",bottom:60,left:0,right:0,zIndex:200,display:"flex",boxShadow:"0 -2px 12px rgba(0,0,0,0.15)"}}>
+        <button onClick={()=>{
+          const items=list.items;
+          if(!items.length){alert("No items yet");return;}
+          const txt="🛒 "+list.name+"\n\n"+items.filter(i=>!i.done).map(i=>"☐ "+i.name).join("\n")+(items.filter(i=>i.done).length?"\n\n✅ Got:\n"+items.filter(i=>i.done).map(i=>"✓ "+i.name).join("\n"):"")+("\n\nFrom Thinko 🌿");
+          window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");
+        }} style={{flex:1,background:"#25D366",color:"#fff",border:"none",padding:"16px 8px",fontSize:16,fontWeight:800,cursor:"pointer"}}>💬 WhatsApp</button>
+        <button onClick={()=>{
+          const items=list.items;
+          if(!items.length){alert("No items yet");return;}
+          const txt="🛒 "+list.name+"\n\n"+items.filter(i=>!i.done).map(i=>"☐ "+i.name).join("\n")+(items.filter(i=>i.done).length?"\n\n✅ Got:\n"+items.filter(i=>i.done).map(i=>"✓ "+i.name).join("\n"):"")+("\n\nFrom Thinko 🌿");
+          window.open("sms:?body="+encodeURIComponent(txt),"_blank");
+        }} style={{flex:1,background:"#3A6028",color:"#fff",border:"none",padding:"16px 8px",fontSize:16,fontWeight:800,cursor:"pointer"}}>📱 Text</button>
+      </div>
       </div>
     </div>
   );
