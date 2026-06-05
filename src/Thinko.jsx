@@ -12334,7 +12334,8 @@ function ProUpgradeModal({ limitHit, onClose }) {
     <div style={{position:"fixed",inset:0,zIndex:999,background:"rgba(10,2,30,0.85)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{background:C.wh,borderRadius:24,padding:"28px 24px",width:"100%",maxWidth:380,textAlign:"center",boxShadow:"0 12px 48px rgba(45,10,94,0.5)"}}>
         <div style={{fontSize:48,marginBottom:12}}>💎</div>
-        <div style={{fontWeight:900,color:C.dp,fontSize:22,marginBottom:8}}>Unlock Thinko Pro</div>
+        <img src="/logo.jpg" alt="Thinko" style={{height:50,objectFit:"contain",marginBottom:8,filter:"drop-shadow(0 2px 6px rgba(0,0,0,0.12))"}}/>
+          <div style={{fontWeight:900,color:C.dp,fontSize:22,marginBottom:8}}>Unlock Thinko Pro</div>
         <div style={{color:C.soft,fontSize:14,lineHeight:1.6,marginBottom:6}}>
           You've reached the free limit for
         </div>
@@ -12846,6 +12847,33 @@ export default function App() {
     },()=>{},{timeout:8000});
   },[]);
 
+
+  // ── Daily Streak ─────────────────────────────────────────
+  const [streak,setStreakRaw]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem("thinko_streak")||'{"count":0,"lastDate":"","longest":0}');}
+    catch{return {count:0,lastDate:"",longest:0};}
+  });
+  const [streakCelebration,setStreakCelebration]=useState(false);
+
+  const checkStreak=useCallback(()=>{
+    const today=new Date().toISOString().slice(0,10);
+    const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    setStreakRaw(prev=>{
+      if(prev.lastDate===today) return prev; // already counted today
+      const newCount=prev.lastDate===yesterday?prev.count+1:1;
+      const newLongest=Math.max(newCount,prev.longest||0);
+      const updated={count:newCount,lastDate:today,longest:newLongest};
+      try{localStorage.setItem("thinko_streak",JSON.stringify(updated));}catch{}
+      if(newCount>1) setStreakCelebration(true);
+      return updated;
+    });
+  },[]);
+
+  useEffect(()=>{
+    // Check streak on app open
+    checkStreak();
+  },[]);
+
   const [showProModal,setShowProModal]=useState(false);
   const [proLimitHit,setProLimitHit]=useState('');
   const [moduleOrder,setModuleOrder]=useState(()=>{
@@ -12888,7 +12916,7 @@ export default function App() {
   const homeTouchEnd=()=>{clearTimeout(homeTouchRef.current);setDragHome(null);homeTouchId.current=null;try{localStorage.setItem('thinko_order',JSON.stringify(moduleOrder));}catch{}};
 
   if(showOnboarding) return <Onboarding onComplete={()=>{localStorage.setItem('thinko_onboarded','1');setShowOnboarding(false);}}/>;
-  if(screen==="prioritizer") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
+  if(screen==="prioritizer") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Prioritizer data={priData} setData={setPriData} onActivity={checkStreak} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} fmtTimer={fmtTimer} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted}/><NavBar current="prioritizer" setScreen={setScreen}/></div></>);
   if(screen==="mindmap") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MindMap data={mapData} setData={setMapData} priData={priData} setPriData={setPriData} ideasData={ideasData} setIdeasData={setIdeasData} matrixData={matrixData} setMatrixData={setMatrixData} goalsData={goalsData} setGoalsData={setGoalsData} setScreen={setScreen}/><NavBar current="mindmap" setScreen={setScreen}/></div></>);
   if((screen==="notes"||screen==="noteshub"||screen==="filing")&&!vaultUnlocked)
     return <VaultPinLock onUnlock={()=>setVaultUnlocked(true)}/>;
@@ -12897,7 +12925,7 @@ export default function App() {
   if(screen==="meals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><MealPlanner data={mealData} setData={setMealData} shopData={shopData} setShopData={setShopData} setScreen={setScreen}/><NavBar current="meals" setScreen={setScreen}/></div></>);
   if(screen==="goals") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Goals data={goalsData} setData={setGoalsData} priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen}/><NavBar current="goals" setScreen={setScreen}/></div></>);
   if(screen==="matrix") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Matrix data={matrixData} setData={setMatrixData} priData={priData} setPriData={setPriData} mapData={mapData} setMapData={setMapData} setScreen={setScreen}/><NavBar current="matrix" setScreen={setScreen}/></div></>);
-  if(screen==="charge") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
+  if(screen==="charge") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} onActivity={checkStreak} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen} cabinetData={cabinetData} setCabinetData={setCabinetData}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
   if(screen==="decision") return (<><GardenBg/><DecisionScreen setScreen={setScreen}/><NavBar current="decision" setScreen={setScreen}/></>);
@@ -12922,7 +12950,7 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
       {showNameModal&&(
         <div style={{position:"fixed",inset:0,zIndex:600,background:"rgba(30,40,20,0.55)",display:"flex",alignItems:"center",justifyContent:"center",padding:32,backdropFilter:"blur(8px)"}}>
           <div style={{background:"rgba(250,248,240,0.98)",borderRadius:28,padding:"32px 24px",width:"100%",maxWidth:340,textAlign:"center",boxShadow:"0 8px 48px rgba(0,0,0,0.18)"}}>
-            <div style={{fontSize:40,marginBottom:12}}>🌿</div>
+            <img src="/logo.jpg" alt="Thinko" style={{height:70,objectFit:"contain",marginBottom:12,filter:"drop-shadow(0 2px 8px rgba(0,0,0,0.12))"}}/>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:22,color:"#1A1A10",marginBottom:8}}>Welcome to Thinko</div>
             <div style={{fontSize:14,color:"#8A8070",marginBottom:20,lineHeight:1.6}}>What should we call you?</div>
             <input value={nameInput} onChange={e=>setNameInput(e.target.value)}
@@ -12938,7 +12966,12 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
       )}
 
       {/* ── COMPACT HEADER ── */}
-      <div style={{padding:"16px 16px 10px",flexShrink:0}}>
+      <div style={{padding:"12px 16px 8px",flexShrink:0}}>
+
+        {/* Logo bar */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
+          <img src="/logo.jpg" alt="Thinko" style={{height:36,objectFit:"contain",filter:"drop-shadow(0 1px 4px rgba(0,0,0,0.12))"}}/>
+        </div>
 
         {/* Top bar: sun/moon + greeting + weather + customise */}
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
@@ -12962,6 +12995,16 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
             </div>
             <div style={{fontSize:11,color:"#3A2A18",fontWeight:600,marginTop:2,opacity:0.8}}>Think it · Plan it · Live it</div>
           </div>
+
+          {/* Streak */}
+          {streak.count>0&&(
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",background:"rgba(255,255,255,0.55)",borderRadius:20,padding:"5px 10px",border:"1px solid rgba(255,160,0,0.30)",flexShrink:0,cursor:"pointer"}}
+              onClick={()=>setStreakCelebration(true)}>
+              <div style={{fontSize:16,lineHeight:1}}>🔥</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:13,color:"#B85000",lineHeight:1}}>{streak.count}</div>
+              <div style={{fontSize:9,color:"#8A6000",fontWeight:600}}>day{streak.count!==1?"s":""}</div>
+            </div>
+          )}
 
           {/* Weather */}
           {weather?(
@@ -13095,6 +13138,41 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
         </div>
       )}
 
+
+      {/* ── STREAK CALENDAR ── */}
+      {streak.count>0&&(
+        <div style={{padding:"0 14px 12px",flexShrink:0}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"12px 16px",border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",cursor:"pointer"}}
+            onClick={()=>setStreakCelebration(true)}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:18}}>🔥</span>
+                <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#B85000"}}>{streak.count} day streak</span>
+                {streak.count>0&&streak.count===streak.longest&&<span style={{fontSize:11,color:"#5A7848",fontWeight:700}}>🏆 Best!</span>}
+              </div>
+              <span style={{fontSize:11,color:"#8A8070"}}>Best: {streak.longest} days</span>
+            </div>
+            <div style={{display:"flex",gap:4,justifyContent:"space-between"}}>
+              {Array.from({length:7},(_,i)=>{
+                const d=new Date(Date.now()-(6-i)*86400000);
+                const ds=d.toISOString().slice(0,10);
+                const isToday=ds===new Date().toISOString().slice(0,10);
+                const streakStart=streak.count>0?new Date(new Date(streak.lastDate+"T12:00:00").getTime()-(streak.count-1)*86400000).toISOString().slice(0,10):"";
+                const active=streak.lastDate&&streakStart&&ds>=streakStart&&ds<=streak.lastDate;
+                const dayName=["S","M","T","W","T","F","S"][d.getDay()];
+                return(
+                  <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,flex:1}}>
+                    <div style={{width:30,height:30,borderRadius:"50%",background:active?"#E07020":"rgba(180,160,140,0.18)",border:isToday?"2px solid #B85000":"2px solid transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>
+                      {active?"🔥":""}
+                    </div>
+                    <span style={{fontSize:9,color:isToday?"#B85000":"#8A8070",fontWeight:isToday?700:400}}>{dayName}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── FAVOURITE APPS ── */}
       <div style={{padding:"0 14px 12px",flexShrink:0}}>
@@ -13240,6 +13318,38 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
 
     </div>
     <NavBar current="home" setScreen={setScreen}/>
+
+    {/* ── STREAK CELEBRATION ── */}
+    {streakCelebration&&(
+      <div style={{position:"fixed",inset:0,zIndex:800,background:"rgba(20,30,10,0.75)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}
+        onClick={()=>setStreakCelebration(false)}>
+        <div style={{background:"rgba(250,248,240,0.99)",borderRadius:32,padding:"36px 28px",maxWidth:320,width:"100%",textAlign:"center",boxShadow:"0 12px 60px rgba(0,0,0,0.25)"}}
+          onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:64,marginBottom:4}}>🔥</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:32,color:"#B85000",marginBottom:4}}>
+            {streak.count} Day Streak!
+          </div>
+          <div style={{fontSize:15,color:"#5A4A30",marginBottom:6,lineHeight:1.6}}>
+            {streak.count===1?"You're back! Keep going tomorrow 🌿":
+             streak.count<7?"You're building a habit! Come back tomorrow 🦔":
+             streak.count<30?"One week strong! You're doing amazing 🌟":
+             streak.count<100?"A whole month! You're unstoppable 🏆":
+             "Legendary! "+streak.count+" days of showing up for yourself 🎉"}
+          </div>
+          {streak.longest>streak.count&&(
+            <div style={{fontSize:12,color:"#8A8070",marginBottom:12}}>Personal best: {streak.longest} days</div>
+          )}
+          {streak.count===streak.longest&&streak.count>1&&(
+            <div style={{fontSize:13,color:"#5A7848",fontWeight:700,marginBottom:12}}>🏆 New personal best!</div>
+          )}
+          <img src="/logo.jpg" alt="Thinko" style={{height:40,objectFit:"contain",marginBottom:16,opacity:0.8}}/>
+          <button onClick={()=>setStreakCelebration(false)}
+            style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#E07020,#B85000)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 20px rgba(184,80,0,0.35)"}}>
+            🔥 Keep the streak going!
+          </button>
+        </div>
+      </div>
+    )}
     {showLoginModal&&<ProLoginModal onClose={()=>setShowLoginModal(false)} onSignIn={()=>{signIn();setShowLoginModal(false);}}/>}
     {showPromo&&<PromoPopup onClose={()=>setShowPromo(false)} onUpgrade={()=>{setShowPromo(false);setShowLoginModal(true);}}/>}
     </>
