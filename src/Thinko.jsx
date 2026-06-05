@@ -1738,8 +1738,13 @@ function MindMap({data,setData,priData,setPriData,ideasData,setIdeasData,matrixD
             </div>
 
             {/* Description */}
-            <div style={{fontSize:16,color:"#1A3010",textAlign:"center",lineHeight:1.72,marginBottom:28,maxWidth:290,fontWeight:700,fontWeight:400}}>
-              Create multiple mind maps — one for each project, idea, or dream. Let your thoughts branch naturally, like vines finding the light.
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"18px 20px",marginBottom:24,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)",maxWidth:320,textAlign:"center"}}>
+              <div style={{fontSize:18,color:"#1A2810",lineHeight:1.65,fontWeight:800,fontFamily:"Georgia,serif"}}>
+                Create multiple mind maps — one for each project, idea, or dream.
+              </div>
+              <div style={{fontSize:15,color:"#3A2A18",lineHeight:1.6,fontWeight:600,marginTop:8}}>
+                Let your thoughts branch naturally, like vines finding the light. 🌿
+              </div>
             </div>
 
             {/* CTA */}
@@ -6018,8 +6023,170 @@ function SectionLabel({n,label}){
   </div>;
 }
 
+
+// ── BUDGET CALCULATOR ──────────────────────────────────────
+function BudgetCalculator({income,saveIncome,calcExpenses,saveCalcExp,newInc,setNewInc,newCalcExp,setNewCalcExp}){
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+  const FREQ_OPTS=["weekly","fortnightly","monthly","yearly"];
+  const EXP_CATS=["Housing","Bills & Utilities","Food & Groceries","Transport","Children","Clothing","Entertainment","Health","Savings","Debt Repayment","Pets","Personal Care","Other"];
+
+  const toMonthly=(amount,freq)=>{
+    const n=Number(amount)||0;
+    if(freq==="weekly") return n*52/12;
+    if(freq==="fortnightly") return n*26/12;
+    if(freq==="yearly") return n/12;
+    return n;
+  };
+
+  const totalInc=income.reduce((s,i)=>s+toMonthly(i.amount,i.freq),0);
+  const totalExp=calcExpenses.reduce((s,e)=>s+toMonthly(e.amount,e.freq),0);
+  const leftOver=totalInc-totalExp;
+  const fmt=(n)=>"£"+Math.abs(n).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  const expByCategory=calcExpenses.reduce((acc,e)=>{
+    if(!acc[e.category])acc[e.category]=0;
+    acc[e.category]+=toMonthly(e.amount,e.freq);
+    return acc;
+  },{});
+
+  return(
+    <div style={{paddingBottom:20}}>
+      {/* Summary */}
+      <div style={{background:leftOver>=0?"linear-gradient(135deg,rgba(60,140,60,0.88),rgba(40,110,40,0.88))":"linear-gradient(135deg,rgba(192,57,43,0.88),rgba(160,30,20,0.88))",borderRadius:24,padding:"22px 20px",marginBottom:16,color:"#fff",boxShadow:"0 6px 24px rgba(0,0,0,0.15)"}}>
+        <div style={{fontSize:13,fontWeight:600,opacity:0.85,marginBottom:4}}>Monthly summary</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:34,lineHeight:1}}>{leftOver>=0?"":"-"}{fmt(leftOver)}</div>
+            <div style={{fontSize:13,opacity:0.85,marginTop:4}}>{leftOver>=0?"left over each month":"shortfall each month"}</div>
+            <div style={{fontSize:12,opacity:0.70,marginTop:2}}>{leftOver>=0?"💰 "+fmt(leftOver*12)+" saved yearly":"⚠️ "+fmt(-leftOver*12)+" shortfall yearly"}</div>
+          </div>
+          <div style={{fontSize:44}}>{leftOver>=0?"🎉":"😟"}</div>
+        </div>
+        <div style={{display:"flex",gap:12}}>
+          <div style={{flex:1,background:"rgba(255,255,255,0.15)",borderRadius:14,padding:"10px 14px"}}>
+            <div style={{fontSize:11,opacity:0.80}}>Income/month</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:18}}>{fmt(totalInc)}</div>
+          </div>
+          <div style={{flex:1,background:"rgba(255,255,255,0.15)",borderRadius:14,padding:"10px 14px"}}>
+            <div style={{fontSize:11,opacity:0.80}}>Expenses/month</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:18}}>{fmt(totalExp)}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Advice */}
+      {leftOver<0&&(
+        <div style={{background:MULTI,borderRadius:16,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(192,57,43,0.30)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#c0392b",marginBottom:4}}>⚠️ Expenses exceed income</div>
+          <div style={{fontSize:13,color:"#5A4A30",lineHeight:1.6}}>You need {fmt(-leftOver)} more per month or need to cut expenses. <strong>StepChange</strong> offer free debt advice — call 0800 138 1111.</div>
+        </div>
+      )}
+      {leftOver>=0&&leftOver<500&&(
+        <div style={{background:MULTI,borderRadius:16,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(220,160,0,0.30)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#8A6000",marginBottom:4}}>💛 Tight but manageable</div>
+          <div style={{fontSize:13,color:"#5A4A30",lineHeight:1.6}}>You have {fmt(leftOver)} left each month. Try saving even £10-20 a week as an emergency fund.</div>
+        </div>
+      )}
+      {leftOver>=500&&(
+        <div style={{background:MULTI,borderRadius:16,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,168,90,0.30)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#2A6020",marginBottom:4}}>✅ Looking good!</div>
+          <div style={{fontSize:13,color:"#5A4A30",lineHeight:1.6}}>You have {fmt(leftOver)} spare each month — {fmt(leftOver*12)} a year. Consider saving or investing the extra.</div>
+        </div>
+      )}
+
+      {/* Income */}
+      <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:14,border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:16,color:"#1A2810",marginBottom:10}}>💵 Income</div>
+        {income.map((inc,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"rgba(255,255,255,0.60)",borderRadius:12,marginBottom:6}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#1A2810"}}>{inc.label}</div>
+              <div style={{fontSize:11,color:"#5A4A30"}}>{inc.freq} · {fmt(toMonthly(inc.amount,inc.freq))}/mo</div>
+            </div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:15,color:"#2A6020"}}>{fmt(Number(inc.amount))}</div>
+            <button onClick={()=>saveIncome(income.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"rgba(192,57,43,0.5)",cursor:"pointer",fontSize:16}}>✕</button>
+          </div>
+        ))}
+        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+          <input value={newInc.label} onChange={e=>setNewInc({...newInc,label:e.target.value})} placeholder="e.g. Wages, Benefits, Universal Credit"
+            style={{flex:"2 1 140px",padding:"9px 12px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.70)"}}/>
+          <input type="number" value={newInc.amount} onChange={e=>setNewInc({...newInc,amount:e.target.value})} placeholder="£ amount"
+            style={{flex:"1 1 80px",padding:"9px 10px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.70)"}}/>
+          <select value={newInc.freq} onChange={e=>setNewInc({...newInc,freq:e.target.value})}
+            style={{flex:"1 1 100px",padding:"9px 8px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.70)"}}>
+            {FREQ_OPTS.map(f=><option key={f} value={f}>{f}</option>)}
+          </select>
+          <button onClick={()=>{if(!newInc.label.trim()||!newInc.amount)return;saveIncome([...income,{...newInc,id:Date.now()}]);setNewInc({label:"",amount:"",freq:"monthly"});}}
+            style={{padding:"9px 16px",background:"#5A7848",color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer"}}>+ Add</button>
+        </div>
+      </div>
+
+      {/* Expenses */}
+      <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:14,border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:16,color:"#1A2810",marginBottom:10}}>💸 Expenses</div>
+        {Object.entries(expByCategory).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>(
+          <div key={cat} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+            <div style={{fontSize:12,color:"#5A4A30",fontWeight:600,width:120,flexShrink:0}}>{cat}</div>
+            <div style={{flex:1,height:6,background:"rgba(180,160,140,0.20)",borderRadius:3,overflow:"hidden"}}>
+              <div style={{height:"100%",width:Math.min(100,totalExp>0?(amt/totalExp)*100:0)+"%",background:"#c0392b",borderRadius:3}}/>
+            </div>
+            <div style={{fontSize:12,fontWeight:700,color:"#c0392b",minWidth:60,textAlign:"right"}}>{fmt(amt)}</div>
+          </div>
+        ))}
+        {calcExpenses.length>0&&<div style={{height:1,background:"rgba(180,160,140,0.20)",margin:"10px 0"}}/>}
+        {calcExpenses.map((exp,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"rgba(255,255,255,0.60)",borderRadius:12,marginBottom:6}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:13,color:"#1A2810"}}>{exp.label}</div>
+              <div style={{fontSize:11,color:"#5A4A30"}}>{exp.category} · {exp.freq} · {fmt(toMonthly(exp.amount,exp.freq))}/mo</div>
+            </div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:15,color:"#c0392b"}}>{fmt(Number(exp.amount))}</div>
+            <button onClick={()=>saveCalcExp(calcExpenses.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"rgba(192,57,43,0.5)",cursor:"pointer",fontSize:16}}>✕</button>
+          </div>
+        ))}
+        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+          <input value={newCalcExp.label} onChange={e=>setNewCalcExp({...newCalcExp,label:e.target.value})} placeholder="e.g. Rent, Gas, Food shopping"
+            style={{flex:"2 1 140px",padding:"9px 10px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.70)"}}/>
+          <input type="number" value={newCalcExp.amount} onChange={e=>setNewCalcExp({...newCalcExp,amount:e.target.value})} placeholder="£ amount"
+            style={{flex:"1 1 70px",padding:"9px 8px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.70)"}}/>
+          <select value={newCalcExp.category} onChange={e=>setNewCalcExp({...newCalcExp,category:e.target.value})}
+            style={{flex:"1 1 100px",padding:"9px 6px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:11,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.70)"}}>
+            {EXP_CATS.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={newCalcExp.freq} onChange={e=>setNewCalcExp({...newCalcExp,freq:e.target.value})}
+            style={{flex:"1 1 90px",padding:"9px 6px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:11,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.70)"}}>
+            {FREQ_OPTS.map(f=><option key={f} value={f}>{f}</option>)}
+          </select>
+          <button onClick={()=>{if(!newCalcExp.label.trim()||!newCalcExp.amount)return;saveCalcExp([...calcExpenses,{...newCalcExp,id:Date.now()}]);setNewCalcExp({label:"",amount:"",category:"Housing",freq:"monthly"});}}
+            style={{padding:"9px 14px",background:"#c0392b",color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:12,cursor:"pointer"}}>+ Add</button>
+        </div>
+      </div>
+
+      {/* Quick presets */}
+      <div style={{background:MULTI,borderRadius:20,padding:"16px",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810",marginBottom:10}}>⚡ Quick add expenses</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {[{l:"Rent/Mortgage",c:"Housing"},{l:"Council Tax",c:"Bills & Utilities"},{l:"Gas & Electric",c:"Bills & Utilities"},{l:"Water",c:"Bills & Utilities"},{l:"Internet",c:"Bills & Utilities"},{l:"TV Licence",c:"Bills & Utilities"},{l:"Mobile",c:"Bills & Utilities"},{l:"Food Shopping",c:"Food & Groceries"},{l:"School meals",c:"Children"},{l:"Childcare",c:"Children"},{l:"Car insurance",c:"Transport"},{l:"Petrol",c:"Transport"},{l:"Bus/Train",c:"Transport"},{l:"Loan",c:"Debt Repayment"},{l:"Credit card",c:"Debt Repayment"},{l:"Subscriptions",c:"Entertainment"},{l:"Clothing",c:"Clothing"},{l:"Pet food",c:"Pets"}].map(p=>(
+            <button key={p.l} onClick={()=>setNewCalcExp({label:p.l,amount:"",category:p.c,freq:"monthly"})}
+              style={{padding:"6px 12px",background:"rgba(255,255,255,0.70)",border:"1.5px solid rgba(180,160,140,0.25)",borderRadius:20,fontSize:12,fontWeight:600,color:"#2A1A08",cursor:"pointer"}}>
+              {p.l}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BudgetDetail({budget,onBack,onUpdate,onDelete,cabinetData,setCabinetData}){
-  const [tab,setTab]=useState("plan"); // plan | spent | tickets
+  const [tab,setTab]=useState("plan"); // plan | spent | tickets | calculator
+  // Income & Expenses Calculator state
+  const [income,setIncomeRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem("thinko_calc_income")||"[]");}catch{return [];}});
+  const [calcExpenses,setCalcExpensesRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem("thinko_calc_expenses")||"[]");}catch{return [];}});
+  const saveIncome=v=>{setIncomeRaw(v);try{localStorage.setItem("thinko_calc_income",JSON.stringify(v));}catch{}};
+  const saveCalcExp=v=>{setCalcExpensesRaw(v);try{localStorage.setItem("thinko_calc_expenses",JSON.stringify(v));}catch{}};
+  const [newInc,setNewInc]=useState({label:"",amount:"",freq:"monthly"});
+  const [newCalcExp,setNewCalcExp]=useState({label:"",amount:"",category:"Housing",freq:"monthly"});
   const [newExp,setNewExp]=useState({label:"",amount:"",category:""});
   const [newTicket,setNewTicket]=useState({name:"",price:"",date:"",type:"✈️",file:null,fileName:""});
   const [toast,setToast]=useState("");
@@ -6131,12 +6298,23 @@ Budget: ${b.name}`,created:Date.now()});
 
       {/* Tabs */}
       <div style={{display:"flex",borderBottom:"1px solid rgba(90,80,60,0.12)",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)"}}>
+        {TAB_BTN("calculator","💰 Calculator")}
         {TAB_BTN("plan","📋 Planning")}
         {TAB_BTN("spent","💸 Spent")}
         {TAB_BTN("tickets","🎫 Tickets")}
       </div>
 
       <div style={{padding:"16px 16px"}}>
+
+        {/* ── CALCULATOR TAB ── */}
+        {tab==="calculator"&&(
+          <BudgetCalculator
+            income={income} saveIncome={saveIncome}
+            calcExpenses={calcExpenses} saveCalcExp={saveCalcExp}
+            newInc={newInc} setNewInc={setNewInc}
+            newCalcExp={newCalcExp} setNewCalcExp={setNewCalcExp}
+          />
+        )}
 
         {/* ── PLAN TAB ── */}
         {tab==="plan"&&(
@@ -6150,11 +6328,11 @@ Budget: ${b.name}`,created:Date.now()});
             {/* Budget calculator */}
             <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:22,padding:"14px 16px",marginBottom:14,border:"1.5px solid rgba(90,120,72,0.18)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>🧮 How much left?</div>
-              <div style={{display:"flex",gap:8,marginBottom:8}}>
-                <input type="number" placeholder="Item cost £" id="bc_item"
-                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#1A2810"}}/>
+              <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                <input type="number" placeholder="Planned cost £" id="bc_item"
+                  style={{flex:"1 1 100px",minWidth:0,padding:"9px 10px",borderRadius:12,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:12,outline:"none",background:"rgba(255,255,255,0.60)",color:"#1A2810"}}/>
                 <input type="number" placeholder="I have £" id="bc_have"
-                  style={{flex:1,padding:"9px 12px",borderRadius:100,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,outline:"none",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#1A2810"}}/>
+                  style={{flex:"1 1 100px",minWidth:0,padding:"9px 10px",borderRadius:12,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:12,outline:"none",background:"rgba(255,255,255,0.60)",color:"#1A2810"}}/>
               </div>
               <button onClick={()=>{
                 const item=parseFloat(document.getElementById("bc_item").value)||0;
@@ -7764,6 +7942,21 @@ function UnitConverter(){
           <div style={{fontSize:16,color:"#5A4A30",fontWeight:600}}>{units.find(u=>u.id===to)?.label}</div>
         </div>
       )}
+
+      {/* Pin to home */}
+      <div style={{padding:"0 16px 16px"}}>
+        <button onClick={()=>{
+          try{
+            const current=JSON.parse(localStorage.getItem("thinko_order")||"[]");
+            if(current.includes("tools")){alert("✅ Tools is already on your home screen!");return;}
+            const next=[...current,"tools"];
+            localStorage.setItem("thinko_order",JSON.stringify(next));
+            alert("📌 Tools pinned to home screen!");
+          }catch(e){alert("Couldn't pin");}
+        }} style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#2A1A08",cursor:"pointer",backdropFilter:"blur(8px)"}}>
+          📌 Pin Tools to Home Screen
+        </button>
+      </div>
     </div>
   );
 }
@@ -7807,12 +8000,20 @@ function QRScanner(){
   const startCamera=async()=>{
     setError("");setResult("");setImgSrc(null);
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+      if(!navigator.mediaDevices?.getUserMedia){
+        setError("Camera not supported. Use the photo upload below.");return;
+      }
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}});
       streamRef.current=stream;
-      if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play();}
+      if(videoRef.current){
+        videoRef.current.srcObject=stream;
+        await videoRef.current.play();
+      }
       setScanning(true);
     }catch(e){
-      setError("Camera not available. Use the photo upload option below instead.");
+      if(e.name==="NotAllowedError")setError("Camera permission denied. Please allow camera access in your browser settings, or use the photo upload below.");
+      else if(e.name==="NotFoundError")setError("No camera found. Use the photo upload below.");
+      else setError("Camera unavailable. Use the photo upload below.");
     }
   };
 
@@ -7881,6 +8082,20 @@ function QRScanner(){
           </div>
         )}
       </div>
+
+      <div style={{padding:"0 16px 16px"}}>
+        <button onClick={()=>{
+          try{
+            const current=JSON.parse(localStorage.getItem("thinko_order")||"[]");
+            if(current.includes("tools")){alert("✅ Tools already on home screen!");return;}
+            const next=[...current,"tools"];
+            localStorage.setItem("thinko_order",JSON.stringify(next));
+            alert("📌 Tools pinned to home screen!");
+          }catch(e){alert("Couldn't pin");}
+        }} style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#2A1A08",cursor:"pointer"}}>
+          📌 Pin Tools to Home Screen
+        </button>
+      </div>
     </div>
   );
 }
@@ -7934,6 +8149,20 @@ function QRGenerator(){
           </div>
         )}
       </div>
+
+      <div style={{padding:"0 16px 16px"}}>
+        <button onClick={()=>{
+          try{
+            const current=JSON.parse(localStorage.getItem("thinko_order")||"[]");
+            if(current.includes("tools")){alert("✅ Tools already on home screen!");return;}
+            const next=[...current,"tools"];
+            localStorage.setItem("thinko_order",JSON.stringify(next));
+            alert("📌 Tools pinned to home screen!");
+          }catch(e){alert("Couldn't pin");}
+        }} style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#2A1A08",cursor:"pointer"}}>
+          📌 Pin Tools to Home Screen
+        </button>
+      </div>
     </div>
   );
 }
@@ -7969,6 +8198,7 @@ function DecisionScreen({setScreen}){
         {tab==="spin"&&<DecisionMaker/>}
         {tab==="analyse"&&<AIDecisionAnalyser/>}
       </div>
+      <NavBar current="decision" setScreen={setScreen}/>
     </div>
   );
 }
@@ -13030,6 +13260,7 @@ function NavBar({current,setScreen}) {
     {id:"tools",      icon:"🔧", name:"Tools"},
     {id:"rest",       icon:"🌿", name:"Rest"},
     {id:"routine",    icon:"🌀", name:"Routine"},
+    {id:"decision",   icon:"🎲", name:"Decide"},
   ];
   const ALL_IDS=ALL_NAV.map(n=>n.id);
 
