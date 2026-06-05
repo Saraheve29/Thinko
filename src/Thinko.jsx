@@ -7773,103 +7773,118 @@ function QRScanner(){
   const [result,setResult]=useState("");
   const [error,setError]=useState("");
   const [scanning,setScanning]=useState(false);
+  const [imgSrc,setImgSrc]=useState(null);
   const videoRef=useRef(null);
   const streamRef=useRef(null);
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
 
-  const startScan=async()=>{
-    setError("");setResult("");setScanning(true);
+  const stopStream=()=>{
+    if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
+    setScanning(false);
+  };
+  useEffect(()=>()=>stopStream(),[]);
+
+  // Upload photo and send to QR API
+  const scanFromFile=async(file)=>{
+    if(!file)return;
+    setError("");setResult("");
+    const reader=new FileReader();
+    reader.onload=async(ev)=>{
+      setImgSrc(ev.target.result);
+      try{
+        const fd=new FormData();fd.append("file",file,"qr.jpg");
+        const res=await fetch("https://api.qrserver.com/v1/read-qr-code/",{method:"POST",body:fd});
+        const data=await res.json();
+        const val=data?.[0]?.symbol?.[0]?.data;
+        if(val&&val!=="null"&&val){setResult(val);}
+        else{setError("No QR code found in this image. Try a clearer photo.");}
+      }catch(e){setError("Could not read QR code. Try a different image.");}
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Camera scan
+  const startCamera=async()=>{
+    setError("");setResult("");setImgSrc(null);
     try{
       const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
       streamRef.current=stream;
       if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play();}
+      setScanning(true);
     }catch(e){
-      setError("Camera access denied. Please allow camera permission.");
-      setScanning(false);
+      setError("Camera not available. Use the photo upload option below instead.");
     }
   };
 
-  const stopScan=()=>{
-    if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
-    setScanning(false);
+  const snapAndScan=async()=>{
+    if(!videoRef.current)return;
+    const canvas=document.createElement("canvas");
+    canvas.width=videoRef.current.videoWidth;
+    canvas.height=videoRef.current.videoHeight;
+    canvas.getContext("2d").drawImage(videoRef.current,0,0);
+    canvas.toBlob(async blob=>{
+      try{
+        const fd=new FormData();fd.append("file",blob,"snap.jpg");
+        const res=await fetch("https://api.qrserver.com/v1/read-qr-code/",{method:"POST",body:fd});
+        const data=await res.json();
+        const val=data?.[0]?.symbol?.[0]?.data;
+        if(val&&val!=="null"&&val){setResult(val);stopStream();}
+        else{setError("No QR code detected. Try holding camera steadier, then tap Scan again.");}
+      }catch(e){setError("Scan failed. Try the photo upload option.");}
+    },"image/jpeg",0.9);
   };
 
-  // Scan using canvas + API
-  React.useEffect(()=>{
-    if(!scanning||!videoRef.current) return;
-    let running=true;
-    const tryBarcodeDetector=async()=>{
-      if(!("BarcodeDetector" in window)){
-        // Fallback: take snapshot and send to QR API
-        const canvas=document.createElement("canvas");
-        const video=videoRef.current;
-        canvas.width=video.videoWidth||300;
-        canvas.height=video.videoHeight||300;
-        const ctx=canvas.getContext("2d");
-        const snap=async()=>{
-          if(!running||!videoRef.current) return;
-          ctx.drawImage(video,0,0,canvas.width,canvas.height);
-          canvas.toBlob(async blob=>{
-            try{
-              const fd=new FormData();fd.append("file",blob,"qr.jpg");
-              const res=await fetch("https://api.qrserver.com/v1/read-qr-code/",{method:"POST",body:fd});
-              const data=await res.json();
-              const val=data?.[0]?.symbol?.[0]?.data;
-              if(val&&val!=="null"){setResult(val);stopScan();return;}
-            }catch(e){}
-            if(running) setTimeout(snap,1500);
-          },"image/jpeg",0.8);
-        };
-        videoRef.current.addEventListener("playing",snap,{once:true});
-        return;
-      }
-      const detector=new window.BarcodeDetector({formats:["qr_code"]});
-      const scan=async()=>{
-        if(!running||!videoRef.current) return;
-        try{
-          const codes=await detector.detect(videoRef.current);
-          if(codes.length>0){setResult(codes[0].rawValue);stopScan();return;}
-        }catch(e){}
-        if(running) requestAnimationFrame(scan);
-      };
-      videoRef.current.addEventListener("playing",scan,{once:true});
-    };
-    tryBarcodeDetector();
-    return()=>{running=false;};
-  },[scanning]);
-
-  useEffect(()=>()=>stopScan(),[]);
-
-  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
   return(
     <div style={{padding:"16px"}}>
       <div style={{background:MULTI,borderRadius:20,padding:"20px",backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
         <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#2A1A08",marginBottom:4}}>📷 QR Code Scanner</div>
-        <div style={{fontSize:13,color:"#7A6A50",marginBottom:16}}>Point your camera at a QR code</div>
+        <div style={{fontSize:13,color:"#5A4A30",marginBottom:16,fontWeight:500}}>Scan a QR code using your camera or upload a photo</div>
+
+        {/* Camera section */}
         {scanning?(
-          <div>
-            <video ref={videoRef} style={{width:"100%",borderRadius:14,maxHeight:280,background:"#000"}} playsInline muted/>
-            <button onClick={stopScan} style={{width:"100%",marginTop:12,padding:"13px",background:"rgba(192,57,43,0.85)",color:"#fff",border:"none",borderRadius:14,fontSize:15,fontWeight:700,cursor:"pointer"}}>✕ Stop Scanning</button>
+          <div style={{marginBottom:12}}>
+            <video ref={videoRef} style={{width:"100%",borderRadius:14,maxHeight:260,background:"#000",display:"block"}} playsInline muted/>
+            <div style={{display:"flex",gap:8,marginTop:10}}>
+              <button onClick={snapAndScan} style={{flex:1,padding:"12px",background:"#2A3848",color:"#fff",border:"none",borderRadius:14,fontSize:15,fontWeight:700,cursor:"pointer"}}>📸 Scan Now</button>
+              <button onClick={stopStream} style={{padding:"12px 16px",background:"rgba(192,57,43,0.85)",color:"#fff",border:"none",borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer"}}>✕ Stop</button>
+            </div>
           </div>
         ):(
-          <button onClick={startScan} style={{width:"100%",padding:"16px",background:"#2A3848",color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-            <span style={{fontSize:24}}>📷</span> Start Scanning
+          <button onClick={startCamera} style={{width:"100%",padding:"14px",background:"#2A3848",color:"#fff",border:"none",borderRadius:14,fontSize:15,fontWeight:700,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+            <span style={{fontSize:22}}>📷</span> Open Camera
           </button>
         )}
-        {error&&<div style={{marginTop:12,padding:"12px",background:"rgba(192,57,43,0.12)",borderRadius:12,color:"#c0392b",fontSize:13,fontWeight:600}}>{error}</div>}
+
+        {/* Upload photo option */}
+        <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,width:"100%",padding:"14px",background:"rgba(255,255,255,0.60)",border:"2px dashed rgba(180,160,140,0.50)",borderRadius:14,fontSize:14,fontWeight:700,color:"#5A4A30",cursor:"pointer",marginBottom:12,boxSizing:"border-box"}}>
+          <span style={{fontSize:22}}>🖼️</span> Upload QR Photo
+          <input type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>scanFromFile(e.target.files[0])}/>
+        </label>
+
+        {imgSrc&&!result&&(
+          <img src={imgSrc} alt="uploaded" style={{width:"100%",borderRadius:12,maxHeight:180,objectFit:"cover",marginBottom:10}}/>
+        )}
+
+        {error&&<div style={{padding:"12px",background:"rgba(192,57,43,0.10)",borderRadius:12,color:"#c0392b",fontSize:13,fontWeight:600,marginBottom:10}}>{error}</div>}
+
         {result&&(
-          <div style={{marginTop:16,padding:"16px",background:"rgba(255,255,255,0.70)",borderRadius:14,border:"1.5px solid rgba(90,140,60,0.30)"}}>
-            <div style={{fontSize:12,color:"#7A6A50",marginBottom:4,fontWeight:600}}>✅ QR Code detected:</div>
-            <div style={{fontSize:15,color:"#1A3010",fontWeight:700,wordBreak:"break-all",marginBottom:10}}>{result}</div>
-            {result.startsWith("http")&&(
-              <button onClick={()=>window.open(result,"_blank")} style={{padding:"10px 18px",background:"#2A5878",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>🔗 Open Link</button>
-            )}
-            <button onClick={()=>navigator.clipboard?.writeText(result).then(()=>alert("Copied!"))} style={{marginLeft:8,padding:"10px 18px",background:"#5A7848",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>📋 Copy</button>
+          <div style={{padding:"16px",background:"rgba(255,255,255,0.80)",borderRadius:14,border:"1.5px solid rgba(90,140,60,0.30)"}}>
+            <div style={{fontSize:12,color:"#5A4A30",marginBottom:4,fontWeight:700}}>✅ QR Code read:</div>
+            <div style={{fontSize:15,color:"#1A3010",fontWeight:700,wordBreak:"break-all",marginBottom:12}}>{result}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {result.startsWith("http")&&(
+                <button onClick={()=>window.open(result,"_blank")} style={{padding:"9px 16px",background:"#2A5878",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>🔗 Open Link</button>
+              )}
+              <button onClick={()=>navigator.clipboard?.writeText(result).then(()=>alert("Copied ✅"))} style={{padding:"9px 16px",background:"#5A7848",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>📋 Copy</button>
+              <button onClick={()=>setResult("")} style={{padding:"9px 16px",background:"rgba(90,80,60,0.10)",color:"#5A4A30",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Clear</button>
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 }
+
 
 // ── QR GENERATOR ───────────────────────────────────────────
 function QRGenerator(){
@@ -7923,9 +7938,46 @@ function QRGenerator(){
   );
 }
 
+// ── DECISION SCREEN WRAPPER ─────────────────────────────────
+function DecisionScreen({setScreen}){
+  const [tab,setTab]=useState("spin"); // spin | analyse
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+  return(
+    <div style={{position:"relative",zIndex:10,minHeight:"100vh"}}>
+      {/* Header */}
+      <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px 0",borderBottom:"1px solid rgba(180,160,140,0.35)",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+          <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2A1A08" strokeWidth="2.2" strokeLinecap="round"/></svg>
+          </button>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#2A1A08",flex:1}}>Decision Maker</div>
+        </div>
+        {/* Tab bar */}
+        <div style={{display:"flex",gap:0,borderBottom:"none"}}>
+          <button onClick={()=>setTab("spin")}
+            style={{flex:1,padding:"10px 8px",background:"none",border:"none",borderBottom:tab==="spin"?"3px solid #5A3888":"3px solid transparent",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:tab==="spin"?"#5A3888":"#7A6A50",cursor:"pointer"}}>
+            🎡 Spin & Pick
+          </button>
+          <button onClick={()=>setTab("analyse")}
+            style={{flex:1,padding:"10px 8px",background:"none",border:"none",borderBottom:tab==="analyse"?"3px solid #5A3888":"3px solid transparent",fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:tab==="analyse"?"#5A3888":"#7A6A50",cursor:"pointer"}}>
+            🧠 Deep Analysis
+          </button>
+        </div>
+      </div>
+      {/* Content */}
+      <div style={{paddingTop:8}}>
+        {tab==="spin"&&<DecisionMaker/>}
+        {tab==="analyse"&&<AIDecisionAnalyser/>}
+      </div>
+    </div>
+  );
+}
+
+
 // ── DECISION MAKER ─────────────────────────────────────────
 function DecisionMaker(){
-  const [options,setOptions]=useState(["Option 1","Option 2","Option 3"]);
+  const [options,setOptions]=useState(["",""]);
+  const [optFocus,setOptFocus]=useState(null);
   const [newOpt,setNewOpt]=useState("");
   const [spinning,setSpinning]=useState(false);
   const [angle,setAngle]=useState(0);
@@ -7944,8 +7996,9 @@ function DecisionMaker(){
     const ctx=canvas.getContext("2d");
     const cx=canvas.width/2,cy=canvas.height/2,r=cx-8;
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    const slice=(2*Math.PI)/options.length;
-    options.forEach((opt,i)=>{
+    const filledOpts=options.filter(o=>o.trim());
+    const slice=(2*Math.PI)/filledOpts.length;
+    filledOpts.forEach((opt,i)=>{
       const start=angle*Math.PI/180+i*slice;
       const end=start+slice;
       ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
@@ -7977,9 +8030,10 @@ function DecisionMaker(){
       if(t<1){requestAnimationFrame(animate);}
       else{
         const finalAngle=cur%360;
-        const slice=360/options.length;
-        const idx=Math.floor(((360-finalAngle%360)%360)/slice)%options.length;
-        setWinner(options[idx]);setSpinning(false);
+        const filled=options.filter(o=>o.trim());
+        const slice=360/filled.length;
+        const idx=Math.floor(((360-finalAngle%360)%360)/slice)%filled.length;
+        setWinner(filled[idx]);setSpinning(false);
       }
     };
     requestAnimationFrame(animate);
@@ -7989,7 +8043,7 @@ function DecisionMaker(){
     if(flipping||options.length<2) return;
     setFlipping(true);setFlipResult(null);
     setTimeout(()=>{
-      setFlipResult(options[Math.floor(Math.random()*options.length)]);
+      const f=options.filter(o=>o.trim());setFlipResult(f[Math.floor(Math.random()*f.length)]);
       setFlipping(false);
     },800);
   };
@@ -8007,25 +8061,35 @@ function DecisionMaker(){
         ))}
       </div>
 
-      {/* Options */}
+            {/* Options */}
       <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:16,backdropFilter:"blur(8px)",border:"1.5px solid rgba(180,160,140,0.35)"}}>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#2A1A08",marginBottom:10}}>Your Options</div>
+        <div style={{display:"flex",alignItems:"center",marginBottom:12}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#2A1A08",flex:1}}>Your Options</div>
+          <div style={{fontSize:12,color:"#8A8070"}}>{options.filter(o=>o.trim()).length} filled</div>
+        </div>
         {options.map((o,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-            <div style={{width:14,height:14,borderRadius:"50%",background:COLOURS[i%COLOURS.length],flexShrink:0}}/>
-            <input value={o} onChange={e=>{const a=[...options];a[i]=e.target.value;setOptions(a);}}
-              style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:14,color:"#2A1A08",background:"rgba(255,255,255,0.60)",outline:"none"}}/>
-            {options.length>2&&<button onClick={()=>setOptions(options.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"rgba(192,57,43,0.6)",fontSize:18,cursor:"pointer",flexShrink:0}}>✕</button>}
+            <div style={{width:20,height:20,borderRadius:"50%",background:COLOURS[i%COLOURS.length],flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff"}}>{i+1}</div>
+            <input
+              value={o}
+              onChange={e=>{const a=[...options];a[i]=e.target.value;setOptions(a);setWinner(null);}}
+              placeholder={"Option "+(i+1)+"…"}
+              style={{flex:1,padding:"10px 14px",borderRadius:12,border:"2px solid rgba(180,160,140,0.35)",fontSize:15,color:"#1A1A10",background:"rgba(255,255,255,0.75)",outline:"none",fontWeight:500}}/>
+            {options.length>2&&(
+              <button onClick={()=>{setOptions(options.filter((_,j)=>j!==i));setWinner(null);}}
+                style={{background:"rgba(192,57,43,0.08)",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontSize:14,color:"rgba(192,57,43,0.70)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+            )}
           </div>
         ))}
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          <input value={newOpt} onChange={e=>setNewOpt(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&newOpt.trim()){setOptions([...options,newOpt.trim()]);setNewOpt("");}}}
-            placeholder="Add option..."
-            style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:14,color:"#2A1A08",background:"rgba(255,255,255,0.60)",outline:"none"}}/>
-          <button onClick={()=>{if(newOpt.trim()){setOptions([...options,newOpt.trim()]);setNewOpt("");}}}
-            style={{padding:"8px 16px",background:"#5A7848",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer"}}>+</button>
-        </div>
+        {options.length<8&&(
+          <button onClick={()=>{setOptions([...options,""]);setWinner(null);}}
+            style={{width:"100%",padding:"10px",background:"rgba(255,255,255,0.50)",border:"1.5px dashed rgba(180,160,140,0.40)",borderRadius:12,fontSize:14,fontWeight:600,color:"#5A7848",cursor:"pointer",marginTop:4,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            ＋ Add another option
+          </button>
+        )}
+        {options.filter(o=>o.trim()).length<2&&(
+          <div style={{fontSize:12,color:"#C09020",marginTop:8,textAlign:"center",fontWeight:600}}>⚠️ Add at least 2 options to spin</div>
+        )}
       </div>
 
       {mode==="wheel"?(
@@ -8036,7 +8100,7 @@ function DecisionMaker(){
             <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",fontSize:28,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.3))"}}>▼</div>
           </div>
           <br/>
-          <button onClick={spin} disabled={spinning||options.length<2}
+          <button onClick={spin} disabled={spinning||options.filter(o=>o.trim()).length<2}
             style={{padding:"16px 40px",background:spinning?"rgba(90,80,60,0.30)":"linear-gradient(135deg,#E07060,#C05040)",color:"#fff",border:"none",borderRadius:100,fontSize:18,fontWeight:800,cursor:spinning?"default":"pointer",boxShadow:"0 4px 20px rgba(192,80,64,0.35)",letterSpacing:0.5}}>
             {spinning?"Spinning...":"🎡 SPIN!"}
           </button>
@@ -8049,7 +8113,7 @@ function DecisionMaker(){
         </div>
       ):(
         <div style={{textAlign:"center"}}>
-          <button onClick={doFlip} disabled={flipping||options.length<2}
+          <button onClick={doFlip} disabled={flipping||options.filter(o=>o.trim()).length<2}
             style={{padding:"20px 40px",background:flipping?"rgba(90,80,60,0.30)":"linear-gradient(135deg,#6080C0,#4060A0)",color:"#fff",border:"none",borderRadius:100,fontSize:18,fontWeight:800,cursor:flipping?"default":"pointer",boxShadow:"0 4px 20px rgba(64,96,160,0.35)",marginBottom:16,letterSpacing:0.5}}>
             {flipping?"Thinking...":"🎲 Pick For Me!"}
           </button>
@@ -8062,6 +8126,659 @@ function DecisionMaker(){
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+
+
+// ── EVENT MANAGER ──────────────────────────────────────────
+function EventManager({events,saveEvents}){
+  const [newName,setNewName]=useState("");
+  const [newDate,setNewDate]=useState("");
+  const [newIcon,setNewIcon]=useState("📅");
+  const [newTime,setNewTime]=useState("");
+  const [newNote,setNewNote]=useState("");
+  const today=new Date().toISOString().slice(0,10);
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+
+  const QUICK_ICONS=["📅","🎂","🏥","💊","🦷","👩‍⚕️","✂️","🎉","✈️","🏫","💼","🛒","🐾","🎓","💒","🎄","🎁","🏋️","⚽","🎵","🍽️","📞","🚗","🏠"];
+
+  // Google Calendar import
+  const [gcalEvents,setGcalEvents]=useState([]);
+  const [gcalLoading,setGcalLoading]=useState(false);
+  const [gcalError,setGcalError]=useState("");
+  const [showGcal,setShowGcal]=useState(false);
+
+  const importFromGcal=async()=>{
+    setGcalLoading(true);setGcalError("");
+    try{
+      // Use Google Calendar public ICS feed if user provides it
+      // Or use OAuth2 implicit flow
+      const CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"; // user configures this
+      const scope="https://www.googleapis.com/auth/calendar.readonly";
+      const redirect=encodeURIComponent(window.location.origin);
+      const authUrl=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${redirect}&response_type=token&scope=${scope}`;
+      
+      // Open popup for auth
+      const popup=window.open(authUrl,"gcal_auth","width=500,height=600,scrollbars=yes");
+      const timer=setInterval(async()=>{
+        try{
+          if(popup.closed){clearInterval(timer);setGcalLoading(false);return;}
+          const hash=popup.location.hash;
+          if(hash&&hash.includes("access_token")){
+            clearInterval(timer);popup.close();
+            const token=new URLSearchParams(hash.slice(1)).get("access_token");
+            const now=new Date().toISOString();
+            const future=new Date(Date.now()+30*24*60*60*1000).toISOString();
+            const res=await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now}&timeMax=${future}&singleEvents=true&orderBy=startTime&maxResults=50`,
+              {headers:{Authorization:"Bearer "+token}});
+            const data=await res.json();
+            const evs=(data.items||[]).map(ev=>({
+              id:ev.id,
+              name:ev.summary||"Event",
+              date:(ev.start?.date||ev.start?.dateTime||"").slice(0,10),
+              time:ev.start?.dateTime?ev.start.dateTime.slice(11,16):"",
+              note:ev.description||ev.location||"",
+              icon:"📅",
+              color:"#4285F4"
+            })).filter(e=>e.date);
+            setGcalEvents(evs);setShowGcal(true);setGcalLoading(false);
+          }
+        }catch(e){}
+      },500);
+    }catch(e){
+      setGcalError("Could not connect to Google Calendar. Try again.");
+      setGcalLoading(false);
+    }
+  };
+
+  const add=()=>{
+    if(!newName.trim()||!newDate)return;
+    const ev={id:Date.now(),name:newName.trim(),date:newDate,time:newTime,note:newNote,icon:newIcon};
+    saveEvents([...events,ev].sort((a,b)=>a.date.localeCompare(b.date)));
+    setNewName("");setNewDate("");setNewTime("");setNewNote("");setNewIcon("📅");
+  };
+
+  const upcoming=events.filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  const past=events.filter(e=>e.date<today).sort((a,b)=>b.date.localeCompare(a.date));
+
+  return(
+    <div style={{padding:"0 20px"}}>
+
+      {/* Add new event */}
+      {/* Google Calendar import */}
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <button onClick={importFromGcal} disabled={gcalLoading}
+          style={{flex:1,padding:"12px",background:"#4285F4",color:"#fff",border:"none",borderRadius:14,fontWeight:700,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <span style={{fontSize:18}}>📅</span> {gcalLoading?"Connecting…":"Import from Google Calendar"}
+        </button>
+      </div>
+      {gcalError&&<div style={{fontSize:12,color:"#c0392b",marginBottom:10,padding:"8px 12px",background:"rgba(192,57,43,0.08)",borderRadius:10}}>{gcalError}</div>}
+
+      {/* Google Calendar events picker */}
+      {showGcal&&gcalEvents.length>0&&(
+        <div style={{background:MULTI,borderRadius:20,padding:"14px",marginBottom:14,border:"1.5px solid rgba(180,160,140,0.35)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810",marginBottom:10}}>
+            📅 Your Google Calendar — tap to add to Thinko
+          </div>
+          {gcalEvents.map(ev=>{
+            const already=events.some(e=>e.name===ev.name&&e.date===ev.date);
+            return(
+              <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"rgba(255,255,255,0.70)",borderRadius:12,marginBottom:6,border:"1px solid rgba(180,160,140,0.25)"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#1A1A10"}}>{ev.name}</div>
+                  <div style={{fontSize:11,color:"#8A8070"}}>{new Date(ev.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}{ev.time&&" · "+ev.time}</div>
+                  {ev.note&&<div style={{fontSize:11,color:"#8A8070",fontStyle:"italic"}}>{ev.note.slice(0,50)}</div>}
+                </div>
+                {already?(
+                  <div style={{fontSize:12,color:"#5A7848",fontWeight:700}}>✅</div>
+                ):(
+                  <button onClick={()=>saveEvents([...events,{...ev,id:Date.now()}].sort((a,b)=>a.date.localeCompare(b.date)))}
+                    style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:20,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Add</button>
+                )}
+              </div>
+            );
+          })}
+          <button onClick={()=>setShowGcal(false)} style={{width:"100%",padding:"8px",background:"transparent",border:"none",color:"#8A8070",fontSize:13,cursor:"pointer",marginTop:4}}>Close</button>
+        </div>
+      )}
+      {showGcal&&gcalEvents.length===0&&(
+        <div style={{textAlign:"center",padding:"12px",color:"#8A8070",fontSize:13,marginBottom:12}}>No upcoming events found in your calendar.</div>
+      )}
+
+      <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:16,border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810"}}>Add event or appointment</div>
+          <button onClick={openCalendar} style={{background:"rgba(255,255,255,0.70)",border:"1.5px solid rgba(66,133,244,0.40)",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,color:"#4285F4",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Google Calendar
+          </button>
+        </div>
+
+        {/* Icon picker */}
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {QUICK_ICONS.map(ic=>(
+            <button key={ic} onClick={()=>setNewIcon(ic)}
+              style={{width:36,height:36,borderRadius:10,border:"2px solid "+(newIcon===ic?"#5A7848":"transparent"),background:newIcon===ic?"rgba(90,120,72,0.15)":"rgba(255,255,255,0.60)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              {ic}
+            </button>
+          ))}
+        </div>
+
+        <input value={newName} onChange={e=>setNewName(e.target.value)}
+          placeholder="Event name e.g. Doctor appointment, Birthday, School run…"
+          style={{width:"100%",boxSizing:"border-box",padding:"11px 14px",borderRadius:14,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)",marginBottom:8}}/>
+
+        <div style={{display:"flex",gap:8,marginBottom:8}}>
+          <input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)}
+            min={today}
+            style={{flex:1,padding:"11px 12px",borderRadius:14,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+          <input type="time" value={newTime} onChange={e=>setNewTime(e.target.value)}
+            style={{flex:1,padding:"11px 12px",borderRadius:14,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+        </div>
+
+        <input value={newNote} onChange={e=>setNewNote(e.target.value)}
+          placeholder="Note (optional) e.g. Bring medication, wear smart dress…"
+          style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:14,border:"1.5px solid rgba(180,160,140,0.35)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)",marginBottom:12}}/>
+
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={add} disabled={!newName.trim()||!newDate}
+            style={{flex:1,padding:"13px",background:newName.trim()&&newDate?"#5A7848":"rgba(90,80,60,0.20)",color:newName.trim()&&newDate?"#fff":"#8A8070",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:newName.trim()&&newDate?"pointer":"default"}}>
+            ✅ Add to Briefing
+          </button>
+          <button onClick={()=>{add();setTimeout(()=>openGoogleCalendar(null),100);}} disabled={!newName.trim()||!newDate}
+            style={{flexShrink:0,padding:"13px 14px",background:newName.trim()&&newDate?"rgba(66,133,244,0.90)":"rgba(90,80,60,0.20)",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:13,cursor:newName.trim()&&newDate?"pointer":"default",display:"flex",alignItems:"center",gap:6}}>
+            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            + Google
+          </button>
+        </div>
+      </div>
+
+      {/* Upcoming events */}
+      {upcoming.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810",marginBottom:10}}>📅 Upcoming</div>
+          {upcoming.map(ev=>{
+            const days=Math.ceil((new Date(ev.date)-new Date(today))/(1000*60*60*24));
+            const isToday=days===0;
+            const isSoon=days<=3&&days>0;
+            return(
+              <div key={ev.id} style={{background:isToday?"linear-gradient(135deg,rgba(255,215,0,0.25),rgba(255,165,0,0.20))":MULTI,borderRadius:16,padding:"12px 14px",marginBottom:8,border:"1.5px solid "+(isToday?"rgba(200,140,0,0.40)":"rgba(180,160,140,0.35)"),display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:26,flexShrink:0}}>{ev.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810"}}>{ev.name}</div>
+                  <div style={{fontSize:12,color:"#5A4A30",marginTop:2}}>
+                    {new Date(ev.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}
+                    {ev.time&&" · "+ev.time}
+                  </div>
+                  {ev.note&&<div style={{fontSize:11,color:"#8A8070",marginTop:2,fontStyle:"italic"}}>{ev.note}</div>}
+                </div>
+                <div style={{textAlign:"center",flexShrink:0}}>
+                  <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:16,color:isToday?"#B8860B":isSoon?"#c0392b":"#5A7848"}}>{isToday?"TODAY":days===1?"Tomorrow":days+"d"}</div>
+                </div>
+                <button onClick={()=>openGoogleCalendar(ev)} title="Add to Google Calendar"
+                  style={{background:"rgba(66,133,244,0.12)",border:"none",borderRadius:20,padding:"5px 8px",cursor:"pointer",fontSize:12,flexShrink:0,color:"#4285F4",fontWeight:700}}>📅</button>
+                <button onClick={()=>saveEvents(events.filter(e=>e.id!==ev.id))}
+                  style={{background:"none",border:"none",color:"rgba(192,57,43,0.40)",cursor:"pointer",fontSize:16,flexShrink:0,padding:"0 4px"}}>🗑</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Past events */}
+      {past.length>0&&(
+        <div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#8A8070",marginBottom:8}}>Past</div>
+          {past.slice(0,5).map(ev=>(
+            <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"rgba(90,80,60,0.05)",borderRadius:12,marginBottom:6,opacity:0.6}}>
+              <span style={{fontSize:18}}>{ev.icon}</span>
+              <div style={{flex:1,fontSize:12,color:"#8A8070"}}>{ev.name} · {new Date(ev.date+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</div>
+              <button onClick={()=>saveEvents(events.filter(e=>e.id!==ev.id))}
+                style={{background:"none",border:"none",color:"rgba(192,57,43,0.30)",cursor:"pointer",fontSize:14}}>🗑</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {events.length===0&&(
+        <div style={{textAlign:"center",padding:"20px 0",color:"#8A8070"}}>
+          <div style={{fontSize:40,marginBottom:8}}>📅</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:600,fontSize:16,color:"#1A1A10",marginBottom:4}}>No events yet</div>
+          <div style={{fontSize:13,lineHeight:1.6}}>Add appointments, birthdays, school dates — anything important. They show in your daily briefing at the top of the home screen.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── AI DECISION ANALYSER ───────────────────────────────────
+function AIDecisionAnalyser(){
+  const [decision,setDecision]=useState("");
+  const [pros,setPros]=useState([""]);
+  const [cons,setCons]=useState([""]);
+  const [context,setContext]=useState("");
+  const [result,setResult]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState("");
+  const [activeTab,setActiveTab]=useState("input"); // input | result
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+
+  const updatePro=(i,v)=>{const a=[...pros];a[i]=v;setPros(a);};
+  const updateCon=(i,v)=>{const a=[...cons];a[i]=v;setCons(a);};
+  const addPro=()=>setPros([...pros,""]);
+  const addCon=()=>setCons([...cons,""]);
+  const removePro=(i)=>setPros(pros.filter((_,j)=>j!==i));
+  const removeCon=(i)=>setCons(cons.filter((_,j)=>j!==i));
+
+  const analyse=async()=>{
+    const cleanPros=pros.filter(p=>p.trim());
+    const cleanCons=cons.filter(c=>c.trim());
+    if(!decision.trim()){setError("Please describe what you're deciding.");return;}
+    if(cleanPros.length===0&&cleanCons.length===0){setError("Please add at least one pro or con.");return;}
+    setError("");setLoading(true);setResult(null);
+
+    const prompt=`You are a wise, empathetic decision coach helping someone make an important decision.
+
+DECISION: ${decision.trim()}
+${context.trim()?`CONTEXT: ${context.trim()}`:""}
+PROS: ${cleanPros.length>0?cleanPros.map((p,i)=>`${i+1}. ${p}`).join("\n"):"None listed"}
+CONS: ${cleanCons.length>0?cleanCons.map((c,i)=>`${i+1}. ${c}`).join("\n"):"None listed"}
+
+Analyse this decision deeply and respond in JSON only (no markdown, no backticks) with exactly this structure:
+{
+  "verdict": "Go for it" | "Think twice" | "It depends" | "Don't do it",
+  "confidence": number 0-100,
+  "summary": "2-3 sentence overall conclusion",
+  "prosAnalysis": [{"point":"string","weight":"High|Medium|Low","insight":"string"}],
+  "consAnalysis": [{"point":"string","weight":"High|Medium|Low","insight":"string"}],
+  "hiddenFactors": ["string","string"],
+  "questions": ["string","string"],
+  "advice": "string - personal, warm, actionable final advice 2-3 sentences"
+}`;
+
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          messages:[{role:"user",content:prompt}]
+        })
+      });
+      const data=await res.json();
+      const text=data.content?.[0]?.text||"";
+      const clean=text.replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(clean);
+      setResult(parsed);
+      setActiveTab("result");
+    }catch(e){
+      setError("Analysis failed. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  const verdictColor=(v)=>{
+    if(v==="Go for it") return "#2A8A3A";
+    if(v==="Think twice") return "#C09020";
+    if(v==="Don\'t do it") return "#C03020";
+    return "#4870A0";
+  };
+  const verdictEmoji=(v)=>{
+    if(v==="Go for it") return "✅";
+    if(v==="Think twice") return "⚠️";
+    if(v==="Don\'t do it") return "❌";
+    return "🤔";
+  };
+  const weightColor=(w)=>w==="High"?"#C03020":w==="Medium"?"#C09020":"#5A7848";
+
+  return(
+    <div style={{padding:"0 16px 90px"}}>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {[{id:"input",label:"📝 Decision"},{id:"result",label:"🧠 Analysis"}].map(t=>(
+          <button key={t.id} onClick={()=>setActiveTab(t.id)}
+            style={{flex:1,padding:"10px",background:activeTab===t.id?MULTI:"rgba(255,255,255,0.40)",
+              border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:20,fontSize:14,fontWeight:700,
+              color:"#2A1A08",cursor:"pointer",backdropFilter:"blur(8px)",
+              opacity:t.id==="result"&&!result?0.5:1}}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab==="input"&&(
+        <div>
+          {/* Decision */}
+          <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:12,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:8}}>🤔 What are you deciding?</div>
+            <textarea value={decision} onChange={e=>setDecision(e.target.value)}
+              placeholder="e.g. Should I change jobs? Should I move house? Should I buy this car?"
+              style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.70)",outline:"none",resize:"none",minHeight:80,fontFamily:"Georgia,serif",lineHeight:1.5}}/>
+          </div>
+
+          {/* Context */}
+          <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:12,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:8}}>📋 Any context? <span style={{fontWeight:400,fontSize:13,color:"#7A6A50"}}>(optional)</span></div>
+            <textarea value={context} onChange={e=>setContext(e.target.value)}
+              placeholder="e.g. I have two kids, limited savings, my current job is stressful…"
+              style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:14,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.70)",outline:"none",resize:"none",minHeight:70,fontFamily:"Georgia,serif",lineHeight:1.5}}/>
+          </div>
+
+          {/* Pros */}
+          <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:12,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>✅ Pros</div>
+            {pros.map((p,i)=>(
+              <div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"center"}}>
+                <span style={{color:"#5A7848",fontWeight:700,flexShrink:0}}>+</span>
+                <input value={p} onChange={e=>updatePro(i,e.target.value)}
+                  placeholder={"Pro "+(i+1)+"…"}
+                  style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.70)",outline:"none"}}/>
+                {pros.length>1&&<button onClick={()=>removePro(i)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.50)",cursor:"pointer",fontSize:18,flexShrink:0}}>✕</button>}
+              </div>
+            ))}
+            <button onClick={addPro} style={{background:"rgba(90,120,72,0.10)",border:"1.5px dashed rgba(90,120,72,0.30)",borderRadius:12,padding:"8px 16px",fontSize:13,fontWeight:600,color:"#5A7848",cursor:"pointer",width:"100%"}}>+ Add pro</button>
+          </div>
+
+          {/* Cons */}
+          <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:16,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)"}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>❌ Cons</div>
+            {cons.map((c,i)=>(
+              <div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"center"}}>
+                <span style={{color:"#C03020",fontWeight:700,flexShrink:0}}>−</span>
+                <input value={c} onChange={e=>updateCon(i,e.target.value)}
+                  placeholder={"Con "+(i+1)+"…"}
+                  style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.70)",outline:"none"}}/>
+                {cons.length>1&&<button onClick={()=>removeCon(i)} style={{background:"none",border:"none",color:"rgba(192,57,43,0.50)",cursor:"pointer",fontSize:18,flexShrink:0}}>✕</button>}
+              </div>
+            ))}
+            <button onClick={addCon} style={{background:"rgba(192,57,43,0.06)",border:"1.5px dashed rgba(192,57,43,0.25)",borderRadius:12,padding:"8px 16px",fontSize:13,fontWeight:600,color:"#C03020",cursor:"pointer",width:"100%"}}>+ Add con</button>
+          </div>
+
+          {error&&<div style={{padding:"12px",background:"rgba(192,57,43,0.10)",borderRadius:12,color:"#c0392b",fontSize:13,fontWeight:600,marginBottom:12}}>{error}</div>}
+
+          <button onClick={analyse} disabled={loading}
+            style={{width:"100%",padding:"16px",background:loading?"rgba(90,80,60,0.20)":"linear-gradient(135deg,#5A3888,#7A4AAA)",color:loading?"#8A8070":"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,cursor:loading?"default":"pointer",boxShadow:loading?"none":"0 4px 20px rgba(90,56,136,0.35)",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+            {loading?(
+              <>
+                <span style={{display:"inline-block",animation:"spin 1s linear infinite",fontSize:20}}>🔄</span>
+                Analysing deeply…
+              </>
+            ):(
+              <>🧠 Deep Analyse My Decision</>
+            )}
+          </button>
+          <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+
+      {activeTab==="result"&&result&&(
+        <div>
+          {/* Verdict card */}
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.95),rgba(210,195,220,0.95))",borderRadius:24,padding:"24px",marginBottom:14,border:"2px solid "+verdictColor(result.verdict)+"44",backdropFilter:"blur(8px)",textAlign:"center"}}>
+            <div style={{fontSize:52,marginBottom:8}}>{verdictEmoji(result.verdict)}</div>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:28,color:verdictColor(result.verdict),marginBottom:6}}>{result.verdict}</div>
+            {/* Confidence bar */}
+            <div style={{fontSize:12,color:"#7A6A50",marginBottom:8,fontWeight:600}}>Confidence: {result.confidence}%</div>
+            <div style={{height:8,background:"rgba(90,80,60,0.12)",borderRadius:100,overflow:"hidden",marginBottom:14}}>
+              <div style={{height:"100%",width:result.confidence+"%",background:"linear-gradient(90deg,"+verdictColor(result.verdict)+","+verdictColor(result.verdict)+"99)",borderRadius:100,transition:"width 1s ease"}}/>
+            </div>
+            <div style={{fontSize:15,color:"#2A1A08",lineHeight:1.7,fontWeight:500}}>{result.summary}</div>
+          </div>
+
+          {/* Pros analysis */}
+          {result.prosAnalysis?.length>0&&(
+            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:12,border:"1.5px solid rgba(90,140,60,0.30)",backdropFilter:"blur(8px)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>✅ Pros — Deep Analysis</div>
+              {result.prosAnalysis.map((p,i)=>(
+                <div key={i} style={{padding:"10px 12px",background:"rgba(255,255,255,0.60)",borderRadius:12,marginBottom:8,border:"1px solid rgba(90,140,60,0.20)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <div style={{fontWeight:700,fontSize:13,color:"#1A2810",flex:1}}>{p.point}</div>
+                    <div style={{fontSize:10,fontWeight:700,color:weightColor(p.weight),background:weightColor(p.weight)+"15",padding:"2px 8px",borderRadius:20,flexShrink:0}}>{p.weight}</div>
+                  </div>
+                  <div style={{fontSize:12,color:"#5A4A30",lineHeight:1.5}}>{p.insight}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Cons analysis */}
+          {result.consAnalysis?.length>0&&(
+            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:12,border:"1.5px solid rgba(192,57,43,0.25)",backdropFilter:"blur(8px)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>❌ Cons — Deep Analysis</div>
+              {result.consAnalysis.map((c,i)=>(
+                <div key={i} style={{padding:"10px 12px",background:"rgba(255,255,255,0.60)",borderRadius:12,marginBottom:8,border:"1px solid rgba(192,57,43,0.15)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <div style={{fontWeight:700,fontSize:13,color:"#1A2810",flex:1}}>{c.point}</div>
+                    <div style={{fontSize:10,fontWeight:700,color:weightColor(c.weight),background:weightColor(c.weight)+"15",padding:"2px 8px",borderRadius:20,flexShrink:0}}>{c.weight}</div>
+                  </div>
+                  <div style={{fontSize:12,color:"#5A4A30",lineHeight:1.5}}>{c.insight}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Hidden factors */}
+          {result.hiddenFactors?.length>0&&(
+            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:12,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>🔍 Hidden Factors to Consider</div>
+              {result.hiddenFactors.map((f,i)=>(
+                <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<result.hiddenFactors.length-1?"1px solid rgba(180,160,140,0.20)":"none"}}>
+                  <span style={{color:"#7A5A90",flexShrink:0}}>◆</span>
+                  <div style={{fontSize:13,color:"#2A1A08",lineHeight:1.5}}>{f}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Questions to ask yourself */}
+          {result.questions?.length>0&&(
+            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:12,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:10}}>💭 Ask Yourself</div>
+              {result.questions.map((q,i)=>(
+                <div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<result.questions.length-1?"1px solid rgba(180,160,140,0.20)":"none"}}>
+                  <span style={{color:"#4870A0",flexShrink:0,fontWeight:700}}>{i+1}.</span>
+                  <div style={{fontSize:13,color:"#2A1A08",lineHeight:1.5,fontStyle:"italic"}}>{q}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Final advice */}
+          {result.advice&&(
+            <div style={{background:"linear-gradient(135deg,rgba(90,56,136,0.12),rgba(72,112,160,0.12))",borderRadius:20,padding:"18px",marginBottom:16,border:"1.5px solid rgba(90,56,136,0.25)",backdropFilter:"blur(8px)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810",marginBottom:8}}>🌿 Final Advice</div>
+              <div style={{fontSize:14,color:"#2A1A08",lineHeight:1.7}}>{result.advice}</div>
+            </div>
+          )}
+
+          {/* Start over */}
+          <button onClick={()=>{setResult(null);setActiveTab("input");setDecision("");setPros([""]);setCons([""]);setContext("");}}
+            style={{width:"100%",padding:"13px",background:"rgba(90,80,60,0.10)",border:"1.5px solid rgba(180,160,140,0.35)",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#5A4A30",cursor:"pointer"}}>
+            🔄 Start a New Decision
+          </button>
+        </div>
+      )}
+
+      {activeTab==="result"&&!result&&(
+        <div style={{textAlign:"center",padding:"60px 20px",color:"#8A8070"}}>
+          <div style={{fontSize:48,marginBottom:12}}>🧠</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:8}}>No analysis yet</div>
+          <div style={{fontSize:13,lineHeight:1.6}}>Fill in your decision, pros and cons on the Decision tab, then tap Analyse.</div>
+          <button onClick={()=>setActiveTab("input")} style={{marginTop:16,padding:"12px 24px",background:"linear-gradient(135deg,#5A3888,#7A4AAA)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>Go to Decision →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ── APP SEARCH ─────────────────────────────────────────────
+function AppSearch({onAdd, quickApps}){
+  const [query,setQuery]=useState("");
+  const [results,setResults]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [searched,setSearched]=useState(false);
+  const [customIcon,setCustomIcon]=useState("🔗");
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
+
+  // Detect iOS vs Android
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  // Built-in popular apps - covers most common ones
+  const POPULAR=[
+    {name:"WhatsApp",   icon:"💬", color:"#25D366", android:"com.whatsapp",              ios:"id310633997",  scheme:"whatsapp://"},
+    {name:"Facebook",   icon:"📘", color:"#1877F2", android:"com.facebook.katana",        ios:"id284882215",  scheme:"fb://"},
+    {name:"Instagram",  icon:"📸", color:"#E1306C", android:"com.instagram.android",      ios:"id389801252",  scheme:"instagram://"},
+    {name:"TikTok",     icon:"🎶", color:"#010101", android:"com.zhiliaoapp.musically",   ios:"id835599320",  scheme:"snssdk1233://"},
+    {name:"Snapchat",   icon:"👻", color:"#FFFC00", android:"com.snapchat.android",       ios:"id447188370",  scheme:"snapchat://"},
+    {name:"YouTube",    icon:"▶️",  color:"#FF0000", android:"com.google.android.youtube", ios:"id544007664",  scheme:"youtube://"},
+    {name:"Spotify",    icon:"🎵", color:"#1DB954", android:"com.spotify.music",          ios:"id324684580",  scheme:"spotify://"},
+    {name:"Netflix",    icon:"🎬", color:"#E50914", android:"com.netflix.mediaclient",    ios:"id363590051",  scheme:"netflix://"},
+    {name:"Disney+",    icon:"🏰", color:"#113CCF", android:"com.disney.disneyplus",      ios:"id1446075923", scheme:"disneyplus://"},
+    {name:"BBC iPlayer",icon:"📺", color:"#BB1919", android:"bbc.iplayer.android",        ios:"id422762933",  scheme:"bbciplayer://"},
+    {name:"Amazon",     icon:"📦", color:"#FF9900", android:"com.amazon.mShop.android",   ios:"id297606951",  scheme:"https://amazon.co.uk"},
+    {name:"eBay",       icon:"🛍️",  color:"#E53238", android:"com.ebay.mobile",            ios:"id282614216",  scheme:"ebay://"},
+    {name:"Vinted",     icon:"👗", color:"#09B1BA", android:"com.vinted.android",         ios:"id632064380",  scheme:"vinted://"},
+    {name:"ASOS",       icon:"🧥", color:"#000000", android:"com.asos.app",               ios:"id457876088",  scheme:"https://asos.com"},
+    {name:"Gmail",      icon:"📧", color:"#EA4335", android:"com.google.android.gm",      ios:"id422689480",  scheme:"googlegmail://"},
+    {name:"Google Maps",icon:"🗺️",  color:"#34A853", android:"com.google.android.apps.maps",ios:"id585027354",scheme:"comgooglemaps://"},
+    {name:"PayPal",     icon:"💳", color:"#003087", android:"com.paypal.android.p2pmobile",ios:"id283646709", scheme:"paypal://"},
+    {name:"Uber",       icon:"🚗", color:"#000000", android:"com.ubercab",                ios:"id368677368",  scheme:"uber://"},
+    {name:"Deliveroo",  icon:"🛵", color:"#00CCBC", android:"com.deliveroo.orderapp",     ios:"id1000873569", scheme:"https://deliveroo.co.uk"},
+    {name:"Just Eat",   icon:"🍔", color:"#FF6600", android:"com.justeat.app.uk",         ios:"id566347057",  scheme:"https://justeat.com"},
+    {name:"Rover",      icon:"🐾", color:"#FF5A1F", android:"com.rover.android",          ios:"id681286001",  scheme:"https://rover.com"},
+    {name:"LinkedIn",   icon:"💼", color:"#0A66C2", android:"com.linkedin.android",       ios:"id288429040",  scheme:"linkedin://"},
+    {name:"Pinterest",  icon:"📌", color:"#E60023", android:"com.pinterest",              ios:"id429047995",  scheme:"pinterest://"},
+    {name:"Twitter/X",  icon:"🐦", color:"#000000", android:"com.twitter.android",        ios:"id333903271",  scheme:"twitter://"},
+    {name:"Duolingo",   icon:"🦉", color:"#58CC02", android:"com.duolingo",               ios:"id570060128",  scheme:"duolingo://"},
+    {name:"Roblox",     icon:"🎮", color:"#FF0000", android:"com.roblox.client",          ios:"id431946152",  scheme:"roblox://"},
+    {name:"Skyla",      icon:"🌤️",  color:"#4A90D9", android:"com.saraheve.skyla",         ios:"",             scheme:"https://skyla-lake.vercel.app"},
+    {name:"Thinko",     icon:"🌿", color:"#5A7848", android:"com.saraheve.thinko",        ios:"",             scheme:"https://thinko-lemon.vercel.app"},
+    {name:"Barclays",   icon:"🦅", color:"#00AEEF", android:"com.barclays.android.barclaysmobilebanking",ios:"id469314760",scheme:"barclays://"},
+    {name:"Lloyds",     icon:"🏦", color:"#024731", android:"com.lloydsbank.mobile",      ios:"id469600848",  scheme:"lloydsbank://"},
+    {name:"NatWest",    icon:"🏦", color:"#42145F", android:"com.rbs.mobile.android.natwest",ios:"id466644700",scheme:"natwest://"},
+    {name:"Halifax",    icon:"🏦", color:"#009AC7", android:"com.halifax.mobile",         ios:"id469628439",  scheme:"halifax://"},
+    {name:"Monzo",      icon:"🔴", color:"#FF3464", android:"co.monzo.uk",                ios:"id1052238659", scheme:"monzo://"},
+    {name:"Revolut",    icon:"💜", color:"#191C1F", android:"com.revolut.revolut",        ios:"id1127186547", scheme:"revolut://"},
+    {name:"NHS App",    icon:"🏥", color:"#005EB8", android:"com.nhs.online.nhsonline",   ios:"id1388411277", scheme:"https://nhs.uk"},
+    {name:"BBC Sounds", icon:"🎙️",  color:"#BB1919", android:"com.bbc.sounds",             ios:"id1209485951", scheme:"bbcsounds://"},
+    {name:"Calm",       icon:"🧘", color:"#4A90D9", android:"com.calm.android",           ios:"id571800810",  scheme:"calm://"},
+    {name:"Headspace",  icon:"🟠", color:"#F47D31", android:"com.getsomeheadspace.android",ios:"id493145008", scheme:"headspace://"},
+  ];
+
+  const getUrl=(app)=>{
+    if(isIOS && app.ios) return "https://apps.apple.com/app/"+app.ios;
+    if(app.android) return "https://play.google.com/store/apps/details?id="+app.android;
+    return app.scheme||"";
+  };
+
+  const search=(q)=>{
+    setQuery(q);
+    if(!q.trim()){setResults([]);setSearched(false);return;}
+    const lower=q.toLowerCase();
+    const matches=POPULAR.filter(a=>a.name.toLowerCase().includes(lower));
+    setResults(matches);
+    setSearched(true);
+  };
+
+  const alreadyAdded=(app)=>quickApps.some(q=>q.name===app.name);
+
+  return(
+    <div style={{padding:"0 20px"}}>
+      {/* Search box */}
+      <div style={{position:"relative",marginBottom:16}}>
+        <input
+          value={query}
+          onChange={e=>search(e.target.value)}
+          placeholder="Type any app name e.g. Skyla, Spotify, Barclays…"
+          autoFocus
+          style={{width:"100%",boxSizing:"border-box",padding:"14px 44px 14px 16px",borderRadius:100,border:"2px solid rgba(90,120,72,0.30)",fontSize:15,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)",fontFamily:"Georgia,serif"}}/>
+        {query&&<button onClick={()=>search("")} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#8A8070"}}>✕</button>}
+      </div>
+
+      {/* iOS/Android notice */}
+      <div style={{fontSize:12,color:"#5A4A30",marginBottom:12,padding:"8px 12px",background:"rgba(90,120,72,0.08)",borderRadius:12,lineHeight:1.5}}>
+        {isIOS?"🍎 iOS detected — links open the App Store":"🤖 Android detected — links open the Play Store or the app if installed"}
+      </div>
+
+      {/* Search results */}
+      {searched&&results.length===0&&(
+        <div style={{textAlign:"center",padding:"20px 0",color:"#8A8070"}}>
+          <div style={{fontSize:32,marginBottom:8}}>🔍</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:4}}>Not found in our list</div>
+          <div style={{fontSize:13,lineHeight:1.6,marginBottom:16}}>Add it manually below</div>
+        </div>
+      )}
+
+      {results.length>0&&(
+        <div style={{marginBottom:16}}>
+          {results.map(app=>(
+            <div key={app.name} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:MULTI,borderRadius:16,marginBottom:8,border:"1.5px solid rgba(180,160,140,0.35)"}}>
+              <div style={{width:46,height:46,borderRadius:14,background:app.color+"22",border:"2px solid "+app.color+"55",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{app.icon}</div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10"}}>{app.name}</div>
+                <div style={{fontSize:11,color:"#8A8070"}}>{isIOS&&app.ios?"App Store":app.android?"Play Store":"Web link"}</div>
+              </div>
+              {alreadyAdded(app)?(
+                <div style={{fontSize:12,color:"#5A7848",fontWeight:700}}>✅ Added</div>
+              ):(
+                <button onClick={()=>onAdd({id:"app_"+Date.now(),name:app.name,icon:app.icon,url:getUrl(app),color:app.color})}
+                  style={{background:"#5A7848",color:"#fff",border:"none",borderRadius:20,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Add</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Popular grid when no search */}
+      {!searched&&(
+        <>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:10}}>Popular apps</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
+            {POPULAR.map(app=>(
+              <button key={app.name} onClick={()=>{
+                if(!alreadyAdded(app))onAdd({id:"app_"+Date.now(),name:app.name,icon:app.icon,url:getUrl(app),color:app.color});
+              }}
+                style={{padding:"12px 6px",background:alreadyAdded(app)?"rgba(90,120,72,0.12)":"rgba(255,255,255,0.80)",border:"1.5px solid "+(alreadyAdded(app)?"rgba(90,120,72,0.30)":"rgba(180,160,140,0.25)"),borderRadius:16,cursor:alreadyAdded(app)?"default":"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transition:"transform 0.1s"}}
+                onTouchStart={e=>{if(!alreadyAdded(app))e.currentTarget.style.transform="scale(0.93)";}}
+                onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+                <span style={{fontSize:26}}>{app.icon}</span>
+                <span style={{fontSize:11,fontWeight:600,color:"#1A1A10",textAlign:"center",lineHeight:1.2}}>{app.name}</span>
+                {alreadyAdded(app)&&<span style={{fontSize:10,color:"#5A7848",fontWeight:700}}>✅</span>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Manual add - always at bottom */}
+      <div style={{background:MULTI,borderRadius:16,padding:"14px 16px",border:"1.5px solid rgba(180,160,140,0.35)"}}>
+        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#2A1A08",marginBottom:10}}>Add any other app</div>
+        <div style={{display:"flex",gap:8,marginBottom:8}}>
+          <input id="qaIcon2" placeholder="🔗" maxLength={4}
+            style={{width:50,flexShrink:0,padding:"10px 4px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:22,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)",textAlign:"center"}}/>
+          <input id="qaName2" placeholder="App name"
+            style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:14,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)"}}/>
+        </div>
+        <input id="qaUrl2" placeholder="Play Store / App Store URL or website"
+          style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:12,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:13,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)",marginBottom:10}}/>
+        <div style={{fontSize:11,color:"#5A4A30",marginBottom:10,lineHeight:1.5}}>
+          💡 Find any app's Play Store link by searching it on play.google.com, then copy the URL from your browser.
+        </div>
+        <button onClick={()=>{
+          const name=document.getElementById("qaName2")?.value.trim();
+          const url=document.getElementById("qaUrl2")?.value.trim();
+          const icon=document.getElementById("qaIcon2")?.value.trim()||"🔗";
+          if(!name||!url){alert("Please fill in the name and URL");return;}
+          onAdd({id:"custom_"+Date.now(),name,icon,url,color:"#5A7848"});
+        }} style={{width:"100%",padding:"12px",background:"#5A7848",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+          ✅ Save to Quick Launch
+        </button>
+      </div>
     </div>
   );
 }
@@ -8116,6 +8833,7 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
           <div style={{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10"}}>
             {TOOL_GRID.find(t=>t.id===active)?.label.replace("\n"," ")||active}
           </div>
+          <button onClick={()=>setActive(null)} style={{background:"rgba(90,80,60,0.10)",border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"#5A4A30"}}>✕</button>
           <div style={{width:36}}/>
         </div>
         <div style={{padding:"16px 14px"}}>
@@ -11227,6 +11945,8 @@ const MODULES=[
    summary:"Plan future events · Log spending · Tickets"},
   {id:"shopping",    icon:"🛒", name:"Shopping",     color:"#486050",
    summary:"Multiple lists · Tick off · Categories · Share"},
+  {id:"decision",    icon:"🎲", name:"Decision Maker",color:"#9060C0",
+   summary:"Spin the wheel · Random pick · Add your options"},
   {id:"tools",       icon:"🔧", name:"Tools",        color:"#705848",
    summary:"Calculator · Timer · Voice to text · Translator · Currency"},
   {id:"rest",        icon:"🌿", name:"Rest Space",   color:"#3A6828",
@@ -11570,6 +12290,98 @@ export default function App() {
   useEffect(()=>{try{localStorage.setItem('thinko_goals',JSON.stringify(goalsData));}catch{}},[goalsData]);
   useEffect(()=>{try{localStorage.setItem('thinko_shop',JSON.stringify(shopData));}catch{}},[shopData]);
   const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
+
+  // ── Quick App Shortcuts ──────────────────────────────────
+  const DEFAULT_QUICK_APPS = [
+    {id:"whatsapp",  name:"WhatsApp",  icon:"💬", url:"https://wa.me",                color:"#25D366"},
+    {id:"facebook",  name:"Facebook",  icon:"📘", url:"fb://",                        color:"#1877F2"},
+    {id:"instagram", name:"Instagram", icon:"📸", url:"instagram://",                 color:"#E1306C"},
+    {id:"youtube",   name:"YouTube",   icon:"▶️",  url:"youtube://",                   color:"#FF0000"},
+    {id:"netflix",   name:"Netflix",   icon:"🎬", url:"netflix://",                   color:"#E50914"},
+    {id:"amazon",    name:"Amazon",    icon:"📦", url:"https://amazon.co.uk",         color:"#FF9900"},
+    {id:"google",    name:"Google",    icon:"🔍", url:"googlechrome://",              color:"#4285F4"},
+    {id:"gmail",     name:"Gmail",     icon:"📧", url:"googlegmail://",               color:"#EA4335"},
+    {id:"maps",      name:"Maps",      icon:"🗺️",  url:"comgooglemaps://",             color:"#34A853"},
+    {id:"spotify",   name:"Spotify",   icon:"🎵", url:"spotify://",                   color:"#1DB954"},
+    {id:"tiktok",    name:"TikTok",    icon:"🎶", url:"snssdk1233://",                color:"#010101"},
+    {id:"twitter",   name:"X/Twitter", icon:"🐦", url:"twitter://",                   color:"#000000"},
+    {id:"pinterest", name:"Pinterest", icon:"📌", url:"pinterest://",                 color:"#E60023"},
+    {id:"ebay",      name:"eBay",      icon:"🛍️",  url:"https://ebay.co.uk",          color:"#E53238"},
+    {id:"paypal",    name:"PayPal",    icon:"💳", url:"paypal://",                    color:"#003087"},
+    {id:"bbc",       name:"BBC",       icon:"📺", url:"https://bbc.co.uk",            color:"#BB1919"},
+    {id:"nhs",       name:"NHS",       icon:"🏥", url:"https://nhs.uk",               color:"#005EB8"},
+    {id:"deliveroo", name:"Deliveroo", icon:"🛵", url:"https://deliveroo.co.uk",      color:"#00CCBC"},
+    {id:"uber",      name:"Uber",      icon:"🚗", url:"uber://",                      color:"#000000"},
+    {id:"linkedin",  name:"LinkedIn",  icon:"💼", url:"linkedin://",                  color:"#0A66C2"},
+    {id:"rover",     name:"Rover",     icon:"🐾", url:"https://rover.com",            color:"#FF5A1F"},
+    {id:"snapchat",  name:"Snapchat",  icon:"👻", url:"snapchat://",                  color:"#FFFC00"},
+    {id:"iplay",     name:"ITVX",      icon:"📱", url:"https://itvx.com",             color:"#3A3A8A"},
+    {id:"bbc_sounds",name:"BBC Sounds",icon:"🎙️", url:"https://bbc.co.uk/sounds",     color:"#BB1919"},
+    {id:"calendar",  name:"Calendar",  icon:"📅", url:"webcal://",                    color:"#4285F4"},
+    {id:"phone",     name:"Phone",     icon:"📞", url:"tel:",                         color:"#34A853"},
+    {id:"messages",  name:"Messages",  icon:"💬", url:"sms:",                         color:"#34A853"},
+    {id:"camera",    name:"Camera",    icon:"📷", url:"https://thinko-lemon.vercel.app/tools", color:"#5A4A30"},
+  ];
+  const [quickApps,setQuickAppsRaw]=useState(()=>{
+    try{const s=localStorage.getItem("thinko_quick_apps");return s?JSON.parse(s):[];}
+    catch{return [];}
+  });
+  const saveQuickApps=a=>{setQuickAppsRaw(a);try{localStorage.setItem("thinko_quick_apps",JSON.stringify(a));}catch{}};
+
+  // One-time migration: clear pre-loaded default apps so users start fresh
+  useEffect(()=>{
+    try{
+      const stored=localStorage.getItem("thinko_quick_apps");
+      if(stored){
+        const apps=JSON.parse(stored);
+        // If it looks like the old pre-loaded set (has whatsapp, facebook etc as defaults), clear it
+        const defaultIds=["whatsapp","facebook","youtube","google","spotify","rover"];
+        const isOldDefault=defaultIds.every(id=>apps.some(a=>a.id===id))&&apps.length===6;
+        if(isOldDefault){
+          localStorage.removeItem("thinko_quick_apps");
+          setQuickAppsRaw([]);
+        }
+      }
+    }catch{}
+  },[]);
+  const [showAppPicker,setShowAppPicker]=useState(false);
+  const [editingApps,setEditingApps]=useState(false);
+
+  // ── Daily Briefing state ─────────────────────────────────
+  const [weather,setWeather]=useState(null);
+  const [events,setEventsRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem("thinko_events")||"[]");}catch{return [];}});
+  const saveEvents=e=>{setEventsRaw(e);try{localStorage.setItem("thinko_events",JSON.stringify(e));}catch{}};
+  const [showEventModal,setShowEventModal]=useState(false);
+  const [weatherLoaded,setWeatherLoaded]=useState(false);
+
+  useEffect(()=>{
+    if(weatherLoaded)return;
+    if(!navigator.geolocation){return;}
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      try{
+        const {latitude:lat,longitude:lon}=pos.coords;
+        const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=precipitation_probability&timezone=auto`);
+        const data=await res.json();
+        const cw=data.current_weather;
+        const code=cw.weathercode;
+        const getIcon=c=>{
+          if(c===0)return"☀️";
+          if(c<=2)return"⛅";
+          if(c<=3)return"☁️";
+          if(c<=48)return"🌫️";
+          if(c<=57)return"🌦️";
+          if(c<=67)return"🌧️";
+          if(c<=77)return"❄️";
+          if(c<=82)return"🌧️";
+          if(c<=99)return"⛈️";
+          return"🌡️";
+        };
+        setWeather({temp:Math.round(cw.temperature),icon:getIcon(code),wind:Math.round(cw.windspeed)});
+        setWeatherLoaded(true);
+      }catch{}
+    },()=>{},{timeout:8000});
+  },[]);
+
   const [showProModal,setShowProModal]=useState(false);
   const [proLimitHit,setProLimitHit]=useState('');
   const [moduleOrder,setModuleOrder]=useState(()=>{
@@ -11624,7 +12436,7 @@ export default function App() {
   if(screen==="charge") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><TheCharge priData={priData} setPriData={setPriData} matrixData={matrixData} setMatrixData={setMatrixData} setScreen={setScreen} focusMins={focusMins} setFocusMins={setFocusMins} focusLeft={focusLeft} setFocusLeft={setFocusLeft} focusOn={focusOn} setFocusOn={setFocusOn} setFocusAlerted={setFocusAlerted} breakMins={breakMins} setBreakMins={setBreakMins} breakLeft={breakLeft} setBreakLeft={setBreakLeft} breakOn={breakOn} setBreakOn={setBreakOn} setBreakAlerted={setBreakAlerted} fmtTimer={fmtTimer}/><NavBar current="charge" setScreen={setScreen}/></div></>);
   if(screen==="budget") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><BudgetPlanner data={budgetData} setData={setBudgetData} setScreen={setScreen} cabinetData={cabinetData} setCabinetData={setCabinetData}/><NavBar current="budget" setScreen={setScreen}/></div></>);
   if(screen==="shopping") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><ShoppingList data={shopData} setData={setShopData} setScreen={setScreen}/><NavBar current="shopping" setScreen={setScreen}/></div></>);
-  if(screen==="decision") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh",paddingBottom:90}}><div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(180,160,140,0.35)",position:"sticky",top:0,zIndex:50}}><button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#2A1A08" strokeWidth="2.2" strokeLinecap="round"/></svg></button><div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#2A1A08",flex:1}}>🎲 Decision Maker</div></div><DecisionMaker/><NavBar current="decision" setScreen={setScreen}/></div></>);
+  if(screen==="decision") return (<><GardenBg/><DecisionScreen setScreen={setScreen}/><NavBar current="decision" setScreen={setScreen}/></>);
 if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Tools setScreen={setScreen} notesData={notesData} setNotesData={setNotesData} moduleOrder={moduleOrder} setModuleOrder={setModuleOrder}/><NavBar current="tools" setScreen={setScreen}/></div></>);
   if(screen==="rest") return (<><div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}><img src="/Garden2.png" alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",filter:"brightness(1.05) saturate(1.05)"}}/><div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(255,255,255,0.1) 0%,rgba(0,0,0,0.05) 100%)"}}/></div><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><RestSpace setScreen={setScreen}/><NavBar current="rest" setScreen={setScreen}/></div></>);
   if(screen==="routine") return (<><GardenBg/><div style={{position:"relative",zIndex:10,minHeight:"100vh"}}><Routine routineData={routineData} setRoutineData={setRoutineData} setScreen={setScreen}/><NavBar current="routine" setScreen={setScreen}/></div></>);
@@ -11661,63 +12473,121 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
         </div>
       )}
 
-      {/* ── GREETING SECTION ── */}
-      <div style={{padding:"36px 24px 8px",textAlign:"center",flexShrink:0}}>
-        {/* Animated sun / moon / stars */}
+      {/* ── COMPACT HEADER ── */}
+      <div style={{padding:"16px 16px 10px",flexShrink:0}}>
+
+        {/* Top bar: sun/moon + greeting + weather + customise */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+
+          {/* Sun / Moon - compact */}
+          {(()=>{
+            const h=new Date().getHours();
+            const isNight=h>=21||h<5;
+            const isEvening=h>=17&&h<21;
+            if(isNight) return <div style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 0 8px #8090FF)"}}>🌙</div>;
+            if(isEvening) return <div style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 0 8px #FF8060)"}}>🌅</div>;
+            return(
+              <div style={{width:38,height:38,borderRadius:"50%",background:"radial-gradient(circle,#FFFDE7,#FFD700,#FFA500)",boxShadow:"0 0 14px #FFD700,0 0 28px rgba(255,200,0,0.4)",flexShrink:0}}/>
+            );
+          })()}
+
+          {/* Greeting */}
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:18,fontWeight:800,color:"#0A1A08",lineHeight:1.1,textShadow:"0 1px 4px rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {(()=>{const h=new Date().getHours();const w=h<12?"Morning":h<17?"Afternoon":h<21?"Evening":"Night";return`Good ${w}${userName?", "+userName:""}!`;})()}
+            </div>
+            <div style={{fontSize:11,color:"#3A2A18",fontWeight:600,marginTop:2,opacity:0.8}}>Think it · Plan it · Live it</div>
+          </div>
+
+          {/* Weather */}
+          {weather?(
+            <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,0.55)",borderRadius:20,padding:"5px 10px",border:"1px solid rgba(180,160,140,0.30)",flexShrink:0}}>
+              <span style={{fontSize:18}}>{weather.icon}</span>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:15,color:"#1A2810"}}>{weather.temp}°</div>
+            </div>
+          ):(
+            <div style={{width:60,height:30,borderRadius:20,background:"rgba(255,255,255,0.30)",border:"1px solid rgba(180,160,140,0.20)"}}/>
+          )}
+
+          {/* Customise button */}
+          <button onClick={()=>setShowHomeEdit(true)}
+            style={{background:"rgba(255,255,255,0.55)",border:"1px solid rgba(180,160,140,0.30)",borderRadius:20,width:34,height:34,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            ⚙️
+          </button>
+        </div>
+
+        {/* Today's events - compact single line */}
         {(()=>{
-          const h=new Date().getHours();
-          const isMorn=h>=5&&h<12;
-          const isEvening=h>=17&&h<21;
-          const isNight=h>=21||h<5;
+          const today=new Date().toISOString().slice(0,10);
+          const todayEvs=events.filter(e=>e.date===today);
+          const nextEv=events.filter(e=>e.date>today).sort((a,b)=>a.date.localeCompare(b.date))[0];
+          if(todayEvs.length===0&&!nextEv) return null;
           return(
-            <div style={{marginBottom:14,display:"inline-block"}}>
-              <style>{`
-                @keyframes sunPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 18px #FFD700) drop-shadow(0 0 36px #FFA500);}50%{transform:scale(1.12);filter:drop-shadow(0 0 28px #FFD700) drop-shadow(0 0 56px #FF8C00);}}
-                @keyframes sunRays{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-                @keyframes moonGlow{0%,100%{filter:drop-shadow(0 0 14px #B0C8FF) drop-shadow(0 0 28px #6080FF);}50%{filter:drop-shadow(0 0 22px #C0D8FF) drop-shadow(0 0 44px #8090FF);}}
-                @keyframes starTwinkle{0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1.2);}}
-                @keyframes eveningGlow{0%,100%{filter:drop-shadow(0 0 14px #FF8C60) drop-shadow(0 0 28px #FF6030);}50%{filter:drop-shadow(0 0 22px #FFB080) drop-shadow(0 0 44px #FF7040);}}
-              `}</style>
-              {(!isEvening&&!isNight)&&(
-                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
-                  <div style={{position:"absolute",inset:-20,animation:"sunRays 12s linear infinite"}}>
-                    {[0,30,60,90,120,150,210,240,270,300,330].map(deg=>(
-                      <div key={deg} style={{position:"absolute",top:"50%",left:"50%",width:3,height:24,background:`linear-gradient(to bottom,${isMorn?"#FFD700":"#FFC200"},transparent)`,borderRadius:2,transformOrigin:"0 0",transform:`rotate(${deg}deg) translateX(-1.5px) translateY(-65px)`,opacity:0.7}}/>
-                    ))}
-                  </div>
-                  <div style={{position:"absolute",inset:0,borderRadius:"50%",background:isMorn?"radial-gradient(circle,#FFFDE7,#FFD700,#FFA500)":"radial-gradient(circle,#FFF9C4,#FFE082,#FFB300)",animation:"sunPulse 3s ease-in-out infinite",boxShadow:isMorn?"0 0 30px #FFD700,0 0 60px rgba(255,200,0,0.4)":"0 0 30px #FFB300,0 0 60px rgba(255,160,0,0.4)"}}/>
+            <div style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.55)",borderRadius:16,padding:"8px 12px",border:"1px solid rgba(180,160,140,0.28)",marginBottom:8}}>
+              <span style={{fontSize:16}}>{todayEvs.length>0?todayEvs[0].icon:nextEv.icon}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#1A2810",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {todayEvs.length>0?todayEvs[0].name:nextEv.name}
+                  {todayEvs.length>1&&<span style={{fontSize:11,color:"#5A7848",fontWeight:600,marginLeft:6}}>+{todayEvs.length-1} more today</span>}
                 </div>
-              )}
-              {isEvening&&<div style={{fontSize:72,lineHeight:1,animation:"eveningGlow 2.5s ease-in-out infinite",display:"block"}}>🌅</div>}
-              {isNight&&(
-                <div style={{position:"relative",width:90,height:90,margin:"0 auto"}}>
-                  {[[10,15,0.8],[70,8,1.4],[15,65,1.1],[75,60,0.9],[40,5,1.6],[85,35,1.0],[5,40,1.3]].map(([x,y,s],i)=>(
-                    <div key={i} style={{position:"absolute",left:`${x}%`,top:`${y}%`,width:s*5,height:s*5,borderRadius:"50%",background:"#E8F0FF",animation:`starTwinkle ${1.5+i*0.4}s ease-in-out infinite`,animationDelay:`${i*0.3}s`,boxShadow:"0 0 4px #C0D0FF"}}/>
-                  ))}
-                  <div style={{position:"absolute",inset:10,fontSize:60,lineHeight:1,textAlign:"center",animation:"moonGlow 3s ease-in-out infinite"}}>🌙</div>
+                <div style={{fontSize:11,color:"#5A4A30",fontWeight:500}}>
+                  {todayEvs.length>0?"Today":(()=>{const d=Math.ceil((new Date(nextEv.date)-new Date(today))/(864e5));return d===1?"Tomorrow":"in "+d+" days";})()}
+                  {(todayEvs[0]||nextEv).time&&" · "+(todayEvs[0]||nextEv).time}
                 </div>
-              )}
+              </div>
+              <button onClick={()=>setShowEventModal(true)}
+                style={{background:"none",border:"none",cursor:"pointer",fontSize:18,color:"#5A7848",flexShrink:0}}>＋</button>
             </div>
           );
         })()}
-        {/* Greeting text */}
-        <div style={{fontFamily:"Georgia,serif",fontSize:32,fontWeight:700,color:"#1A1A10",letterSpacing:-0.5,lineHeight:1.2,marginBottom:4,textShadow:"0 2px 12px rgba(255,255,255,0.7)"}}>
-          {(()=>{
-            const h=new Date().getHours();
-            const word=h<12?"Good morning":h<17?"Good afternoon":h<21?"Good evening":"Good night";
-            return <>{word}{userName?`, ${userName}`:""}</>;
-          })()}
-        </div>
-        <div style={{fontSize:15,color:"#1A2810",marginBottom:8,fontStyle:"italic",fontWeight:800,textShadow:"0 1px 3px rgba(255,255,255,0.7)"}}>Think it. 🤔 Plan it. Live it. · v2.6</div>
+
+        {/* Events countdown - slim scroll */}
+        {events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length>1&&(
+          <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+            {events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.date.localeCompare(b.date)).map((ev,i)=>{
+              const today=new Date().toISOString().slice(0,10);
+              const days=Math.ceil((new Date(ev.date)-new Date(today))/(864e5));
+              const isToday=days===0;
+              const isSoon=days<=3&&days>0;
+              return(
+                <div key={i} onClick={()=>setShowEventModal(true)}
+                  style={{flexShrink:0,background:isToday?"linear-gradient(135deg,rgba(255,215,0,0.85),rgba(255,165,0,0.80))":isSoon?"rgba(192,57,43,0.15)":"rgba(255,255,255,0.55)",borderRadius:12,padding:"6px 10px",border:"1px solid "+(isToday?"rgba(200,140,0,0.40)":isSoon?"rgba(192,57,43,0.25)":"rgba(180,160,140,0.28)"),cursor:"pointer",textAlign:"center",minWidth:64}}>
+                  <div style={{fontSize:14}}>{ev.icon}</div>
+                  <div style={{fontSize:10,fontWeight:700,color:isToday?"#5A3000":isSoon?"#c0392b":"#1A2810",lineHeight:1.2,maxWidth:60,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.name}</div>
+                  <div style={{fontSize:11,fontWeight:800,color:isToday?"#5A3000":isSoon?"#c0392b":"#5A7848"}}>{isToday?"TODAY":days===1?"Tmrw":days+"d"}</div>
+                </div>
+              );
+            })}
+            <div onClick={()=>setShowEventModal(true)}
+              style={{flexShrink:0,background:"rgba(255,255,255,0.40)",borderRadius:12,padding:"6px 10px",border:"1px dashed rgba(180,160,140,0.35)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",minWidth:40}}>
+              <span style={{fontSize:18,color:"#5A7848"}}>＋</span>
+            </div>
+          </div>
+        )}
+
+        {/* Add event button when no events */}
+        {events.length===0&&(
+          <button onClick={()=>setShowEventModal(true)}
+            style={{width:"100%",padding:"8px 14px",background:"rgba(255,255,255,0.45)",border:"1px dashed rgba(180,160,140,0.35)",borderRadius:14,cursor:"pointer",display:"flex",alignItems:"center",gap:8,color:"#5A4A30"}}>
+            <span style={{fontSize:16}}>📅</span>
+            <span style={{fontSize:13,fontWeight:600}}>Add events or appointments to your briefing</span>
+          </button>
+        )}
       </div>
 
-      {/* ── ACTION ROW (subtle) ── */}
-      <div style={{display:"flex",gap:8,padding:"0 24px 16px",justifyContent:"center",flexShrink:0}}>
-        {TESTING_MODE&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"rgba(74,112,56,0.12)",border:"1px solid rgba(74,112,56,0.22)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#4A7038"}}>🔓 Tester Mode</div>}
-        <button onClick={async()=>{const ok=await showInstallPrompt();if(!ok)alert("To install:\n\n📱 Android: tap ⋮ → Add to Home Screen\n🍎 iPhone: Share → Add to Home Screen");}} style={{display:"inline-flex",alignItems:"center",gap:5,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,padding:"5px 12px",fontSize:11,fontWeight:600,color:"#3A3020",cursor:"pointer"}}>📲 App</button>
-        <button onClick={()=>setShowLoginModal(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,#5A7848,#3A5830)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#fff",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,80,38,0.25)"}}>💎 Go Pro</button>
-        <button onClick={()=>setShowHomeEdit(true)} style={{display:"inline-flex",alignItems:"center",gap:6,background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"none",borderRadius:100,padding:"7px 16px",fontSize:12,fontWeight:700,color:"#2A1A08",cursor:"pointer",boxShadow:"0 2px 10px rgba(58,100,38,0.30)"}}>⚙️ Customise Home</button>
-      </div>
+      {/* ── EVENT MANAGER MODAL ── */}
+      {showEventModal&&(
+        <div style={{position:"fixed",inset:0,zIndex:700,background:"rgba(30,40,20,0.60)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end"}} onClick={()=>setShowEventModal(false)}>
+          <div style={{background:"rgba(250,248,240,0.99)",borderRadius:"28px 28px 0 0",width:"100%",maxHeight:"85vh",overflow:"auto",padding:"0 0 40px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>📅 Events & Appointments</div>
+              <button onClick={()=>setShowEventModal(false)} style={{background:"rgba(90,80,60,0.08)",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:16}}>✕</button>
+            </div>
+            <EventManager events={events} saveEvents={saveEvents}/>
+          </div>
+        </div>
+      )}
 
       {/* ── HOME CUSTOMISE MODAL ── */}
       {showHomeEdit&&(
@@ -11762,13 +12632,67 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
       )}
 
 
-      {/* ── DRAG HINT ── */}
-      <div style={{textAlign:"center",marginBottom:10,flexShrink:0,display:"flex",flexDirection:"column",gap:3}}>
-        <span style={{fontSize:11,color:"rgba(60,56,40,0.40)",letterSpacing:0.5}}>⠿ Hold and drag cards to reorder</span>
-        {orderedModules.some(m=>MODULES.find(mod=>mod.id===m.id)?.optional)&&(
-          <span style={{fontSize:11,color:"rgba(60,56,40,0.40)",letterSpacing:0.5}}>📌 Tap Unpin on any card to remove it</span>
+      {/* ── FAVOURITE APPS ── */}
+      <div style={{padding:"0 14px 12px",flexShrink:0}}>
+        {quickApps.length===0?(
+          <button onClick={()=>setShowAppPicker(true)}
+            style={{width:"100%",padding:"12px 16px",background:"rgba(255,255,255,0.55)",border:"1.5px dashed rgba(180,160,140,0.40)",borderRadius:18,cursor:"pointer",display:"flex",alignItems:"center",gap:10,color:"#5A4A30"}}>
+            <span style={{fontSize:22}}>⭐</span>
+            <div style={{textAlign:"left"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810"}}>Favourite Apps</div>
+              <div style={{fontSize:11,color:"#8A8070"}}>Tap to add shortcuts to your favourite apps</div>
+            </div>
+          </button>
+        ):(
+          <div>
+            <div style={{display:"flex",alignItems:"center",marginBottom:8,gap:8}}>
+              <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A2810",textShadow:"0 1px 3px rgba(255,255,255,0.6)"}}>⭐ Favourite Apps</span>
+              <button onClick={()=>setEditingApps(e=>!e)}
+                style={{background:"rgba(255,255,255,0.50)",border:"1px solid rgba(180,160,140,0.30)",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#5A4A30",cursor:"pointer"}}>
+                {editingApps?"✓ Done":"✏️ Edit"}
+              </button>
+              <button onClick={()=>setShowAppPicker(true)}
+                style={{marginLeft:"auto",background:"rgba(255,255,255,0.50)",border:"1px solid rgba(180,160,140,0.30)",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#5A4A30",cursor:"pointer"}}>+ Add</button>
+            </div>
+            <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4}}>
+              {quickApps.map((app,i)=>(
+                <div key={app.id+i} style={{position:"relative",flexShrink:0}}>
+                  {editingApps&&(
+                    <button onClick={()=>saveQuickApps(quickApps.filter((_,j)=>j!==i))}
+                      style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",background:"#c0392b",color:"#fff",border:"2px solid #fff",cursor:"pointer",fontSize:11,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>✕</button>
+                  )}
+                  <button onClick={()=>{if(!editingApps&&app.url)window.open(app.url,"_blank");}}
+                    style={{width:56,height:56,borderRadius:16,background:app.color+"22",border:"2px solid "+app.color+"55",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,cursor:"pointer"}}
+                    onTouchStart={e=>e.currentTarget.style.transform="scale(0.90)"}
+                    onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+                    {app.icon}
+                  </button>
+                  <div style={{textAlign:"center",fontSize:10,fontWeight:600,color:"#1A2810",marginTop:3,width:56,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textShadow:"0 1px 2px rgba(255,255,255,0.7)"}}>{app.name}</div>
+                </div>
+              ))}
+              <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <button onClick={()=>setShowAppPicker(true)}
+                  style={{width:56,height:56,borderRadius:16,background:"rgba(255,255,255,0.45)",border:"1.5px dashed rgba(180,160,140,0.40)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,cursor:"pointer",color:"#5A7848"}}>＋</button>
+                <div style={{fontSize:10,fontWeight:600,color:"#8A8070",width:56,textAlign:"center"}}>Add</div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* ── APP PICKER MODAL ── */}
+      {showAppPicker&&(
+        <div style={{position:"fixed",inset:0,zIndex:700,background:"rgba(30,40,20,0.60)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end"}} onClick={()=>setShowAppPicker(false)}>
+          <div style={{background:"rgba(250,248,240,0.99)",borderRadius:"28px 28px 0 0",width:"100%",maxHeight:"88vh",overflow:"auto",padding:"0 0 40px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:"rgba(90,80,60,0.18)"}}/></div>
+            <div style={{padding:"0 20px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10"}}>Add App Shortcut</div>
+              <button onClick={()=>setShowAppPicker(false)} style={{background:"rgba(90,80,60,0.08)",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",fontSize:16}}>✕</button>
+            </div>
+            <AppSearch onAdd={app=>{saveQuickApps([...quickApps,app]);setShowAppPicker(false);}} quickApps={quickApps}/>
+          </div>
+        </div>
+      )}
 
       {/* ── MODULE CARDS GRID ── */}
       <style>{`.mod-card:active{transform:scale(0.95)!important;opacity:0.82!important;transition:transform 0.1s ease,opacity 0.1s ease!important;}`}</style>
