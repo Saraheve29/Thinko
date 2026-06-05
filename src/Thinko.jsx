@@ -8132,6 +8132,9 @@ function DecisionMaker(){
 
 
 
+// ── GOOGLE CALENDAR CONFIG ────────────────────────────────
+const ICAL_PROXY="https://api.allorigins.win/raw?url=";
+
 // ── EVENT MANAGER ──────────────────────────────────────────
 function EventManager({events,saveEvents}){
   const [newName,setNewName]=useState("");
@@ -8139,59 +8142,97 @@ function EventManager({events,saveEvents}){
   const [newIcon,setNewIcon]=useState("📅");
   const [newTime,setNewTime]=useState("");
   const [newNote,setNewNote]=useState("");
-  const today=new Date().toISOString().slice(0,10);
-  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
-
-  const QUICK_ICONS=["📅","🎂","🏥","💊","🦷","👩‍⚕️","✂️","🎉","✈️","🏫","💼","🛒","🐾","🎓","💒","🎄","🎁","🏋️","⚽","🎵","🍽️","📞","🚗","🏠"];
-
-  // Google Calendar import
   const [gcalEvents,setGcalEvents]=useState([]);
   const [gcalLoading,setGcalLoading]=useState(false);
   const [gcalError,setGcalError]=useState("");
   const [showGcal,setShowGcal]=useState(false);
+  const today=new Date().toISOString().slice(0,10);
+  const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
 
-  const importFromGcal=async()=>{
-    setGcalLoading(true);setGcalError("");
-    try{
-      // Use Google Calendar public ICS feed if user provides it
-      // Or use OAuth2 implicit flow
-      const CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"; // user configures this
-      const scope="https://www.googleapis.com/auth/calendar.readonly";
-      const redirect=encodeURIComponent(window.location.origin);
-      const authUrl=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${redirect}&response_type=token&scope=${scope}`;
-      
-      // Open popup for auth
-      const popup=window.open(authUrl,"gcal_auth","width=500,height=600,scrollbars=yes");
-      const timer=setInterval(async()=>{
-        try{
-          if(popup.closed){clearInterval(timer);setGcalLoading(false);return;}
-          const hash=popup.location.hash;
-          if(hash&&hash.includes("access_token")){
-            clearInterval(timer);popup.close();
-            const token=new URLSearchParams(hash.slice(1)).get("access_token");
-            const now=new Date().toISOString();
-            const future=new Date(Date.now()+30*24*60*60*1000).toISOString();
-            const res=await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now}&timeMax=${future}&singleEvents=true&orderBy=startTime&maxResults=50`,
-              {headers:{Authorization:"Bearer "+token}});
-            const data=await res.json();
-            const evs=(data.items||[]).map(ev=>({
-              id:ev.id,
-              name:ev.summary||"Event",
-              date:(ev.start?.date||ev.start?.dateTime||"").slice(0,10),
-              time:ev.start?.dateTime?ev.start.dateTime.slice(11,16):"",
-              note:ev.description||ev.location||"",
-              icon:"📅",
-              color:"#4285F4"
-            })).filter(e=>e.date);
-            setGcalEvents(evs);setShowGcal(true);setGcalLoading(false);
-          }
-        }catch(e){}
-      },500);
-    }catch(e){
-      setGcalError("Could not connect to Google Calendar. Try again.");
-      setGcalLoading(false);
-    }
+  // Parse iCal format
+  const parseIcal=(text)=>{
+    const events=[];
+    const blocks=text.split("BEGIN:VEVENT");
+    blocks.slice(1).forEach(block=>{
+      const get=(key)=>{
+        const m=block.match(new RegExp(key+"(?:;[^:]*)?:([^\r\n]+)"));
+        return m?m[1].replace(/\\n/g,"\n").replace(/\\,/g,",").trim():"";
+      };
+      const dtstart=get("DTSTART");
+      if(!dtstart)return;
+      const dateStr=dtstart.replace(/T.*/,"").slice(0,8);
+      const timeStr=dtstart.includes("T")?dtstart.slice(dtstart.indexOf("T")+1,dtstart.indexOf("T")+5):"";
+      const date=dateStr.slice(0,4)+"-"+dateStr.slice(4,6)+"-"+dateStr.slice(6,8);
+      const time=timeStr?timeStr.slice(0,2)+":"+timeStr.slice(2,4):"";
+      const name=get("SUMMARY")||"(No title)";
+      const note=(get("DESCRIPTION")||get("LOCATION")||"").slice(0,120);
+      const uid=get("UID")||"uid_"+Math.random();
+      events.push({id:"gcal_"+uid.replace(/[^a-z0-9]/gi,"_").slice(0,30),name,date,time,note,icon:"📅"});
+    });
+    const todayStr=new Date().toISOString().slice(0,10);
+    return events.filter(e=>e.date&&e.date>=todayStr)
+                 .sort((a,b)=>a.date.localeCompare(b.date))
+                 .slice(0,60);
   };
+
+  const [icalUrl,setIcalUrlRaw]=useState(()=>{
+    try{return localStorage.getItem("thinko_ical_url")||"";}catch{return "";}
+  });
+  const [showIcalSetup,setShowIcalSetup]=useState(false);
+  const [icalInput,setIcalInput]=useState("");
+
+  const saveIcalUrl=(url)=>{
+    setIcalUrlRaw(url);
+    try{localStorage.setItem("thinko_ical_url",url);}catch{}
+  };
+
+  const fetchIcal=async(url)=>{
+    const targetUrl=url||icalUrl;
+    if(!targetUrl){setShowIcalSetup(true);return;}
+    setGcalLoading(true);
+    setGcalError("");
+    setShowGcal(true);
+    setShowIcalSetup(false);
+    const proxies=[
+      "https://api.allorigins.win/raw?url=",
+      "https://corsproxy.io/?",
+    ];
+    for(const proxy of proxies){
+      try{
+        const res=await fetch(proxy+encodeURIComponent(targetUrl));
+        if(!res.ok)continue;
+        const text=await res.text();
+        if(!text.includes("BEGIN:VCALENDAR"))continue;
+        const evs=parseIcal(text);
+        setGcalEvents(evs);
+        setGcalLoading(false);
+        return;
+      }catch(e){continue;}
+    }
+    setGcalError("Could not load your calendar. Check the link is correct and try again.");
+    setGcalLoading(false);
+  };
+
+  const importEvent=(ev)=>{
+    if(events.find(e=>e.id===ev.id))return;
+    const icon=ev.name.toLowerCase().includes("doctor")||ev.name.toLowerCase().includes("gp")||ev.name.toLowerCase().includes("hospital")?"🏥":
+               ev.name.toLowerCase().includes("birthday")?"🎂":
+               ev.name.toLowerCase().includes("school")||ev.name.toLowerCase().includes("pickup")?"🏫":
+               ev.name.toLowerCase().includes("dentist")?"🦷":
+               ev.name.toLowerCase().includes("flight")||ev.name.toLowerCase().includes("holiday")?"✈️":
+               ev.name.toLowerCase().includes("meeting")||ev.name.toLowerCase().includes("work")?"💼":"📅";
+    saveEvents([...events,{...ev,icon}].sort((a,b)=>a.date.localeCompare(b.date)));
+  };
+
+  const importAll=()=>{
+    const toAdd=gcalEvents.filter(ev=>!events.find(e=>e.id===ev.id));
+    if(!toAdd.length)return;
+    saveEvents([...events,...toAdd].sort((a,b)=>a.date.localeCompare(b.date)));
+    alert(`✅ Imported ${toAdd.length} events from Google Calendar!`);
+  };
+
+  const QUICK_ICONS=["📅","🎂","🏥","💊","🦷","👩‍⚕️","✂️","🎉","✈️","🏫","💼","🛒","🐾","🎓","💒","🎄","🎁","🏋️","⚽","🎵","🍽️","📞","🚗","🏠"];
+
 
   const add=()=>{
     if(!newName.trim()||!newDate)return;
@@ -8208,13 +8249,124 @@ function EventManager({events,saveEvents}){
 
       {/* Add new event */}
       {/* Google Calendar import */}
-      <div style={{display:"flex",gap:8,marginBottom:12}}>
-        <button onClick={importFromGcal} disabled={gcalLoading}
-          style={{flex:1,padding:"12px",background:"#4285F4",color:"#fff",border:"none",borderRadius:14,fontWeight:700,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          <span style={{fontSize:18}}>📅</span> {gcalLoading?"Connecting…":"Import from Google Calendar"}
+      {/* iCal Setup Modal */}
+      {showIcalSetup&&(
+        <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"18px",marginBottom:14,border:"1.5px solid rgba(66,133,244,0.30)"}}>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A2810",marginBottom:6}}>📅 Connect Google Calendar</div>
+          <div style={{fontSize:13,color:"#5A4A30",lineHeight:1.7,marginBottom:14}}>
+            To import your events, you need your calendar's private link.<br/>
+            <strong>How to get it:</strong><br/>
+            1. Open <strong>Google Calendar</strong> on your phone or PC<br/>
+            2. Tap ⚙️ Settings → your calendar name<br/>
+            3. Scroll to <strong>"Secret address in iCal format"</strong><br/>
+            4. Copy that link and paste it below
+          </div>
+          <textarea
+            value={icalInput}
+            onChange={e=>setIcalInput(e.target.value)}
+            placeholder="Paste your iCal link here (starts with https://calendar.google.com/calendar/ical/...)"
+            style={{width:"100%",boxSizing:"border-box",padding:"12px",borderRadius:14,border:"1.5px solid rgba(180,160,140,0.40)",fontSize:12,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.80)",resize:"none",minHeight:80,marginBottom:10,fontFamily:"inherit",lineHeight:1.5}}/>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{
+              const url=icalInput.trim();
+              if(!url.includes("calendar.google.com")&&!url.includes(".ics")){
+                alert("That doesn't look like a calendar link. Make sure you copied the iCal/ICS link from Google Calendar settings.");
+                return;
+              }
+              saveIcalUrl(url);
+              fetchIcal(url);
+            }} style={{flex:1,padding:"12px",background:"#4285F4",color:"#fff",border:"none",borderRadius:100,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+              ✅ Connect Calendar
+            </button>
+            <button onClick={()=>setShowIcalSetup(false)} style={{padding:"12px 16px",background:"rgba(90,80,60,0.10)",color:"#5A4A30",border:"none",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>
+              Cancel
+            </button>
+          </div>
+          {icalUrl&&(
+            <div style={{marginTop:10,fontSize:11,color:"#5A7848",fontWeight:600}}>
+              ✅ Calendar already connected — tap Cancel to use existing link
+            </div>
+          )}
+        </div>
+      )}
+
+      {!showGcal?(
+        <button onClick={()=>fetchIcal()}
+          style={{width:"100%",padding:"13px",background:"#4285F4",color:"#fff",border:"none",borderRadius:14,fontWeight:700,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:12}}>
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          {gcalLoading?"Loading your calendar…":"📅 Import from Google Calendar"}
         </button>
-      </div>
-      {gcalError&&<div style={{fontSize:12,color:"#c0392b",marginBottom:10,padding:"8px 12px",background:"rgba(192,57,43,0.08)",borderRadius:10}}>{gcalError}</div>}
+      ):(
+        <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <button onClick={()=>setShowGcal(false)}
+            style={{flex:1,padding:"10px",background:"rgba(66,133,244,0.10)",color:"#4285F4",border:"1.5px solid rgba(66,133,244,0.30)",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+            ✕ Close
+          </button>
+          <button onClick={()=>{setIcalInput(icalUrl);setShowIcalSetup(true);setShowGcal(false);}}
+            style={{padding:"10px 14px",background:"rgba(90,80,60,0.08)",color:"#5A4A30",border:"1px solid rgba(180,160,140,0.30)",borderRadius:14,fontWeight:600,fontSize:12,cursor:"pointer",flexShrink:0}}>
+            ⚙️ Change link
+          </button>
+        </div>
+      )}
+      {gcalError&&<div style={{fontSize:12,color:"#c0392b",marginBottom:10,padding:"8px 12px",background:"rgba(192,57,43,0.08)",borderRadius:10,fontWeight:600}}>{gcalError}</div>}
+
+      {/* Google Calendar events list */}
+      {showGcal&&(
+        <div style={{background:MULTI,borderRadius:20,padding:"14px",marginBottom:14,border:"1.5px solid rgba(66,133,244,0.30)"}}>
+          {gcalLoading&&(
+            <div style={{textAlign:"center",padding:"20px",color:"#4285F4",fontSize:14,fontWeight:600}}>
+              ⏳ Loading your Google Calendar…
+            </div>
+          )}
+          {!gcalLoading&&gcalEvents.length===0&&!gcalError&&(
+            <div style={{textAlign:"center",padding:"16px",color:"#5A4A30",fontSize:13,lineHeight:1.6}}>
+              No upcoming events found in your Google Calendar.<br/>
+              <span style={{fontSize:12,color:"#8A8070"}}>Only events in the next 90 days are shown.</span>
+            </div>
+          )}
+          {gcalEvents.length>0&&(
+            <>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810"}}>
+                  📅 {gcalEvents.length} upcoming events
+                </div>
+                <button onClick={importAll}
+                  style={{padding:"6px 14px",background:"#4285F4",color:"#fff",border:"none",borderRadius:20,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                  Add all ({gcalEvents.filter(ev=>!events.find(e=>e.id===ev.id)).length} new)
+                </button>
+              </div>
+              <div style={{maxHeight:320,overflowY:"auto",display:"flex",flexDirection:"column",gap:6}}>
+                {gcalEvents.map(ev=>{
+                  const already=!!events.find(e=>e.id===ev.id);
+                  const days=Math.ceil((new Date(ev.date)-new Date(today))/(1000*60*60*24));
+                  const isToday=days===0;
+                  return(
+                    <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"rgba(255,255,255,0.75)",borderRadius:14,border:"1px solid rgba(66,133,244,0.15)"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A2810",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.name}</div>
+                        <div style={{fontSize:11,color:"#5A4A30",marginTop:2}}>
+                          {new Date(ev.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}
+                          {ev.time&&" · "+ev.time}
+                          {" · "}{isToday?"Today":days===1?"Tomorrow":days+"d away"}
+                        </div>
+                        {ev.note&&<div style={{fontSize:10,color:"#8A8070",marginTop:1,fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.note}</div>}
+                      </div>
+                      {already?(
+                        <div style={{fontSize:11,color:"#5A7848",fontWeight:700,flexShrink:0}}>✅ Added</div>
+                      ):(
+                        <button onClick={()=>importEvent(ev)}
+                          style={{background:"#4285F4",color:"#fff",border:"none",borderRadius:20,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                          + Add
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Google Calendar events picker */}
       {showGcal&&gcalEvents.length>0&&(
@@ -8250,9 +8402,9 @@ function EventManager({events,saveEvents}){
       <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:16,border:"1.5px solid rgba(180,160,140,0.35)"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810"}}>Add event or appointment</div>
-          <button onClick={openCalendar} style={{background:"rgba(255,255,255,0.70)",border:"1.5px solid rgba(66,133,244,0.40)",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,color:"#4285F4",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+          <button onClick={signInAndFetch} style={{background:"rgba(255,255,255,0.70)",border:"1.5px solid rgba(66,133,244,0.40)",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,color:"#4285F4",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
             <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-            Google Calendar
+            {gcalLoading?"Loading...":"Import from Google"}
           </button>
         </div>
 
@@ -8294,6 +8446,60 @@ function EventManager({events,saveEvents}){
           </button>
         </div>
       </div>
+
+      {/* Google Calendar Import Panel */}
+      {showGcal&&(
+        <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:16,border:"1.5px solid rgba(66,133,244,0.35)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A2810"}}>
+              {gcalLoading?"⏳ Loading your calendar...":gcalEvents.length>0?"📅 Your Google Calendar events":"📅 Google Calendar"}
+            </div>
+            {gcalEvents.length>0&&(
+              <button onClick={importAll} style={{background:"#4285F4",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                Import all ({gcalEvents.filter(ev=>!events.find(e=>e.id===ev.id)).length} new)
+              </button>
+            )}
+          </div>
+          {gcalError&&<div style={{color:"#c0392b",fontSize:13,marginBottom:8,fontWeight:600}}>{gcalError}</div>}
+          {!gcalLoading&&!gcalSignedIn&&!gcalError&&(
+            <div style={{textAlign:"center",padding:"10px 0"}}>
+              <div style={{fontSize:13,color:"#5A4A30",marginBottom:12,lineHeight:1.6}}>Sign in with Google to import your calendar events directly into Thinko.</div>
+              <button onClick={signInAndFetch} style={{padding:"12px 24px",background:"#4285F4",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:10}}>
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+              </button>
+            </div>
+          )}
+          {gcalLoading&&(
+            <div style={{textAlign:"center",padding:"20px 0",color:"#5A4A30",fontSize:14}}>Loading your events...</div>
+          )}
+          {gcalEvents.length>0&&(
+            <div style={{maxHeight:300,overflowY:"auto"}}>
+              {gcalEvents.map(ev=>{
+                const already=!!events.find(e=>e.id===ev.id);
+                const days=Math.ceil((new Date(ev.date)-new Date(today))/(1000*60*60*24));
+                return(
+                  <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"rgba(255,255,255,0.70)",borderRadius:14,marginBottom:6,border:"1px solid rgba(66,133,244,0.15)"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A2810",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ev.name}</div>
+                      <div style={{fontSize:11,color:"#5A4A30",marginTop:2}}>
+                        {new Date(ev.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}
+                        {ev.time&&" · "+ev.time}
+                        {" · "}{days===0?"Today":days===1?"Tomorrow":days+"d away"}
+                      </div>
+                    </div>
+                    {already?(
+                      <div style={{fontSize:11,color:"#5A7848",fontWeight:700,flexShrink:0}}>✅ Added</div>
+                    ):(
+                      <button onClick={()=>importEvent(ev)} style={{background:"#4285F4",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>+ Add</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Upcoming events */}
       {upcoming.length>0&&(
@@ -8676,13 +8882,33 @@ function AppSearch({onAdd, quickApps}){
     return app.scheme||"";
   };
 
-  const search=(q)=>{
+  const search=async(q)=>{
     setQuery(q);
     if(!q.trim()){setResults([]);setSearched(false);return;}
     const lower=q.toLowerCase();
+    // First search built-in list
     const matches=POPULAR.filter(a=>a.name.toLowerCase().includes(lower));
     setResults(matches);
     setSearched(true);
+    // Also open Play Store search in background for any app not found
+  };
+
+  const searchPlayStore=(q)=>{
+    if(!q.trim())return;
+    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(isIOS){
+      window.open("https://apps.apple.com/search?term="+encodeURIComponent(q),"_blank");
+    } else {
+      window.open("https://play.google.com/store/search?q="+encodeURIComponent(q)+"&c=apps","_blank");
+    }
+  };
+
+  const addFromStore=(q)=>{
+    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+    const storeUrl=isIOS
+      ?"https://apps.apple.com/search?term="+encodeURIComponent(q)
+      :"https://play.google.com/store/search?q="+encodeURIComponent(q)+"&c=apps";
+    onAdd({id:"store_"+Date.now(),name:q,icon:"📱",url:storeUrl,color:"#5A7848"});
   };
 
   const alreadyAdded=(app)=>quickApps.some(q=>q.name===app.name);
@@ -8690,15 +8916,23 @@ function AppSearch({onAdd, quickApps}){
   return(
     <div style={{padding:"0 20px"}}>
       {/* Search box */}
-      <div style={{position:"relative",marginBottom:16}}>
+      <div style={{position:"relative",marginBottom:10}}>
         <input
           value={query}
           onChange={e=>search(e.target.value)}
-          placeholder="Type any app name e.g. Skyla, Spotify, Barclays…"
+          placeholder="Type any app name e.g. Roblox, My Bank, Skyla…"
           autoFocus
           style={{width:"100%",boxSizing:"border-box",padding:"14px 44px 14px 16px",borderRadius:100,border:"2px solid rgba(90,120,72,0.30)",fontSize:15,color:"#1A1A10",outline:"none",background:"rgba(255,255,255,0.90)",fontFamily:"Georgia,serif"}}/>
         {query&&<button onClick={()=>search("")} style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#8A8070"}}>✕</button>}
       </div>
+      {query&&(
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          <button onClick={()=>searchPlayStore(query)}
+            style={{flex:1,padding:"11px",background:"#01875F",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            <span style={{fontSize:16}}>▶</span> Search Play Store for "{query}"
+          </button>
+        </div>
+      )}
 
       {/* iOS/Android notice */}
       <div style={{fontSize:12,color:"#5A4A30",marginBottom:12,padding:"8px 12px",background:"rgba(90,120,72,0.08)",borderRadius:12,lineHeight:1.5}}>
@@ -12903,28 +13137,3 @@ function NavBar({current,setScreen}) {
     </div>
   );
 }
-
-          {/* Realistic leaf overlays — add /leaf.png to your public/ folder */}
-          {[
-            {top:-20,left:-30,rot:-35,s:1.1},{top:80,left:-45,rot:-20,s:0.9},
-            {top:220,left:-40,rot:-42,s:1.0},{top:360,left:-50,rot:-25,s:1.2},
-            {top:500,left:-35,rot:-38,s:0.95},{top:640,left:-45,rot:-18,s:1.05},
-            {top:780,left:-40,rot:-30,s:1.0},
-            {top:-20,right:-30,rot:35,s:1.1},{top:80,right:-45,rot:22,s:0.9},
-            {top:220,right:-40,rot:44,s:1.0},{top:360,right:-50,rot:28,s:1.15},
-            {top:500,right:-35,rot:40,s:0.95},{top:640,right:-45,rot:20,s:1.05},
-            {top:780,right:-40,rot:32,s:1.0},
-          ].map((l,i)=>(
-            <img key={i} src="/leaf.png" alt="" onError={e=>e.target.style.display="none"}
-              style={{
-                position:"absolute",
-                top:l.top,
-                ...(l.left!==undefined?{left:l.left}:{right:l.right}),
-                width:120*l.s,
-                height:"auto",
-                transform:`rotate(${l.rot}deg)`,
-                opacity:0.88,
-                pointerEvents:"none",
-                filter:"drop-shadow(2px 4px 6px rgba(20,50,5,0.40)) brightness(1.05) saturate(1.2)",
-              }}/>
-          ))}
