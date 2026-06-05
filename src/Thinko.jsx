@@ -2356,7 +2356,7 @@ function MindMapCanvas({map,onBack,onUpdate,priData,setPriData,ideasData,setIdea
                   <text
                     x={hasIcon?n.x+10:n.x} y={n.y}
                     textAnchor="middle" dominantBaseline="middle"
-                    fill={isSel?"white":"#1A2E10"} fontSize={15} fontWeight={700}
+                    fill="#1A2E10" fontSize={16} fontWeight={800}
                     style={{pointerEvents:"none",userSelect:"none"}}>
                     {n.text}
                   </text>
@@ -5841,7 +5841,7 @@ function Matrix({data,setData,priData,setPriData,mapData,setMapData,setScreen}) 
                 {/* Label */}
                 <div style={{paddingRight:18,marginBottom:4}}>
                   <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:12,color:"#2A1A08",lineHeight:1.2,marginBottom:0}}>{q.label}</div>
-                  <div style={{fontSize:10,color:"rgba(42,26,8,0.70)",fontWeight:400,lineHeight:1.2}}>{q.sub}</div>
+                  <div style={{fontSize:10,color:"rgba(42,26,8,0.85)",fontWeight:600,fontSize:13,lineHeight:1.2}}>{q.sub}</div>
                 </div>
                 <div style={{height:1,background:isSage?"rgba(255,255,255,0.3)":"rgba(90,80,60,0.12)",marginBottom:5}}/>
 
@@ -6709,6 +6709,22 @@ function ShoppingList({data,setData,setScreen}){
           style={{width:"100%",marginTop:14,padding:"15px",background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",color:"#2A1A08",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer",boxShadow:"0 4px 18px rgba(58,80,38,0.30)"}}>
           ✅ Create list
         </button>
+        {customItems.filter(i=>i.on).length>0&&(
+          <div style={{display:"flex",gap:8,marginTop:10,marginBottom:4}}>
+            <button onClick={()=>{
+              const name=custListName||customising.name;
+              const items=customItems.filter(i=>i.on).map(i=>i.name);
+              const txt="🛒 "+name+"\n\n"+items.map(i=>"☐ "+i).join("\n")+"\n\nFrom Thinko 🌿";
+              window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");
+            }} style={{flex:1,background:"#25D366",color:"#fff",border:"none",borderRadius:20,padding:"13px",fontSize:14,fontWeight:700,cursor:"pointer"}}>💬 WhatsApp</button>
+            <button onClick={()=>{
+              const name=custListName||customising.name;
+              const items=customItems.filter(i=>i.on).map(i=>i.name);
+              const txt="🛒 "+name+"\n\n"+items.map(i=>"☐ "+i).join("\n")+"\n\nFrom Thinko 🌿";
+              window.open("sms:?body="+encodeURIComponent(txt),"_blank");
+            }} style={{flex:1,background:"#3A6028",color:"#fff",border:"none",borderRadius:20,padding:"13px",fontSize:14,fontWeight:700,cursor:"pointer"}}>📱 Text</button>
+          </div>
+        )}
         <button onClick={()=>setCustomising(null)}
           style={{width:"100%",marginTop:8,padding:"12px",background:"transparent",color:"#8A8070",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontWeight:600,fontSize:13,cursor:"pointer"}}>
           Cancel
@@ -7777,21 +7793,47 @@ function QRScanner(){
     setScanning(false);
   };
 
-  // Use BarcodeDetector API if available
+  // Scan using canvas + API
   React.useEffect(()=>{
     if(!scanning||!videoRef.current) return;
-    if(!("BarcodeDetector" in window)){setError("QR scanning not supported in this browser. Try Chrome on Android.");setScanning(false);return;}
-    const detector=new window.BarcodeDetector({formats:["qr_code"]});
     let running=true;
-    const scan=async()=>{
-      if(!running||!videoRef.current) return;
-      try{
-        const codes=await detector.detect(videoRef.current);
-        if(codes.length>0){setResult(codes[0].rawValue);stopScan();return;}
-      }catch(e){}
-      if(running) requestAnimationFrame(scan);
+    const tryBarcodeDetector=async()=>{
+      if(!("BarcodeDetector" in window)){
+        // Fallback: take snapshot and send to QR API
+        const canvas=document.createElement("canvas");
+        const video=videoRef.current;
+        canvas.width=video.videoWidth||300;
+        canvas.height=video.videoHeight||300;
+        const ctx=canvas.getContext("2d");
+        const snap=async()=>{
+          if(!running||!videoRef.current) return;
+          ctx.drawImage(video,0,0,canvas.width,canvas.height);
+          canvas.toBlob(async blob=>{
+            try{
+              const fd=new FormData();fd.append("file",blob,"qr.jpg");
+              const res=await fetch("https://api.qrserver.com/v1/read-qr-code/",{method:"POST",body:fd});
+              const data=await res.json();
+              const val=data?.[0]?.symbol?.[0]?.data;
+              if(val&&val!=="null"){setResult(val);stopScan();return;}
+            }catch(e){}
+            if(running) setTimeout(snap,1500);
+          },"image/jpeg",0.8);
+        };
+        videoRef.current.addEventListener("playing",snap,{once:true});
+        return;
+      }
+      const detector=new window.BarcodeDetector({formats:["qr_code"]});
+      const scan=async()=>{
+        if(!running||!videoRef.current) return;
+        try{
+          const codes=await detector.detect(videoRef.current);
+          if(codes.length>0){setResult(codes[0].rawValue);stopScan();return;}
+        }catch(e){}
+        if(running) requestAnimationFrame(scan);
+      };
+      videoRef.current.addEventListener("playing",scan,{once:true});
     };
-    videoRef.current.addEventListener("playing",scan,{once:true});
+    tryBarcodeDetector();
     return()=>{running=false;};
   },[scanning]);
 
@@ -7861,6 +7903,18 @@ function QRGenerator(){
             <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
               <a href={qr} download="thinko-qr.png" style={{padding:"10px 18px",background:"#5A7848",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6}}>⬇️ Download</a>
               <button onClick={()=>window.open(qr,"_blank")} style={{padding:"10px 18px",background:"#2A5878",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>🔍 Full Size</button>
+              <button onClick={()=>{
+                try{
+                  const notes=JSON.parse(localStorage.getItem("thinko_notes")||"[]");
+                  const newNote={id:Date.now(),title:"QR Code — "+text.slice(0,30),content:"QR Code for: "+text+"\n\nImage: "+qr,date:new Date().toLocaleDateString("en-GB"),tags:["qr"]};
+                  const first=notes[0]||{id:"default",name:"Notes",pages:[]};
+                  first.pages=[newNote,...(first.pages||[])];
+                  const updated=notes.length?notes.map((s,i)=>i===0?first:s):[first];
+                  localStorage.setItem("thinko_notes",JSON.stringify(updated));
+                  alert("✅ Saved to Vault Notes!");
+                }catch(e){alert("Couldn't save to vault");}
+              }} style={{padding:"10px 18px",background:"#8D6E63",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>🔒 Save to Vault</button>
+              <button onClick={()=>{setText("");setQr(null);}} style={{padding:"10px 18px",background:"rgba(192,57,43,0.85)",color:"#fff",border:"none",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer"}}>🗑 Delete</button>
             </div>
           </div>
         )}
@@ -8099,7 +8153,10 @@ function Tools({setScreen, notesData, setNotesData, moduleOrder, setModuleOrder}
 
       {/* 3-column icon grid */}
       <div style={{padding:"14px 14px 0",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
-        <div style={{textAlign:"center",fontSize:11,color:"rgba(42,60,28,0.40)",marginBottom:8,fontStyle:"italic"}}>Hold and drag tiles to reorder</div>
+        <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 16px",marginBottom:12,border:"1.5px solid rgba(180,160,140,0.35)",backdropFilter:"blur(8px)"}}>
+          <div style={{fontSize:13,color:"#2A1A08",fontWeight:700,marginBottom:2}}>📌 Tap any tool to open it</div>
+          <div style={{fontSize:12,color:"#5A4A30",fontWeight:500}}>Pin to home screen using the ☰ menu • Hold and drag to reorder</div>
+        </div>
         {orderedTools.map(t=>{
           const modId={translate:"translate",currency:"currency",calc:"calc",sw:"stopwatch",timer:"countdown",alarm:"alarm"}[t.id]||null;
           const isPinned=modId&&moduleOrder&&moduleOrder.includes(modId);
@@ -9737,17 +9794,20 @@ function TheCharge({priData,setPriData,matrixData,setMatrixData,setScreen,focusM
                     🎉
                   </div>
                   <div style={{fontFamily:"Georgia,serif",fontWeight:800,fontSize:24,color:"#1A1A10",marginBottom:8,lineHeight:1.2}}>
-                    {["TASK CRUSHED! 💪","YES! ONE DOWN! ⚡","BOOM! WIPED OUT! 💥","KEEP GOING! 🔥"][charged.length%4]}
+                    {[["Well done, you got this! 💪","Amazing achievement — every step counts! 🌟","Another task achieved, you're doing amazing! 🎉","Yes! Keep going, you're unstoppable! ✨","That's what we're talking about! 🏆","Brilliant — one step closer! 🌿","Look at you go! Keep it up! 💫"][Math.floor(Math.random()*7)],"YES! ONE DOWN! ⚡","BOOM! WIPED OUT! 💥","KEEP GOING! 🔥"][charged.length%4]}
                   </div>
                   <div style={{fontSize:14,color:"#5A7060",lineHeight:1.7,marginBottom:12}}>
                     {celebration.isReward
                       ?<><strong style={{color:"#C0A020",fontSize:16}}>🎁 Reward unlocked!</strong><br/>"{rewardName}"<br/>Go enjoy it — you earned it! 🌿</>
                       :[
-                        `"${celebration.name}" — DONE! Momentum building 🚀`,
-                        `Every task = dopamine hit. Keep going! 💫`,
-                        `"${celebration.name}" wiped out! You're proving something 🌱`,
-                        `The monster is weakening! ${target-charged.length-1} tasks left! 👊`,
-                      ][charged.length%4]
+                        "Well done, you got this! 💪",
+                        "Amazing achievement — every step counts! 🌟",
+                        "Another task achieved, you're doing amazing! 🎉",
+                        "Yes! Keep going, you're unstoppable! ✨",
+                        "That's what we're talking about! 🏆",
+                        "Brilliant — one step closer! 🌿",
+                        "Look at you go! 💫",
+                      ][Math.floor(Math.random()*7)]
                     }
                   </div>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
@@ -10598,7 +10658,7 @@ function RestSpace({setScreen}){
                 <span style={{fontSize:24}}>{allMeds.find(m=>m.id===activeMed.id)?.icon}</span>
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10"}}>{allMeds.find(m=>m.id===activeMed.id)?.title}</div>
-                  <div style={{fontSize:12,color:"#8A8070"}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?.type==="video"?"🎬 Playing...":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
+                  <div style={{fontSize:13,color:"#3A2A18",fontWeight:500}}>{medDone?"Complete ✨":audioFiles[activeMed.id]?.type==="video"?"🎬 Playing...":audioFiles[activeMed.id]?"🎵 Audio playing...":medRunning?"Reading script...":"Paused"}</div>
                 </div>
                 <button onClick={stopMed} style={{background:"rgba(192,57,43,0.08)",color:"#c0392b",border:"none",borderRadius:100,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>✕ End</button>
               </div>
@@ -10669,7 +10729,7 @@ function RestSpace({setScreen}){
                   <div style={{width:52,height:52,borderRadius:16,background:"rgba(58,96,40,0.12)",border:"1.5px solid rgba(58,96,40,0.22)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🌲</div>
                   <div style={{flex:1}}>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Forest Walk Meditation</div>
-                    <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>A gentle 6-minute guided walk through a peaceful forest 🌿</div>
+                    <div style={{fontSize:13,color:"#3A2A18",fontWeight:500,lineHeight:1.5}}>A gentle 6-minute guided walk through a peaceful forest 🌿</div>
                   </div>
                   <button onClick={()=>toggleFav("forest_walk","meditate","🌲 Forest Walk Meditation")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",flexShrink:0,opacity:isFav("forest_walk")?1:0.35}} title={isFav("forest_walk")?"Remove from saved":"Save to favourites"}>⭐</button>
                   <button onClick={()=>setForestWalkPlaying(true)} style={{background:"#3A6028",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(40,70,30,0.28)"}}>▶ Play</button>
@@ -10699,7 +10759,7 @@ function RestSpace({setScreen}){
                   <div style={{width:52,height:52,borderRadius:16,background:"rgba(42,56,72,0.10)",border:"1.5px solid rgba(42,56,72,0.20)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>🧘</div>
                   <div style={{flex:1}}>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Clear Space Clear Mind</div>
-                    <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>Guided meditation to clear your mind and find inner calm 🌙</div>
+                    <div style={{fontSize:13,color:"#3A2A18",fontWeight:500,lineHeight:1.5}}>Guided meditation to clear your mind and find inner calm 🌙</div>
                   </div>
                   <button onClick={()=>toggleFav("cscm","meditate","🧘 Clear Space Clear Mind")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",flexShrink:0,opacity:isFav("cscm")?1:0.35}}>⭐</button>
                   <button onClick={()=>setCscmPlaying(true)} style={{background:"#2A3848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(30,50,70,0.28)"}}>▶ Play</button>
@@ -10730,7 +10790,7 @@ function RestSpace({setScreen}){
                   <div style={{width:52,height:52,borderRadius:16,background:"rgba(58,40,72,0.10)",border:"1.5px solid rgba(58,40,72,0.20)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>💜</div>
                   <div style={{flex:1}}>
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:2}}>Stress Relief Meditation</div>
-                    <div style={{fontSize:12,color:"#8A8070",lineHeight:1.5}}>Release tension and let stress melt away 🌸</div>
+                    <div style={{fontSize:13,color:"#3A2A18",fontWeight:500,lineHeight:1.5}}>Release tension and let stress melt away 🌸</div>
                   </div>
                   <button onClick={()=>toggleFav("stress","meditate","💜 Stress Relief Meditation")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",flexShrink:0,opacity:isFav("stress")?1:0.35}}>⭐</button>
                   <button onClick={()=>setStressPlaying(true)} style={{background:"#3A2848",color:"#fff",border:"none",borderRadius:100,padding:"10px 18px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(50,30,70,0.28)"}}>▶ Play</button>
@@ -10749,7 +10809,7 @@ function RestSpace({setScreen}){
                     <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:2}}>
                       {audioFiles[med.id]?audioFiles[med.id].name?.replace(/\.[^.]+$/,"").slice(0,30)||med.title:med.title}
                     </div>
-                    <div style={{fontSize:12,color:"#8A8070"}}>{audioFiles[med.id]?`${audioFiles[med.id].type} file ready`:med.desc}</div>
+                    <div style={{fontSize:13,color:"#3A2A18",fontWeight:500}}>{audioFiles[med.id]?`${audioFiles[med.id].type} file ready`:med.desc}</div>
                   </div>
                   <div style={{display:"flex",gap:6,flexShrink:0}}>
                     {audioFiles[med.id]?(
@@ -10773,7 +10833,7 @@ function RestSpace({setScreen}){
         {/* ══ SOUNDS ══ */}
         <div style={{display:tab==="sounds"?"block":"none"}}>
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:4}}>🎵 My Sounds</div>
-          <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Tap a sound to play — it loops continuously. More sounds coming soon.</div>
+          <div style={{fontSize:13,color:"#3A2A18",fontWeight:500,marginBottom:14,lineHeight:1.6}}>Tap a sound to play — it loops continuously. More sounds coming soon.</div>
 
           {/* Real embedded sounds — Stream and Forest */}
           {WN_PRESETS.filter(p=>p.mp3).map(p=>{
@@ -10954,14 +11014,14 @@ function RestSpace({setScreen}){
             );
           })()}
 
-          <div style={{textAlign:"center",marginTop:14,fontSize:12,color:"#8A8070",fontStyle:"italic"}}>🌿 More nature sounds coming soon</div>
+          <div style={{textAlign:"center",marginTop:14,fontSize:13,color:"#3A2A18",fontWeight:500,fontStyle:"italic"}}>🌿 More nature sounds coming soon</div>
         </div>
 
         {/* ══ BREAK TIMER ══ */}
         <div style={{display:tab==="timer"?"block":"none"}}>
           <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"24px 20px",boxShadow:"0 2px 14px rgba(60,70,40,0.06)",border:"1px solid rgba(255,255,255,0.9)"}}>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:4}}>⏱ Break Timer</div>
-            <div style={{fontSize:12,color:"#8A8070",marginBottom:20,lineHeight:1.6}}>Step away. Rest. Come back refreshed.</div>
+            <div style={{fontSize:13,color:"#3A2A18",fontWeight:500,marginBottom:20,lineHeight:1.6}}>Step away. Rest. Come back refreshed.</div>
             {!breakOn?(
               <>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
@@ -10993,7 +11053,7 @@ function RestSpace({setScreen}){
         {/* ── FAVOURITES TAB ── */}
         <div style={{display:tab==="favs"?"block":"none"}}>
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:4}}>⭐ Saved</div>
-          <div style={{fontSize:12,color:"#8A8070",marginBottom:14,lineHeight:1.6}}>Tap ⭐ on any sound or meditation to save it here for quick access.</div>
+          <div style={{fontSize:13,color:"#3A2A18",fontWeight:500,marginBottom:14,lineHeight:1.6}}>Tap ⭐ on any sound or meditation to save it here for quick access.</div>
           {favourites.length===0?(
             <div style={{textAlign:"center",padding:"30px 20px",color:"#8A8070"}}>
               <div style={{fontSize:48,marginBottom:8}}>⭐</div>
@@ -11648,7 +11708,7 @@ if(screen==="tools") return (<><GardenBg/><div style={{position:"relative",zInde
             return <>{word}{userName?`, ${userName}`:""}</>;
           })()}
         </div>
-        <div style={{fontSize:13,color:"rgba(42,42,20,0.55)",marginBottom:8,fontStyle:"italic"}}>Think it. 🤔 Plan it. Live it. · v2.6</div>
+        <div style={{fontSize:15,color:"#1A2810",marginBottom:8,fontStyle:"italic",fontWeight:800,textShadow:"0 1px 3px rgba(255,255,255,0.7)"}}>Think it. 🤔 Plan it. Live it. · v2.6</div>
       </div>
 
       {/* ── ACTION ROW (subtle) ── */}
