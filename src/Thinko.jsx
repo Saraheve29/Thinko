@@ -13564,7 +13564,7 @@ function Housework({setScreen}){
       opts:["Single garage","Double garage","Garage & shed","Workshop","Other"],
       next:()=>"cupboards"},
     cupboards:{id:"cupboards",q:"Do you have cupboards you'd like to organise?",
-      opts:["Upstairs bedroom wardrobes/cupboards","Upstairs airing/linen cupboard","Downstairs food cupboards","Downstairs cleaning/laundry cupboard","Under stairs cupboard","Other"],
+      opts:["Upstairs bedroom wardrobes/cupboards","Upstairs airing/linen cupboard","Downstairs food cupboards","Downstairs cleaning/laundry cupboard","Under stairs cupboard","Other","Not today"],
       multi:true,other:true,next:()=>"done"},
   };
 
@@ -13968,7 +13968,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
           <div style={{height:4,borderRadius:2,background:"rgba(90,80,60,0.10)",marginBottom:20,overflow:"hidden"}}>
             <div style={{height:"100%",width:`${(stepNum/stepIds.length)*100}%`,background:"#5A7848",borderRadius:2,transition:"width 0.3s"}}/>
           </div>
-          <div style={{background:"rgba(255,255,255,0.92)",borderRadius:24,padding:"22px 18px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"22px 18px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
             <div style={{textAlign:"center",marginBottom:10}}><img src="/image.png" style={{width:52,height:52,objectFit:"contain",margin:"0 auto 6px",display:"block"}} alt="Thinko"/></div>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:isMulti?8:16,textAlign:"center",lineHeight:1.4}}>{step.q}</div>
             {isMulti&&<div style={{fontSize:11,color:"#8A8070",textAlign:"center",marginBottom:12}}>Tap all that apply</div>}
@@ -14036,7 +14036,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
           <div style={{background:"rgba(255,255,255,0.82)",borderRadius:16,padding:"12px 16px",marginBottom:16}}>
             <div style={{fontSize:12,color:"#5A7040"}}>Question {aiPanel.step+1} of {aiPanel.questions.length} · I'll prioritise your tasks based on your answers</div>
           </div>
-          <div style={{background:"rgba(255,255,255,0.92)",borderRadius:20,padding:"20px"}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
             <div style={{fontSize:16,fontWeight:700,color:"#1A1A10",marginBottom:16,lineHeight:1.4}}>{q.q}</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {q.opts.filter(Boolean).map((opt,i)=>(
@@ -14080,7 +14080,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
         </div>
         <div style={{padding:"20px 16px"}}>
           {/* This category result */}
-          <div style={{background:"rgba(255,255,255,0.92)",borderRadius:24,padding:"22px 18px",marginBottom:14}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"22px 18px",marginBottom:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
             <div style={{fontSize:36,textAlign:"center",marginBottom:6}}>{cat?.icon}</div>
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:8,textAlign:"center"}}>Start with:</div>
             <div style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",borderRadius:14,padding:"13px 18px",fontSize:15,fontWeight:700,marginBottom:12,textAlign:"center"}}>{aiPanel.first}</div>
@@ -14112,7 +14112,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
 
           {/* Check other cats */}
           {!allChecked&&(
-            <div style={{background:"rgba(255,255,255,0.80)",borderRadius:18,padding:"14px 16px",marginBottom:14}}>
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:18,padding:"14px 16px",marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
               <div style={{fontSize:13,fontWeight:700,color:"#3A5828",marginBottom:8}}>Check your other areas for full ranking:</div>
               {allActive.filter(id=>!checkedCats.includes(id)).map(id=>(
                 <button key={id} onClick={()=>{
@@ -14156,13 +14156,13 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
           <div style={{height:4,borderRadius:2,background:"rgba(90,80,60,0.10)",marginBottom:20,overflow:"hidden"}}>
             <div style={{height:"100%",width:`${((current+1)/pairs.length)*100}%`,background:"#5A7848",borderRadius:2,transition:"width 0.3s"}}/>
           </div>
-          <div style={{background:"rgba(255,255,255,0.82)",borderRadius:16,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 16px",marginBottom:16,textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
             <div style={{fontSize:13,color:"#5A7040",fontWeight:600}}>Which is more urgent right now?</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             {[{label:"A",task:taskA},{label:"B",task:taskB}].map(({label,task})=>(
               <button key={task.id} onClick={()=>handleCompareChoice(task,label==="A"?taskB:taskA)}
-                style={{background:"rgba(255,255,255,0.92)",border:"2px solid rgba(180,160,140,0.25)",borderRadius:20,padding:"20px",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)",transition:"border 0.15s"}}
+                style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"2px solid rgba(180,160,140,0.25)",borderRadius:20,padding:"20px",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)",transition:"border 0.15s"}}
                 onMouseOver={e=>e.currentTarget.style.border="2px solid rgba(90,120,72,0.40)"}
                 onMouseOut={e=>e.currentTarget.style.border="2px solid rgba(180,160,140,0.25)"}>
                 <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Georgia,serif",fontWeight:800,fontSize:16,flexShrink:0}}>{label}</div>
@@ -14200,7 +14200,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
           <div style={{fontSize:11,color:"#8A8070"}}>{catCurrent+1}/{catPairs.length}</div>
         </div>
         <div style={{padding:"20px 16px"}}>
-          <div style={{background:"rgba(255,255,255,0.82)",borderRadius:16,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 16px",marginBottom:16,textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
             <div style={{fontSize:13,color:"#5A7040",fontWeight:600}}>What's more important to tackle today?</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -14240,7 +14240,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
           <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>🏆 Your priority order!</div>
         </div>
         <div style={{padding:"20px 16px"}}>
-          <div style={{background:"rgba(255,255,255,0.92)",borderRadius:24,padding:"20px 18px",marginBottom:16}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"20px 18px",marginBottom:16,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
             <div style={{fontSize:14,color:"#5A7040",marginBottom:16,textAlign:"center"}}>Your home tiles have been rearranged to match</div>
             {order.filter(id=>cats?.[id]).map((id,i)=>{
               const c=cats[id];
@@ -14291,7 +14291,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
         <div style={{padding:"14px 16px"}}>
           {/* Rooms in this category */}
           {cat.rooms&&cat.rooms.length>0&&(
-            <div style={{background:"rgba(255,255,255,0.75)",borderRadius:14,padding:"10px 14px",marginBottom:12,display:"flex",flexWrap:"wrap",gap:6}}>
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:14,padding:"10px 14px",marginBottom:12,display:"flex",flexWrap:"wrap",gap:6,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
               {cat.rooms.map(r=>(
                 <span key={r} style={{background:"rgba(90,120,72,0.10)",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:700,color:"#3A5828"}}>{r}</span>
               ))}
@@ -14319,7 +14319,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
           </div>
 
           {/* Add task */}
-          <div style={{background:"rgba(255,255,255,0.85)",borderRadius:18,padding:"13px",marginBottom:12}}>
+          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:18,padding:"13px",marginBottom:12,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
             <div style={{display:"flex",gap:8,marginBottom:6}}>
               <input value={newTask} onChange={e=>setNewTask(e.target.value)}
                 onKeyDown={e=>{if(e.key==="Enter"&&newTask.trim()){addTask(activeCat,newTask.trim(),newTaskRoom,3,"");setNewTask("");}}}
@@ -14378,7 +14378,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
               onDragOver={e=>onTaskDragOver(e,activeCat,t.id)}
               onDrop={e=>onTaskDrop(e,activeCat,t.id)}
               onDragEnd={()=>{setDragTask(null);setDragOverTask(null);}}
-              style={{background:dragOverTask?.taskId===t.id?"rgba(90,120,72,0.08)":"rgba(255,255,255,0.88)",borderRadius:15,padding:"11px 13px",marginBottom:8,boxShadow:"0 2px 8px rgba(0,0,0,0.05)",display:"flex",alignItems:"flex-start",gap:9,border:`1.5px solid ${dragOverTask?.taskId===t.id?"rgba(90,120,72,0.30)":"transparent"}`,cursor:"grab",transition:"border 0.15s"}}>
+              style={{background:dragOverTask?.taskId===t.id?"rgba(90,120,72,0.08)":"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:15,padding:"11px 13px",marginBottom:8,boxShadow:"0 2px 8px rgba(0,0,0,0.05)",display:"flex",alignItems:"flex-start",gap:9,border:`1.5px solid ${dragOverTask?.taskId===t.id?"rgba(90,120,72,0.30)":"transparent"}`,cursor:"grab",transition:"border 0.15s"}}>
               <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,flexShrink:0}}>
                 <div style={{width:30,height:30,borderRadius:8,background:SCORE_COLORS[t.score],display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:12,fontWeight:800}}>{t.score}</div>
                 <div style={{fontSize:12,color:"#A09080",lineHeight:1}}>⠿</div>
@@ -14400,7 +14400,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
             <div style={{marginTop:14}}>
               <div style={{fontSize:11,fontWeight:700,color:"#8A8070",marginBottom:7,textTransform:"uppercase",letterSpacing:1}}>✓ Done ({done.length})</div>
               {done.map(t=>(
-                <div key={t.id} style={{background:"rgba(90,120,72,0.05)",borderRadius:12,padding:"8px 12px",marginBottom:5,display:"flex",alignItems:"center",gap:8,opacity:0.55}}>
+                <div key={t.id} style={{background:"rgba(90,120,72,0.10)",borderRadius:12,padding:"8px 12px",marginBottom:5,display:"flex",alignItems:"center",gap:8,opacity:0.7}}>
                   <div style={{flex:1,textDecoration:"line-through",color:"#8A8070",fontSize:13}}>{t.name}{t.room&&<span style={{fontSize:10,color:"#A0A080"}}> · {t.room}</span>}</div>
                   <button onClick={()=>toggleDone(activeCat,t.id)} style={{background:"none",border:"1px solid rgba(90,80,60,0.15)",borderRadius:6,padding:"3px 7px",fontSize:10,color:"#8A8070",cursor:"pointer"}}>Undo</button>
                   <button onClick={()=>deleteTask(activeCat,t.id)} style={{background:"none",border:"none",fontSize:13,cursor:"pointer",color:"#C04030"}}>✕</button>
@@ -14478,7 +14478,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
             <div style={{height:4,borderRadius:2,background:"rgba(90,80,60,0.10)",marginBottom:20,overflow:"hidden"}}>
               <div style={{height:"100%",width:`${((stepIdx+1)/CLEAROUT_QUESTIONS.length)*100}%`,background:"#A85028",borderRadius:2,transition:"width 0.3s"}}/>
             </div>
-            <div style={{background:"rgba(255,255,255,0.92)",borderRadius:24,padding:"22px 18px"}}>
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"22px 18px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
               <div style={{fontSize:22,textAlign:"center",marginBottom:10}}>📦</div>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:16,textAlign:"center",lineHeight:1.4}}>{q.q}</div>
               <div style={{display:"flex",flexDirection:"column",gap:9}}>
@@ -14517,7 +14517,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
             <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>📦 Anything else?</div>
           </div>
           <div style={{padding:"16px"}}>
-            <div style={{background:"rgba(255,255,255,0.92)",borderRadius:24,padding:"20px 18px"}}>
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"20px 18px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:8,textAlign:"center"}}>Any other areas to include?</div>
               <div style={{fontSize:12,color:"#8A8070",textAlign:"center",marginBottom:14}}>Tap all that apply — or skip</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -14576,7 +14576,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
 
             {/* Task list */}
             {(plan.tasks||[]).map((t,i)=>(
-              <div key={i} style={{background:"rgba(255,255,255,0.88)",borderRadius:16,padding:"14px",marginBottom:9,display:"flex",gap:12,alignItems:"flex-start"}}>
+              <div key={i} style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"14px",marginBottom:9,display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
                 <div style={{width:32,height:32,borderRadius:9,background:PRIORITY_COLORS[i]||"#5A7848",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:800,fontSize:14,flexShrink:0}}>{i+1}</div>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:2}}>{t.task}</div>
@@ -14590,7 +14590,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
             ))}
 
             {/* Google Calendar */}
-            <div style={{background:"rgba(255,255,255,0.88)",borderRadius:20,padding:"18px",marginTop:8}}>
+            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"18px",marginTop:8,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
               <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:12}}>📅 Add to Google Calendar</div>
               <input type="date" value={clearOutDate} onChange={e=>setClearOutDate(e.target.value)}
                 style={{width:"100%",padding:"11px 14px",borderRadius:12,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.9)",marginBottom:10,boxSizing:"border-box"}}/>
@@ -14669,7 +14669,7 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
                   order.splice(to,0,...order.splice(from,1));
                   saveCatOrder(order);setCatDrag(null);setCatDragOver(null);
                 }}
-                style={{background:catDragOver===id?"rgba(90,120,72,0.08)":"rgba(255,255,255,0.88)",borderRadius:22,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)",border:`2px solid ${catDragOver===id?"rgba(90,120,72,0.35)":"transparent"}`,transition:"border 0.15s",cursor:"grab"}}>
+                style={{background:catDragOver===id?"rgba(90,120,72,0.10)":"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:22,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)",border:`2px solid ${catDragOver===id?"rgba(90,120,72,0.35)":"transparent"}`,transition:"border 0.15s",cursor:"grab"}}>
                 <div style={{padding:"16px 18px",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={()=>setActiveCat(id)}>
                   <div style={{fontSize:36}}>{cat.icon}</div>
                   <div style={{flex:1}}>
