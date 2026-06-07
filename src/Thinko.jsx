@@ -13116,28 +13116,26 @@ export default function App() {
           <img src="/logo.jpg" alt="Thinko" style={{height:36,objectFit:"contain",filter:"drop-shadow(0 1px 4px rgba(0,0,0,0.12))"}}/>
         </div>
 
-        {/* Top bar: sun/moon + greeting + weather + customise */}
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-
-          {/* Sun / Moon - compact */}
-          {(()=>{
-            const h=new Date().getHours();
-            const isNight=h>=21||h<5;
-            const isEvening=h>=17&&h<21;
-            if(isNight) return <div style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 0 8px #8090FF)"}}>🌙</div>;
-            if(isEvening) return <div style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 0 8px #FF8060)"}}>🌅</div>;
-            return(
-              <div style={{width:38,height:38,borderRadius:"50%",background:"radial-gradient(circle,#FFFDE7,#FFD700,#FFA500)",boxShadow:"0 0 14px #FFD700,0 0 28px rgba(255,200,0,0.4)",flexShrink:0}}/>
-            );
-          })()}
-
-          {/* Greeting */}
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontFamily:"Georgia,serif",fontSize:18,fontWeight:800,color:"#0A1A08",lineHeight:1.1,textShadow:"0 1px 4px rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {(()=>{const h=new Date().getHours();const w=h<12?"Morning":h<17?"Afternoon":h<21?"Evening":"Night";return`Good ${w}${userName?", "+userName:""}!`;})()}
-            </div>
-            <div style={{fontSize:11,color:"#3A2A18",fontWeight:600,marginTop:2,opacity:0.8}}>Think it · Plan it · Live it</div>
+        {/* Big centred greeting */}
+        <div style={{textAlign:"center",padding:"18px 16px 10px",flexShrink:0}}>
+          <div style={{marginBottom:10}}>
+            {(()=>{
+              const h=new Date().getHours();
+              const isNight=h>=21||h<5;
+              const isEvening=h>=17&&h<21;
+              if(isNight) return <div style={{fontSize:52,lineHeight:1,filter:"drop-shadow(0 0 12px #8090FF)"}}>🌙</div>;
+              if(isEvening) return <div style={{fontSize:52,lineHeight:1,filter:"drop-shadow(0 0 12px #FF8060)"}}>🌅</div>;
+              return <div style={{width:56,height:56,borderRadius:"50%",background:"radial-gradient(circle,#FFFDE7,#FFD700,#FFA500)",boxShadow:"0 0 20px #FFD700,0 0 40px rgba(255,200,0,0.4)",margin:"0 auto"}}/>;
+            })()}
           </div>
+          <div style={{fontFamily:"Georgia,serif",fontSize:26,fontWeight:900,color:"#0A1A08",lineHeight:1.1,textShadow:"0 2px 8px rgba(255,255,255,0.8)"}}>
+            {(()=>{const h=new Date().getHours();const w=h<12?"Morning":h<17?"Afternoon":h<21?"Evening":"Night";return`Good ${w}${userName?", "+userName:""}!`;})()}
+          </div>
+          <div style={{fontSize:12,color:"#3A2A18",fontWeight:600,marginTop:4,opacity:0.75}}>Think it · Plan it · Live it 🦔</div>
+        </div>
+
+        {/* Top bar: streak + weather + customise */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:0,justifyContent:"flex-end"}}>
 
           {/* Streak */}
           {streak.count>0&&(
@@ -13283,53 +13281,6 @@ export default function App() {
 
 
 
-      {/* ── FAVOURITE APPS ── */}
-      <div style={{padding:"0 14px 12px",flexShrink:0}}>
-        {quickApps.length===0?(
-          <button onClick={()=>setShowAppPicker(true)}
-            style={{width:"100%",padding:"12px 16px",background:"rgba(255,255,255,0.55)",border:"1.5px dashed rgba(180,160,140,0.40)",borderRadius:18,cursor:"pointer",display:"flex",alignItems:"center",gap:10,color:"#5A4A30"}}>
-            <span style={{fontSize:22}}>⭐</span>
-            <div style={{textAlign:"left"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:14,color:"#1A2810"}}>Favourite Apps</div>
-              <div style={{fontSize:11,color:"#8A8070"}}>Tap to add shortcuts to your favourite apps</div>
-            </div>
-          </button>
-        ):(
-          <div>
-            <div style={{display:"flex",alignItems:"center",marginBottom:8,gap:8}}>
-              <span style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A2810",textShadow:"0 1px 3px rgba(255,255,255,0.6)"}}>⭐ Favourite Apps</span>
-              <button onClick={()=>setEditingApps(e=>!e)}
-                style={{background:"rgba(255,255,255,0.50)",border:"1px solid rgba(180,160,140,0.30)",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#5A4A30",cursor:"pointer"}}>
-                {editingApps?"✓ Done":"✏️ Edit"}
-              </button>
-              <button onClick={()=>setShowAppPicker(true)}
-                style={{marginLeft:"auto",background:"rgba(255,255,255,0.50)",border:"1px solid rgba(180,160,140,0.30)",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#5A4A30",cursor:"pointer"}}>+ Add</button>
-            </div>
-            <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4}}>
-              {quickApps.map((app,i)=>(
-                <div key={app.id+i} style={{position:"relative",flexShrink:0}}>
-                  {editingApps&&(
-                    <button onClick={()=>saveQuickApps(quickApps.filter((_,j)=>j!==i))}
-                      style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",background:"#c0392b",color:"#fff",border:"2px solid #fff",cursor:"pointer",fontSize:11,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>✕</button>
-                  )}
-                  <button onClick={()=>{if(!editingApps&&app.url)window.open(app.url,"_blank");}}
-                    style={{width:56,height:56,borderRadius:16,background:app.color+"22",border:"2px solid "+app.color+"55",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,cursor:"pointer"}}
-                    onTouchStart={e=>e.currentTarget.style.transform="scale(0.90)"}
-                    onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-                    {app.icon}
-                  </button>
-                  <div style={{textAlign:"center",fontSize:10,fontWeight:600,color:"#1A2810",marginTop:3,width:56,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textShadow:"0 1px 2px rgba(255,255,255,0.7)"}}>{app.name}</div>
-                </div>
-              ))}
-              <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <button onClick={()=>setShowAppPicker(true)}
-                  style={{width:56,height:56,borderRadius:16,background:"rgba(255,255,255,0.45)",border:"1.5px dashed rgba(180,160,140,0.40)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,cursor:"pointer",color:"#5A7848"}}>＋</button>
-                <div style={{fontSize:10,fontWeight:600,color:"#8A8070",width:56,textAlign:"center"}}>Add</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* ── APP PICKER MODAL ── */}
       {showAppPicker&&(
