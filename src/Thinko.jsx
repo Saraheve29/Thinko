@@ -13112,8 +13112,8 @@ export default function App() {
       <div style={{padding:"12px 16px 8px",flexShrink:0}}>
 
         {/* Logo bar */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}>
-          <img src="/logo.jpg" alt="Thinko" style={{height:36,objectFit:"contain",filter:"drop-shadow(0 1px 4px rgba(0,0,0,0.12))"}}/>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:4,padding:"8px 0"}}>
+          <img src="/logo.jpg" alt="Thinko" style={{height:72,objectFit:"contain",filter:"drop-shadow(0 2px 10px rgba(0,0,0,0.15))"}}/>
         </div>
 
         {/* Big centred greeting */}
@@ -13602,7 +13602,7 @@ function Housework({setScreen}){
         const r=room.toLowerCase();
         if((r.includes("bedroom")||r.includes("room"))&&!r.includes("bathroom")&&!r.includes("bath")&&!r.includes("toilet")&&!r.includes("wardrobe")&&!r.includes("airing")){
           qs.push({q:`${room} — when did you last change the bedding?`,opts:["This week","Last week","Two weeks ago","Can't remember"]});
-          qs.push({q:`${room} — how is it?`,opts:["Really needs a clean","Getting dusty","Could do with a tidy","It's fine"]});
+          qs.push({q:`${room} — how tidy is it?`,opts:["Really needs a tidy","Getting messy","Could do with a quick tidy","It's fine"]});
         } else if(r.includes("bathroom")||r.includes("bath")){
           qs.push({q:"Bathroom — how dirty is the toilet?",opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]});
           qs.push({q:"Bathroom — how is the bath/shower?",opts:["Really dirty","Needs a clean","Just a quick wipe","Fine"]});
@@ -13611,13 +13611,18 @@ function Housework({setScreen}){
         } else if(r.includes("landing")){
           qs.push({q:"Landing — does it need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
         } else if(r.includes("wardrobe")){
-          qs.push({q:"Bedroom wardrobes — how are they?",opts:["Can't close the doors","Really cluttered","Could do with a sort","Fine"]});
+          qs.push({q:"Bedroom wardrobes — how are they?",opts:["Can't close the doors","Really cluttered","Could do with a sort","Fine","To do later","Skip for now"]});
         } else if(r.includes("airing")){
-          qs.push({q:"Airing cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine"]});
+          qs.push({q:"Airing cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","To do later","Skip for now"]});
         } else {
           qs.push({q:`${room} — how does it look?`,opts:["Really needs doing","Getting bad","Could do with a clean","Fine"]});
         }
       });
+      // General upstairs questions always asked
+      qs.push({q:"Upstairs floors — do they need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
+      qs.push({q:"Do the stairs need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No stairs"]});
+      qs.push({q:"Upstairs surfaces — do they need cleaning?",opts:["Really grimy","Needs a clean","Could do with a wipe","Fine"]});
+      qs.push({q:"Any rubbish/bins to take out upstairs?",opts:["Yes urgently","Yes","Could do soon","No"]});
       if(qs.length===0) qs.push({q:"How does upstairs feel overall?",opts:["Really needs doing","Getting bad","Could do with a clean","Not too bad"]});
       return qs;
     }
@@ -13639,9 +13644,9 @@ function Housework({setScreen}){
           qs.push({q:r.includes("downstairs")?"Downstairs toilet — how dirty is it?":"Toilet — how dirty is it?",opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]});
           qs.push({q:"How is the sink?",opts:["Really dirty","Needs a clean","Just a quick wipe","Fine"]});
         } else if(r.includes("food cupboard")){
-          qs.push({q:"Food cupboards — how are they?",opts:["Really need a clear out","Getting cluttered","Could do with a tidy","Fine"]});
+          qs.push({q:"Food cupboards — how are they?",opts:["Really need a clear out","Getting cluttered","Could do with a tidy","Fine","To do later","Skip for now"]});
         } else if(r.includes("cleaning")&&r.includes("cupboard")){
-          qs.push({q:"Cleaning/laundry cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine"]});
+          qs.push({q:"Cleaning/laundry cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","To do later","Skip for now"]});
         } else if(r.includes("under stairs")){
           qs.push({q:"Under stairs — how is it?",opts:["Can't get anything out","Really cluttered","Could do with a tidy","Fine"]});
         } else if(r.includes("dining")){
@@ -13650,7 +13655,11 @@ function Housework({setScreen}){
           qs.push({q:`${room} — how does it look?`,opts:["Really needs doing","Getting bad","Could do with a clean","Fine"]});
         }
       });
-      // Always ask about laundry and dinner for downstairs
+      // General downstairs questions always asked
+      qs.push({q:"Downstairs floors — do they need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
+      qs.push({q:"Downstairs floors — do they need mopping?",opts:["Really needs it","Yes after hoovering","Wouldn't hurt","No"]});
+      qs.push({q:"Downstairs surfaces — do they need cleaning?",opts:["Really grimy","Sticky patches","Could do with a wipe","Fine"]});
+      qs.push({q:"Any rubbish/bins to take out downstairs?",opts:["Yes urgently","Yes","Could do soon","No"]});
       qs.push({q:"How is the laundry situation?",opts:["Overflowing — urgent","Needs doing today","A small load","All on top of it"]});
       qs.push({q:"Do you need to think about dinner today?",opts:["Yes — nothing planned","Yes — need to prep","Something simple sorted","All sorted"]});
       if(qs.length===0) qs.push({q:"How does downstairs feel overall?",opts:["Really needs doing","Getting bad","Could do with a clean","Not too bad"]});
@@ -13678,7 +13687,7 @@ function Housework({setScreen}){
       // Shed
       if(gf.includes("Shed"))qs.push({q:"How is the shed?",opts:["Can't find anything","Pretty cluttered","Could do with a tidy","Fine"]});
       // Log cabin
-      if(gf.includes("Log cabin/Summerhouse"))qs.push({q:"How is the log cabin/summerhouse?",opts:["Needs a clean","Getting dusty","Could do with a tidy","Fine"]});
+      if(gf.includes("Log cabin/Summerhouse"))qs.push({q:"How is the log cabin/summerhouse?",opts:["Needs a clean","Getting very messy","Could do with a tidy","Fine"]});
       // General planting question
       if(gf.includes("Plants/Flower beds")||gf.includes("Vegetable patch"))qs.push({q:"Any planting or sowing needed?",opts:["Yes urgently","Yes soon","Not right now","No"]});
       if(qs.length===0)qs.push({q:"How does the garden look overall?",opts:["Really needs work","Getting overgrown","Could do with a tidy","Looking ok"]});
@@ -13698,13 +13707,56 @@ function Housework({setScreen}){
 
   // Preset tasks per category
   const CAT_PRESETS={
-    upstairs:["Tidy floors","Hoovering","Dusting","Changing beds","Tidy surfaces","Cleaning mirrors","Emptying bins","Ironing","Tidying bedrooms","Cleaning bathroom","Mopping bathroom floor","Sort wardrobe/clothes","Clear out wardrobe","Organise airing cupboard","Sort kids clothes","Put away laundry"],
-    downstairs:["Tidying floors","Hoovering","Mopping floors","Washing up","Tidy surfaces","Wiping surfaces","Tidy sofa","Dusting","Tidying living room","Cleaning toilet","Emptying bins","Cleaning oven","Wiping cupboards","Do laundry","Cook dinner","Organise food cupboards","Clear out food cupboards","Organise cleaning cupboard","Sort laundry cupboard","Tidy under stairs"],
+    upstairs:["Tidy floors","Hoovering","Hoover stairs","Mop bathroom floor","Clean surfaces","Dusting","Changing beds","Tidy surfaces","Cleaning mirrors","Emptying bins","Take rubbish out","Ironing","Tidying bedrooms","Cleaning bathroom","Sort wardrobe/clothes","Clear out wardrobe","Organise airing cupboard","Sort kids clothes","Put away laundry"],
+    downstairs:["Tidy floors","Hoovering","Mop floors","Clean surfaces","Wiping surfaces","Tidy sofa","Washing up","Dusting","Tidying living room","Cleaning toilet","Emptying bins","Take rubbish out","Cleaning oven","Wiping cupboards","Do laundry","Cook dinner","Organise food cupboards","Clear out food cupboards","Organise cleaning cupboard","Sort laundry cupboard","Tidy under stairs"],
     garden:["Mowing lawn","Weeding","Watering plants","Watering greenhouse","Sweeping path","Trimming edges","Clearing leaves","Tidying patio","Tending shed","Planting/sowing","Tidying flower beds","Cleaning pond","Tidying log cabin","Pruning","Deadheading flowers","Composting"],
     garage:["Sweeping floor","Tidying tools","Organising shelves","Taking rubbish out","Clearing clutter"],
   };
 
   const getCatTasks=catId=>(cats?.[catId]?.tasks)||[];
+
+  // Split any bundled tasks into individual ones before storing
+  const splitBundledTask=(taskName)=>{
+    const splits=[
+      // "and" patterns
+      [/clean toilet and bath[/\w\s]*/i, ["Clean toilet","Clean bath/shower"]],
+      [/clean bath[/\w\s]* and toilet/i, ["Clean bath/shower","Clean toilet"]],
+      [/change bedding and tidy/i, ["Change bedding","Tidy room"]],
+      [/tidy.* and change bedding/i, ["Tidy room","Change bedding"]],
+      [/hoover and mop/i, ["Hoover floors","Mop floors"]],
+      [/mop and hoover/i, ["Hoover floors","Mop floors"]],
+      [/clean surfaces and/i, null], // handled by "and" split below
+      [/dust and/i, null],
+    ];
+    // Check specific patterns first
+    for(const [pattern, result] of splits){
+      if(result && pattern.test(taskName)) return result;
+    }
+    // Generic "and" split — if task contains " and " split it
+    if(/ and /i.test(taskName)){
+      const parts = taskName.split(/ and /i).map(p=>p.trim()).filter(Boolean);
+      if(parts.length===2 && parts[0].length>2 && parts[1].length>2){
+        // Capitalise first letter of each
+        return parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1));
+      }
+    }
+    return [taskName]; // no split needed
+  };
+
+  const splitAllTasks=(taskList)=>{
+    const result=[];
+    taskList.forEach(t=>{
+      const split=splitBundledTask(t.name);
+      if(split.length===1){
+        result.push(t);
+      } else {
+        split.forEach((name,i)=>{
+          result.push({...t,id:t.id+(i*0.001),name});
+        });
+      }
+    });
+    return result;
+  };
 
   // Auto-enforce logical task order
   const enforceTaskOrder=(taskList)=>{
@@ -13737,7 +13789,7 @@ function Housework({setScreen}){
 
   const handleCompareChoice=(winner,loser)=>{
     if(!comparing) return;
-    const {pairs,current,ranked,catId}=comparing;
+    const {pairs,current,ranked,catId,aiFirst,aiMessage}=comparing;
     const newRanked=ranked.map(t=>{
       if(t.id===winner.id) return {...t,score:Math.max(1,t.score-1)};
       if(t.id===loser.id) return {...t,score:Math.min(5,t.score+1)};
@@ -13745,15 +13797,21 @@ function Housework({setScreen}){
     }).sort((a,b)=>a.score-b.score);
     const next=current+1;
     if(next>=pairs.length){
-      saveTasks({...tasks,[catId]:newRanked});
+      // Save using current cats state to avoid stale closure
+      setCatsRaw(prev=>{
+        const updated={...prev,[catId]:{...prev[catId],tasks:newRanked}};
+        try{localStorage.setItem('thinko_hw_cats',JSON.stringify(updated));}catch{}
+        return updated;
+      });
       const ids=(catOrder||defaultOrder2).filter(id=>cats?.[id]);
       if(ids.length>=2){
         const catPairs=[];
         for(let i=0;i<ids.length-1;i++) catPairs.push([ids[i],ids[i+1]]);
         setActiveCat(null);
-      setComparing({...comparing,ranked:newRanked,phase:"cats",catPairs,catCurrent:0,catScores:Object.fromEntries(ids.map(id=>[id,3]))});
+        setComparing({...comparing,ranked:newRanked,phase:"cats",catPairs,catCurrent:0,
+          catScores:Object.fromEntries(ids.map(id=>[id,3])),aiFirst,aiMessage});
       } else {
-        setComparing(null);
+        setComparing({...comparing,ranked:newRanked,phase:"done",finalOrder:ids,aiFirst,aiMessage});
       }
     } else {
       setComparing({...comparing,current:next,ranked:newRanked});
@@ -13768,7 +13826,8 @@ function Housework({setScreen}){
     if(next>=catPairs.length){
       const sorted=Object.keys(newScores).sort((a,b)=>newScores[a]-newScores[b]);
       saveCatOrder(sorted);
-      setComparing({...comparing,phase:"done",catScores:newScores,finalOrder:sorted});
+      setComparing({...comparing,phase:"done",catScores:newScores,finalOrder:sorted,
+        aiFirst:comparing.aiFirst,aiMessage:comparing.aiMessage});
     } else {
       setComparing({...comparing,catCurrent:next,catScores:newScores});
     }
@@ -13821,20 +13880,25 @@ function Housework({setScreen}){
       const cat=cats[catId];
       const todoTasks=getCatTasks(catId).filter(t=>!t.done).map(t=>t.name);
       const qaPairs=answers.map(a=>`Q: "${a.q}" A: "${a.a}"`).join("\n");
-      const prompt=`You are a helpful housework assistant for someone who finds it hard to get started.
+      const prompt=`You are a housework assistant for someone with ADHD and autism. They need tasks broken into SINGLE, SPECIFIC actions to avoid overwhelm.
+
+STRICT RULES:
+- Every task must be ONE single action only. NEVER combine two actions.
+- BAD: "Clean toilet and bath" GOOD: "Clean toilet" + "Clean bath" as separate tasks
+- BAD: "Change bedding and tidy room" GOOD: "Change bedding" + "Tidy room" as separate tasks  
+- BAD: "Hoover and mop floors" GOOD: "Hoover floors" + "Mop floors" as separate tasks
+- Each task name must be short, clear and specific — one thing only.
+
 Category: ${cat?.name}
 Current tasks: ${todoTasks.length>0?todoTasks.join(", "):"none yet"}
 User answered:
 ${qaPairs}
 
-Based on their answers:
-1. Suggest what to do FIRST (most urgent/important)
-2. Suggest 3-5 prioritised tasks with scores
-3. Give an encouraging message
-4. Give this category an overall urgency score 1-4 (1=needs doing now, 2=do today, 3=do this week, 4=can wait)
+Based on their answers, suggest 4-8 tasks. Each must be ONE specific action. Give an urgency score and which room.
+Also: what to start with first, a short encouraging message, and an overall category urgency score 1-4.
 
 Reply ONLY with JSON:
-{"first":"task to do first","message":"short encouraging message","catScore":2,"tasks":[{"task":"name","score":1,"reason":"why","room":"room name or empty"}]}
+{"first":"single task to do first","message":"short encouraging message","catScore":2,"tasks":[{"task":"single action only","score":1,"reason":"why","room":"room name or empty"}]}
 Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
       const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,messages:[{role:"user",content:prompt}]})});
       const data=await resp.json();
@@ -13842,12 +13906,17 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
       const result=JSON.parse(txt);
       // Add suggested tasks that don't already exist
       const existing=getCatTasks(catId).map(t=>t.name.toLowerCase());
-      const newTasks=(result.tasks||[])
+      const rawNewTasks=(result.tasks||[])
         .filter(s=>!existing.includes(s.task.toLowerCase()))
         .map(s=>({id:Date.now()+Math.random(),name:s.task,room:s.room||"",score:s.score||3,reason:s.reason||"AI suggested",done:false}));
-      // Re-sort existing tasks by AI priority
-      const allTasks=[...getCatTasks(catId),...newTasks].sort((a,b)=>a.score-b.score);
-      saveCats({...cats,[catId]:{...cats[catId],tasks:allTasks}});
+      // Split any bundled tasks into individual ones
+      const newTasks=splitAllTasks(rawNewTasks);
+      // Build allTasks using existing tasks from cats state directly (not stale getCatTasks)
+      const existingTasks=cats?.[catId]?.tasks||[];
+      const allTasks=[...existingTasks,...newTasks].sort((a,b)=>a.score-b.score);
+      // Save AFTER building allTasks
+      const updatedCats={...cats,[catId]:{...cats[catId],tasks:allTasks}};
+      saveCats(updatedCats);
       // Store category score and reorder hub
       const catScores={...(JSON.parse(localStorage.getItem('thinko_hw_cat_scores')||'{}')),[catId]:result.catScore||3};
       localStorage.setItem('thinko_hw_cat_scores',JSON.stringify(catScores));
@@ -13855,20 +13924,20 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
       const allCatIds=["upstairs","downstairs","garden","garage"].filter(id=>cats?.[id]);
       const newOrder=[...allCatIds].sort((a,b)=>(catScores[a]||3)-(catScores[b]||3));
       saveCatOrder(newOrder);
-      // Auto-start A vs B comparison with the new tasks
-      const allCatTasks=[...getCatTasks(catId),...newTasks];
-      const freshTasks=allCatTasks.filter(t=>!t.done).sort((a,b)=>a.score-b.score);
+      // Auto-start A vs B comparison — use allTasks (already built above, not stale state)
+      const freshTasks=allTasks.filter(t=>!t.done);
       if(freshTasks.length>=2){
         const pairs=[];
         for(let i=0;i<freshTasks.length-1;i++) pairs.push([freshTasks[i],freshTasks[i+1]]);
+        setAiLoading(false);
         setAiPanel(null);
         setActiveCat(null);
-        setComparing({catId,pairs,current:0,ranked:freshTasks,phase:"tasks",catScores,newOrder});
+        setComparing({catId,pairs,current:0,ranked:freshTasks,phase:"tasks",catScores,newOrder,aiFirst:result.first,aiMessage:result.message});
       } else {
+        setAiLoading(false);
         setAiPanel({...aiPanel,done:true,first:result.first,message:result.message,catScore:result.catScore,catScores,newOrder});
       }
-    }catch{setAiPanel(null);}
-    setAiLoading(false);
+    }catch{setAiPanel(null);setAiLoading(false);}
   };
 
   // ── SETUP SCREEN ──
@@ -13959,135 +14028,6 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
   }
 
   // ── AI PANEL ──
-  if(aiPanel&&aiPanel.loading&&!aiPanel.done){
-    const cat=cats?.[aiPanel.catId];
-    return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{textAlign:"center",padding:"40px 20px"}}>
-          <img src="/image.png" style={{width:72,height:72,objectFit:"contain",marginBottom:16,animation:"pulse 1s ease-in-out infinite alternate"}} alt="Thinko"/>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:8}}>Working out your plan…</div>
-          <div style={{fontSize:13,color:"#8A8070"}}>Prioritising {cat?.name} for you</div>
-        </div>
-      </div>
-    );
-  }
-  if(aiPanel&&!aiPanel.done){
-    const q=aiPanel.questions[aiPanel.step];
-    const cat=cats?.[aiPanel.catId];
-    return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <button onClick={()=>setAiPanel(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> {cat?.icon} {cat?.name} check-in</div>
-          <button onClick={()=>setAiPanel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#8A8070",fontWeight:600}}>Skip</button>
-        </div>
-        <div style={{padding:"20px 16px"}}>
-          <div style={{background:"rgba(255,255,255,0.82)",borderRadius:16,padding:"12px 16px",marginBottom:16}}>
-            <div style={{fontSize:12,color:"#5A7040"}}>Question {aiPanel.step+1} of {aiPanel.questions.length} · I'll prioritise your tasks based on your answers</div>
-          </div>
-          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <div style={{fontSize:16,fontWeight:700,color:"#1A1A10",marginBottom:16,lineHeight:1.4}}>{q.q}</div>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {q.opts.filter(Boolean).map((opt,i)=>(
-                <button key={i} onClick={()=>{
-                  const newAnswers=[...aiPanel.answers,{q:q.q,a:opt}];
-                  if(aiPanel.step+1<aiPanel.questions.length){
-                    setAiPanel({...aiPanel,step:aiPanel.step+1,answers:newAnswers});
-                  } else {
-                    setAiPanel({...aiPanel,answers:newAnswers,loading:true});
-                    runAiPrioritise(aiPanel.catId,newAnswers);
-                  }
-                }}
-                  style={{background:"rgba(90,120,72,0.08)",border:"1.5px solid rgba(90,120,72,0.20)",borderRadius:14,padding:"12px 16px",textAlign:"left",fontSize:14,color:"#2A3820",fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{background:"rgba(90,120,72,0.15)",borderRadius:"50%",width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#3A5828",flexShrink:0}}>{String.fromCharCode(65+i)}</span>
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── AI DONE PANEL ──
-  if(aiPanel&&aiPanel.done){
-    const cat=cats?.[aiPanel.catId];
-    const SCORE_LABELS_CAT={1:"Needs doing NOW 🔴",2:"Do today 🟠",3:"Do this week 🟡",4:"Can wait 🟢"};
-    const catScores=aiPanel.catScores||{};
-    const newOrder=aiPanel.newOrder||[];
-    const checkedCats=Object.keys(catScores);
-    const allActive=["upstairs","downstairs","garden","garage"].filter(id=>cats?.[id]);
-    const allChecked=allActive.every(id=>checkedCats.includes(id));
-    return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <button onClick={()=>{setAiPanel(null);setActiveCat(aiPanel.catId);}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Your plan is ready!</div>
-        </div>
-        <div style={{padding:"20px 16px"}}>
-          {/* This category result */}
-          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"22px 18px",marginBottom:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <div style={{fontSize:36,textAlign:"center",marginBottom:6}}>{cat?.icon}</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:8,textAlign:"center"}}>Start with:</div>
-            <div style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",borderRadius:14,padding:"13px 18px",fontSize:15,fontWeight:700,marginBottom:12,textAlign:"center"}}>{aiPanel.first}</div>
-            <div style={{fontSize:13,color:"#5A7040",lineHeight:1.5,textAlign:"center",marginBottom:4}}>{aiPanel.message}</div>
-          </div>
-
-          {/* Overall ranking if all cats checked */}
-          {allChecked&&newOrder.length>0&&(
-            <div style={{background:"rgba(255,255,255,0.92)",borderRadius:24,padding:"20px 18px",marginBottom:14}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:4}}>🏆 Today's priority order:</div>
-              <div style={{fontSize:11,color:"#8A8070",marginBottom:12}}>Your home tiles have been rearranged to match</div>
-              {newOrder.filter(id=>cats?.[id]).map((id,i)=>{
-                const c=cats[id];
-                const score=catScores[id]||3;
-                const colors={1:"#E03020",2:"#E07020",3:"#D4A020",4:"#5A7848"};
-                return(
-                  <div key={id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<newOrder.length-1?"1px solid rgba(90,80,60,0.08)":"none"}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:colors[score],color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{i+1}</div>
-                    <div style={{fontSize:22,flexShrink:0}}>{c.icon}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontWeight:700,fontSize:14,color:"#1A1A10"}}>{c.name}</div>
-                      <div style={{fontSize:11,color:colors[score],fontWeight:600}}>{SCORE_LABELS_CAT[score]}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Check other cats */}
-          {!allChecked&&(
-            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:18,padding:"14px 16px",marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#3A5828",marginBottom:8}}>Check your other areas for full ranking:</div>
-              {allActive.filter(id=>!checkedCats.includes(id)).map(id=>(
-                <button key={id} onClick={()=>{
-                  const c=cats[id];
-                  const qs=getCatQuestions(id,profile,c);
-                  setAiPanel({catId:id,questions:qs,step:0,answers:[],done:false,catScores,newOrder:aiPanel.newOrder||[]});
-                }} style={{width:"100%",padding:"10px 14px",marginBottom:6,background:"rgba(90,120,72,0.08)",border:"1.5px solid rgba(90,120,72,0.20)",borderRadius:12,fontSize:13,fontWeight:700,color:"#3A5828",cursor:"pointer",display:"flex",alignItems:"center",gap:8,textAlign:"left"}}>
-                  <span style={{fontSize:20}}>{cats[id]?.icon}</span>
-                  <span>Check in {cats[id]?.name}</span>
-                  <span style={{marginLeft:"auto",fontSize:11,color:"#8A8070"}}>→</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <button onClick={()=>{setAiPanel(null);setActiveCat(aiPanel.catId);}}
-            style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer"}}>
-            ✨ Let's go!
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // ── A vs B COMPARISON SCREENS ──
   if(comparing&&comparing.phase==="tasks"){
     const {pairs,current,catId}=comparing;
@@ -14185,27 +14125,63 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
 
   if(comparing&&comparing.phase==="done"){
     const order=comparing.finalOrder||[];
+    const rankedTasks=comparing.ranked||[];
+    const cat=cats?.[comparing.catId];
+    const SCORE_COLORS2={1:"#E03020",2:"#E07020",3:"#D4A020",4:"#5A7848",5:"#4878A8"};
+    const SCORE_LABELS2={1:"Urgent",2:"High",3:"Medium",4:"Low",5:"Whenever"};
     return(
       <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
         <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>🏆 Your priority order!</div>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>🏆 Your plan!</div>
         </div>
-        <div style={{padding:"20px 16px"}}>
-          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"20px 18px",marginBottom:16,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <div style={{fontSize:14,color:"#5A7040",marginBottom:16,textAlign:"center"}}>Your home tiles have been rearranged to match</div>
-            {order.filter(id=>cats?.[id]).map((id,i)=>{
-              const c=cats[id];
-              const colors=["#E03020","#E07020","#D4A020","#5A7848"];
-              return(
-                <div key={id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:i<order.length-1?"1px solid rgba(90,80,60,0.08)":"none"}}>
-                  <div style={{width:30,height:30,borderRadius:"50%",background:colors[i]||"#5A7848",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:15,flexShrink:0}}>{i+1}</div>
-                  <div style={{fontSize:26}}>{c.icon}</div>
-                  <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",flex:1}}>{c.name}</div>
+        <div style={{padding:"16px"}}>
+
+          {/* AI first suggestion */}
+          {comparing.aiFirst&&(
+            <div style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",borderRadius:20,padding:"16px 18px",marginBottom:14,textAlign:"center"}}>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",marginBottom:4}}>Start with</div>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#fff",marginBottom:6}}>{comparing.aiFirst}</div>
+              {comparing.aiMessage&&<div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>{comparing.aiMessage}</div>}
+            </div>
+          )}
+
+          {/* Ranked task list */}
+          {rankedTasks.filter(t=>!t.done).length>0&&(
+            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:12}}>{cat?.icon} {cat?.name} — in order</div>
+              {rankedTasks.filter(t=>!t.done).map((t,i)=>(
+                <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<rankedTasks.filter(x=>!x.done).length-1?"1px solid rgba(90,80,60,0.08)":"none"}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:SCORE_COLORS2[t.score]||"#5A7848",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{i+1}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:14,color:"#1A1A10"}}>{t.name}</div>
+                    {t.room&&<div style={{fontSize:10,color:"#5A7040"}}>{t.room}</div>}
+                    <div style={{fontSize:10,color:SCORE_COLORS2[t.score],fontWeight:600}}>{SCORE_LABELS2[t.score]}</div>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-          <button onClick={()=>setComparing(null)}
+              ))}
+            </div>
+          )}
+
+          {/* Category ranking */}
+          {order.length>0&&(
+            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:4}}>🏠 Area priority order</div>
+              <div style={{fontSize:11,color:"#8A8070",marginBottom:12}}>Tiles rearranged to match</div>
+              {order.filter(id=>cats?.[id]).map((id,i)=>{
+                const c=cats[id];
+                const colors=["#E03020","#E07020","#D4A020","#5A7848"];
+                return(
+                  <div key={id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<order.length-1?"1px solid rgba(90,80,60,0.08)":"none"}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:colors[i]||"#5A7848",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{i+1}</div>
+                    <div style={{fontSize:22}}>{c.icon}</div>
+                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>{c.name}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <button onClick={()=>{setComparing(null);setActiveCat(comparing.catId);}}
             style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer"}}>
             ✨ Let's get started!
           </button>
@@ -14216,6 +14192,112 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
 
 
   // ── CATEGORY DETAIL ──
+
+  // ── AI PANEL LOADING ──
+  if(aiPanel&&aiPanel.loading&&!aiPanel.done){
+    const cat=cats?.[aiPanel.catId];
+    return(
+      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{textAlign:"center",padding:"40px 20px"}}>
+          <img src="/image.png" style={{width:72,height:72,objectFit:"contain",marginBottom:16}} alt="Thinko"/>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:8}}>Working out your plan…</div>
+          <div style={{fontSize:13,color:"#8A8070"}}>Prioritising {cat?.name} for you</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── AI PANEL QUESTIONS ──
+  if(aiPanel&&!aiPanel.done){
+    const q=aiPanel.questions[aiPanel.step];
+    const cat=cats?.[aiPanel.catId];
+    return(
+      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+          <button onClick={()=>setAiPanel(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> {cat?.icon} {cat?.name} check-in</div>
+          <button onClick={()=>setAiPanel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#8A8070",fontWeight:600}}>Skip</button>
+        </div>
+        <div style={{padding:"20px 16px"}}>
+          {aiPanel.step>0&&(
+            <button onClick={()=>setAiPanel({...aiPanel,step:aiPanel.step-1,answers:aiPanel.answers.slice(0,-1)})}
+              style={{width:"100%",padding:"10px",background:"rgba(255,255,255,0.6)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontSize:13,color:"#5A4A30",fontWeight:600,cursor:"pointer",marginBottom:12}}>
+              ← Back to previous question
+            </button>
+          )}
+          <div style={{background:MULTI,borderRadius:16,padding:"12px 16px",marginBottom:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:12,color:"#5A7040"}}>Question {aiPanel.step+1} of {aiPanel.questions.length} · I'll prioritise your tasks based on your answers</div>
+          </div>
+          <div style={{background:MULTI,borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#1A1A10",marginBottom:16,lineHeight:1.4}}>{q.q}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {q.opts.filter(Boolean).map((opt,i)=>(
+                <button key={i} onClick={()=>{
+                  const newAnswers=[...aiPanel.answers,{q:q.q,a:opt}];
+                  if(aiPanel.step+1<aiPanel.questions.length){
+                    setAiPanel({...aiPanel,step:aiPanel.step+1,answers:newAnswers});
+                  } else {
+                    setAiPanel({...aiPanel,answers:newAnswers,loading:true});
+                    runAiPrioritise(aiPanel.catId,newAnswers);
+                  }
+                }}
+                  style={{background:MULTI,border:"1.5px solid rgba(90,120,72,0.20)",borderRadius:14,padding:"12px 16px",textAlign:"left",fontSize:14,color:"#2A3820",fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{background:"rgba(90,120,72,0.15)",borderRadius:"50%",width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#3A5828",flexShrink:0}}>{String.fromCharCode(65+i)}</span>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── AI PANEL DONE ──
+  if(aiPanel&&aiPanel.done){
+    const cat=cats?.[aiPanel.catId];
+    const SCORE_LABELS_CAT={1:"Needs doing NOW 🔴",2:"Do today 🟠",3:"Do this week 🟡",4:"Can wait 🟢"};
+    const catScores=aiPanel.catScores||{};
+    const newOrder=aiPanel.newOrder||[];
+    const checkedCats=Object.keys(catScores);
+    const allActive=["upstairs","downstairs","garden","garage"].filter(id=>cats?.[id]);
+    const allChecked=allActive.every(id=>checkedCats.includes(id));
+    return(
+      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
+          <button onClick={()=>{setAiPanel(null);setActiveCat(aiPanel.catId);}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Your plan is ready!</div>
+        </div>
+        <div style={{padding:"20px 16px"}}>
+          {!allChecked&&(
+            <div style={{background:MULTI,borderRadius:18,padding:"14px 16px",marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#3A5828",marginBottom:8}}>Check your other areas for full ranking:</div>
+              {allActive.filter(id=>!checkedCats.includes(id)).map(id=>(
+                <button key={id} onClick={()=>{
+                  const c=cats[id];
+                  const qs=getCatQuestions(id,profile,c);
+                  setAiPanel({catId:id,questions:qs,step:0,answers:[],done:false,catScores,newOrder:aiPanel.newOrder||[]});
+                }} style={{width:"100%",padding:"10px 14px",marginBottom:6,background:"rgba(90,120,72,0.08)",border:"1.5px solid rgba(90,120,72,0.20)",borderRadius:12,fontSize:13,fontWeight:700,color:"#3A5828",cursor:"pointer",display:"flex",alignItems:"center",gap:8,textAlign:"left"}}>
+                  <span style={{fontSize:20}}>{cats[id]?.icon}</span>
+                  <span>Check in {cats[id]?.name}</span>
+                  <span style={{marginLeft:"auto",fontSize:11,color:"#8A8070"}}>→</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={()=>{setAiPanel(null);setActiveCat(aiPanel.catId);}}
+            style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer"}}>
+            ✨ Let's go!
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if(activeCat&&cats?.[activeCat]){
     const cat=cats[activeCat];
     const allTasks=getCatTasks(activeCat);
@@ -14234,8 +14316,8 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
           <button onClick={()=>{
             const qs=getCatQuestions(activeCat,profile,cat);
             setAiPanel({catId:activeCat,questions:qs,step:0,answers:[],done:false});
-          }} style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:20,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>
-            <img src="/image.png" style={{width:18,height:18,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Prioritise
+          }} style={{background:"rgba(90,120,72,0.15)",color:"#3A5828",border:"1.5px solid rgba(90,120,72,0.30)",borderRadius:20,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+            <img src="/image.png" style={{width:14,height:14,objectFit:"contain",verticalAlign:"middle"}} alt=""/> Setup
           </button>
         </div>
 
@@ -14320,7 +14402,23 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
             </div>
           )}
 
-          {todo.length>0&&<div style={{fontSize:11,color:"#8A8070",marginBottom:8,fontWeight:600}}>⠿ Drag to reorder</div>}
+          {todo.length>0&&(
+            <div style={{marginBottom:12}}>
+              <div style={{display:"flex",gap:8,marginBottom:6}}>
+                <button onClick={()=>{
+                  const qs=getCatQuestions(activeCat,profile,cat);
+                  setAiPanel({catId:activeCat,questions:qs,step:0,answers:[],done:false});
+                }} style={{flex:2,background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:14,padding:"9px 12px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                  <img src="/image.png" style={{width:16,height:16,objectFit:"contain",verticalAlign:"middle"}} alt=""/> AI check-in + rank
+                </button>
+                <button onClick={()=>startComparison(activeCat)}
+                  style={{flex:1,background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.30)",borderRadius:14,padding:"9px 12px",fontSize:12,fontWeight:700,color:"#3A5828",cursor:"pointer"}}>
+                  A vs B now
+                </button>
+              </div>
+              <div style={{fontSize:10,color:"#8A8070",textAlign:"center"}}>⠿ Drag to reorder · AI check-in adds tasks then ranks · A vs B ranks existing tasks</div>
+            </div>
+          )}
 
           {todo.map(t=>(
             <div key={t.id}
@@ -14386,7 +14484,11 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
     {id:"cleaning_cupboard",q:"How is the cleaning cupboard?",opts:["Chaos","Getting messy","Could do with a tidy","Fine"]},
     {id:"shed",      q:"How is the shed/garage?",             opts:["Can't get in","Pretty bad","Could do with a sort","Fine"]},
     {id:"paperwork", q:"How is the paperwork situation?",     opts:["Piles everywhere","Getting bad","A bit behind","Under control"]},
-    {id:"general",   q:"Any other areas that need a clear out?", opts:["Kids bedrooms","Loft","Under stairs","Kitchen drawers"]},
+    {id:"my_wardrobe",  q:"How are your wardrobe and clothes?",       opts:["Really need a clear out","Quite a lot to sort","Could do with a tidy","Fine","Skip for now"]},
+    {id:"kids_wardrobe", q:"How are the kids wardrobes/clothes?",       opts:["Outgrown loads — urgent","Quite a lot to sort","Could do with a tidy","Fine","Skip for now"]},
+    {id:"food_cup",      q:"How are the food cupboards?",               opts:["Out of date stuff everywhere","Getting cluttered","Could do with a sort","Fine","Skip for now"]},
+    {id:"cleaning_cup",  q:"How is the cleaning/laundry cupboard?",     opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","Skip for now"]},
+    {id:"general",       q:"Any other areas?",                          opts:["Kids bedrooms","Loft","Under stairs","Kitchen drawers","Spare room","Garage","None"]},
   ];
 
   const CLEAROUT_EXTRA_OPTS=["Loft","Under stairs","Kitchen drawers","Bathroom cabinet","Junk drawer","Spare room","Garage","Books/DVDs"];
@@ -14397,7 +14499,9 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
       const sep=" | ";
       const qaPairs=CLEAROUT_QUESTIONS.map(q=>q.q+" -> "+(answers[q.id]||"Not answered")).join(sep);
       const extraStr=extras.length>0?" Extra: "+extras.join(", "):"";
-      const promptText='You are helping someone plan a clear out day. Answers: '+qaPairs+extraStr+'. Prioritise tasks. Reply ONLY with JSON: {"startWith":"first task","encouragement":"message","tasks":[{"task":"name","area":"area","time":"30 mins","priority":1,"tip":"tip"}]}';
+      const skippedAreas=answers.filter(a=>a.a==="Skip for now"||a.a==="To do later").map(a=>a.q.split(" — ")[0]).join(", ");
+      const skipNote=skippedAreas?"Do NOT suggest tasks for: "+skippedAreas+". ":"";
+      const promptText=skipNote+'You are helping someone plan a clear out day. Answers: '+qaPairs+extraStr+'. Prioritise tasks. Reply ONLY with JSON: {"startWith":"first task","encouragement":"message","tasks":[{"task":"name","area":"area","time":"30 mins","priority":1,"tip":"tip"}]}';
       const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:promptText}]})});
       const data=await resp.json();
       const txt=data.content[0].text.replace(/```json|```/g,"").trim();
