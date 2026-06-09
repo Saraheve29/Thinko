@@ -13924,20 +13924,25 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
       const allCatIds=["upstairs","downstairs","garden","garage"].filter(id=>cats?.[id]);
       const newOrder=[...allCatIds].sort((a,b)=>(catScores[a]||3)-(catScores[b]||3));
       saveCatOrder(newOrder);
-      // Auto-start A vs B comparison — use allTasks (already built above, not stale state)
       const freshTasks=allTasks.filter(t=>!t.done);
+      // Always clear loading and aiPanel first
+      setAiLoading(false);
+      setAiPanel(null);
+      setActiveCat(null);
       if(freshTasks.length>=2){
         const pairs=[];
         for(let i=0;i<freshTasks.length-1;i++) pairs.push([freshTasks[i],freshTasks[i+1]]);
-        setAiLoading(false);
-        setAiPanel(null);
-        setActiveCat(null);
         setComparing({catId,pairs,current:0,ranked:freshTasks,phase:"tasks",catScores,newOrder,aiFirst:result.first,aiMessage:result.message});
       } else {
-        setAiLoading(false);
-        setAiPanel({...aiPanel,done:true,first:result.first,message:result.message,catScore:result.catScore,catScores,newOrder});
+        // Fewer than 2 tasks — just go back to category with tasks shown
+        setActiveCat(catId);
       }
-    }catch{setAiPanel(null);setAiLoading(false);}
+    }catch(e){
+      console.error("AI prioritise error:",e);
+      setAiPanel(null);
+      setAiLoading(false);
+      setActiveCat(catId);
+    }
   };
 
   // ── SETUP SCREEN ──
