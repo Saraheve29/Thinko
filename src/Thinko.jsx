@@ -13419,61 +13419,47 @@ export default function App() {
 
 
 
+
 // ═══════════════════════════════════════════════════════════
-//   HOUSEWORK  —  grouped categories · drag tasks · AI prioritiser
+//   HOUSEWORK  — clean rebuild
 // ═══════════════════════════════════════════════════════════
 function Housework({setScreen}){
   const MULTI="linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)";
-  const MOTIVATIONAL=["Great job! Every task done is a win 🌟","You're smashing it! 💪","One less thing to think about 🌿","Look at you go! ✨","Amazing — you're on a roll! 🎉","That's the way! 🏡","Brilliant work! 🌸","You're doing so well! 💫"];
+  const MOT=["Great job! 🌟","You're smashing it! 💪","One less thing to worry about 🌿","Amazing work! ✨","Keep going! 🎉","Brilliant! 🌸"];
 
-  // ── State ──
-  const [profile,setProfileRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_hw_profile')||'null');}catch{return null;}});
-  const saveProfile=p=>{setProfileRaw(p);try{localStorage.setItem('thinko_hw_profile',JSON.stringify(p));}catch{}};
+  // ── Persistent state ──
+  const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}};
+  const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
 
-  // Categories: upstairs | downstairs | garden | garage
-  // Each category has tasks array [{id,name,score,reason,done,room}]
-  const [cats,setCatsRaw]=useState(()=>{
-    try{
-      let c=JSON.parse(localStorage.getItem('thinko_hw_cats')||'null');
-      // Migrate old thinko_hw_tasks into cats if present
-      if(c){
-        const oldTasks=JSON.parse(localStorage.getItem('thinko_hw_tasks')||'{}');
-        let migrated=false;
-        Object.keys(oldTasks).forEach(zoneId=>{
-          if(c[zoneId]&&(!c[zoneId].tasks||c[zoneId].tasks.length===0)&&oldTasks[zoneId].length>0){
-            c[zoneId].tasks=oldTasks[zoneId];
-            migrated=true;
-          }
-        });
-        if(migrated) localStorage.setItem('thinko_hw_cats',JSON.stringify(c));
-      }
-      return c;
-    }catch{return null;}
-  });
-  const saveCats=c=>{setCatsRaw(c);try{localStorage.setItem('thinko_hw_cats',JSON.stringify(c));}catch{}};
+  const [profile,setProfile]=useState(()=>load('hw_profile',null));
+  const [zones,setZonesRaw]=useState(()=>load('hw_zones',null));
+  const saveZones=z=>{setZonesRaw(z);save('hw_zones',z);};
 
-  const [activeCat,setActiveCat]=useState(null);
-  const [showSetup,setShowSetup]=useState(()=>!profile||!cats);
-  const [setupStepId,setSetupStepId]=useState("start");
+  // Tasks stored as {zoneId:[{id,name,score,done}]}
+  const [tasks,setTasksRaw]=useState(()=>load('hw_tasks',{}));
+  const saveTasks=t=>{setTasksRaw(t);save('hw_tasks',t);};
+
+  const getZT=zid=>tasks[zid]||[];
+
+  // ── UI state ──
+  const [view,setView]=useState('hub'); // hub | zone | setup | ai | avb | avbdone
+  const [activeZone,setActiveZone]=useState(null);
+  const [setupStep,setSetupStep]=useState(0);
   const [setupAnswers,setSetupAnswers]=useState({});
-  const [setupMultiSel,setSetupMultiSel]=useState([]);
-  const [setupOtherText,setSetupOtherText]=useState("");
-  const [newTask,setNewTask]=useState("");
-  const [newTaskRoom,setNewTaskRoom]=useState("");
-  const [showPresets,setShowPresets]=useState(false);
+  const [multiSel,setMultiSel]=useState([]);
+  const [otherText,setOtherText]=useState('');
+  const [aiAnswers,setAiAnswers]=useState([]);
+  const [aiStep,setAiStep]=useState(0);
   const [aiLoading,setAiLoading]=useState(false);
-  const [aiPanel,setAiPanel]=useState(null); // {catId, step, questions, answers}
+  const [pairs,setPairs]=useState([]);
+  const [pairIdx,setPairIdx]=useState(0);
+  const [ranked,setRanked]=useState([]);
   const [celebration,setCelebration]=useState(null);
-  const [taskMotivation,setTaskMotivation]=useState(null);
-  const [dragTask,setDragTask]=useState(null); // {catId, taskId}
-  const [dragOverTask,setDragOverTask]=useState(null);
-  const [catDrag,setCatDrag]=useState(null);
-  const [catDragOver,setCatDragOver]=useState(null);
-  const [showClearOut,setShowClearOut]=useState(false);
-  const [clearOutPanel,setClearOutPanel]=useState(null); // {step,questions,answers,done,plan}
-  const [clearOutDate,setClearOutDate]=useState("");
-  const [catOrder,setCatOrderRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_hw_cat_order')||'null');}catch{return null;}});
-  const saveCatOrder=o=>{setCatOrderRaw(o);try{localStorage.setItem('thinko_hw_cat_order',JSON.stringify(o));}catch{}};
+  const [motivMsg,setMotivMsg]=useState(null);
+  const [newTask,setNewTask]=useState('');
+  const [showTemplates,setShowTemplates]=useState(false);
+  const [dragTask,setDragTask]=useState(null);
+  const [dragOver,setDragOver]=useState(null);
 
   // Focus timer
   const [timerOn,setTimerOn]=useState(false);
@@ -13485,788 +13471,312 @@ function Housework({setScreen}){
     else{clearInterval(timerRef.current);if(timerLeft===0&&timerOn)setTimerOn(false);}
     return()=>clearInterval(timerRef.current);
   },[timerOn,timerLeft]);
-  const fmtTimer=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+  const fmtT=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
   const resetTimer=()=>{setTimerOn(false);setTimerLeft(timerMins*60);};
 
-  const SCORE_COLORS={1:"#E03020",2:"#E07020",3:"#D4A020",4:"#5A7848",5:"#4878A8"};
-  const SCORE_LABELS={1:"Urgent",2:"High",3:"Medium",4:"Low",5:"Whenever"};
+  const SCORE_C={1:"#E03020",2:"#E07020",3:"#D4A020",4:"#5A7848",5:"#4878A8"};
+  const SCORE_L={1:"Urgent",2:"High",3:"Medium",4:"Low",5:"Whenever"};
 
-  // ── SETUP STEPS ──
-  const SETUP_STEPS={
-    start:{id:"start",q:"Do you have an upstairs?",opts:["Yes","No"],
-      next:a=>a==="Yes"?"upstairs_rooms":"downstairs_rooms"},
-    upstairs_rooms:{id:"upstairs_rooms",q:"What rooms do you have upstairs?",
-      opts:["Bedroom(s)","Landing","Bathroom","Toilet","Study/Office","Other"],
-      multi:true,other:true,
-      next:a=>Array.isArray(a)&&a.some(x=>x.includes("Bedroom"))?"bedroom_names":"downstairs_rooms"},
-    bedroom_names:{id:"bedroom_names",q:"What bedrooms do you have?",
-      opts:["My bedroom","Kids bedroom(s)","Spare room","Guest room","Other"],
-      multi:true,other:true,
-      next:a=>Array.isArray(a)&&a.includes("Kids bedroom(s)")?"kids_count":"downstairs_rooms"},
-    kids_count:{id:"kids_count",q:"How many kids bedrooms do you have?",
-      opts:["1","2","3","4","5+"],
-      next:(a)=>"kids_name_0"},
-    kids_name_0:{id:"kids_name_0",q:"Name the 1st kids bedroom:",
-      opts:["Child's name (type below)"],freeText:true,
-      next:(a,ans)=>{const n=parseInt(ans.kids_count)||1;return n>1?"kids_name_1":"downstairs_rooms";}},
-    kids_name_1:{id:"kids_name_1",q:"Name the 2nd kids bedroom:",
-      opts:["Child's name (type below)"],freeText:true,
-      next:(a,ans)=>{const n=parseInt(ans.kids_count)||1;return n>2?"kids_name_2":"downstairs_rooms";}},
-    kids_name_2:{id:"kids_name_2",q:"Name the 3rd kids bedroom:",
-      opts:["Child's name (type below)"],freeText:true,
-      next:(a,ans)=>{const n=parseInt(ans.kids_count)||1;return n>3?"kids_name_3":"downstairs_rooms";}},
-    kids_name_3:{id:"kids_name_3",q:"Name the 4th kids bedroom:",
-      opts:["Child's name (type below)"],freeText:true,
-      next:()=>"downstairs_rooms"},
-    downstairs_rooms:{id:"downstairs_rooms",q:"What rooms do you have downstairs?",
-      opts:["Living room","Kitchen","Hallway","Toilet","Dining room","Study/Office","Utility room","Other"],
-      multi:true,other:true,next:()=>"garden"},
-    garden:{id:"garden",q:"Do you have a garden?",opts:["Yes","No"],
-      next:a=>a==="Yes"?"garden_features":"garage"},
-    garden_features:{id:"garden_features",q:"What does your garden have?",
-      opts:["Lawn","Plants/Flower beds","Patio/Decking","Shed","Greenhouse","Pond","Vegetable patch","Log cabin/Summerhouse","Other"],
-      multi:true,other:true,next:()=>"garage"},
-    garage:{id:"garage",q:"Do you have a garage?",opts:["Yes","No"],
-      next:a=>a==="Yes"?"garage_type":"cupboards"},
-    garage_type:{id:"garage_type",q:"What best describes it?",
-      opts:["Single garage","Double garage","Garage & shed","Workshop","Other"],
-      next:()=>"cupboards"},
-    cupboards:{id:"cupboards",q:"Do you have cupboards you'd like to organise?",
-      opts:["Upstairs bedroom wardrobes/cupboards","Upstairs airing/linen cupboard","Downstairs food cupboards","Downstairs cleaning/laundry cupboard","Under stairs cupboard","Other","Not today"],
-      multi:true,other:true,next:()=>"done"},
-  };
+  // ── SETUP ──
+  const SETUP=[
+    {id:'upstairs',q:"Do you have an upstairs?",opts:["Yes","No"]},
+    {id:'bedrooms',q:"What bedrooms do you have upstairs?",opts:["My bedroom","Kids bedroom(s)","Spare room","Guest room","Other"],multi:true},
+    {id:'upstairs_rooms',q:"Any other upstairs rooms?",opts:["Bathroom","Upstairs toilet","Landing","Study/Office","None"],multi:true},
+    {id:'downstairs',q:"What rooms do you have downstairs?",opts:["Living room","Kitchen","Hallway","Downstairs toilet","Dining room","Utility room","Other"],multi:true},
+    {id:'garden',q:"Do you have a garden?",opts:["Yes","No"]},
+    {id:'garden_features',q:"What does your garden have?",opts:["Lawn","Plants/Flower beds","Patio/Decking","Shed","Greenhouse","Vegetable patch","Log cabin","Other"],multi:true},
+    {id:'garage',q:"Do you have a garage or shed?",opts:["Garage","Shed","Both","Neither"]},
+    {id:'cupboards',q:"Any cupboards to organise?",opts:["Bedroom wardrobes","Airing/linen cupboard","Food cupboards","Cleaning/laundry cupboard","Under stairs","None"],multi:true},
+  ];
 
-  const buildCatsFromAnswers=(ans)=>{
-    const cats={};
-    // Upstairs
-    if(ans.start==="Yes"){
-      const rooms=ans.upstairs_rooms||[];
-      const bedrooms=ans.bedroom_names||[];
-      const subRooms=[];
-      if(bedrooms.length>0){
-        bedrooms.forEach(b=>{
-          if(b==="Kids bedroom(s)"){
-            // Add individually named kids rooms
-            const count=parseInt(ans.kids_count)||1;
-            for(let i=0;i<Math.min(count,4);i++){
-              const name=ans["kids_name_"+i];
-              subRooms.push(name&&name.trim()?name.trim()+"'s room":"Kids room "+(i+1));
-            }
-          } else if(b==="Other"){
-            subRooms.push("Bedroom");
-          } else {
-            subRooms.push(b);
-          }
-        });
-      } else if(rooms.some(r=>r.includes("Bedroom")))subRooms.push("Bedroom");
-      if(rooms.includes("Landing"))subRooms.push("Landing");
-      if(rooms.includes("Bathroom"))subRooms.push("Bathroom");
-      if(rooms.includes("Toilet"))subRooms.push("Upstairs toilet");
-      if(rooms.includes("Study/Office"))subRooms.push("Study/Office");
-      const otherRooms=rooms.filter(r=>!["Bedroom(s)","Landing","Bathroom","Toilet","Study/Office"].includes(r));
-      otherRooms.forEach(r=>subRooms.push(r));
-      // Add upstairs cupboards
-      const upCupboards=ans.cupboards||[];
-      if(upCupboards.includes("Upstairs bedroom wardrobes/cupboards"))subRooms.push("Bedroom wardrobes");
-      if(upCupboards.includes("Upstairs airing/linen cupboard"))subRooms.push("Airing cupboard");
-      cats.upstairs={id:"upstairs",name:"Upstairs",icon:"🛏️",color:"#6878B8",rooms:subRooms,tasks:[]};
+  const buildZones=(ans)=>{
+    const z=[];
+    if(ans.upstairs==="Yes"){
+      const rooms=[...(ans.bedrooms||[]),(ans.upstairs_rooms||[]).filter(r=>r!=="None")].filter(Boolean);
+      z.push({id:'upstairs',name:'Upstairs',icon:'🛏️',color:'#6878B8',rooms});
     }
-    // Downstairs
-    const downRooms=ans.downstairs_rooms||[];
-    if(downRooms.length>0){
-      const subRooms=[];
-      ["Living room","Kitchen","Hallway","Toilet","Dining room","Study/Office","Utility room"].forEach(r=>{
-        if(downRooms.includes(r))subRooms.push(r==="Toilet"?"Downstairs toilet":r);
-      });
-      const otherRooms=downRooms.filter(r=>!["Living room","Kitchen","Hallway","Toilet","Dining room","Study/Office","Utility room"].includes(r));
-      otherRooms.forEach(r=>subRooms.push(r));
-      // Add downstairs cupboards
-      const downCupboards=ans.cupboards||[];
-      if(downCupboards.includes("Downstairs food cupboards"))subRooms.push("Food cupboards");
-      if(downCupboards.includes("Downstairs cleaning/laundry cupboard"))subRooms.push("Cleaning/laundry cupboard");
-      if(downCupboards.includes("Under stairs cupboard"))subRooms.push("Under stairs");
-      cats.downstairs={id:"downstairs",name:"Downstairs",icon:"🛋️",color:"#7A8A5A",rooms:subRooms,tasks:[]};
-    }
-    // Garden
+    const down=ans.downstairs||[];
+    if(down.length>0) z.push({id:'downstairs',name:'Downstairs',icon:'🛋️',color:'#7A8A5A',rooms:down});
     if(ans.garden==="Yes"){
-      const gf=ans.garden_features||[];
-      const subRooms=["Garden"];
-      if(gf.includes("Shed"))subRooms.push("Shed");
-      if(gf.includes("Greenhouse"))subRooms.push("Greenhouse");
-      if(gf.includes("Log cabin/Summerhouse"))subRooms.push("Log cabin");
-      if(gf.includes("Pond"))subRooms.push("Pond area");
-      if(gf.includes("Vegetable patch"))subRooms.push("Veg patch");
-      const otherG=gf.filter(r=>!["Lawn","Plants/Flower beds","Patio/Decking","Shed","Greenhouse","Pond","Vegetable patch","Log cabin/Summerhouse"].includes(r));
-      otherG.forEach(r=>subRooms.push(r));
-      cats.garden={id:"garden",name:"Garden",icon:"🌿",color:"#4A8A5A",rooms:subRooms,tasks:[]};
+      z.push({id:'garden',name:'Garden',icon:'🌿',color:'#4A8A5A',rooms:ans.garden_features||[]});
     }
-    // Garage
-    if(ans.garage==="Yes"){
-      const gt=ans.garage_type||"Garage";
-      const name=gt.includes("shed")||gt.includes("Shed")?"Garage & Shed":gt.includes("Workshop")?"Garage/Workshop":"Garage";
-      cats.garage={id:"garage",name:name,icon:"🔧",color:"#7A6848",rooms:[name],tasks:[]};
-    }
-    return cats;
+    const g=ans.garage||'Neither';
+    if(g!=='Neither') z.push({id:'garage',name:g==='Shed'?'Shed':g==='Both'?'Garage & Shed':'Garage',icon:'🔧',color:'#7A6848',rooms:[]});
+    return z;
   };
 
-  // ── AI CATEGORY QUESTIONS ──
-  const getCatQuestions=(catId,prof,catData)=>{
-    const rooms=(catData?.rooms||[]).filter(Boolean);
-    if(catId==="upstairs"){
-      const qs=[];
-      // Ask about each room individually
-      rooms.forEach(room=>{
-        const r=room.toLowerCase();
-        if((r.includes("bedroom")||r.includes("room"))&&!r.includes("bathroom")&&!r.includes("bath")&&!r.includes("toilet")&&!r.includes("wardrobe")&&!r.includes("airing")){
-          qs.push({q:`${room} — when did you last change the bedding?`,opts:["This week","Last week","Two weeks ago","Can't remember"]});
-          qs.push({q:`${room} — how tidy is it?`,opts:["Really needs a tidy","Getting messy","Could do with a quick tidy","It's fine"]});
-        } else if(r.includes("bathroom")||r.includes("bath")){
-          qs.push({q:"Bathroom — how dirty is the toilet?",opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]});
-          qs.push({q:"Bathroom — how is the bath/shower?",opts:["Really dirty","Needs a clean","Just a quick wipe","Fine"]});
-        } else if(r.includes("toilet")){
-          qs.push({q:"Upstairs toilet — how dirty is it?",opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]});
-        } else if(r.includes("landing")){
-          qs.push({q:"Landing — does it need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
-        } else if(r.includes("wardrobe")){
-          qs.push({q:"Bedroom wardrobes — how are they?",opts:["Can't close the doors","Really cluttered","Could do with a sort","Fine","To do later","Skip for now"]});
-        } else if(r.includes("airing")){
-          qs.push({q:"Airing cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","To do later","Skip for now"]});
-        } else {
-          qs.push({q:`${room} — how does it look?`,opts:["Really needs doing","Getting bad","Could do with a clean","Fine"]});
-        }
+  // ── AI QUESTIONS ──
+  const getAIQuestions=(zoneId,prof)=>{
+    const z=zones?.find(z=>z.id===zoneId);
+    const rooms=z?.rooms||[];
+    const qs=[];
+    if(zoneId==='upstairs'){
+      rooms.forEach(r=>{
+        const rl=r.toLowerCase();
+        if(rl.includes('bedroom')||rl.includes('room')&&!rl.includes('bath')&&!rl.includes('toilet'))
+          qs.push({q:`${r} — when did you last change the bedding?`,opts:["This week","Last week","Two weeks ago","Can't remember"]},{q:`${r} — how tidy is it?`,opts:["Really messy","Getting messy","Could do with a tidy","Fine"]});
+        else if(rl.includes('bathroom')) qs.push({q:"Bathroom — how dirty is the toilet?",opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]},{q:"Bathroom — how is the bath/shower?",opts:["Really dirty","Needs a clean","Just a quick wipe","Fine"]});
+        else if(rl.includes('toilet')) qs.push({q:"Upstairs toilet — how dirty is it?",opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]});
+        else if(rl.includes('landing')) qs.push({q:"Landing — does it need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
+        else if(rl.includes('wardrobe')) qs.push({q:"Bedroom wardrobes — how are they?",opts:["Can't close them","Really cluttered","Could do with a sort","Fine","Skip for now"]});
+        else if(rl.includes('airing')) qs.push({q:"Airing cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","Skip for now"]});
       });
-      // General upstairs questions always asked
       qs.push({q:"Upstairs floors — do they need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
       qs.push({q:"Do the stairs need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No stairs"]});
-      qs.push({q:"Upstairs surfaces — do they need cleaning?",opts:["Really grimy","Needs a clean","Could do with a wipe","Fine"]});
-      qs.push({q:"Any rubbish/bins to take out upstairs?",opts:["Yes urgently","Yes","Could do soon","No"]});
-      if(qs.length===0) qs.push({q:"How does upstairs feel overall?",opts:["Really needs doing","Getting bad","Could do with a clean","Not too bad"]});
-      return qs;
+      qs.push({q:"Upstairs surfaces — do they need cleaning?",opts:["Really grimy","Needs a wipe","Could do with a wipe","Fine"]});
+      qs.push({q:"Any bins/rubbish to take out upstairs?",opts:["Yes urgently","Yes","Could do soon","No"]});
     }
-    if(catId==="downstairs"){
-      const qs=[];
-      rooms.forEach(room=>{
-        const r=room.toLowerCase();
-        if(r.includes("kitchen")){
-          qs.push({q:"Kitchen — how are the dishes?",opts:["Overflowing","Pretty bad","Just a few","All done"]});
-          qs.push({q:"Kitchen — how are the surfaces?",opts:["Really grimy","Sticky patches","Could do with a wipe","Clean"]});
-        } else if(r.includes("living")){
-          qs.push({q:"Living room — how is it?",opts:["Really messy","Getting cluttered","Could do with a hoover","Fine"]});
-          qs.push({q:"How is the sofa?",opts:["Really needs a tidy","Cushions everywhere","Could do with a straighten","Fine"]});
-        } else if(r.includes("toilet")||r.includes("bathroom")){
-          qs.push({q:`${room} — how dirty is the toilet?`,opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]});
-        } else if(r.includes("hallway")){
-          qs.push({q:"Hallway — how is the floor?",opts:["Filthy","Needs a mop","Could do with a sweep","Fine"]});
-        } else if(r.includes("toilet")||r.includes("downstairs toilet")){
-          qs.push({q:r.includes("downstairs")?"Downstairs toilet — how dirty is it?":"Toilet — how dirty is it?",opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]});
-          qs.push({q:"How is the sink?",opts:["Really dirty","Needs a clean","Just a quick wipe","Fine"]});
-        } else if(r.includes("food cupboard")){
-          qs.push({q:"Food cupboards — how are they?",opts:["Really need a clear out","Getting cluttered","Could do with a tidy","Fine","To do later","Skip for now"]});
-        } else if(r.includes("cleaning")&&r.includes("cupboard")){
-          qs.push({q:"Cleaning/laundry cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","To do later","Skip for now"]});
-        } else if(r.includes("under stairs")){
-          qs.push({q:"Under stairs — how is it?",opts:["Can't get anything out","Really cluttered","Could do with a tidy","Fine"]});
-        } else if(r.includes("dining")){
-          qs.push({q:"Dining room — how is it?",opts:["Needs a proper clean","Getting messy","Could do with a wipe","Fine"]});
-        } else {
-          qs.push({q:`${room} — how does it look?`,opts:["Really needs doing","Getting bad","Could do with a clean","Fine"]});
-        }
+    if(zoneId==='downstairs'){
+      rooms.forEach(r=>{
+        const rl=r.toLowerCase();
+        if(rl.includes('kitchen')) qs.push({q:"Kitchen — how are the dishes?",opts:["Overflowing","Pretty bad","Just a few","All done"]},{q:"Kitchen — how are the surfaces?",opts:["Really grimy","Sticky patches","Could do with a wipe","Clean"]});
+        else if(rl.includes('living')) qs.push({q:"Living room — how is it?",opts:["Really messy","Getting cluttered","Could do with a hoover","Fine"]},{q:"How is the sofa?",opts:["Really needs a tidy","Cushions everywhere","Could do with a straighten","Fine"]});
+        else if(rl.includes('toilet')||rl.includes('bathroom')) qs.push({q:`${r} — how dirty is the toilet?`,opts:["Really bad","Needs a clean","Could do with a wipe","Fine"]},{q:"How is the sink?",opts:["Really dirty","Needs a clean","Just a quick wipe","Fine"]});
+        else if(rl.includes('hallway')) qs.push({q:"Hallway — how is the floor?",opts:["Filthy","Needs a mop","Could do with a sweep","Fine"]});
+        else if(rl.includes('dining')) qs.push({q:"Dining room — how is it?",opts:["Needs a proper clean","Getting messy","Could do with a wipe","Fine"]});
+        else if(rl.includes('food cupboard')) qs.push({q:"Food cupboards — how are they?",opts:["Really need a clear out","Getting cluttered","Could do with a tidy","Fine","Skip for now"]});
+        else if(rl.includes('cleaning')) qs.push({q:"Cleaning cupboard — how is it?",opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","Skip for now"]});
       });
-      // General downstairs questions always asked
       qs.push({q:"Downstairs floors — do they need hoovering?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
       qs.push({q:"Downstairs floors — do they need mopping?",opts:["Really needs it","Yes after hoovering","Wouldn't hurt","No"]});
       qs.push({q:"Downstairs surfaces — do they need cleaning?",opts:["Really grimy","Sticky patches","Could do with a wipe","Fine"]});
-      qs.push({q:"Any rubbish/bins to take out downstairs?",opts:["Yes urgently","Yes","Could do soon","No"]});
+      qs.push({q:"Any bins/rubbish to take out?",opts:["Yes urgently","Yes","Could do soon","No"]});
       qs.push({q:"How is the laundry situation?",opts:["Overflowing — urgent","Needs doing today","A small load","All on top of it"]});
       qs.push({q:"Do you need to think about dinner today?",opts:["Yes — nothing planned","Yes — need to prep","Something simple sorted","All sorted"]});
-      if(qs.length===0) qs.push({q:"How does downstairs feel overall?",opts:["Really needs doing","Getting bad","Could do with a clean","Not too bad"]});
-      return qs;
     }
-    if(catId==="garden"){
-      const qs=[];
-      const gf=prof?.garden_features||[];
-      const rooms=catData?.rooms||[];
-      // Lawn always asked if they have one
-      if(gf.includes("Lawn")||rooms.includes("Garden"))qs.push({q:"How is the lawn?",opts:["Very overgrown","Getting long","About right","Just done"]});
-      // Weeding
-      if(gf.includes("Plants/Flower beds")||gf.includes("Lawn")){
-        qs.push({q:"How bad are the weeds?",opts:["Taking over","Pretty bad","A few weeds","Under control"]});
-        qs.push({q:"How are the plants and flower beds?",opts:["Need watering urgently","Getting weedy","Could do with a tidy","Fine"]});
-      }
-      // Patio
-      if(gf.includes("Patio/Decking"))qs.push({q:"How is the patio/decking?",opts:["Needs a power wash","Getting dirty","Could do with a sweep","Fine"]});
-      // Veg patch
-      if(gf.includes("Vegetable patch"))qs.push({q:"How is the veg patch?",opts:["Urgent attention needed","Getting weedy","Needs watering","Fine"]});
-      // Pond
-      if(gf.includes("Pond"))qs.push({q:"How is the pond?",opts:["Needs cleaning urgently","Getting green","Could do with a tidy","Fine"]});
-      // Greenhouse
-      if(gf.includes("Greenhouse"))qs.push({q:"How are the plants in the greenhouse?",opts:["Need watering urgently","Getting dry","Could do with attention","Fine"]});
-      // Shed
-      if(gf.includes("Shed"))qs.push({q:"How is the shed?",opts:["Can't find anything","Pretty cluttered","Could do with a tidy","Fine"]});
-      // Log cabin
-      if(gf.includes("Log cabin/Summerhouse"))qs.push({q:"How is the log cabin/summerhouse?",opts:["Needs a clean","Getting very messy","Could do with a tidy","Fine"]});
-      // General planting question
-      if(gf.includes("Plants/Flower beds")||gf.includes("Vegetable patch"))qs.push({q:"Any planting or sowing needed?",opts:["Yes urgently","Yes soon","Not right now","No"]});
-      if(qs.length===0)qs.push({q:"How does the garden look overall?",opts:["Really needs work","Getting overgrown","Could do with a tidy","Looking ok"]});
-      return qs;
+    if(zoneId==='garden'){
+      const gf=prof?.garden_features||rooms;
+      if(gf.some(f=>f.toLowerCase().includes('lawn'))) qs.push({q:"How is the lawn?",opts:["Very overgrown","Getting long","About right","Just done"]});
+      qs.push({q:"How bad are the weeds?",opts:["Taking over","Pretty bad","A few weeds","Under control"]});
+      if(gf.some(f=>f.toLowerCase().includes('plant'))) qs.push({q:"How are the plants/flower beds?",opts:["Need watering urgently","Getting weedy","Could do with a tidy","Fine"]});
+      if(gf.some(f=>f.toLowerCase().includes('patio'))) qs.push({q:"How is the patio/decking?",opts:["Needs a power wash","Getting dirty","Could do with a sweep","Fine"]});
+      if(gf.some(f=>f.toLowerCase().includes('shed'))) qs.push({q:"How is the shed?",opts:["Can't find anything","Pretty cluttered","Could do with a tidy","Fine"]});
+      if(gf.some(f=>f.toLowerCase().includes('greenhouse'))) qs.push({q:"How are the greenhouse plants?",opts:["Need watering urgently","Getting dry","Could do with a tidy","Fine"]});
+      if(gf.some(f=>f.toLowerCase().includes('veg'))) qs.push({q:"How is the veg patch?",opts:["Urgent attention","Getting weedy","Needs watering","Fine"]});
+      if(gf.some(f=>f.toLowerCase().includes('log')||f.toLowerCase().includes('cabin'))) qs.push({q:"How is the log cabin?",opts:["Needs a clean","Getting very messy","Could do with a tidy","Fine"]});
+      if(gf.some(f=>f.toLowerCase().includes('pond'))) qs.push({q:"How is the pond?",opts:["Needs cleaning urgently","Getting green","Could do with a tidy","Fine"]});
+      qs.push({q:"Any planting or sowing needed?",opts:["Yes urgently","Yes soon","Not right now","No"]});
     }
-    if(catId==="garage"){
-      return[
-        {q:"How cluttered is it?",opts:["Can't get in","Pretty bad","A bit untidy","Fine"]},
-        {q:"Does the floor need sweeping?",opts:["Really needs it","Yes","Wouldn't hurt","No"]},
-      ];
+    if(zoneId==='garage'){
+      qs.push({q:"How cluttered is it?",opts:["Can't get in","Pretty bad","A bit untidy","Fine"]});
+      qs.push({q:"Does the floor need sweeping?",opts:["Really needs it","Yes","Wouldn't hurt","No"]});
     }
-    return[
-      {q:"How urgent does this feel?",opts:["Really urgent","Fairly soon","Can wait","No rush"]},
-      {q:"When did you last clean it?",opts:["Yesterday","A few days ago","Last week","Can't remember"]},
-    ];
+    if(qs.length===0) qs.push({q:`How does ${z?.name||'this area'} look?`,opts:["Really needs doing","Getting bad","Could do with a clean","Fine"]});
+    return qs;
   };
 
-  // Preset tasks per category
-  const CAT_PRESETS={
-    upstairs:["Tidy floors","Hoovering","Hoover stairs","Mop bathroom floor","Clean surfaces","Dusting","Changing beds","Tidy surfaces","Cleaning mirrors","Emptying bins","Take rubbish out","Ironing","Tidying bedrooms","Cleaning bathroom","Sort wardrobe/clothes","Clear out wardrobe","Organise airing cupboard","Sort kids clothes","Put away laundry"],
-    downstairs:["Tidy floors","Hoovering","Mop floors","Clean surfaces","Wiping surfaces","Tidy sofa","Washing up","Dusting","Tidying living room","Cleaning toilet","Emptying bins","Take rubbish out","Cleaning oven","Wiping cupboards","Do laundry","Cook dinner","Organise food cupboards","Clear out food cupboards","Organise cleaning cupboard","Sort laundry cupboard","Tidy under stairs"],
-    garden:["Mowing lawn","Weeding","Watering plants","Watering greenhouse","Sweeping path","Trimming edges","Clearing leaves","Tidying patio","Tending shed","Planting/sowing","Tidying flower beds","Cleaning pond","Tidying log cabin","Pruning","Deadheading flowers","Composting"],
-    garage:["Sweeping floor","Tidying tools","Organising shelves","Taking rubbish out","Clearing clutter"],
+  const PRESETS={
+    upstairs:["Tidy floors","Hoovering","Hoover stairs","Mop bathroom floor","Clean surfaces","Dust","Change bedding","Tidy bedroom","Clean bathroom","Clean toilet","Clean bath/shower","Empty bins","Take rubbish out","Iron","Tidy wardrobe","Sort clothes","Put away laundry"],
+    downstairs:["Tidy floors","Hoovering","Mop floors","Clean surfaces","Wash up","Tidy sofa","Dust","Tidy living room","Clean toilet","Empty bins","Take rubbish out","Clean oven","Wipe cupboards","Do laundry","Cook dinner","Tidy food cupboard","Sort cleaning cupboard","Tidy under stairs"],
+    garden:["Mow lawn","Weed","Water plants","Water greenhouse","Sweep path","Trim edges","Clear leaves","Tidy patio","Tidy shed","Plant/sow","Tidy flower beds","Clean pond","Tidy log cabin","Prune","Deadhead flowers"],
+    garage:["Sweep floor","Tidy tools","Organise shelves","Take rubbish out","Clear clutter"],
   };
 
-  const getCatTasks=catId=>(cats?.[catId]?.tasks)||[];
-
-  // Split any bundled tasks into individual ones before storing
-  const splitBundledTask=(taskName)=>{
-    const splits=[
-      // "and" patterns
-      [/clean toilet and bath[/\w\s]*/i, ["Clean toilet","Clean bath/shower"]],
-      [/clean bath[/\w\s]* and toilet/i, ["Clean bath/shower","Clean toilet"]],
-      [/change bedding and tidy/i, ["Change bedding","Tidy room"]],
-      [/tidy.* and change bedding/i, ["Tidy room","Change bedding"]],
-      [/hoover and mop/i, ["Hoover floors","Mop floors"]],
-      [/mop and hoover/i, ["Hoover floors","Mop floors"]],
-      [/clean surfaces and/i, null], // handled by "and" split below
-      [/dust and/i, null],
-    ];
-    // Check specific patterns first
-    for(const [pattern, result] of splits){
-      if(result && pattern.test(taskName)) return result;
+  // Split "X and Y" tasks into separate tasks
+  const splitTask=(name)=>{
+    if(/ and /i.test(name)){
+      const parts=name.split(/ and /i).map(p=>p.trim()).filter(p=>p.length>2);
+      if(parts.length===2) return parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1));
     }
-    // Generic "and" split — if task contains " and " split it
-    if(/ and /i.test(taskName)){
-      const parts = taskName.split(/ and /i).map(p=>p.trim()).filter(Boolean);
-      if(parts.length===2 && parts[0].length>2 && parts[1].length>2){
-        // Capitalise first letter of each
-        return parts.map(p=>p.charAt(0).toUpperCase()+p.slice(1));
+    return [name];
+  };
+
+  const addTask=(zoneId,name,score,reason)=>{
+    const names=splitTask(name);
+    const existing=getZT(zoneId);
+    const newTasks=names
+      .filter(n=>!existing.some(t=>t.name.toLowerCase()===n.toLowerCase()))
+      .map(n=>({id:Date.now()+Math.random(),name:n,score:score||3,reason:reason||'',done:false}));
+    if(newTasks.length===0) return;
+    const updated={...tasks,[zoneId]:[...existing,...newTasks].sort((a,b)=>a.score-b.score)};
+    saveTasks(updated);
+  };
+
+  const tickDone=(zoneId,taskId)=>{
+    const zt=getZT(zoneId);
+    const wasDone=zt.find(t=>t.id===taskId)?.done;
+    const updated={...tasks,[zoneId]:zt.map(t=>t.id===taskId?{...t,done:!t.done}:t)};
+    saveTasks(updated);
+    if(!wasDone){
+      setMotivMsg(MOT[Math.floor(Math.random()*MOT.length)]);
+      setTimeout(()=>setMotivMsg(null),2500);
+      if(updated[zoneId].filter(t=>!t.done).length===0&&updated[zoneId].length>0){
+        setCelebration({zoneId,name:zones?.find(z=>z.id===zoneId)?.name||''});
       }
     }
-    return [taskName]; // no split needed
   };
 
-  const splitAllTasks=(taskList)=>{
-    const result=[];
-    taskList.forEach(t=>{
-      const split=splitBundledTask(t.name);
-      if(split.length===1){
-        result.push(t);
-      } else {
-        split.forEach((name,i)=>{
-          result.push({...t,id:t.id+(i*0.001),name});
-        });
-      }
-    });
-    return result;
+  const delTask=(zoneId,taskId)=>saveTasks({...tasks,[zoneId]:getZT(zoneId).filter(t=>t.id!==taskId)});
+
+  // ── A vs B ──
+  const startAvB=()=>{
+    const todo=getZT(activeZone).filter(t=>!t.done);
+    if(todo.length<2){alert("Add at least 2 tasks first!");return;}
+    const p=[];
+    for(let i=0;i<todo.length-1;i++) p.push([todo[i],todo[i+1]]);
+    setPairs(p);setPairIdx(0);setRanked([...todo]);setView('avb');
   };
 
-  // Auto-enforce logical task order
-  const enforceTaskOrder=(taskList)=>{
-    return taskList.map(t=>{
-      let s=t.score;
-      const n=t.name.toLowerCase();
-      // Floor: tidy floor must come before hoover, hoover before mop
-      if(n.includes("tidy floor")||n.includes("tidying floor")||n.includes("clear floor")) s=Math.max(1,s-2);
-      if((n.includes("hoover")||n.includes("vacuum"))&&!n.includes("tidy")) s=Math.min(5,Math.max(1,s));
-      if(n.includes("mop")||n.includes("mopping")) s=Math.min(5,s+1);
-      // Surfaces: tidy surfaces before wipe
-      if(n.includes("tidy surface")||n.includes("clear surface")) s=Math.max(1,s-1);
-      if((n.includes("wipe")||n.includes("wipe down"))&&!n.includes("tidy")) s=Math.min(5,s+1);
-      return {...t,score:s};
-    }).sort((a,b)=>a.score-b.score);
-  };
-
-  // A vs B comparison
-  const defaultOrder2=["upstairs","downstairs","garden","garage"];
-  const [comparing,setComparing]=useState(null);
-
-  const startComparison=(catId)=>{
-    const todo=getCatTasks(catId).filter(t=>!t.done);
-    if(todo.length<2) return;
-    const pairs=[];
-    for(let i=0;i<todo.length-1;i++) pairs.push([todo[i],todo[i+1]]);
-    setActiveCat(null); // clear so comparison screen shows
-    setComparing({catId,pairs,current:0,ranked:todo,phase:"tasks"});
-  };
-
-  const handleCompareChoice=(winner,loser)=>{
-    if(!comparing) return;
-    const {pairs,current,ranked,catId,aiFirst,aiMessage}=comparing;
+  const chooseAvB=(winner,loser)=>{
     const newRanked=ranked.map(t=>{
       if(t.id===winner.id) return {...t,score:Math.max(1,t.score-1)};
       if(t.id===loser.id) return {...t,score:Math.min(5,t.score+1)};
       return t;
     }).sort((a,b)=>a.score-b.score);
-    const next=current+1;
+    const next=pairIdx+1;
     if(next>=pairs.length){
-      // Save using current cats state to avoid stale closure
-      setCatsRaw(prev=>{
-        const updated={...prev,[catId]:{...prev[catId],tasks:newRanked}};
-        try{localStorage.setItem('thinko_hw_cats',JSON.stringify(updated));}catch{}
-        return updated;
-      });
-      const ids=(catOrder||defaultOrder2).filter(id=>cats?.[id]);
-      if(ids.length>=2){
-        const catPairs=[];
-        for(let i=0;i<ids.length-1;i++) catPairs.push([ids[i],ids[i+1]]);
-        setActiveCat(null);
-        setComparing({...comparing,ranked:newRanked,phase:"cats",catPairs,catCurrent:0,
-          catScores:Object.fromEntries(ids.map(id=>[id,3])),aiFirst,aiMessage});
-      } else {
-        setComparing({...comparing,ranked:newRanked,phase:"done",finalOrder:ids,aiFirst,aiMessage});
-      }
+      saveTasks({...tasks,[activeZone]:newRanked});
+      setRanked(newRanked);
+      setView('avbdone');
     } else {
-      setComparing({...comparing,current:next,ranked:newRanked});
+      setRanked(newRanked);
+      setPairIdx(next);
     }
   };
 
-  const handleCatChoice=(winnerId,loserId)=>{
-    if(!comparing) return;
-    const {catPairs,catCurrent,catScores}=comparing;
-    const newScores={...catScores,[winnerId]:Math.max(1,(catScores[winnerId]||3)-1),[loserId]:Math.min(5,(catScores[loserId]||3)+1)};
-    const next=catCurrent+1;
-    if(next>=catPairs.length){
-      const sorted=Object.keys(newScores).sort((a,b)=>newScores[a]-newScores[b]);
-      saveCatOrder(sorted);
-      setComparing({...comparing,phase:"done",catScores:newScores,finalOrder:sorted,
-        aiFirst:comparing.aiFirst,aiMessage:comparing.aiMessage});
-    } else {
-      setComparing({...comparing,catCurrent:next,catScores:newScores});
-    }
-  };
-
-  const addTask=(catId,taskName,roomName,score,reason)=>{
-    const newT={id:Date.now()+Math.random(),name:taskName,room:roomName||"",score:score||3,reason:reason||"",done:false};
-    const updated={...cats,[catId]:{...cats[catId],tasks:[...getCatTasks(catId),newT]}};
-    saveCats(updated);
-  };
-
-  const toggleDone=(catId,taskId)=>{
-    const ts=getCatTasks(catId);
-    const wasDone=ts.find(t=>t.id===taskId)?.done;
-    const updated={...cats,[catId]:{...cats[catId],tasks:ts.map(t=>t.id===taskId?{...t,done:!t.done}:t)}};
-    saveCats(updated);
-    if(!wasDone){
-      setTaskMotivation({message:MOTIVATIONAL[Math.floor(Math.random()*MOTIVATIONAL.length)]});
-      setTimeout(()=>setTaskMotivation(null),2800);
-      const remaining=updated[catId].tasks.filter(t=>!t.done);
-      if(remaining.length===0&&updated[catId].tasks.length>0){
-        setCelebration({catId,message:`🎉 All ${cats[catId]?.name} tasks done! Amazing work! 🏡`});
-      }
-    }
-  };
-
-  const deleteTask=(catId,taskId)=>{
-    saveCats({...cats,[catId]:{...cats[catId],tasks:getCatTasks(catId).filter(t=>t.id!==taskId)}});
-  };
-
-  // Drag to reorder tasks
-  const onTaskDragStart=(catId,taskId)=>setDragTask({catId,taskId});
-  const onTaskDragOver=(e,catId,taskId)=>{e.preventDefault();setDragOverTask({catId,taskId});};
-  const onTaskDrop=(e,catId,toTaskId)=>{
-    e.preventDefault();
-    if(!dragTask||dragTask.taskId===toTaskId||dragTask.catId!==catId){setDragTask(null);setDragOverTask(null);return;}
-    const ts=[...getCatTasks(catId)];
-    const from=ts.findIndex(t=>t.id===dragTask.taskId);
-    const to=ts.findIndex(t=>t.id===toTaskId);
-    if(from<0||to<0){setDragTask(null);setDragOverTask(null);return;}
-    ts.splice(to,0,...ts.splice(from,1));
-    saveCats({...cats,[catId]:{...cats[catId],tasks:ts}});
-    setDragTask(null);setDragOverTask(null);
-  };
-
-  // ── AI CATEGORY PANEL ──
-  const runAiPrioritise=async(catId,answers)=>{
+  // ── AI complete ──
+  const finishAI=async(allAnswers)=>{
     setAiLoading(true);
+    setView('hub'); // temp - will be overridden
+    const z=zones?.find(z=>z.id===activeZone);
+    const qaPairs=allAnswers.map(a=>a.q.split('—')[0].trim()+': '+a.a).join(', ');
+    const prompt='Housework for '+z?.name+'. Answers: '+qaPairs+'. Give 4-8 tasks, ONE action each (never combine). JSON only: {"tasks":[{"name":"one action","score":1,"reason":"why"}]}';
+    let newTasksList=[];
     try{
-      const cat=cats[catId];
-      const todoTasks=getCatTasks(catId).filter(t=>!t.done).map(t=>t.name);
-      const qaPairs=answers.map(a=>a.q.split(" — ")[0]+": "+a.a).join(", ");
-      const prompt="Housework tasks for "+cat?.name+". ONE action per task only (never combine). Answers: "+qaPairs+". Reply ONLY with this JSON (no extra text): {"+'"'+"first"+'"'+":"+'"'+"task"+'"'+","+'"'+"message"+'"'+":"+'"'+"encouragement"+'"'+","+'"'+"catScore"+'"'+":2,"+'"'+"tasks"+'"'+":[{"+'"'+"task"+'"'+":"+'"'+"one action"+'"'+","+'"'+"score"+'"'+":1,"+'"'+"reason"+'"'+":"+'"'+"why"+'"'+","+'"'+"room"+'"'+":"+'"'+"room"+'"'+"}]}";
-      const resp=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,max_tokens:1200})});
+      const resp=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,max_tokens:800})});
       const raw=await resp.text();
-      let result={first:"Start with the most urgent task",message:"You can do this! 💪",catScore:2,tasks:[]};
-      try{
-        const data=JSON.parse(raw);
-        const txt=(data.content?.[0]?.text||"").replace(/```json|```/g,"").trim();
-        const jsonStart=txt.indexOf("{");
-        const jsonEnd=txt.lastIndexOf("}");
-        if(jsonStart>-1&&jsonEnd>-1){
-          const parsed=JSON.parse(txt.slice(jsonStart,jsonEnd+1));
-          result={...result,...parsed};
-        }
-      }catch(parseErr){
-        console.error("Parse error:",parseErr);
+      const data=JSON.parse(raw);
+      const txt=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
+      const jStart=txt.indexOf('{'),jEnd=txt.lastIndexOf('}');
+      if(jStart>-1&&jEnd>-1){
+        const parsed=JSON.parse(txt.slice(jStart,jEnd+1));
+        newTasksList=parsed.tasks||[];
       }
-      // Add suggested tasks that don't already exist
-      const existing=getCatTasks(catId).map(t=>t.name.toLowerCase());
-      const rawNewTasks=(result.tasks||[])
-        .filter(s=>!existing.includes(s.task.toLowerCase()))
-        .map(s=>({id:Date.now()+Math.random(),name:s.task,room:s.room||"",score:s.score||3,reason:s.reason||"AI suggested",done:false}));
-      // Split any bundled tasks into individual ones
-      const newTasks=splitAllTasks(rawNewTasks);
-      // Build allTasks using existing tasks from cats state directly (not stale getCatTasks)
-      const existingTasks=cats?.[catId]?.tasks||[];
-      const allTasks=[...existingTasks,...newTasks].sort((a,b)=>a.score-b.score);
-      // Save AFTER building allTasks
-      const updatedCats={...cats,[catId]:{...cats[catId],tasks:allTasks}};
-      saveCats(updatedCats);
-      // Store category score and reorder hub
-      const catScores={...(JSON.parse(localStorage.getItem('thinko_hw_cat_scores')||'{}')),[catId]:result.catScore||3};
-      localStorage.setItem('thinko_hw_cat_scores',JSON.stringify(catScores));
-      // Reorder categories by urgency score
-      const allCatIds=["upstairs","downstairs","garden","garage"].filter(id=>cats?.[id]);
-      const newOrder=[...allCatIds].sort((a,b)=>(catScores[a]||3)-(catScores[b]||3));
-      saveCatOrder(newOrder);
-      const freshTasks=allTasks.filter(t=>!t.done);
-      setAiLoading(false);
-      setAiPanel(null);
-      setActiveCat(null);
-      if(freshTasks.length>=2){
-        const pairs=[];
-        for(let i=0;i<freshTasks.length-1;i++) pairs.push([freshTasks[i],freshTasks[i+1]]);
-        setComparing({catId,pairs,current:0,ranked:freshTasks,phase:"tasks",catScores,newOrder,aiFirst:result.first,aiMessage:result.message});
-      } else {
-        setActiveCat(catId);
-      }
-    }catch(e){
-      console.error("runAiPrioritise error:",e);
-      setAiLoading(false);
-      setAiPanel(null);
-      setActiveCat(null);
-      // Always fall through to A vs B with existing tasks
-      const existingOnError=cats?.[catId]?.tasks||[];
-      const todoOnError=existingOnError.filter(t=>!t.done);
-      if(todoOnError.length>=2){
-        const pairs=[];
-        for(let i=0;i<todoOnError.length-1;i++) pairs.push([todoOnError[i],todoOnError[i+1]]);
-        setComparing({catId,pairs,current:0,ranked:todoOnError,phase:"tasks"});
-      } else {
-        setActiveCat(catId);
-      }
+    }catch(e){console.error('AI error:',e);}
+    setAiLoading(false);
+    const existing=getZT(activeZone);
+    const existingNames=existing.map(t=>t.name.toLowerCase());
+    const toAdd=newTasksList
+      .filter(t=>!existingNames.includes((t.name||'').toLowerCase()))
+      .flatMap(t=>splitTask(t.name||'').map(n=>({id:Date.now()+Math.random(),name:n,score:t.score||3,reason:t.reason||'AI suggested',done:false})));
+    const merged=[...existing,...toAdd].sort((a,b)=>a.score-b.score);
+    saveTasks({...tasks,[activeZone]:merged});
+    // Go straight to A vs B
+    const todo=merged.filter(t=>!t.done);
+    if(todo.length>=2){
+      const p=[];
+      for(let i=0;i<todo.length-1;i++) p.push([todo[i],todo[i+1]]);
+      setPairs(p);setPairIdx(0);setRanked([...todo]);setView('avb');
+    } else {
+      setView('zone');
     }
   };
 
   // ── SETUP SCREEN ──
-  if(showSetup){
-    const step=SETUP_STEPS[setupStepId];
+  if(view==='setup'){
+    const step=SETUP[setupStep];
+    const isLast=setupStep===SETUP.length-1;
     const isMulti=!!step.multi;
-    const stepIds=Object.keys(SETUP_STEPS);
-    const stepNum=stepIds.indexOf(setupStepId)+1;
-
-    const handleSingle=(opt)=>{
-      const ans={...setupAnswers,[step.id]:opt};
-      setSetupAnswers(ans);setSetupMultiSel([]);setSetupOtherText("");
-      const nextId=step.next(opt,ans);
-      if(nextId==="done"){saveCats(buildCatsFromAnswers(ans));saveProfile(ans);setShowSetup(false);}
-      else setSetupStepId(nextId);
-    };
-    const handleFreeText=()=>{
-      const val=setupOtherText.trim();
-      if(!val)return;
-      const ans={...setupAnswers,[step.id]:val};
-      setSetupAnswers(ans);setSetupOtherText("");
-      const nextId=step.next(val,ans);
-      if(nextId==="done"){saveCats(buildCatsFromAnswers(ans));saveProfile(ans);setShowSetup(false);}
-      else setSetupStepId(nextId);
-    };
-
-    const handleMultiNext=()=>{
-      let sel=[...setupMultiSel];
-      if(setupOtherText.trim())sel=[...sel.filter(s=>s!=="Other"),setupOtherText.trim()];
-      if(sel.length===0)sel=["None"];
-      const ans={...setupAnswers,[step.id]:sel};
-      setSetupAnswers(ans);setSetupMultiSel([]);setSetupOtherText("");
-      const nextId=step.next(sel);
-      if(nextId==="done"){saveCats(buildCatsFromAnswers(ans));saveProfile(ans);setShowSetup(false);}
-      else setSetupStepId(nextId);
-    };
-
     return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          {setupStepId!=="start"&&<button onClick={()=>{const ids=Object.keys(SETUP_STEPS);setSetupStepId(ids[ids.indexOf(setupStepId)-1]||"start");}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{minHeight:'100vh',background:'transparent',fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+        <div style={{background:MULTI,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid rgba(90,80,60,0.08)',position:'sticky',top:0,zIndex:50}}>
+          {setupStep>0&&<button onClick={()=>{setSetupStep(s=>s-1);setMultiSel([]);setOtherText('');}} style={{background:'none',border:'none',cursor:'pointer',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center'}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>}
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>🏠 Set up your home</div>
-          <button onClick={()=>{const ans=setupAnswers;saveCats(buildCatsFromAnswers(ans));saveProfile(ans);setShowSetup(false);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#8A8070",fontWeight:600}}>Skip</button>
+          <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:18,color:'#1A1A10',flex:1}}>🏠 Set up your home</div>
+          <button onClick={()=>{
+            const z=buildZones(setupAnswers);
+            saveZones(z.length?z:[{id:'home',name:'Home',icon:'🏠',color:'#7A8A5A',rooms:[]}]);
+            save('hw_profile',setupAnswers);setProfile(setupAnswers);setView('hub');
+          }} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:'#8A8070',fontWeight:600}}>Skip</button>
         </div>
-        <div style={{padding:"16px"}}>
-          <div style={{height:4,borderRadius:2,background:"rgba(90,80,60,0.10)",marginBottom:20,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${(stepNum/stepIds.length)*100}%`,background:"#5A7848",borderRadius:2,transition:"width 0.3s"}}/>
+        <div style={{padding:'16px'}}>
+          <div style={{height:4,borderRadius:2,background:'rgba(90,80,60,0.10)',marginBottom:20,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${((setupStep+1)/SETUP.length)*100}%`,background:'#5A7848',borderRadius:2}}/>
           </div>
-          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"22px 18px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <div style={{textAlign:"center",marginBottom:10}}><img src="/image.png" style={{width:52,height:52,objectFit:"contain",margin:"0 auto 6px",display:"block"}} alt="Thinko"/></div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:isMulti?8:16,textAlign:"center",lineHeight:1.4}}>{step.q}</div>
-            {isMulti&&<div style={{fontSize:11,color:"#8A8070",textAlign:"center",marginBottom:12}}>Tap all that apply</div>}
-            {!step.freeText&&<div style={{display:"flex",flexDirection:"column",gap:9}}>
+          <div style={{background:MULTI,borderRadius:24,padding:'22px 18px',boxShadow:'0 2px 12px rgba(0,0,0,0.07)'}}>
+            <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:17,color:'#1A1A10',marginBottom:isMulti?8:16,textAlign:'center',lineHeight:1.4}}>{step.q}</div>
+            {isMulti&&<div style={{fontSize:11,color:'#8A8070',textAlign:'center',marginBottom:12}}>Tap all that apply</div>}
+            <div style={{display:'flex',flexDirection:'column',gap:9}}>
               {step.opts.map((opt,i)=>{
-                const sel=isMulti&&setupMultiSel.includes(opt);
+                const sel=isMulti&&multiSel.includes(opt);
+                const handleTap=()=>{
+                  if(isMulti){setMultiSel(prev=>prev.includes(opt)?prev.filter(x=>x!==opt):[...prev,opt]);}
+                  else{
+                    const ans={...setupAnswers,[step.id]:opt};
+                    setSetupAnswers(ans);setMultiSel([]);setOtherText('');
+                    if(isLast){const z=buildZones(ans);saveZones(z);save('hw_profile',ans);setProfile(ans);setView('hub');}
+                    else setSetupStep(s=>s+1);
+                  }
+                };
                 return(
-                  <button key={i} onClick={()=>isMulti?(setupMultiSel.includes(opt)?setSetupMultiSel(s=>s.filter(x=>x!==opt)):setSetupMultiSel(s=>[...s,opt])):handleSingle(opt)}
-                    style={{background:sel?"rgba(90,120,72,0.18)":"rgba(248,245,236,0.90)",border:`1.5px solid ${sel?"rgba(90,120,72,0.40)":"rgba(180,160,140,0.25)"}`,borderRadius:14,padding:"12px 16px",textAlign:"left",fontSize:14,color:"#1A1A10",fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{width:26,height:26,borderRadius:"50%",background:sel?"#5A7848":"rgba(90,80,60,0.10)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:sel?"#fff":"#5A4A30",flexShrink:0}}>{sel?"✓":String.fromCharCode(65+i)}</span>
+                  <button key={i} onClick={handleTap}
+                    style={{background:sel?'rgba(90,120,72,0.18)':'rgba(248,245,236,0.90)',border:`1.5px solid ${sel?'rgba(90,120,72,0.40)':'rgba(180,160,140,0.25)'}`,borderRadius:14,padding:'12px 16px',textAlign:'left',fontSize:14,color:'#1A1A10',fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
+                    <span style={{width:26,height:26,borderRadius:'50%',background:sel?'#5A7848':'rgba(90,80,60,0.10)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:sel?'#fff':'#5A4A30',flexShrink:0}}>{sel?'✓':String.fromCharCode(65+i)}</span>
                     {opt}
                   </button>
                 );
               })}
-            </div>}
-            {isMulti&&step.other&&setupMultiSel.includes("Other")&&(
-              <input value={setupOtherText} onChange={e=>setSetupOtherText(e.target.value)} placeholder="Type name here…"
-                style={{width:"100%",marginTop:10,padding:"10px 14px",borderRadius:12,border:"1.5px solid rgba(90,120,72,0.30)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.9)",outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            {isMulti&&step.other&&multiSel.includes('Other')&&(
+              <input value={otherText} onChange={e=>setOtherText(e.target.value)} placeholder="Type here…"
+                style={{width:'100%',marginTop:10,padding:'10px 14px',borderRadius:12,border:'1.5px solid rgba(90,120,72,0.30)',fontSize:14,color:'#1A1A10',background:'rgba(255,255,255,0.9)',outline:'none',boxSizing:'border-box'}}/>
             )}
-            {isMulti&&<button onClick={handleMultiNext} style={{width:"100%",marginTop:14,padding:"13px",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>Next →</button>}
-            {step.freeText&&(
-              <div style={{marginTop:12}}>
-                <input value={setupOtherText} onChange={e=>setSetupOtherText(e.target.value)}
-                  onKeyDown={e=>{if(e.key==="Enter")handleFreeText();}}
-                  placeholder="Type name here e.g. Malikie, Sally…"
-                  style={{width:"100%",padding:"12px 14px",borderRadius:12,border:"1.5px solid rgba(90,120,72,0.30)",fontSize:15,color:"#1A1A10",background:"rgba(255,255,255,0.9)",outline:"none",boxSizing:"border-box",marginBottom:10}}/>
-                <button onClick={handleFreeText} disabled={!setupOtherText.trim()}
-                  style={{width:"100%",padding:"13px",background:setupOtherText.trim()?"linear-gradient(135deg,#5A7848,#3A5828)":"rgba(90,80,60,0.15)",color:setupOtherText.trim()?"#fff":"#A09080",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:setupOtherText.trim()?"pointer":"default"}}>
-                  Next →
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── AI PANEL ──
-  // ── A vs B COMPARISON SCREENS ──
-  if(comparing&&comparing.phase==="tasks"){
-    const {pairs,current,catId}=comparing;
-    const [taskA,taskB]=pairs[current];
-    const cat=cats?.[catId];
-    const SCORE_COLORS2={1:"#E03020",2:"#E07020",3:"#D4A020",4:"#5A7848",5:"#4878A8"};
-    return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <button onClick={()=>setComparing(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>{cat?.icon} Prioritising {cat?.name}</div>
-          <div style={{fontSize:11,color:"#8A8070"}}>{current+1}/{pairs.length}</div>
-        </div>
-        <div style={{padding:"20px 16px"}}>
-          <div style={{height:4,borderRadius:2,background:"rgba(90,80,60,0.10)",marginBottom:20,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${((current+1)/pairs.length)*100}%`,background:"#5A7848",borderRadius:2,transition:"width 0.3s"}}/>
-          </div>
-          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 16px",marginBottom:16,textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{fontSize:13,color:"#5A7040",fontWeight:600}}>Which is more urgent right now?</div>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            {[{label:"A",task:taskA},{label:"B",task:taskB}].map(({label,task})=>(
-              <button key={task.id} onClick={()=>handleCompareChoice(task,label==="A"?taskB:taskA)}
-                style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",border:"2px solid rgba(180,160,140,0.25)",borderRadius:20,padding:"20px",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)",transition:"border 0.15s"}}
-                onMouseOver={e=>e.currentTarget.style.border="2px solid rgba(90,120,72,0.40)"}
-                onMouseOut={e=>e.currentTarget.style.border="2px solid rgba(180,160,140,0.25)"}>
-                <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Georgia,serif",fontWeight:800,fontSize:16,flexShrink:0}}>{label}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:3}}>{task.name}</div>
-                  {task.room&&<div style={{fontSize:11,color:"#5A7040",fontWeight:600}}>{task.room}</div>}
-                  <div style={{fontSize:11,color:SCORE_COLORS2[task.score],fontWeight:600,marginTop:2}}>Current priority: {["","Urgent","High","Medium","Low","Whenever"][task.score]}</div>
-                </div>
+            {isMulti&&(
+              <button onClick={()=>{
+                let sel=[...multiSel];
+                if(otherText.trim())sel=[...sel.filter(s=>s!=='Other'),otherText.trim()];
+                const ans={...setupAnswers,[step.id]:sel};
+                setSetupAnswers(ans);setMultiSel([]);setOtherText('');
+                if(isLast){const z=buildZones(ans);saveZones(z);save('hw_profile',ans);setProfile(ans);setView('hub');}
+                else setSetupStep(s=>s+1);
+              }} style={{width:'100%',marginTop:14,padding:'13px',background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:100,fontFamily:'Georgia,serif',fontWeight:700,fontSize:15,cursor:'pointer'}}>
+                Next →
               </button>
-            ))}
-          </div>
-          <div style={{textAlign:"center",marginTop:16}}>
-            <button onClick={()=>handleCompareChoice(taskA,taskB)}
-              style={{background:"none",border:"1px solid rgba(90,80,60,0.20)",borderRadius:100,padding:"8px 20px",fontSize:12,color:"#8A8070",cursor:"pointer"}}>
-              Equal priority — skip
-            </button>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  if(comparing&&comparing.phase==="cats"){
-    const {catPairs,catCurrent}=comparing;
-    const [catAId,catBId]=catPairs[catCurrent];
-    const catA=cats?.[catAId];
-    const catB=cats?.[catBId];
+  // ── AI QUESTIONS ──
+  if(view==='ai'){
+    const qs=getAIQuestions(activeZone,profile);
+    const q=qs[aiStep];
+    if(!q||aiLoading) return(
+      <div style={{minHeight:'100vh',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16}}>
+        <img src="/image.png" style={{width:64,height:64,objectFit:'contain'}} alt="Thinko"/>
+        <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:18,color:'#1A1A10'}}>
+          {aiLoading?'Building your plan…':'Done!'}
+        </div>
+      </div>
+    );
     return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <button onClick={()=>setComparing(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{minHeight:'100vh',background:'transparent',fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+        <div style={{background:MULTI,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid rgba(90,80,60,0.08)',position:'sticky',top:0,zIndex:50}}>
+          <button onClick={()=>{if(aiStep>0){setAiStep(s=>s-1);setAiAnswers(a=>a.slice(0,-1));}else{setView('zone');}}} style={{background:'none',border:'none',cursor:'pointer',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center'}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>Which area first?</div>
-          <div style={{fontSize:11,color:"#8A8070"}}>{catCurrent+1}/{catPairs.length}</div>
-        </div>
-        <div style={{padding:"20px 16px"}}>
-          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"12px 16px",marginBottom:16,textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{fontSize:13,color:"#5A7040",fontWeight:600}}>What's more important to tackle today?</div>
+          <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:16,color:'#1A1A10',flex:1}}>
+            {zones?.find(z=>z.id===activeZone)?.icon} Check-in — Q{aiStep+1}/{qs.length}
           </div>
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            {[{label:"A",cat:catA,id:catAId},{label:"B",cat:catB,id:catBId}].map(({label,cat,id})=>{
-              const total=getCatTasks(id).filter(t=>!t.done).length;
-              const urgent=getCatTasks(id).filter(t=>!t.done&&t.score<=2).length;
-              return(
-                <button key={id} onClick={()=>handleCatChoice(id,label==="A"?catBId:catAId)}
-                  style={{background:"rgba(255,255,255,0.92)",border:"2px solid rgba(180,160,140,0.25)",borderRadius:20,padding:"20px",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}
-                  onMouseOver={e=>e.currentTarget.style.border="2px solid rgba(90,120,72,0.40)"}
-                  onMouseOut={e=>e.currentTarget.style.border="2px solid rgba(180,160,140,0.25)"}>
-                  <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Georgia,serif",fontWeight:800,fontSize:16,flexShrink:0}}>{label}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:18,marginBottom:4}}>{cat?.icon} {cat?.name}</div>
-                    <div style={{fontSize:12,color:"#5A7040"}}>{total} tasks to do{urgent>0?` · ${urgent} urgent`:""}</div>
-                  </div>
-                </button>
-              );
-            })}
+          <button onClick={()=>setView('zone')} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:'#8A8070',fontWeight:600}}>Skip</button>
+        </div>
+        <div style={{padding:'16px'}}>
+          <div style={{height:4,borderRadius:2,background:'rgba(90,80,60,0.10)',marginBottom:16,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${((aiStep+1)/qs.length)*100}%`,background:'#5A7848',borderRadius:2}}/>
           </div>
-          <div style={{textAlign:"center",marginTop:16}}>
-            <button onClick={()=>handleCatChoice(catAId,catBId)}
-              style={{background:"none",border:"1px solid rgba(90,80,60,0.20)",borderRadius:100,padding:"8px 20px",fontSize:12,color:"#8A8070",cursor:"pointer"}}>
-              Equal — skip
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if(comparing&&comparing.phase==="done"){
-    const order=comparing.finalOrder||[];
-    const rankedTasks=comparing.ranked||[];
-    const cat=cats?.[comparing.catId];
-    const SCORE_COLORS2={1:"#E03020",2:"#E07020",3:"#D4A020",4:"#5A7848",5:"#4878A8"};
-    const SCORE_LABELS2={1:"Urgent",2:"High",3:"Medium",4:"Low",5:"Whenever"};
-    return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>🏆 Your plan!</div>
-        </div>
-        <div style={{padding:"16px"}}>
-
-          {/* AI first suggestion */}
-          {comparing.aiFirst&&(
-            <div style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",borderRadius:20,padding:"16px 18px",marginBottom:14,textAlign:"center"}}>
-              <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",marginBottom:4}}>Start with</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#fff",marginBottom:6}}>{comparing.aiFirst}</div>
-              {comparing.aiMessage&&<div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>{comparing.aiMessage}</div>}
-            </div>
-          )}
-
-          {/* Ranked task list */}
-          {rankedTasks.filter(t=>!t.done).length>0&&(
-            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:12}}>{cat?.icon} {cat?.name} — in order</div>
-              {rankedTasks.filter(t=>!t.done).map((t,i)=>(
-                <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<rankedTasks.filter(x=>!x.done).length-1?"1px solid rgba(90,80,60,0.08)":"none"}}>
-                  <div style={{width:28,height:28,borderRadius:8,background:SCORE_COLORS2[t.score]||"#5A7848",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{i+1}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:14,color:"#1A1A10"}}>{t.name}</div>
-                    {t.room&&<div style={{fontSize:10,color:"#5A7040"}}>{t.room}</div>}
-                    <div style={{fontSize:10,color:SCORE_COLORS2[t.score],fontWeight:600}}>{SCORE_LABELS2[t.score]}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Category ranking */}
-          {order.length>0&&(
-            <div style={{background:MULTI,borderRadius:20,padding:"16px",marginBottom:14,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:4}}>🏠 Area priority order</div>
-              <div style={{fontSize:11,color:"#8A8070",marginBottom:12}}>Tiles rearranged to match</div>
-              {order.filter(id=>cats?.[id]).map((id,i)=>{
-                const c=cats[id];
-                const colors=["#E03020","#E07020","#D4A020","#5A7848"];
-                return(
-                  <div key={id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<order.length-1?"1px solid rgba(90,80,60,0.08)":"none"}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:colors[i]||"#5A7848",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{i+1}</div>
-                    <div style={{fontSize:22}}>{c.icon}</div>
-                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",flex:1}}>{c.name}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <button onClick={()=>{setComparing(null);setActiveCat(comparing.catId);}}
-            style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer"}}>
-            ✨ Let's get started!
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-
-  // ── CATEGORY DETAIL ──
-
-  // ── AI PANEL LOADING ──
-  if(aiPanel&&aiPanel.loading&&!aiPanel.done){
-    const cat=cats?.[aiPanel.catId];
-    return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{textAlign:"center",padding:"40px 20px"}}>
-          <img src="/image.png" style={{width:72,height:72,objectFit:"contain",marginBottom:16}} alt="Thinko"/>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:8}}>Working out your plan…</div>
-          <div style={{fontSize:13,color:"#8A8070"}}>Prioritising {cat?.name} for you</div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── AI PANEL QUESTIONS ──
-  if(aiPanel&&!aiPanel.done){
-    const q=aiPanel.questions[aiPanel.step];
-    const cat=cats?.[aiPanel.catId];
-    return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <button onClick={()=>setAiPanel(null)} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> {cat?.icon} {cat?.name} check-in</div>
-          <button onClick={()=>setAiPanel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#8A8070",fontWeight:600}}>Skip</button>
-        </div>
-        <div style={{padding:"20px 16px"}}>
-          {aiPanel.step>0&&(
-            <button onClick={()=>setAiPanel({...aiPanel,step:aiPanel.step-1,answers:aiPanel.answers.slice(0,-1)})}
-              style={{width:"100%",padding:"10px",background:"rgba(255,255,255,0.6)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontSize:13,color:"#5A4A30",fontWeight:600,cursor:"pointer",marginBottom:12}}>
-              ← Back to previous question
-            </button>
-          )}
-          <div style={{background:MULTI,borderRadius:16,padding:"12px 16px",marginBottom:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{fontSize:12,color:"#5A7040"}}>Question {aiPanel.step+1} of {aiPanel.questions.length} · I'll prioritise your tasks based on your answers</div>
-          </div>
-          <div style={{background:MULTI,borderRadius:20,padding:"20px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <div style={{fontSize:16,fontWeight:700,color:"#1A1A10",marginBottom:16,lineHeight:1.4}}>{q.q}</div>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {q.opts.filter(Boolean).map((opt,i)=>(
+          <div style={{background:MULTI,borderRadius:20,padding:'20px',boxShadow:'0 2px 12px rgba(0,0,0,0.07)'}}>
+            <div style={{fontWeight:700,fontSize:16,color:'#1A1A10',marginBottom:16,lineHeight:1.4}}>{q.q}</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {q.opts.map((opt,i)=>(
                 <button key={i} onClick={()=>{
-                  const newAnswers=[...aiPanel.answers,{q:q.q,a:opt}];
-                  if(aiPanel.step+1<aiPanel.questions.length){
-                    setAiPanel({...aiPanel,step:aiPanel.step+1,answers:newAnswers});
-                  } else {
-                    setAiPanel({...aiPanel,answers:newAnswers,loading:true});
-                    runAiPrioritise(aiPanel.catId,newAnswers);
-                  }
-                }}
-                  style={{background:MULTI,border:"1.5px solid rgba(90,120,72,0.20)",borderRadius:14,padding:"12px 16px",textAlign:"left",fontSize:14,color:"#2A3820",fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{background:"rgba(90,120,72,0.15)",borderRadius:"50%",width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#3A5828",flexShrink:0}}>{String.fromCharCode(65+i)}</span>
+                  const newAnswers=[...aiAnswers,{q:q.q,a:opt}];
+                  if(aiStep+1<qs.length){setAiAnswers(newAnswers);setAiStep(s=>s+1);}
+                  else finishAI(newAnswers);
+                }} style={{background:MULTI,border:'1.5px solid rgba(90,120,72,0.20)',borderRadius:14,padding:'12px 16px',textAlign:'left',fontSize:14,color:'#2A3820',fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
+                  <span style={{background:'rgba(90,120,72,0.15)',borderRadius:'50%',width:26,height:26,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#3A5828',flexShrink:0}}>{String.fromCharCode(65+i)}</span>
                   {opt}
                 </button>
               ))}
@@ -14277,134 +13787,150 @@ function Housework({setScreen}){
     );
   }
 
-  // ── AI PANEL DONE ──
-  if(aiPanel&&aiPanel.done){
-    const cat=cats?.[aiPanel.catId];
-    const SCORE_LABELS_CAT={1:"Needs doing NOW 🔴",2:"Do today 🟠",3:"Do this week 🟡",4:"Can wait 🟢"};
-    const catScores=aiPanel.catScores||{};
-    const newOrder=aiPanel.newOrder||[];
-    const checkedCats=Object.keys(catScores);
-    const allActive=["upstairs","downstairs","garden","garage"].filter(id=>cats?.[id]);
-    const allChecked=allActive.every(id=>checkedCats.includes(id));
+  // ── A vs B ──
+  if(view==='avb'){
+    if(pairs.length===0||pairIdx>=pairs.length){setView('zone');return null;}
+    const [taskA,taskB]=pairs[pairIdx];
     return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <button onClick={()=>{setAiPanel(null);setActiveCat(aiPanel.catId);}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{minHeight:'100vh',background:'transparent',fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+        <div style={{background:MULTI,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid rgba(90,80,60,0.08)',position:'sticky',top:0,zIndex:50}}>
+          <button onClick={()=>setView('zone')} style={{background:'none',border:'none',cursor:'pointer',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center'}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Your plan is ready!</div>
+          <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:18,color:'#1A1A10',flex:1}}>Which is more urgent?</div>
+          <div style={{fontSize:11,color:'#8A8070'}}>{pairIdx+1}/{pairs.length}</div>
         </div>
-        <div style={{padding:"20px 16px"}}>
-          {!allChecked&&(
-            <div style={{background:MULTI,borderRadius:18,padding:"14px 16px",marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#3A5828",marginBottom:8}}>Check your other areas for full ranking:</div>
-              {allActive.filter(id=>!checkedCats.includes(id)).map(id=>(
-                <button key={id} onClick={()=>{
-                  const c=cats[id];
-                  const qs=getCatQuestions(id,profile,c);
-                  setAiPanel({catId:id,questions:qs,step:0,answers:[],done:false,catScores,newOrder:aiPanel.newOrder||[]});
-                }} style={{width:"100%",padding:"10px 14px",marginBottom:6,background:"rgba(90,120,72,0.08)",border:"1.5px solid rgba(90,120,72,0.20)",borderRadius:12,fontSize:13,fontWeight:700,color:"#3A5828",cursor:"pointer",display:"flex",alignItems:"center",gap:8,textAlign:"left"}}>
-                  <span style={{fontSize:20}}>{cats[id]?.icon}</span>
-                  <span>Check in {cats[id]?.name}</span>
-                  <span style={{marginLeft:"auto",fontSize:11,color:"#8A8070"}}>→</span>
-                </button>
-              ))}
+        <div style={{padding:'20px 16px'}}>
+          <div style={{height:4,borderRadius:2,background:'rgba(90,80,60,0.10)',marginBottom:20,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${((pairIdx+1)/pairs.length)*100}%`,background:'#5A7848',borderRadius:2}}/>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:14}}>
+            {[{label:'A',task:taskA},{label:'B',task:taskB}].map(({label,task})=>(
+              <button key={task.id} onClick={()=>chooseAvB(task,label==='A'?taskB:taskA)}
+                style={{background:MULTI,border:'2px solid rgba(180,160,140,0.25)',borderRadius:20,padding:'20px',textAlign:'left',cursor:'pointer',display:'flex',alignItems:'center',gap:14,boxShadow:'0 2px 12px rgba(0,0,0,0.07)'}}>
+                <div style={{width:38,height:38,borderRadius:'50%',background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Georgia,serif',fontWeight:800,fontSize:18,flexShrink:0}}>{label}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:16,color:'#1A1A10',marginBottom:3}}>{task.name}</div>
+                  <div style={{fontSize:11,color:SCORE_C[task.score],fontWeight:600}}>{SCORE_L[task.score]}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div style={{textAlign:'center',marginTop:16}}>
+            <button onClick={()=>{
+              const next=pairIdx+1;
+              if(next>=pairs.length){saveTasks({...tasks,[activeZone]:ranked});setView('avbdone');}
+              else setPairIdx(next);
+            }} style={{background:'none',border:'1px solid rgba(90,80,60,0.20)',borderRadius:100,padding:'8px 20px',fontSize:12,color:'#8A8070',cursor:'pointer'}}>
+              Equal — skip
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── A vs B DONE ──
+  if(view==='avbdone'){
+    const todo=ranked.filter(t=>!t.done);
+    return(
+      <div style={{minHeight:'100vh',background:'transparent',fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+        <div style={{background:MULTI,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid rgba(90,80,60,0.08)',position:'sticky',top:0,zIndex:50}}>
+          <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:18,color:'#1A1A10',flex:1}}>🏆 Your priority list!</div>
+        </div>
+        <div style={{padding:'16px'}}>
+          <div style={{background:'linear-gradient(135deg,#5A7848,#3A5828)',borderRadius:20,padding:'16px 18px',marginBottom:14,textAlign:'center'}}>
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.8)',marginBottom:4}}>Start with</div>
+            <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:18,color:'#fff'}}>{todo[0]?.name||'Your first task'}</div>
+          </div>
+          {todo.map((t,i)=>(
+            <div key={t.id} style={{background:MULTI,borderRadius:14,padding:'12px 14px',marginBottom:8,display:'flex',alignItems:'center',gap:10,boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
+              <div style={{width:28,height:28,borderRadius:8,background:SCORE_C[t.score]||'#5A7848',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:13,flexShrink:0}}>{i+1}</div>
+              <div style={{fontWeight:700,fontSize:14,color:'#1A1A10',flex:1}}>{t.name}</div>
             </div>
-          )}
-          <button onClick={()=>{setAiPanel(null);setActiveCat(aiPanel.catId);}}
-            style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer"}}>
-            ✨ Let's go!
+          ))}
+          <button onClick={()=>setView('zone')} style={{width:'100%',marginTop:8,padding:'14px',background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:100,fontFamily:'Georgia,serif',fontWeight:700,fontSize:16,cursor:'pointer'}}>
+            ✨ Let's get started!
           </button>
         </div>
       </div>
     );
   }
 
-  if(activeCat&&cats?.[activeCat]){
-    const cat=cats[activeCat];
-    const allTasks=getCatTasks(activeCat);
-    const todo=allTasks.filter(t=>!t.done);
-    const done=allTasks.filter(t=>t.done);
-    const presets=(CAT_PRESETS[activeCat]||[]).filter(p=>!allTasks.some(t=>t.name.toLowerCase()===p.toLowerCase()));
-
+  // ── ZONE DETAIL ──
+  if(view==='zone'&&activeZone){
+    const z=zones?.find(z=>z.id===activeZone);
+    const zt=getZT(activeZone);
+    const todo=zt.filter(t=>!t.done).sort((a,b)=>a.score-b.score);
+    const done=zt.filter(t=>t.done);
+    const availPresets=(PRESETS[activeZone]||[]).filter(p=>!zt.some(t=>t.name.toLowerCase()===p.toLowerCase()));
     return(
-      <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{minHeight:'100vh',background:'transparent',fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
         {/* Header */}
-        <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-          <button onClick={()=>{setActiveCat(null);resetTimer();}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <div style={{background:MULTI,padding:'14px 18px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(90,80,60,0.08)',position:'sticky',top:0,zIndex:50}}>
+          <button onClick={()=>{setView('hub');resetTimer();}} style={{background:'none',border:'none',cursor:'pointer',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          <div style={{flex:1,fontFamily:"Georgia,serif",fontWeight:700,fontSize:19,color:"#1A1A10"}}>{cat.icon} {cat.name}</div>
-          <button onClick={()=>{
-            const qs=getCatQuestions(activeCat,profile,cat);
-            setAiPanel({catId:activeCat,questions:qs,step:0,answers:[],done:false});
-          }} style={{background:"rgba(90,120,72,0.15)",color:"#3A5828",border:"1.5px solid rgba(90,120,72,0.30)",borderRadius:20,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
-            <img src="/image.png" style={{width:14,height:14,objectFit:"contain",verticalAlign:"middle"}} alt=""/> Setup
-          </button>
+          <div style={{flex:1,fontFamily:'Georgia,serif',fontWeight:700,fontSize:19,color:'#1A1A10'}}>{z?.icon} {z?.name}</div>
         </div>
-
-        <div style={{padding:"14px 16px"}}>
-          {/* Rooms in this category */}
-          {cat.rooms&&cat.rooms.length>0&&(
-            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:14,padding:"10px 14px",marginBottom:12,display:"flex",flexWrap:"wrap",gap:6,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-              {cat.rooms.map(r=>(
-                <span key={r} style={{background:"rgba(90,120,72,0.10)",border:"1px solid rgba(90,120,72,0.20)",borderRadius:100,padding:"4px 10px",fontSize:11,fontWeight:700,color:"#3A5828"}}>{r}</span>
-              ))}
-            </div>
-          )}
+        <div style={{padding:'14px 16px'}}>
 
           {/* Focus Timer */}
-          <div style={{background:MULTI,borderRadius:18,padding:"11px 16px",marginBottom:12,border:"1.5px solid rgba(180,160,140,0.35)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{background:MULTI,borderRadius:18,padding:'11px 16px',marginBottom:12,border:'1.5px solid rgba(180,160,140,0.35)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
               <span style={{fontSize:15}}>⏱</span>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,color:"#1A1A10",flex:1}}>Focus Timer</div>
-              <div style={{fontFamily:"monospace",fontSize:20,fontWeight:700,color:timerLeft<60?"#E03020":"#1A2810"}}>{fmtTimer(timerLeft)}</div>
+              <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:13,color:'#1A1A10',flex:1}}>Focus Timer</div>
+              <div style={{fontFamily:'monospace',fontSize:20,fontWeight:700,color:timerLeft<60?'#E03020':'#1A2810'}}>{fmtT(timerLeft)}</div>
             </div>
-            <div style={{display:"flex",gap:6,marginTop:9}}>
+            <div style={{display:'flex',gap:6,marginTop:9}}>
               {[10,15,25,45].map(m=>(
                 <button key={m} onClick={()=>{setTimerMins(m);setTimerLeft(m*60);setTimerOn(false);}}
-                  style={{flex:1,padding:"5px 0",background:timerMins===m?"rgba(90,120,72,0.20)":"rgba(255,255,255,0.6)",border:`1.5px solid ${timerMins===m?"rgba(90,120,72,0.40)":"rgba(180,160,140,0.25)"}`,borderRadius:9,fontSize:11,fontWeight:700,color:timerMins===m?"#3A5828":"#5A4A30",cursor:"pointer"}}>{m}m</button>
+                  style={{flex:1,padding:'5px 0',background:timerMins===m?'rgba(90,120,72,0.20)':'rgba(255,255,255,0.6)',border:`1.5px solid ${timerMins===m?'rgba(90,120,72,0.40)':'rgba(180,160,140,0.25)'}`,borderRadius:9,fontSize:11,fontWeight:700,color:timerMins===m?'#3A5828':'#5A4A30',cursor:'pointer'}}>{m}m</button>
               ))}
               <button onClick={()=>timerLeft===0?resetTimer():setTimerOn(!timerOn)}
-                style={{flex:1,padding:"5px 0",background:"linear-gradient(135deg,#5A7848,#3A5828)",border:"none",borderRadius:9,fontSize:15,cursor:"pointer"}}>
-                {timerLeft===0?"↺":timerOn?"⏸":"▶"}
+                style={{flex:1,padding:'5px 0',background:'linear-gradient(135deg,#5A7848,#3A5828)',border:'none',borderRadius:9,fontSize:15,cursor:'pointer'}}>
+                {timerLeft===0?'↺':timerOn?'⏸':'▶'}
               </button>
-              <button onClick={resetTimer} style={{flex:1,padding:"5px 0",background:"rgba(180,160,140,0.15)",border:"1.5px solid rgba(180,160,140,0.25)",borderRadius:9,fontSize:10,fontWeight:600,color:"#5A4A30",cursor:"pointer"}}>Reset</button>
+              <button onClick={resetTimer} style={{flex:1,padding:'5px 0',background:'rgba(180,160,140,0.15)',border:'1.5px solid rgba(180,160,140,0.25)',borderRadius:9,fontSize:10,fontWeight:600,color:'#5A4A30',cursor:'pointer'}}>Reset</button>
             </div>
           </div>
 
-          {/* Add task */}
-          <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:18,padding:"13px",marginBottom:12,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-            <div style={{display:"flex",gap:8,marginBottom:6}}>
-              <input value={newTask} onChange={e=>setNewTask(e.target.value)}
-                onKeyDown={e=>{if(e.key==="Enter"&&newTask.trim()){addTask(activeCat,newTask.trim(),newTaskRoom,3,"");setNewTask("");}}}
-                placeholder="Add a task…"
-                style={{flex:1,padding:"9px 13px",borderRadius:11,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.9)",outline:"none"}}/>
-              <button onClick={()=>{if(newTask.trim()){addTask(activeCat,newTask.trim(),newTaskRoom,3,"");setNewTask("");}}}
-                style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:11,padding:"9px 14px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add</button>
-            </div>
-            {cat.rooms&&cat.rooms.length>1&&(
-              <select value={newTaskRoom} onChange={e=>setNewTaskRoom(e.target.value)}
-                style={{width:"100%",padding:"7px 12px",borderRadius:10,border:"1.5px solid rgba(90,120,72,0.20)",fontSize:13,color:"#1A1A10",background:"rgba(255,255,255,0.9)",marginBottom:8}}>
-                <option value="">Which room? (optional)</option>
-                {cat.rooms.map(r=><option key={r} value={r}>{r}</option>)}
-              </select>
-            )}
-            <div style={{fontSize:10,color:"#8A8070",marginBottom:8}}>💡 Use <strong><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Prioritise</strong> to let AI sort your tasks automatically</div>
-            <button onClick={()=>setShowPresets(!showPresets)}
-              style={{width:"100%",padding:"9px 13px",background:showPresets?"rgba(90,120,72,0.12)":"rgba(255,255,255,0.7)",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:11,fontSize:12,fontWeight:700,color:"#3A5828",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span>📋 Template tasks</span><span>{showPresets?"▲":"▼"}</span>
+          {/* Action buttons */}
+          <div style={{display:'flex',gap:8,marginBottom:12}}>
+            <button onClick={()=>{setAiAnswers([]);setAiStep(0);setView('ai');}}
+              style={{flex:2,background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:14,padding:'10px',fontSize:13,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+              <img src="/image.png" style={{width:16,height:16,objectFit:'contain'}} alt=""/> AI check-in
             </button>
-            {showPresets&&(
-              <div style={{marginTop:8}}>
-                {presets.length===0
-                  ?<div style={{fontSize:11,color:"#8A8070",textAlign:"center",padding:"8px"}}>All templates already added ✓</div>
-                  :presets.map(p=>(
-                    <div key={p} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 0",borderBottom:"1px solid rgba(90,80,60,0.06)"}}>
-                      <div style={{flex:1,fontSize:13,color:"#1A1A10"}}>{p}</div>
-                      <button onClick={()=>addTask(activeCat,p,"",1,"Urgent")} style={{background:"rgba(224,48,32,0.10)",border:"1px solid rgba(224,48,32,0.25)",borderRadius:7,padding:"4px 7px",fontSize:10,fontWeight:700,color:"#C03020",cursor:"pointer"}}>🔴</button>
-                      <button onClick={()=>addTask(activeCat,p,"",3,"Normal")} style={{background:"rgba(90,120,72,0.10)",border:"1px solid rgba(90,120,72,0.25)",borderRadius:7,padding:"4px 7px",fontSize:10,fontWeight:700,color:"#3A5828",cursor:"pointer"}}>Normal</button>
-                      <button onClick={()=>addTask(activeCat,p,"",5,"Later")} style={{background:"rgba(72,120,168,0.10)",border:"1px solid rgba(72,120,168,0.25)",borderRadius:7,padding:"4px 7px",fontSize:10,fontWeight:700,color:"#2A5880",cursor:"pointer"}}>Later</button>
+            <button onClick={startAvB}
+              style={{flex:1,background:MULTI,border:'1.5px solid rgba(90,120,72,0.30)',borderRadius:14,padding:'10px',fontSize:13,fontWeight:700,color:'#3A5828',cursor:'pointer'}}>
+              A vs B
+            </button>
+          </div>
+
+          {/* Add task */}
+          <div style={{background:MULTI,borderRadius:16,padding:'12px',marginBottom:12,boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
+            <div style={{display:'flex',gap:8,marginBottom:8}}>
+              <input value={newTask} onChange={e=>setNewTask(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter'&&newTask.trim()){addTask(activeZone,newTask.trim(),3,'');setNewTask('');}}}
+                placeholder="Add a task…"
+                style={{flex:1,padding:'9px 13px',borderRadius:11,border:'1.5px solid rgba(90,120,72,0.25)',fontSize:14,color:'#1A1A10',background:'rgba(255,255,255,0.9)',outline:'none'}}/>
+              <button onClick={()=>{if(newTask.trim()){addTask(activeZone,newTask.trim(),3,'');setNewTask('');}}}
+                style={{background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:11,padding:'9px 14px',fontSize:13,fontWeight:700,cursor:'pointer'}}>Add</button>
+            </div>
+            <button onClick={()=>setShowTemplates(!showTemplates)}
+              style={{width:'100%',padding:'8px',background:'rgba(255,255,255,0.6)',border:'1px solid rgba(90,120,72,0.20)',borderRadius:10,fontSize:12,fontWeight:700,color:'#3A5828',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span>📋 Template tasks</span><span>{showTemplates?'▲':'▼'}</span>
+            </button>
+            {showTemplates&&(
+              <div style={{marginTop:8,maxHeight:200,overflowY:'auto'}}>
+                {availPresets.length===0
+                  ?<div style={{fontSize:12,color:'#8A8070',textAlign:'center',padding:'8px'}}>All templates added ✓</div>
+                  :availPresets.map(p=>(
+                    <div key={p} style={{display:'flex',alignItems:'center',gap:6,padding:'6px 0',borderBottom:'1px solid rgba(90,80,60,0.06)'}}>
+                      <div style={{flex:1,fontSize:13,color:'#1A1A10'}}>{p}</div>
+                      <button onClick={()=>addTask(activeZone,p,1,'Urgent')} style={{background:'rgba(224,48,32,0.10)',border:'1px solid rgba(224,48,32,0.25)',borderRadius:7,padding:'4px 7px',fontSize:10,fontWeight:700,color:'#C03020',cursor:'pointer'}}>🔴</button>
+                      <button onClick={()=>addTask(activeZone,p,3,'Normal')} style={{background:'rgba(90,120,72,0.10)',border:'1px solid rgba(90,120,72,0.25)',borderRadius:7,padding:'4px 7px',fontSize:10,fontWeight:700,color:'#3A5828',cursor:'pointer'}}>Normal</button>
+                      <button onClick={()=>addTask(activeZone,p,5,'Later')} style={{background:'rgba(72,120,168,0.10)',border:'1px solid rgba(72,120,168,0.25)',borderRadius:7,padding:'4px 7px',fontSize:10,fontWeight:700,color:'#2A5880',cursor:'pointer'}}>Later</button>
                     </div>
                   ))
                 }
@@ -14412,84 +13938,70 @@ function Housework({setScreen}){
             )}
           </div>
 
-          {/* Task list — draggable */}
+          {/* Task list */}
           {todo.length===0&&done.length===0&&(
-            <div style={{textAlign:"center",padding:"30px 20px",color:"#8A8070"}}>
-              <div style={{fontSize:38,marginBottom:8}}>{cat.icon}</div>
-              <div style={{fontFamily:"Georgia,serif",fontSize:14,marginBottom:12}}>No tasks yet!</div>
-              <button onClick={()=>{const qs=getCatQuestions(activeCat,profile,cat);setAiPanel({catId:activeCat,questions:qs,step:0,answers:[],done:false});}}
-                style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,padding:"10px 20px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                <img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Let AI suggest tasks
-              </button>
+            <div style={{textAlign:'center',padding:'30px 20px',color:'#8A8070'}}>
+              <div style={{fontSize:40,marginBottom:8}}>{z?.icon}</div>
+              <div style={{fontFamily:'Georgia,serif',fontSize:15,marginBottom:12}}>No tasks yet — add one above or use templates!</div>
             </div>
           )}
 
-          {todo.length>0&&(
-            <div style={{marginBottom:12}}>
-              <div style={{display:"flex",gap:8,marginBottom:6}}>
-                <button onClick={()=>{
-                  const qs=getCatQuestions(activeCat,profile,cat);
-                  setAiPanel({catId:activeCat,questions:qs,step:0,answers:[],done:false});
-                }} style={{flex:2,background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:14,padding:"9px 12px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                  <img src="/image.png" style={{width:16,height:16,objectFit:"contain",verticalAlign:"middle"}} alt=""/> AI check-in + rank
-                </button>
-                <button onClick={()=>startComparison(activeCat)}
-                  style={{flex:1,background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.30)",borderRadius:14,padding:"9px 12px",fontSize:12,fontWeight:700,color:"#3A5828",cursor:"pointer"}}>
-                  A vs B now
-                </button>
-              </div>
-              <div style={{fontSize:10,color:"#8A8070",textAlign:"center"}}>⠿ Drag to reorder · AI check-in adds tasks then ranks · A vs B ranks existing tasks</div>
-            </div>
-          )}
+          {todo.length>0&&<div style={{fontSize:11,color:'#8A8070',marginBottom:8,fontWeight:600}}>⠿ Drag to reorder</div>}
 
           {todo.map(t=>(
             <div key={t.id}
               draggable
-              onDragStart={()=>onTaskDragStart(activeCat,t.id)}
-              onDragOver={e=>onTaskDragOver(e,activeCat,t.id)}
-              onDrop={e=>onTaskDrop(e,activeCat,t.id)}
-              onDragEnd={()=>{setDragTask(null);setDragOverTask(null);}}
-              style={{background:dragOverTask?.taskId===t.id?"rgba(90,120,72,0.08)":"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:15,padding:"11px 13px",marginBottom:8,boxShadow:"0 2px 8px rgba(0,0,0,0.05)",display:"flex",alignItems:"flex-start",gap:9,border:`1.5px solid ${dragOverTask?.taskId===t.id?"rgba(90,120,72,0.30)":"transparent"}`,cursor:"grab",transition:"border 0.15s"}}>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,flexShrink:0}}>
-                <div style={{width:30,height:30,borderRadius:8,background:SCORE_COLORS[t.score],display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:12,fontWeight:800}}>{t.score}</div>
-                <div style={{fontSize:12,color:"#A09080",lineHeight:1}}>⠿</div>
+              onDragStart={()=>setDragTask(t.id)}
+              onDragOver={e=>{e.preventDefault();setDragOver(t.id);}}
+              onDrop={e=>{
+                e.preventDefault();
+                if(!dragTask||dragTask===t.id){setDragTask(null);setDragOver(null);return;}
+                const list=[...getZT(activeZone)];
+                const from=list.findIndex(x=>x.id===dragTask),to=list.findIndex(x=>x.id===t.id);
+                list.splice(to,0,...list.splice(from,1));
+                saveTasks({...tasks,[activeZone]:list});
+                setDragTask(null);setDragOver(null);
+              }}
+              onDragEnd={()=>{setDragTask(null);setDragOver(null);}}
+              style={{background:dragOver===t.id?'rgba(90,120,72,0.10)':MULTI,borderRadius:14,padding:'11px 13px',marginBottom:8,boxShadow:'0 2px 8px rgba(0,0,0,0.05)',display:'flex',alignItems:'flex-start',gap:9,border:`1.5px solid ${dragOver===t.id?'rgba(90,120,72,0.30)':'transparent'}`,cursor:'grab'}}>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2,flexShrink:0}}>
+                <div style={{width:30,height:30,borderRadius:8,background:SCORE_C[t.score],display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:12,fontWeight:800}}>{t.score}</div>
+                <div style={{fontSize:10,color:'#A09080'}}>⠿</div>
               </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:700,fontSize:14,color:"#1A1A10"}}>{t.name}</div>
-                {t.room&&<div style={{fontSize:10,color:"#5A7040",fontWeight:600,marginTop:1}}>{t.room}</div>}
-                <div style={{fontSize:10,color:SCORE_COLORS[t.score],fontWeight:600}}>{SCORE_LABELS[t.score]}</div>
-                {t.reason&&<div style={{fontSize:10,color:"#8A8070"}}>{t.reason}</div>}
+                <div style={{fontWeight:700,fontSize:14,color:'#1A1A10'}}>{t.name}</div>
+                <div style={{fontSize:10,color:SCORE_C[t.score],fontWeight:600}}>{SCORE_L[t.score]}</div>
+                {t.reason&&<div style={{fontSize:10,color:'#8A8070'}}>{t.reason}</div>}
               </div>
-              <div style={{display:"flex",gap:4,flexShrink:0}}>
-                <button onClick={()=>toggleDone(activeCat,t.id)} style={{background:"rgba(90,120,72,0.12)",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:7,padding:"5px 8px",fontSize:11,fontWeight:700,color:"#3A5828",cursor:"pointer"}}>✓</button>
-                <button onClick={()=>deleteTask(activeCat,t.id)} style={{background:"rgba(200,80,60,0.08)",border:"1.5px solid rgba(200,80,60,0.15)",borderRadius:7,padding:"5px 8px",fontSize:11,fontWeight:700,color:"#C04030",cursor:"pointer"}}>✕</button>
+              <div style={{display:'flex',gap:4,flexShrink:0}}>
+                <button onClick={()=>tickDone(activeZone,t.id)} style={{background:'rgba(90,120,72,0.12)',border:'1.5px solid rgba(90,120,72,0.25)',borderRadius:7,padding:'5px 8px',fontSize:11,fontWeight:700,color:'#3A5828',cursor:'pointer'}}>✓</button>
+                <button onClick={()=>delTask(activeZone,t.id)} style={{background:'rgba(200,80,60,0.08)',border:'1.5px solid rgba(200,80,60,0.15)',borderRadius:7,padding:'5px 8px',fontSize:11,fontWeight:700,color:'#C04030',cursor:'pointer'}}>✕</button>
               </div>
             </div>
           ))}
 
           {done.length>0&&(
             <div style={{marginTop:14}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#8A8070",marginBottom:7,textTransform:"uppercase",letterSpacing:1}}>✓ Done ({done.length})</div>
+              <div style={{fontSize:11,fontWeight:700,color:'#8A8070',marginBottom:7,textTransform:'uppercase',letterSpacing:1}}>✓ Done ({done.length})</div>
               {done.map(t=>(
-                <div key={t.id} style={{background:"rgba(90,120,72,0.10)",borderRadius:12,padding:"8px 12px",marginBottom:5,display:"flex",alignItems:"center",gap:8,opacity:0.7}}>
-                  <div style={{flex:1,textDecoration:"line-through",color:"#8A8070",fontSize:13}}>{t.name}{t.room&&<span style={{fontSize:10,color:"#A0A080"}}> · {t.room}</span>}</div>
-                  <button onClick={()=>toggleDone(activeCat,t.id)} style={{background:"none",border:"1px solid rgba(90,80,60,0.15)",borderRadius:6,padding:"3px 7px",fontSize:10,color:"#8A8070",cursor:"pointer"}}>Undo</button>
-                  <button onClick={()=>deleteTask(activeCat,t.id)} style={{background:"none",border:"none",fontSize:13,cursor:"pointer",color:"#C04030"}}>✕</button>
+                <div key={t.id} style={{background:'rgba(90,120,72,0.06)',borderRadius:11,padding:'8px 12px',marginBottom:5,display:'flex',alignItems:'center',gap:8,opacity:0.6}}>
+                  <div style={{flex:1,textDecoration:'line-through',color:'#8A8070',fontSize:13}}>{t.name}</div>
+                  <button onClick={()=>tickDone(activeZone,t.id)} style={{background:'none',border:'1px solid rgba(90,80,60,0.15)',borderRadius:6,padding:'3px 7px',fontSize:10,color:'#8A8070',cursor:'pointer'}}>Undo</button>
+                  <button onClick={()=>delTask(activeZone,t.id)} style={{background:'none',border:'none',fontSize:13,cursor:'pointer',color:'#C04030'}}>✕</button>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {taskMotivation&&(
-          <div style={{position:"fixed",bottom:100,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",borderRadius:100,padding:"11px 22px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:13,boxShadow:"0 4px 20px rgba(0,0,0,0.25)",zIndex:200,whiteSpace:"nowrap"}}>{taskMotivation.message}</div>
-        )}
-        {celebration&&celebration.catId===activeCat&&(
-          <div style={{position:"fixed",inset:0,zIndex:800,background:"rgba(20,30,10,0.75)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}} onClick={()=>setCelebration(null)}>
-            <div style={{background:"rgba(250,248,240,0.99)",borderRadius:32,padding:"36px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={e=>e.stopPropagation()}>
+        {motivMsg&&<div style={{position:'fixed',bottom:100,left:'50%',transform:'translateX(-50%)',background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',borderRadius:100,padding:'11px 22px',fontFamily:'Georgia,serif',fontWeight:700,fontSize:14,boxShadow:'0 4px 20px rgba(0,0,0,0.25)',zIndex:200,whiteSpace:'nowrap'}}>{motivMsg}</div>}
+
+        {celebration&&celebration.zoneId===activeZone&&(
+          <div style={{position:'fixed',inset:0,zIndex:800,background:'rgba(20,30,10,0.75)',backdropFilter:'blur(6px)',display:'flex',alignItems:'center',justifyContent:'center',padding:24}} onClick={()=>setCelebration(null)}>
+            <div style={{background:'rgba(250,248,240,0.99)',borderRadius:32,padding:'36px 28px',maxWidth:320,width:'100%',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
               <div style={{fontSize:64,marginBottom:8}}>🎉</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:900,fontSize:22,color:"#3A5828",marginBottom:12}}>{celebration.message}</div>
-              <button onClick={()=>setCelebration(null)} style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,cursor:"pointer"}}>✨ Keep going!</button>
+              <div style={{fontFamily:'Georgia,serif',fontWeight:900,fontSize:22,color:'#3A5828',marginBottom:12}}>All {celebration.name} tasks done! Amazing! 🏡</div>
+              <button onClick={()=>setCelebration(null)} style={{width:'100%',padding:'14px',background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:100,fontFamily:'Georgia,serif',fontWeight:700,fontSize:16,cursor:'pointer'}}>✨ Keep going!</button>
             </div>
           </div>
         )}
@@ -14497,300 +14009,56 @@ function Housework({setScreen}){
     );
   }
 
-  // ── CLEAR OUT DAY ──
-  const CLEAROUT_QUESTIONS=[
-    {id:"toys",      q:"How bad are the toys?",               opts:["Everywhere, urgent","Pretty bad","Could do with a sort","Fine"]},
-    {id:"kids_clothes",q:"How are the kids clothes?",         opts:["Outgrown loads","Getting cluttered","Could do with a sort","Fine"]},
-    {id:"my_clothes",q:"How are your own clothes?",           opts:["Wardrobe bursting","Quite a lot to sort","Could do with a clear out","Fine"]},
-    {id:"food_cupboard",q:"How are the food cupboards?",      opts:["Out of date stuff everywhere","Getting cluttered","Could do with a sort","Fine"]},
-    {id:"cleaning_cupboard",q:"How is the cleaning cupboard?",opts:["Chaos","Getting messy","Could do with a tidy","Fine"]},
-    {id:"shed",      q:"How is the shed/garage?",             opts:["Can't get in","Pretty bad","Could do with a sort","Fine"]},
-    {id:"paperwork", q:"How is the paperwork situation?",     opts:["Piles everywhere","Getting bad","A bit behind","Under control"]},
-    {id:"my_wardrobe",  q:"How are your wardrobe and clothes?",       opts:["Really need a clear out","Quite a lot to sort","Could do with a tidy","Fine","Skip for now"]},
-    {id:"kids_wardrobe", q:"How are the kids wardrobes/clothes?",       opts:["Outgrown loads — urgent","Quite a lot to sort","Could do with a tidy","Fine","Skip for now"]},
-    {id:"food_cup",      q:"How are the food cupboards?",               opts:["Out of date stuff everywhere","Getting cluttered","Could do with a sort","Fine","Skip for now"]},
-    {id:"cleaning_cup",  q:"How is the cleaning/laundry cupboard?",     opts:["Really need a sort","Getting messy","Could do with a tidy","Fine","Skip for now"]},
-    {id:"general",       q:"Any other areas?",                          opts:["Kids bedrooms","Loft","Under stairs","Kitchen drawers","Spare room","Garage","None"]},
-  ];
-
-  const CLEAROUT_EXTRA_OPTS=["Loft","Under stairs","Kitchen drawers","Bathroom cabinet","Junk drawer","Spare room","Garage","Books/DVDs"];
-
-  const runClearOutAI=async(answers,extras)=>{
-    setClearOutPanel(p=>({...p,loading:true}));
-    try{
-      const sep=" | ";
-      const qaPairs=CLEAROUT_QUESTIONS.map(q=>q.q+" -> "+(answers[q.id]||"Not answered")).join(sep);
-      const extraStr=extras.length>0?" Extra: "+extras.join(", "):"";
-      const skippedAreas=answers.filter(a=>a.a==="Skip for now"||a.a==="To do later").map(a=>a.q.split(" — ")[0]).join(", ");
-      const skipNote=skippedAreas?"Do NOT suggest tasks for: "+skippedAreas+". ":"";
-      const promptText=skipNote+'You are helping someone plan a clear out day. Answers: '+qaPairs+extraStr+'. Prioritise tasks. Reply ONLY with JSON: {"startWith":"first task","encouragement":"message","tasks":[{"task":"name","area":"area","time":"30 mins","priority":1,"tip":"tip"}]}';
-      const resp=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:promptText,max_tokens:600})});
-      const data=await resp.json();
-      const txt=(data.content?.[0]?.text||data.result||"").replace(/```json|```/g,"").trim();
-      const plan=JSON.parse(txt);
-      setClearOutPanel({done:true,plan,answers,extras});
-    }catch(e){
-      setClearOutPanel({done:true,plan:{startWith:"Start with the most urgent area",encouragement:"You can do this! 💪",tasks:[]},answers,extras});
-    }
-  };
-
-  if(showClearOut){
-    // Questions phase
-    if(!clearOutPanel||(!clearOutPanel.done&&!clearOutPanel.loading)){
-      const stepIdx=clearOutPanel?.step||0;
-      const extras=clearOutPanel?.extras||[];
-      const answers=clearOutPanel?.answers||{};
-      const q=CLEAROUT_QUESTIONS[stepIdx];
-      const isLast=stepIdx===CLEAROUT_QUESTIONS.length-1;
-      return(
-        <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-          <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-            <button onClick={()=>{setShowClearOut(false);setClearOutPanel(null);}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>📦 Clear Out Day</div>
-            <div style={{fontSize:11,color:"#8A8070"}}>{stepIdx+1}/{CLEAROUT_QUESTIONS.length}</div>
-          </div>
-          <div style={{padding:"16px"}}>
-            <div style={{height:4,borderRadius:2,background:"rgba(90,80,60,0.10)",marginBottom:20,overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${((stepIdx+1)/CLEAROUT_QUESTIONS.length)*100}%`,background:"#A85028",borderRadius:2,transition:"width 0.3s"}}/>
-            </div>
-            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"22px 18px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-              <div style={{fontSize:22,textAlign:"center",marginBottom:10}}>📦</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:16,textAlign:"center",lineHeight:1.4}}>{q.q}</div>
-              <div style={{display:"flex",flexDirection:"column",gap:9}}>
-                {q.opts.map((opt,i)=>(
-                  <button key={i} onClick={()=>{
-                    const newAnswers={...answers,[q.id]:opt};
-                    if(isLast){
-                      // Show extra areas step
-                      setClearOutPanel({step:"extras",answers:newAnswers,extras:[]});
-                    } else {
-                      setClearOutPanel({step:stepIdx+1,answers:newAnswers,extras});
-                    }
-                  }} style={{background:"rgba(168,88,40,0.08)",border:"1.5px solid rgba(168,88,40,0.20)",borderRadius:14,padding:"12px 16px",textAlign:"left",fontSize:14,color:"#1A1A10",fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{background:"rgba(168,88,40,0.15)",borderRadius:"50%",width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#8A4010",flexShrink:0}}>{String.fromCharCode(65+i)}</span>
-                    {opt}
-                  </button>
-                ))}
-              </div>
-              {stepIdx>0&&<button onClick={()=>setClearOutPanel({step:stepIdx-1,answers,extras})}
-                style={{width:"100%",marginTop:12,padding:"10px",background:"none",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontSize:12,color:"#8A8070",cursor:"pointer"}}>← Back</button>}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Extras phase
-    if(clearOutPanel?.step==="extras"){
-      const extras=clearOutPanel.extras||[];
-      return(
-        <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-          <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-            <button onClick={()=>setClearOutPanel(p=>({...p,step:CLEAROUT_QUESTIONS.length-1}))} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>📦 Anything else?</div>
-          </div>
-          <div style={{padding:"16px"}}>
-            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:24,padding:"20px 18px",boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:16,color:"#1A1A10",marginBottom:8,textAlign:"center"}}>Any other areas to include?</div>
-              <div style={{fontSize:12,color:"#8A8070",textAlign:"center",marginBottom:14}}>Tap all that apply — or skip</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-                {CLEAROUT_EXTRA_OPTS.map(opt=>{
-                  const sel=extras.includes(opt);
-                  return(
-                    <button key={opt} onClick={()=>setClearOutPanel(p=>({...p,extras:sel?p.extras.filter(x=>x!==opt):[...p.extras,opt]}))}
-                      style={{background:sel?"rgba(168,88,40,0.18)":"rgba(248,245,236,0.90)",border:`1.5px solid ${sel?"rgba(168,88,40,0.40)":"rgba(180,160,140,0.25)"}`,borderRadius:12,padding:"10px 12px",fontSize:13,fontWeight:600,color:sel?"#8A4010":"#1A1A10",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-                      <span>{sel?"✓":"+"}</span>{opt}
-                    </button>
-                  );
-                })}
-              </div>
-              <button onClick={()=>runClearOutAI(clearOutPanel.answers,extras)}
-                style={{width:"100%",padding:"14px",background:"linear-gradient(135deg,#A85028,#803818)",color:"#fff",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
-                <img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Build my clear out plan →
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Loading
-    if(clearOutPanel?.loading){
-      return(
-        <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{textAlign:"center",padding:"40px"}}>
-            <div style={{fontSize:48,marginBottom:16}}>📦</div>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",marginBottom:8}}>Building your plan…</div>
-            <div style={{fontSize:13,color:"#8A8070"}}>AI is prioritising everything for you</div>
-          </div>
-        </div>
-      );
-    }
-
-    // Done — show plan
-    if(clearOutPanel?.done){
-      const {plan}=clearOutPanel;
-      const PRIORITY_COLORS=["#E03020","#E07020","#D4A020","#5A7848","#4878A8","#7848A8","#A84878","#48A878"];
-      return(
-        <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-          <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-            <button onClick={()=>{setShowClearOut(false);setClearOutPanel(null);}} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#1A1A10",flex:1}}>📦 Your Clear Out Plan</div>
-          </div>
-          <div style={{padding:"16px"}}>
-            {/* Start with */}
-            <div style={{background:"linear-gradient(135deg,#A85028,#803818)",borderRadius:20,padding:"18px 20px",marginBottom:14,textAlign:"center"}}>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",marginBottom:4}}>Start with</div>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:18,color:"#fff",marginBottom:8}}>{plan.startWith}</div>
-              <div style={{fontSize:13,color:"rgba(255,255,255,0.9)"}}>{plan.encouragement}</div>
-            </div>
-
-            {/* Task list */}
-            {(plan.tasks||[]).map((t,i)=>(
-              <div key={i} style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:16,padding:"14px",marginBottom:9,display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-                <div style={{width:32,height:32,borderRadius:9,background:PRIORITY_COLORS[i]||"#5A7848",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:800,fontSize:14,flexShrink:0}}>{i+1}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:14,color:"#1A1A10",marginBottom:2}}>{t.task}</div>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {t.area&&<span style={{fontSize:11,color:"#5A7040",fontWeight:600}}>📍 {t.area}</span>}
-                    {t.time&&<span style={{fontSize:11,color:"#8A8070"}}>⏱ {t.time}</span>}
-                  </div>
-                  {t.tip&&<div style={{fontSize:11,color:"#8A8070",marginTop:3,fontStyle:"italic"}}>{t.tip}</div>}
-                </div>
-              </div>
-            ))}
-
-            {/* Google Calendar */}
-            <div style={{background:"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:20,padding:"18px",marginTop:8,boxShadow:"0 2px 12px rgba(0,0,0,0.07)"}}>
-              <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#1A1A10",marginBottom:12}}>📅 Add to Google Calendar</div>
-              <input type="date" value={clearOutDate} onChange={e=>setClearOutDate(e.target.value)}
-                style={{width:"100%",padding:"11px 14px",borderRadius:12,border:"1.5px solid rgba(90,120,72,0.25)",fontSize:14,color:"#1A1A10",background:"rgba(255,255,255,0.9)",marginBottom:10,boxSizing:"border-box"}}/>
-              <button onClick={()=>{
-                if(!clearOutDate)return;
-                const title="Clear Out Day";
-                const details=(plan.tasks||[]).map((t,i)=>(i+1)+". "+t.task+" ("+(t.area||"")+") - "+(t.time||"")).join("\n");
-                const date=clearOutDate.replace(/-/g,"");
-                const url=`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${date}/${date}&details=${encodeURIComponent(details)}`;
-                window.open(url,"_blank");
-              }} disabled={!clearOutDate}
-                style={{width:"100%",padding:"13px",background:clearOutDate?"linear-gradient(135deg,#4878A8,#2A5888)":"rgba(90,80,60,0.10)",color:clearOutDate?"#fff":"#A09080",border:"none",borderRadius:100,fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:clearOutDate?"pointer":"default"}}>
-                📅 Add to Google Calendar
-              </button>
-              <div style={{fontSize:11,color:"#8A8070",textAlign:"center",marginTop:8}}>Opens Google Calendar with your plan pre-filled</div>
-            </div>
-
-            <button onClick={()=>setClearOutPanel(null)}
-              style={{width:"100%",marginTop:10,padding:"11px",background:"rgba(90,80,60,0.08)",border:"1px solid rgba(90,80,60,0.15)",borderRadius:100,fontSize:13,fontWeight:600,color:"#5A4A30",cursor:"pointer"}}>
-              ↺ Start again
-            </button>
-          </div>
-        </div>
-      );
-    }
-  }
-
   // ── HUB ──
-  const defaultOrder=["upstairs","downstairs","garden","garage"];
-  const activeCats=(catOrder||defaultOrder).filter(id=>cats?.[id]);
-
+  const zoneList=zones||[];
   return(
-    <div style={{minHeight:"100vh",background:"transparent",fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
-      <div style={{background:MULTI,backdropFilter:"blur(16px)",padding:"14px 18px",display:"flex",alignItems:"center",gap:12,borderBottom:"1px solid rgba(90,80,60,0.08)",position:"sticky",top:0,zIndex:50}}>
-        <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",cursor:"pointer",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{minHeight:'100vh',background:'transparent',fontFamily:"'Segoe UI',sans-serif",paddingBottom:90}}>
+      <div style={{background:MULTI,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,borderBottom:'1px solid rgba(90,80,60,0.08)',position:'sticky',top:0,zIndex:50}}>
+        <button onClick={()=>setScreen('home')} style={{background:'none',border:'none',cursor:'pointer',width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center'}}>
           <svg width="10" height="18" viewBox="0 0 10 18" fill="none"><path d="M9 1L1 9l8 8" stroke="#1A1A10" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:20,color:"#1A1A10",flex:1}}>🏠 Housework</div>
-        <button onClick={()=>{
-          setSetupStepId("start");
-          setSetupAnswers({});
-          setSetupMultiSel([]);
-          setSetupOtherText("");
-          setShowSetup(true);
-        }} style={{background:"rgba(90,120,72,0.10)",border:"1px solid rgba(90,120,72,0.20)",borderRadius:16,padding:"5px 10px",fontSize:11,fontWeight:700,color:"#3A5828",cursor:"pointer"}}>
-          <img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Re-setup
+        <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:20,color:'#1A1A10',flex:1}}>🏠 Housework</div>
+        <button onClick={()=>{setSetupStep(0);setSetupAnswers({});setMultiSel([]);setOtherText('');setView('setup');}}
+          style={{background:'rgba(90,120,72,0.10)',border:'1px solid rgba(90,120,72,0.20)',borderRadius:16,padding:'5px 12px',fontSize:12,fontWeight:700,color:'#3A5828',cursor:'pointer'}}>
+          🤖 Setup
         </button>
       </div>
-      <div style={{padding:"12px 16px"}}>
-        {(!cats||activeCats.length===0)&&(
-          <div style={{textAlign:"center",padding:"40px 20px"}}>
+      <div style={{padding:'12px 16px'}}>
+        {zoneList.length===0?(
+          <div style={{textAlign:'center',padding:'40px 20px'}}>
             <div style={{fontSize:48,marginBottom:12}}>🏠</div>
-            <div style={{fontFamily:"Georgia,serif",fontSize:16,color:"#5A4A30",marginBottom:16}}>Let's set up your home first!</div>
-            <button onClick={()=>setShowSetup(true)} style={{background:"linear-gradient(135deg,#5A7848,#3A5828)",color:"#fff",border:"none",borderRadius:100,padding:"13px 28px",fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,cursor:"pointer"}}><img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Set up my home</button>
+            <div style={{fontFamily:'Georgia,serif',fontSize:16,color:'#5A4A30',marginBottom:16}}>Let's set up your home!</div>
+            <button onClick={()=>{setSetupStep(0);setSetupAnswers({});setMultiSel([]);setOtherText('');setView('setup');}}
+              style={{background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:100,padding:'13px 28px',fontFamily:'Georgia,serif',fontWeight:700,fontSize:15,cursor:'pointer'}}>
+              🤖 Set up my home
+            </button>
+          </div>
+        ):(
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            {zoneList.map(z=>{
+              const zt=getZT(z.id);
+              const total=zt.filter(t=>!t.done).length;
+              const urgent=zt.filter(t=>!t.done&&t.score<=2).length;
+              const doneC=zt.filter(t=>t.done).length;
+              return(
+                <button key={z.id} onClick={()=>{setActiveZone(z.id);setView('zone');setShowTemplates(false);}}
+                  style={{background:MULTI,borderRadius:20,padding:'16px 18px',border:'1.5px solid rgba(255,255,255,0.6)',boxShadow:'0 2px 12px rgba(0,0,0,0.07)',cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:14}}>
+                  <div style={{fontSize:36,flexShrink:0}}>{z.icon}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:'Georgia,serif',fontWeight:700,fontSize:17,color:'#1A1A10',marginBottom:3}}>{z.name}</div>
+                    <div style={{fontSize:11,color:total>0?'#5A7040':'#A09080',fontWeight:600}}>
+                      {total>0?`${total} to do`:'All clear ✓'}{doneC>0?` · ${doneC} done`:''}
+                    </div>
+                    {zt.length>0&&<div style={{marginTop:6,height:4,borderRadius:2,background:'rgba(90,80,60,0.08)',overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${(doneC/zt.length)*100}%`,background:z.color,borderRadius:2}}/>
+                    </div>}
+                  </div>
+                  {urgent>0&&<div style={{background:'#E03020',color:'#fff',borderRadius:100,padding:'2px 8px',fontSize:11,fontWeight:700,flexShrink:0}}>{urgent} urgent</div>}
+                </button>
+              );
+            })}
           </div>
         )}
-        <div style={{fontSize:11,color:"#8A8070",marginBottom:6,textAlign:"center"}}>⠿ Hold and drag tiles to reorder</div>
-        <div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {activeCats.map(id=>{
-            const cat=cats[id];
-            const allT=getCatTasks(id);
-            const urgent=allT.filter(t=>!t.done&&t.score<=2).length;
-            const total=allT.filter(t=>!t.done).length;
-            const doneCount=allT.filter(t=>t.done).length;
-            return(
-              <div key={id}
-                draggable
-                onDragStart={e=>{e.dataTransfer.effectAllowed="move";e.currentTarget.style.opacity="0.5";setCatDrag(id);}}
-                onDragEnd={e=>{e.currentTarget.style.opacity="1";setCatDrag(null);setCatDragOver(null);}}
-                onDragOver={e=>{e.preventDefault();setCatDragOver(id);}}
-                onDrop={e=>{
-                  e.preventDefault();
-                  if(!catDrag||catDrag===id){setCatDrag(null);setCatDragOver(null);return;}
-                  const order=[...activeCats];
-                  const from=order.indexOf(catDrag),to=order.indexOf(id);
-                  order.splice(to,0,...order.splice(from,1));
-                  saveCatOrder(order);setCatDrag(null);setCatDragOver(null);
-                }}
-                style={{background:catDragOver===id?"rgba(90,120,72,0.10)":"linear-gradient(135deg,rgba(230,200,180,0.92) 0%,rgba(210,195,220,0.92) 35%,rgba(190,215,200,0.92) 70%,rgba(220,210,185,0.92) 100%)",borderRadius:22,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.07)",border:`2px solid ${catDragOver===id?"rgba(90,120,72,0.35)":"transparent"}`,transition:"border 0.15s",cursor:"grab"}}>
-                <div style={{padding:"16px 18px",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={()=>setActiveCat(id)}>
-                  <div style={{fontSize:36}}>{cat.icon}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:17,color:"#1A1A10",marginBottom:3}}>{cat.name}</div>
-                    <div style={{fontSize:11,color:"#8A8070",display:"flex",flexWrap:"wrap",gap:4}}>
-                      {(cat.rooms||[]).map(r=><span key={r} style={{background:"rgba(90,120,72,0.08)",borderRadius:100,padding:"2px 7px",fontWeight:600,color:"#5A7040"}}>{r}</span>)}
-                    </div>
-                  </div>
-                  <div style={{textAlign:"right",flexShrink:0}}>
-                    {urgent>0&&<div style={{background:"#E03020",color:"#fff",borderRadius:100,padding:"2px 8px",fontSize:11,fontWeight:700,marginBottom:3}}>{urgent} urgent</div>}
-                    <div style={{fontSize:11,color:total>0?"#5A7040":"#A09080",fontWeight:600}}>{total>0?`${total} to do`:"All clear ✓"}</div>
-                    {doneCount>0&&<div style={{fontSize:10,color:"#A09080"}}>{doneCount} done</div>}
-                  </div>
-                </div>
-                {/* Progress bar */}
-                {allT.length>0&&(
-                  <div style={{height:4,background:"rgba(90,80,60,0.08)"}}>
-                    <div style={{height:"100%",width:`${(doneCount/allT.length)*100}%`,background:cat.color,transition:"width 0.3s"}}/>
-                  </div>
-                )}
-                {/* AI button at bottom of card */}
-                <div style={{padding:"10px 18px",borderTop:"1px solid rgba(90,80,60,0.06)"}}>
-                  <button onClick={()=>{
-                    const qs=getCatQuestions(id,profile,cat);
-                    setAiPanel({catId:id,questions:qs,step:0,answers:[],done:false});
-                  }} style={{width:"100%",padding:"9px",background:"linear-gradient(135deg,rgba(90,120,72,0.12),rgba(60,88,40,0.08))",border:"1.5px solid rgba(90,120,72,0.25)",borderRadius:12,fontSize:13,fontWeight:700,color:"#3A5828",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                    <img src="/image.png" style={{width:20,height:20,objectFit:"contain",verticalAlign:"middle"}} alt="Thinko"/> Check in & prioritise {cat.name}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Clear Out Day */}
-        <button onClick={()=>setShowClearOut(true)}
-          style={{width:"100%",marginTop:4,padding:"14px",background:"linear-gradient(135deg,rgba(168,88,40,0.12),rgba(140,60,20,0.08))",border:"1.5px solid rgba(168,88,40,0.25)",borderRadius:20,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
-          <span style={{fontSize:28}}>📦</span>
-          <div style={{textAlign:"left",flex:1}}>
-            <div style={{fontFamily:"Georgia,serif",fontWeight:700,fontSize:15,color:"#6A3010"}}>Clear Out Day</div>
-            <div style={{fontSize:11,color:"#8A6040"}}>AI prioritises everything · Add to Google Calendar</div>
-          </div>
-          <span style={{fontSize:18,color:"#8A6040"}}>→</span>
-        </button>
       </div>
     </div>
   );
