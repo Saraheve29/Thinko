@@ -13432,11 +13432,40 @@ function Housework({setScreen}){
   const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
 
   const [profile,setProfile]=useState(()=>load('hw_profile',null));
-  const [zones,setZonesRaw]=useState(()=>load('hw_zones',null));
+  const [zones,setZonesRaw]=useState(()=>{
+    const z=load('hw_zones',null);
+    if(z) return z;
+    // Try old key thinko_hw_zones
+    const old1=load('thinko_hw_zones',null);
+    if(old1) return old1;
+    // Try thinko_hw_cats for zone structure
+    const old2=load('thinko_hw_cats',null);
+    if(old2){
+      return Object.values(old2).map(z=>({id:z.id,name:z.name,icon:z.icon,color:z.color,rooms:z.rooms||[]}));
+    }
+    return null;
+  });
   const saveZones=z=>{setZonesRaw(z);save('hw_zones',z);};
 
   // Tasks stored as {zoneId:[{id,name,score,done}]}
-  const [tasks,setTasksRaw]=useState(()=>load('hw_tasks',{}));
+  const [tasks,setTasksRaw]=useState(()=>{
+    // Try new key first, then migrate from old keys
+    const t=load('hw_tasks',null);
+    if(t) return t;
+    // Try old key thinko_hw_tasks
+    const old1=load('thinko_hw_tasks',null);
+    if(old1) return old1;
+    // Try thinko_hw_cats (extract tasks from old structure)
+    const old2=load('thinko_hw_cats',null);
+    if(old2){
+      const migrated={};
+      Object.keys(old2).forEach(zoneId=>{
+        if(old2[zoneId]?.tasks?.length>0) migrated[zoneId]=old2[zoneId].tasks;
+      });
+      if(Object.keys(migrated).length>0) return migrated;
+    }
+    return {};
+  });
   const saveTasks=t=>{setTasksRaw(t);save('hw_tasks',t);};
 
   const getZT=zid=>tasks[zid]||[];
@@ -13640,11 +13669,12 @@ function Housework({setScreen}){
     setAiLoading(true);
     const z=zones?.find(z=>z.id===activeZone);
     const qaPairs=allAnswers.map(a=>a.q.split('—')[0].trim()+': '+a.a).join(', ');
-    const prompt='Housework for '+z?.name+'. Answers: '+qaPairs+'. Give 4-8 tasks, ONE action each (never combine). JSON only: {"tasks":[{"name":"one action","score":1,"reason":"why"}]}';
+    const prompt='Housework for '+z?.name+'. Give 4-8 tasks ONE action each. JSON only: {"tasks":[{"name":"action","score":1,"reason":"why"}]}';
     let newTasksList=[];
     try{
       const resp=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,max_tokens:800})});
       const raw=await resp.text();
+      alert('API response: '+raw.slice(0,200));
       const data=JSON.parse(raw);
       const txt=(data.content?.[0]?.text||'').replace(/```json|```/g,'').trim();
       const jStart=txt.indexOf('{'),jEnd=txt.lastIndexOf('}');
@@ -13652,7 +13682,21 @@ function Housework({setScreen}){
         const parsed=JSON.parse(txt.slice(jStart,jEnd+1));
         newTasksList=parsed.tasks||[];
       }
-    }catch(e){console.error('AI error:',e);}
+    }catch(e){
+      alert('CATCH ERROR: '+e.message);
+      // Skip AI - just go to zone with existing tasks
+      setAiLoading(false);
+      const existing=getZT(activeZone);
+      const todo=existing.filter(t=>!t.done);
+      if(todo.length>=2){
+        const p=[];
+        for(let i=0;i<todo.length-1;i++) p.push([todo[i],todo[i+1]]);
+        setPairs(p);setPairIdx(0);setRanked([...todo]);setView('avb');
+      } else {
+        setView('zone');
+      }
+      return;
+    }
     setAiLoading(false);
     const existing=getZT(activeZone);
     const existingNames=existing.map(t=>t.name.toLowerCase());
@@ -13661,14 +13705,13 @@ function Housework({setScreen}){
       .flatMap(t=>splitTask(t.name||'').map(n=>({id:Date.now()+Math.random(),name:n,score:t.score||3,reason:t.reason||'AI suggested',done:false})));
     const merged=[...existing,...toAdd].sort((a,b)=>a.score-b.score);
     saveTasks({...tasks,[activeZone]:merged});
-    // Go straight to A vs B
+    alert('AI done! Tasks from AI: '+newTasksList.length+' | Total merged: '+merged.length+' | activeZone: '+activeZone);
     const todo=merged.filter(t=>!t.done);
     if(todo.length>=2){
       const p=[];
       for(let i=0;i<todo.length-1;i++) p.push([todo[i],todo[i+1]]);
       setPairs(p);setPairIdx(0);setRanked([...todo]);setView('avb');
     } else {
-      // Even with 0-1 tasks, go to zone so user can see task list
       setView('zone');
     }
   };
