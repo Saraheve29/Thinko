@@ -13928,10 +13928,20 @@ function Housework({setScreen}){
         setActiveCat(catId);
       }
     }catch(e){
-      alert("AI ERROR: "+e.message);
-      setAiPanel(null);
+      console.error("runAiPrioritise error:",e);
       setAiLoading(false);
-      setActiveCat(catId);
+      setAiPanel(null);
+      setActiveCat(null);
+      // Always fall through to A vs B with existing tasks
+      const existingOnError=cats?.[catId]?.tasks||[];
+      const todoOnError=existingOnError.filter(t=>!t.done);
+      if(todoOnError.length>=2){
+        const pairs=[];
+        for(let i=0;i<todoOnError.length-1;i++) pairs.push([todoOnError[i],todoOnError[i+1]]);
+        setComparing({catId,pairs,current:0,ranked:todoOnError,phase:"tasks"});
+      } else {
+        setActiveCat(catId);
+      }
     }
   };
 
