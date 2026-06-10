@@ -13879,27 +13879,8 @@ function Housework({setScreen}){
     try{
       const cat=cats[catId];
       const todoTasks=getCatTasks(catId).filter(t=>!t.done).map(t=>t.name);
-      const qaPairs=answers.map(a=>`Q: "${a.q}" A: "${a.a}"`).join("\n");
-      const prompt=`You are a housework assistant for someone with ADHD and autism. They need tasks broken into SINGLE, SPECIFIC actions to avoid overwhelm.
-
-STRICT RULES:
-- Every task must be ONE single action only. NEVER combine two actions.
-- BAD: "Clean toilet and bath" GOOD: "Clean toilet" + "Clean bath" as separate tasks
-- BAD: "Change bedding and tidy room" GOOD: "Change bedding" + "Tidy room" as separate tasks  
-- BAD: "Hoover and mop floors" GOOD: "Hoover floors" + "Mop floors" as separate tasks
-- Each task name must be short, clear and specific — one thing only.
-
-Category: ${cat?.name}
-Current tasks: ${todoTasks.length>0?todoTasks.join(", "):"none yet"}
-User answered:
-${qaPairs}
-
-Based on their answers, suggest 4-8 tasks. Each must be ONE specific action. Give an urgency score and which room.
-Also: what to start with first, a short encouraging message, and an overall category urgency score 1-4.
-
-Reply ONLY with JSON:
-{"first":"single task to do first","message":"short encouraging message","catScore":2,"tasks":[{"task":"single action only","score":1,"reason":"why","room":"room name or empty"}]}
-Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
+      const qaPairs=answers.map(a=>a.q.split(" — ")[0]+": "+a.a).join(", ");
+      const prompt="Housework tasks for "+cat?.name+". ONE action per task only (never combine). Answers: "+qaPairs+". Reply ONLY with this JSON (no extra text): {"+'"'+"first"+'"'+":"+'"'+"task"+'"'+","+'"'+"message"+'"'+":"+'"'+"encouragement"+'"'+","+'"'+"catScore"+'"'+":2,"+'"'+"tasks"+'"'+":[{"+'"'+"task"+'"'+":"+'"'+"one action"+'"'+","+'"'+"score"+'"'+":1,"+'"'+"reason"+'"'+":"+'"'+"why"+'"'+","+'"'+"room"+'"'+":"+'"'+"room"+'"'+"}]}";
       const resp=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,max_tokens:1200})});
       const raw=await resp.text();
       let result={first:"Start with the most urgent task",message:"You can do this! 💪",catScore:2,tasks:[]};
