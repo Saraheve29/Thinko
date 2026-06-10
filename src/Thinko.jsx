@@ -13638,7 +13638,6 @@ function Housework({setScreen}){
   // ── AI complete ──
   const finishAI=async(allAnswers)=>{
     setAiLoading(true);
-    setView('hub'); // temp - will be overridden
     const z=zones?.find(z=>z.id===activeZone);
     const qaPairs=allAnswers.map(a=>a.q.split('—')[0].trim()+': '+a.a).join(', ');
     const prompt='Housework for '+z?.name+'. Answers: '+qaPairs+'. Give 4-8 tasks, ONE action each (never combine). JSON only: {"tasks":[{"name":"one action","score":1,"reason":"why"}]}';
@@ -13669,6 +13668,7 @@ function Housework({setScreen}){
       for(let i=0;i<todo.length-1;i++) p.push([todo[i],todo[i+1]]);
       setPairs(p);setPairIdx(0);setRanked([...todo]);setView('avb');
     } else {
+      // Even with 0-1 tasks, go to zone so user can see task list
       setView('zone');
     }
   };
@@ -13850,7 +13850,7 @@ function Housework({setScreen}){
               <div style={{fontWeight:700,fontSize:14,color:'#1A1A10',flex:1}}>{t.name}</div>
             </div>
           ))}
-          <button onClick={()=>setView('zone')} style={{width:'100%',marginTop:8,padding:'14px',background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:100,fontFamily:'Georgia,serif',fontWeight:700,fontSize:16,cursor:'pointer'}}>
+          <button onClick={()=>{setView('zone');setShowTemplates(false);}} style={{width:'100%',marginTop:8,padding:'14px',background:'linear-gradient(135deg,#5A7848,#3A5828)',color:'#fff',border:'none',borderRadius:100,fontFamily:'Georgia,serif',fontWeight:700,fontSize:16,cursor:'pointer'}}>
             ✨ Let's get started!
           </button>
         </div>
