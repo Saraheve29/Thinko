@@ -13492,7 +13492,7 @@ function Housework({setScreen}){
   const buildZones=(ans)=>{
     const z=[];
     if(ans.upstairs==="Yes"){
-      const rooms=[...(ans.bedrooms||[]),(ans.upstairs_rooms||[]).filter(r=>r!=="None")].filter(Boolean);
+      const rooms=[...(ans.bedrooms||[]),(ans.upstairs_rooms||[]).filter(r=>r!=="None")].flat().filter(r=>r&&typeof r==="string");
       z.push({id:'upstairs',name:'Upstairs',icon:'🛏️',color:'#6878B8',rooms});
     }
     const down=ans.downstairs||[];
@@ -13508,7 +13508,8 @@ function Housework({setScreen}){
   // ── AI QUESTIONS ──
   const getAIQuestions=(zoneId,prof)=>{
     const z=zones?.find(z=>z.id===zoneId);
-    const rooms=z?.rooms||[];
+    // Flatten rooms - ensure all are strings, not arrays
+    const rooms=(z?.rooms||[]).flat().filter(r=>r&&typeof r==='string');
     const qs=[];
     if(zoneId==='upstairs'){
       rooms.forEach(r=>{
@@ -13545,7 +13546,7 @@ function Housework({setScreen}){
       qs.push({q:"Do you need to think about dinner today?",opts:["Yes — nothing planned","Yes — need to prep","Something simple sorted","All sorted"]});
     }
     if(zoneId==='garden'){
-      const gf=prof?.garden_features||rooms;
+      const gf=(prof?.garden_features||rooms).flat().filter(r=>r&&typeof r==='string');
       if(gf.some(f=>f.toLowerCase().includes('lawn'))) qs.push({q:"How is the lawn?",opts:["Very overgrown","Getting long","About right","Just done"]});
       qs.push({q:"How bad are the weeds?",opts:["Taking over","Pretty bad","A few weeds","Under control"]});
       if(gf.some(f=>f.toLowerCase().includes('plant'))) qs.push({q:"How are the plants/flower beds?",opts:["Need watering urgently","Getting weedy","Could do with a tidy","Fine"]});
