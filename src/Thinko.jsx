@@ -13900,9 +13900,9 @@ Also: what to start with first, a short encouraging message, and an overall cate
 Reply ONLY with JSON:
 {"first":"single task to do first","message":"short encouraging message","catScore":2,"tasks":[{"task":"single action only","score":1,"reason":"why","room":"room name or empty"}]}
 Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,messages:[{role:"user",content:prompt}]})});
+      const resp=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,max_tokens:500})});
       const data=await resp.json();
-      const txt=data.content[0].text.replace(/```json|```/g,"").trim();
+      const txt=(data.content?.[0]?.text||data.result||"").replace(/```json|```/g,"").trim();
       const result=JSON.parse(txt);
       // Add suggested tasks that don't already exist
       const existing=getCatTasks(catId).map(t=>t.name.toLowerCase());
@@ -13925,7 +13925,6 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
       const newOrder=[...allCatIds].sort((a,b)=>(catScores[a]||3)-(catScores[b]||3));
       saveCatOrder(newOrder);
       const freshTasks=allTasks.filter(t=>!t.done);
-      // Always clear loading and aiPanel first
       setAiLoading(false);
       setAiPanel(null);
       setActiveCat(null);
@@ -13934,11 +13933,10 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
         for(let i=0;i<freshTasks.length-1;i++) pairs.push([freshTasks[i],freshTasks[i+1]]);
         setComparing({catId,pairs,current:0,ranked:freshTasks,phase:"tasks",catScores,newOrder,aiFirst:result.first,aiMessage:result.message});
       } else {
-        // Fewer than 2 tasks — just go back to category with tasks shown
         setActiveCat(catId);
       }
     }catch(e){
-      console.error("AI prioritise error:",e);
+      alert("AI ERROR: "+e.message);
       setAiPanel(null);
       setAiLoading(false);
       setActiveCat(catId);
@@ -14507,9 +14505,9 @@ Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
       const skippedAreas=answers.filter(a=>a.a==="Skip for now"||a.a==="To do later").map(a=>a.q.split(" — ")[0]).join(", ");
       const skipNote=skippedAreas?"Do NOT suggest tasks for: "+skippedAreas+". ":"";
       const promptText=skipNote+'You are helping someone plan a clear out day. Answers: '+qaPairs+extraStr+'. Prioritise tasks. Reply ONLY with JSON: {"startWith":"first task","encouragement":"message","tasks":[{"task":"name","area":"area","time":"30 mins","priority":1,"tip":"tip"}]}';
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:promptText}]})});
+      const resp=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:promptText,max_tokens:600})});
       const data=await resp.json();
-      const txt=data.content[0].text.replace(/```json|```/g,"").trim();
+      const txt=(data.content?.[0]?.text||data.result||"").replace(/```json|```/g,"").trim();
       const plan=JSON.parse(txt);
       setClearOutPanel({done:true,plan,answers,extras});
     }catch(e){
