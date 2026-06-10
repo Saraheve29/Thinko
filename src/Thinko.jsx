@@ -13900,10 +13900,21 @@ Also: what to start with first, a short encouraging message, and an overall cate
 Reply ONLY with JSON:
 {"first":"single task to do first","message":"short encouraging message","catScore":2,"tasks":[{"task":"single action only","score":1,"reason":"why","room":"room name or empty"}]}
 Scores: 1=urgent,2=high,3=medium,4=low,5=whenever`;
-      const resp=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,max_tokens:500})});
-      const data=await resp.json();
-      const txt=(data.content?.[0]?.text||data.result||"").replace(/```json|```/g,"").trim();
-      const result=JSON.parse(txt);
+      const resp=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,max_tokens:1200})});
+      const raw=await resp.text();
+      let result={first:"Start with the most urgent task",message:"You can do this! 💪",catScore:2,tasks:[]};
+      try{
+        const data=JSON.parse(raw);
+        const txt=(data.content?.[0]?.text||"").replace(/```json|```/g,"").trim();
+        const jsonStart=txt.indexOf("{");
+        const jsonEnd=txt.lastIndexOf("}");
+        if(jsonStart>-1&&jsonEnd>-1){
+          const parsed=JSON.parse(txt.slice(jsonStart,jsonEnd+1));
+          result={...result,...parsed};
+        }
+      }catch(parseErr){
+        console.error("Parse error:",parseErr);
+      }
       // Add suggested tasks that don't already exist
       const existing=getCatTasks(catId).map(t=>t.name.toLowerCase());
       const rawNewTasks=(result.tasks||[])
