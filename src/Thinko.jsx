@@ -13432,7 +13432,24 @@ function Housework({setScreen}){
 
   // Categories: upstairs | downstairs | garden | garage
   // Each category has tasks array [{id,name,score,reason,done,room}]
-  const [cats,setCatsRaw]=useState(()=>{try{return JSON.parse(localStorage.getItem('thinko_hw_cats')||'null');}catch{return null;}});
+  const [cats,setCatsRaw]=useState(()=>{
+    try{
+      let c=JSON.parse(localStorage.getItem('thinko_hw_cats')||'null');
+      // Migrate old thinko_hw_tasks into cats if present
+      if(c){
+        const oldTasks=JSON.parse(localStorage.getItem('thinko_hw_tasks')||'{}');
+        let migrated=false;
+        Object.keys(oldTasks).forEach(zoneId=>{
+          if(c[zoneId]&&(!c[zoneId].tasks||c[zoneId].tasks.length===0)&&oldTasks[zoneId].length>0){
+            c[zoneId].tasks=oldTasks[zoneId];
+            migrated=true;
+          }
+        });
+        if(migrated) localStorage.setItem('thinko_hw_cats',JSON.stringify(c));
+      }
+      return c;
+    }catch{return null;}
+  });
   const saveCats=c=>{setCatsRaw(c);try{localStorage.setItem('thinko_hw_cats',JSON.stringify(c));}catch{}};
 
   const [activeCat,setActiveCat]=useState(null);
@@ -14033,14 +14050,6 @@ function Housework({setScreen}){
   }
 
   // ── AI PANEL ──
-  // DEBUG - remove after testing
-  if(comparing) return(
-    <div style={{padding:40,background:"red",color:"white",fontSize:20}}>
-      COMPARING STATE SET! Phase: {comparing.phase} Tasks: {comparing.pairs?.length} pairs
-      <button onClick={()=>setComparing(null)} style={{marginTop:20,padding:10,display:"block"}}>Clear</button>
-    </div>
-  );
-
   // ── A vs B COMPARISON SCREENS ──
   if(comparing&&comparing.phase==="tasks"){
     const {pairs,current,catId}=comparing;
