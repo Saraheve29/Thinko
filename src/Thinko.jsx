@@ -14033,6 +14033,14 @@ function Housework({setScreen}){
   }
 
   // ── AI PANEL ──
+  // DEBUG - remove after testing
+  if(comparing) return(
+    <div style={{padding:40,background:"red",color:"white",fontSize:20}}>
+      COMPARING STATE SET! Phase: {comparing.phase} Tasks: {comparing.pairs?.length} pairs
+      <button onClick={()=>setComparing(null)} style={{marginTop:20,padding:10,display:"block"}}>Clear</button>
+    </div>
+  );
+
   // ── A vs B COMPARISON SCREENS ──
   if(comparing&&comparing.phase==="tasks"){
     const {pairs,current,catId}=comparing;
