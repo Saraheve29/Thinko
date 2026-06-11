@@ -7,9 +7,8 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   try {
-    const { prompt, messages, max_tokens = 600, model = "claude-sonnet-4-20250514" } = req.body;
+    const { prompt, messages, max_tokens = 600, model = "claude-sonnet-4-5" } = req.body;
 
-    // Support both simple prompt string and full messages array
     const msgs = messages || [{ role: "user", content: prompt }];
 
     if (!msgs || !msgs.length) {
