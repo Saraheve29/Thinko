@@ -2172,9 +2172,9 @@ function Housework({setScreen}){
   };
 
   const PRESETS={
-    upstairs:["Tidy all floors","Hoovering","Hoover stairs","Clean stairs","Mop bathroom floor","Clean surfaces","Clean windows","Clean mirrors","Change bedding","Tidy bedroom","Clean bathroom","Clean toilet","Bleach toilet","Clean bath/shower","Take rubbish out","Iron clothes","Organise clothes","Put away laundry","Take laundry upstairs","Put laundry load in","Air freshener"],
-    downstairs:["Tidy all floors","Hoovering","Hoover stairs","Clean stairs","Mop floors","Clean surfaces","Clean windows","Clean mirrors","Wash up","Clean kitchen sides","Tidy sofa","Tidy living room","Clean downstairs toilet","Bleach toilet","Take rubbish out","Clean oven","Wipe cupboards","Take laundry out","Put laundry load in","Iron clothes","Air freshener","Make dinner","Make fruit juice/smoothie","Tidy food cupboard","Sort cleaning cupboard","Tidy under stairs"],
-    garden:["Mow lawn","Weed","Water plants","Water greenhouse","Sweep path","Trim edges","Clear leaves","Tidy patio","Tidy shed","Plant/sow","Tidy flower beds","Clean pond","Tidy log cabin","Prune","Deadhead flowers"],
+    upstairs:["Tidy all floors","Hoovering","Hoover stairs","Clean stairs","Mop bathroom floor","Clean surfaces","Clean windows","Clean mirrors","Clean doors","Change bedding","Tidy bedroom","Clean bathroom","Clean toilet","Bleach toilet","Clean bath/shower","Take rubbish out","Iron clothes","Organise clothes","Put away laundry","Take laundry upstairs","Put laundry load in","Air freshener","Brush hair","Get dressed","Make up","Brush teeth"],
+    downstairs:["Tidy all floors","Hoovering","Hoover stairs","Clean stairs","Mop floors","Clean surfaces","Clean windows","Clean mirrors","Clean doors","Wash up","Clean kitchen sides","Tidy sofa","Tidy living room","Clean downstairs toilet","Bleach toilet","Take rubbish out","Clean oven","Wipe cupboards","Take laundry out","Put laundry load in","Iron clothes","Air freshener","Make dinner","Make fruit juice/smoothie","Tidy food cupboard","Sort cleaning cupboard","Tidy under stairs"],
+    garden:["Tidy garden","Mow lawn","Weed","Water plants","Water greenhouse","Sweep path","Trim edges","Clear leaves","Tidy patio","Tidy shed","Plant/sow","Tidy flower beds","Clean pond","Tidy log cabin","Prune","Deadhead flowers"],
     garage:["Sweep floor","Tidy tools","Organise shelves","Take rubbish out","Clear clutter"],
   };
 
